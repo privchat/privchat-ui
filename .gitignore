@@ -1,0 +1,51 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.kotlin/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Android
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+local.properties
+.externalNativeBuild/
+.cxx/
+captures/
+*.hprof
+
+# iOS / Xcode
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+Pods/
+*.xcworkspace
+Podfile.lock
+*.xcuserstate
+
+# Kotlin Multiplatform
+*.klib
+*.knm
+compose-resources/
+ksp/
+
+# macOS
+.DS_Store
+._*
+
+# Misc
+*.tmp
+*.temp
+*.swp
+*~
+*.log
