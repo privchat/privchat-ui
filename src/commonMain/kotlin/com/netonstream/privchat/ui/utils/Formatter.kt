@@ -1,20 +1,23 @@
 package com.netonstream.privchat.ui.utils
 
+import com.netonstream.privchat.ui.PrivChat
+import com.netonstream.privchat.ui.common.base.LocalDateTimeInfo
 import com.netonstream.privchat.ui.common.base.currentTimeMillis
+import com.netonstream.privchat.ui.common.base.epochMillisToLocalDateTime
 import kotlin.math.pow
 import kotlin.math.round
 
 /**
  * 格式化工具
  *
- * 统一的时间、文件大小等格式化方法
+ * 统一的时间、文件大小等格式化方法。
+ *
+ * 时区策略：
+ * - 所有时间戳均为 UTC 毫秒，数据层不做任何转换
+ * - 格式化时按 PrivChat.timeZoneId 指定的时区解释并显示
+ * - App 层可通过 PrivChat.setTimeZone("Asia/Ho_Chi_Minh") 切换
  */
 object Formatter {
-
-    private const val SECOND = 1000L
-    private const val MINUTE = 60 * SECOND
-    private const val HOUR = 60 * MINUTE
-    private const val DAY = 24 * HOUR
 
     // ========== 时间格式化 ==========
 
@@ -23,25 +26,38 @@ object Formatter {
      *
      * - 今天：HH:mm
      * - 昨天：昨天
-     * - 本周：周X
+     * - 本周内（7天内）：周X
      * - 更早：MM-dd
      *
-     * @param timestamp 时间戳（毫秒）
+     * @param timestamp UTC 时间戳（毫秒）
      */
     fun conversationTime(timestamp: Long): String {
         if (timestamp <= 0) return ""
 
+        val zone = PrivChat.timeZoneId
         val now = currentTimeMillis()
-        val todayStart = now - (now % DAY)
-        val yesterdayStart = todayStart - DAY
-        val weekStart = todayStart - 6 * DAY
+        val nowLocal = epochMillisToLocalDateTime(now, zone)
+        val tsLocal = epochMillisToLocalDateTime(timestamp, zone)
 
-        return when {
-            timestamp >= todayStart -> formatHHmm(timestamp)
-            timestamp >= yesterdayStart -> "昨天"
-            timestamp >= weekStart -> getDayOfWeek(timestamp)
-            else -> formatMMdd(timestamp)
+        // 同一天
+        if (nowLocal.year == tsLocal.year && nowLocal.month == tsLocal.month && nowLocal.day == tsLocal.day) {
+            return formatHHmm(tsLocal)
         }
+
+        // 昨天：日期差1天（简化：用 now 减一天的开始判断）
+        val yesterdayLocal = epochMillisToLocalDateTime(now - 86_400_000L, zone)
+        if (yesterdayLocal.year == tsLocal.year && yesterdayLocal.month == tsLocal.month && yesterdayLocal.day == tsLocal.day) {
+            return "昨天"
+        }
+
+        // 本周内（7天以内）
+        val sevenDaysAgo = now - 7 * 86_400_000L
+        if (timestamp >= sevenDaysAgo) {
+            return getDayOfWeek(tsLocal.dayOfWeek)
+        }
+
+        // 更早
+        return formatMMdd(tsLocal)
     }
 
     /**
@@ -52,12 +68,14 @@ object Formatter {
     /**
      * 格式化消息时间
      *
-     * @param timestamp 时间戳（毫秒）
+     * @param timestamp UTC 时间戳（毫秒）
      * @return HH:mm
      */
     fun messageTime(timestamp: Long): String {
         if (timestamp <= 0) return ""
-        return formatHHmm(timestamp)
+        val zone = PrivChat.timeZoneId
+        val local = epochMillisToLocalDateTime(timestamp, zone)
+        return formatHHmm(local)
     }
 
     /**
@@ -73,22 +91,35 @@ object Formatter {
      * - 本年：MM月dd日 HH:mm
      * - 更早：yyyy年MM月dd日 HH:mm
      *
-     * @param timestamp 时间戳（毫秒）
+     * @param timestamp UTC 时间戳（毫秒）
      */
     fun messageSeparatorTime(timestamp: Long): String {
         if (timestamp <= 0) return ""
 
+        val zone = PrivChat.timeZoneId
         val now = currentTimeMillis()
-        val todayStart = now - (now % DAY)
-        val yesterdayStart = todayStart - DAY
+        val nowLocal = epochMillisToLocalDateTime(now, zone)
+        val tsLocal = epochMillisToLocalDateTime(timestamp, zone)
+        val time = formatHHmm(tsLocal)
 
-        val time = formatHHmm(timestamp)
-
-        return when {
-            timestamp >= todayStart -> "今天 $time"
-            timestamp >= yesterdayStart -> "昨天 $time"
-            else -> "${formatMMdd(timestamp)} $time"
+        // 今天
+        if (nowLocal.year == tsLocal.year && nowLocal.month == tsLocal.month && nowLocal.day == tsLocal.day) {
+            return "今天 $time"
         }
+
+        // 昨天
+        val yesterdayLocal = epochMillisToLocalDateTime(now - 86_400_000L, zone)
+        if (yesterdayLocal.year == tsLocal.year && yesterdayLocal.month == tsLocal.month && yesterdayLocal.day == tsLocal.day) {
+            return "昨天 $time"
+        }
+
+        // 同年
+        if (nowLocal.year == tsLocal.year) {
+            return "${tsLocal.month.toString().padStart(2, '0')}月${tsLocal.day.toString().padStart(2, '0')}日 $time"
+        }
+
+        // 不同年
+        return "${tsLocal.year}年${tsLocal.month.toString().padStart(2, '0')}月${tsLocal.day.toString().padStart(2, '0')}日 $time"
     }
 
     /**
@@ -212,29 +243,17 @@ object Formatter {
 
     // ========== 私有辅助方法 ==========
 
-    private fun formatHHmm(timestamp: Long): String {
-        // 使用简单计算，避免平台差异
-        val totalMinutes = timestamp / MINUTE
-        val hours = ((totalMinutes / 60) % 24).toInt()
-        val minutes = (totalMinutes % 60).toInt()
-        return "${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}"
+    private fun formatHHmm(local: LocalDateTimeInfo): String {
+        return "${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
     }
 
-    private fun formatMMdd(timestamp: Long): String {
-        // 简化实现，使用近似计算
-        val days = timestamp / DAY
-        // 简单的日期估算（不考虑闰年等，仅用于显示）
-        val dayOfYear = (days % 365).toInt()
-        val month = (dayOfYear / 30 + 1).coerceIn(1, 12)
-        val day = (dayOfYear % 30 + 1).coerceIn(1, 31)
-        return "${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}"
+    private fun formatMMdd(local: LocalDateTimeInfo): String {
+        return "${local.month.toString().padStart(2, '0')}-${local.day.toString().padStart(2, '0')}"
     }
 
-    private fun getDayOfWeek(timestamp: Long): String {
-        val days = listOf("周日", "周一", "周二", "周三", "周四", "周五", "周六")
-        // 1970-01-01 是周四，索引为 4
-        val dayIndex = ((timestamp / DAY + 4) % 7).toInt()
-        return days[dayIndex]
+    private fun getDayOfWeek(isoDayOfWeek: Int): String {
+        val days = listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日")
+        return days.getOrElse(isoDayOfWeek - 1) { "周一" }
     }
 
     private fun formatDecimal(value: Double, digits: Int): String {
@@ -248,5 +267,3 @@ object Formatter {
         return raw + "0".repeat(digits - decimals)
     }
 }
-
-// currentTimeMillis 从 com.netonstream.privchat.ui.common.base 导入

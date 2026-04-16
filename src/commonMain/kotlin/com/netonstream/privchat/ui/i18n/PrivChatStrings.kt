@@ -216,6 +216,31 @@ data class PrivChatStrings(
     val contactUsServiceTime: String,
     val contactUsChatNow: String,
 
+    // ========== 个人资料编辑 ==========
+    val profileEditSave: String,
+    val profileEditAvatarHint: String,
+
+    // ========== 修改密码 ==========
+    val changePasswordTitle: String,
+    val changePasswordNew: String,
+    val changePasswordConfirm: String,
+    val changePasswordSmsCode: String,
+    val changePasswordSendCode: String,
+    val changePasswordSubmit: String,
+    val changePasswordSuccess: String,
+    val changePasswordMismatch: String,
+
+    // ========== 设置密码（首次） ==========
+    val setPasswordTitle: String,
+    val setPasswordHint: String,
+    val setPasswordSubmit: String,
+    val setPasswordSuccess: String,
+
+    // ========== 设置昵称（首次） ==========
+    val setNicknameTitle: String,
+    val setNicknameHint: String,
+    val setNicknameSubmit: String,
+
     // ========== 时间 ==========
     val timeYesterday: String,
     val timeToday: String,
@@ -435,6 +460,31 @@ object PrivChatStringSets {
         contactUsServiceTime = "服务时间：工作日 9:00 - 18:00",
         contactUsChatNow = "立即联系",
 
+        // 个人资料编辑
+        profileEditSave = "保存",
+        profileEditAvatarHint = "点击修改头像",
+
+        // 修改密码
+        changePasswordTitle = "修改密码",
+        changePasswordNew = "新密码",
+        changePasswordConfirm = "确认密码",
+        changePasswordSmsCode = "验证码",
+        changePasswordSendCode = "发送验证码",
+        changePasswordSubmit = "确认修改",
+        changePasswordSuccess = "密码修改成功",
+        changePasswordMismatch = "两次密码不一致",
+
+        // 设置密码（首次）
+        setPasswordTitle = "设置密码",
+        setPasswordHint = "设置密码后可使用密码登录",
+        setPasswordSubmit = "确认设置",
+        setPasswordSuccess = "密码设置成功",
+
+        // 设置昵称（首次）
+        setNicknameTitle = "设置昵称",
+        setNicknameHint = "给自己取个名字吧",
+        setNicknameSubmit = "完成",
+
         // 时间
         timeYesterday = "昨天",
         timeToday = "今天",
@@ -649,6 +699,31 @@ object PrivChatStringSets {
         contactUsServiceTime = "Service hours: Weekdays 9:00 - 18:00",
         contactUsChatNow = "Chat Now",
 
+        // Profile Edit
+        profileEditSave = "Save",
+        profileEditAvatarHint = "Tap to change avatar",
+
+        // Change Password
+        changePasswordTitle = "Change Password",
+        changePasswordNew = "New Password",
+        changePasswordConfirm = "Confirm Password",
+        changePasswordSmsCode = "Verification Code",
+        changePasswordSendCode = "Send Code",
+        changePasswordSubmit = "Submit",
+        changePasswordSuccess = "Password changed successfully",
+        changePasswordMismatch = "Passwords don't match",
+
+        // Set Password (first time)
+        setPasswordTitle = "Set Password",
+        setPasswordHint = "Set a password to log in with your account",
+        setPasswordSubmit = "Confirm",
+        setPasswordSuccess = "Password set successfully",
+
+        // Set Nickname (first time)
+        setNicknameTitle = "Set Nickname",
+        setNicknameHint = "Give yourself a name",
+        setNicknameSubmit = "Done",
+
         // Time
         timeYesterday = "Yesterday",
         timeToday = "Today",
@@ -661,17 +736,27 @@ object PrivChatStringSets {
         timeSaturday = "Sat",
     )
 
-    const val DEFAULT_LANGUAGE_TAG = "en-US"
+    val ChineseTraditional: PrivChatStrings = PrivChatStringsZhHant
+    val Vietnamese: PrivChatStrings = PrivChatStringsViVn
+
+    const val DEFAULT_LANGUAGE_TAG = "zh-Hans"
     const val CHINESE_SIMPLIFIED_TAG = "zh-Hans"
+    const val CHINESE_TRADITIONAL_TAG = "zh-Hant"
     const val ENGLISH_TAG = "en-US"
+    const val VIETNAMESE_TAG = "vi-VN"
 
     val builtIn: Map<String, PrivChatStrings> = mapOf(
         CHINESE_SIMPLIFIED_TAG to Chinese,
         "zh" to Chinese,
         "zh-CN" to Chinese,
         "zh-Hans-CN" to Chinese,
+        CHINESE_TRADITIONAL_TAG to ChineseTraditional,
+        "zh-TW" to ChineseTraditional,
+        "zh-HK" to ChineseTraditional,
         ENGLISH_TAG to English,
         "en" to English,
+        VIETNAMESE_TAG to Vietnamese,
+        "vi" to Vietnamese,
     )
 }
 

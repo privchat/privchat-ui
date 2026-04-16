@@ -62,6 +62,7 @@ fun ConversationPage(
     onMuteChannel: (suspend (ULong, Boolean) -> Result<Boolean>)? = null,
     onHideChannel: (suspend (ULong) -> Result<Boolean>)? = null,
     onError: ((String) -> Unit)? = null,
+    showNavBar: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val strings = PrivChatI18n.strings
@@ -115,12 +116,14 @@ fun ConversationPage(
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             // 顶部导航栏
-            NavBar(
-                title = strings.conversationTitle,
-                rightItems = listOf(
-                    NavBarItem(icon = Icons.add, onClick = { showPlusMenu = true })
+            if (showNavBar) {
+                NavBar(
+                    title = strings.conversationTitle,
+                    rightItems = listOf(
+                        NavBarItem(icon = Icons.add, onClick = { showPlusMenu = true })
+                    )
                 )
-            )
+            }
             networkStatusBar?.invoke()
 
         // 会话列表（搜索栏作为第一个 item，下拉时出现，上划时隐藏）
@@ -197,7 +200,7 @@ fun ConversationPage(
         }
 
         // "+" 下拉菜单浮层（覆盖在整个页面之上）
-        if (showPlusMenu) {
+        if (showNavBar && showPlusMenu) {
             PlusDropdownMenu(
                 onDismiss = { showPlusMenu = false },
                 onCreateGroup = { showPlusMenu = false; onCreateGroup() },

@@ -58,6 +58,34 @@ expect fun getDeviceScreenType(): DeviceScreenType
 expect fun currentTimeMillis(): Long
 
 /**
+ * 本地日期时间（年月日时分秒 + 星期）
+ * 纯数据结构，不依赖任何平台日期类
+ */
+data class LocalDateTimeInfo(
+    val year: Int,
+    val month: Int,      // 1-12
+    val day: Int,        // 1-31
+    val hour: Int,       // 0-23
+    val minute: Int,     // 0-59
+    val second: Int,     // 0-59
+    val dayOfWeek: Int,  // 1=周一 ... 7=周日 (ISO 8601)
+)
+
+/**
+ * 将 UTC 毫秒时间戳转换为指定时区的本地日期时间
+ *
+ * @param epochMillis UTC 毫秒时间戳
+ * @param timeZoneId IANA 时区 ID，如 "Asia/Shanghai"、"Asia/Ho_Chi_Minh"
+ * @return 该时区下的本地日期时间
+ */
+expect fun epochMillisToLocalDateTime(epochMillis: Long, timeZoneId: String): LocalDateTimeInfo
+
+/**
+ * 获取系统默认时区 ID（IANA 格式）
+ */
+expect fun systemDefaultTimeZoneId(): String
+
+/**
  * PrivChat 组件构建器
  *
  * 根据设备类型自动选择对应的构建器

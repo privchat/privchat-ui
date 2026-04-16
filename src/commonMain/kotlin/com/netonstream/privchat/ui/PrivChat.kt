@@ -6,6 +6,7 @@ import om.netonstream.privchat.sdk.dto.*
 import com.netonstream.privchat.ui.models.ChannelLocalState
 import com.netonstream.privchat.ui.models.UIState
 import com.netonstream.privchat.ui.common.base.currentTimeMillis
+import com.netonstream.privchat.ui.common.base.systemDefaultTimeZoneId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,6 +54,38 @@ object PrivChat {
         _sdkVersion = version
         _sdkGitSha = gitSha
         _sdkBuildTime = buildTime
+    }
+
+    // ========== 时区配置 ==========
+
+    /**
+     * 显示时区 ID（IANA 格式，如 "Asia/Shanghai"、"Asia/Ho_Chi_Minh"）
+     *
+     * - 仅影响 UI 展示层（Formatter）的时间格式化
+     * - UTC 时间戳在数据层始终保持原样，不做任何转换
+     * - 默认值：设备系统时区
+     *
+     * App 层可在初始化时或用户切换语言/时区时调用 setTimeZone() 修改
+     */
+    private var _timeZoneId: String = systemDefaultTimeZoneId()
+
+    /** 当前显示时区 ID */
+    val timeZoneId: String get() = _timeZoneId
+
+    /**
+     * 设置显示时区
+     *
+     * @param zoneId IANA 时区 ID，如 "Asia/Shanghai"、"Asia/Ho_Chi_Minh"、"America/New_York"
+     */
+    fun setTimeZone(zoneId: String) {
+        _timeZoneId = zoneId
+    }
+
+    /**
+     * 重置为设备系统时区
+     */
+    fun resetTimeZone() {
+        _timeZoneId = systemDefaultTimeZoneId()
     }
 
     // ========== SDK 客户端 ==========
