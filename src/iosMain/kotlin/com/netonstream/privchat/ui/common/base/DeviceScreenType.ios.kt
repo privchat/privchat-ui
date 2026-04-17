@@ -11,6 +11,7 @@ import platform.Foundation.NSCalendarUnitWeekday
 import platform.Foundation.NSDate
 import platform.Foundation.NSTimeZone
 import platform.Foundation.dateWithTimeIntervalSince1970
+import platform.Foundation.localTimeZone
 import platform.Foundation.timeIntervalSince1970
 import platform.Foundation.timeZoneWithName
 

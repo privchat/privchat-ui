@@ -1064,6 +1064,13 @@ private fun MessageInputBar(
             .fillMaxWidth()
             .background(colors.surface),
     ) {
+        // 顶部分隔线（与 BottomNavBar 一致）
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(colors.divider),
+        )
         Box(
             modifier = Modifier
                 .fillMaxWidth()
