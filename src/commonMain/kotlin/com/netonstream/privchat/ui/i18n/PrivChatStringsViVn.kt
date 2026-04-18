@@ -101,6 +101,7 @@ val PrivChatStringsViVn = PrivChatStrings(
     userProfileSystemAccount = "Tài khoản hệ thống",
     userProfileBio = "Giới thiệu",
     userProfileRemark = "Ghi chú",
+    userProfileRemarkPlaceholder = "Nhập tên ghi chú",
     userProfileNickname = "Biệt danh",
     userProfileSendMessage = "Gửi tin nhắn",
     userProfileAddFriend = "Thêm bạn",

@@ -101,6 +101,7 @@ val PrivChatStringsZhHant = PrivChatStrings(
     userProfileSystemAccount = "系統帳號",
     userProfileBio = "簡介",
     userProfileRemark = "備註",
+    userProfileRemarkPlaceholder = "請輸入備註名",
     userProfileNickname = "暱稱",
     userProfileSendMessage = "發訊息",
     userProfileAddFriend = "新增好友",

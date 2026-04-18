@@ -227,6 +227,10 @@ private fun ChannelItem(
     val strings = PrivChatI18n.strings
     val colors = Theme.colors
     val swipeCellState = rememberSwipeCellState()
+    val presences by PrivChat.presences.collectAsState()
+
+    // DM 会话在线状态
+    val isOnline = channel.peerUserId?.let { presences[it]?.isOnline } == true
 
     // 背景色
     val backgroundColor = when {
@@ -265,6 +269,7 @@ private fun ChannelItem(
                 url = channel.avatarUrl,
                 name = channel.displayName,
                 size = AvatarSpecs.Size.medium,
+                isOnline = isOnline,
             )
 
             HorizontalSpacer(12.dp)

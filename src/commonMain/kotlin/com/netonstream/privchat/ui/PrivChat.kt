@@ -272,6 +272,10 @@ object PrivChat {
     /** 更新连接状态 */
     fun updateConnectionState(state: ConnectionState) {
         _connectionState.value = state
+        // 断开连接时清空在线状态缓存，避免显示过期的在线状态
+        if (state == ConnectionState.Disconnected) {
+            _presences.value = emptyMap()
+        }
     }
 
     /** 更新当前用户 ID */

@@ -1,6 +1,7 @@
 package com.netonstream.privchat.ui.pages
 
 import androidx.compose.runtime.*
+import om.netonstream.privchat.sdk.ConnectionState
 import om.netonstream.privchat.sdk.dto.ChannelListEntry
 import om.netonstream.privchat.sdk.dto.MessageEntry
 import om.netonstream.privchat.sdk.dto.MessageStatus
@@ -134,7 +135,8 @@ fun MessagePage(
     val listState = rememberLazyListState()
     val runtimeEnv = LocalGearRuntimeEnvironment.current
     val sortedMessages = messages
-    var peerUserId by remember(channel.channelId) { mutableStateOf<ULong?>(null) }
+    // peer_user_id：优先从 channel 字段取，channel_member 表为空时回退到 dmPeerUserId()
+    var peerUserId by remember(channel.channelId) { mutableStateOf(channel.peerUserId) }
     var initialPositioned by remember(channel.channelId) { mutableStateOf(false) }
     var hasInitialLoadCompleted by remember(channel.channelId) { mutableStateOf(false) }
     // 输入文本
@@ -205,12 +207,43 @@ fun MessagePage(
             }
         }
         if (channel.isDm) {
-            runCatching {
-                withContext(Dispatchers.Default) {
-                    val resolvedPeerUserId = PrivChat.client.dmPeerUserId(channel.channelId).getOrNull()
-                    peerUserId = resolvedPeerUserId
-                    if (resolvedPeerUserId != null) {
-                        PrivChat.client.fetchPresence(listOf(resolvedPeerUserId))
+            // channel_member 表为空时 peerUserId 可能是 null，回退到 dmPeerUserId()
+            if (peerUserId == null) {
+                runCatching {
+                    withContext(Dispatchers.Default) {
+                        PrivChat.client.dmPeerUserId(channel.channelId)
+                            .getOrNull()
+                            ?.let { peerUserId = it }
+                    }
+                }
+            }
+            val uid = peerUserId
+            if (uid != null) {
+                runCatching {
+                    withContext(Dispatchers.Default) {
+                        PrivChat.client.fetchPresence(listOf(uid))
+                            .getOrNull()
+                            ?.firstOrNull()
+                            ?.let { PrivChat.updatePresence(it) }
+                    }
+                }
+            }
+        }
+    }
+
+    // 重连后重新拉取对端在线状态
+    val connectionState by PrivChat.connectionState.collectAsState()
+    LaunchedEffect(connectionState) {
+        if (connectionState == ConnectionState.Connected && channel.isDm) {
+            val uid = peerUserId ?: run {
+                PrivChat.client.dmPeerUserId(channel.channelId)
+                    .getOrNull()
+                    ?.also { peerUserId = it }
+            }
+            if (uid != null) {
+                runCatching {
+                    withContext(Dispatchers.Default) {
+                        PrivChat.client.fetchPresence(listOf(uid))
                             .getOrNull()
                             ?.firstOrNull()
                             ?.let { PrivChat.updatePresence(it) }
