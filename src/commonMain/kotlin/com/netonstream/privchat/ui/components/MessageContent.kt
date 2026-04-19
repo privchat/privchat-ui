@@ -58,15 +58,17 @@ fun MessageContent(
             MessageType.FILE -> FileContent(parsed, textColor, secondaryTextColor)
             MessageType.STICKER -> StickerContent(parsed)
             MessageType.LOCATION -> LocationContent(parsed, textColor, secondaryTextColor)
-            MessageType.SYSTEM, MessageType.REVOKED -> {
-                // 系统消息和撤回消息不在这里渲染
+            MessageType.SYSTEM -> {
+                // 系统消息由 MessageRow 在 row 级早返回 SystemMessageRow 渲染，
+                // 不会走到这里；留空分支以保持 when 穷尽。
+                // 撤回（isRevoked）同样在 row 级被 RenderType.REVOKED 拦截。
             }
 
             MessageType.UNKNOWN -> UnknownContent(textColor)
         }
 
         // 消息时间和状态（系统消息除外）
-        if (parsed.type != MessageType.SYSTEM && parsed.type != MessageType.REVOKED) {
+        if (parsed.type != MessageType.SYSTEM) {
             VerticalSpacer(4.dp)
             MessageFooter(
                 timestamp = message.timestamp,

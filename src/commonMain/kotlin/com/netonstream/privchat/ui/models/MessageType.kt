@@ -3,9 +3,10 @@ package com.netonstream.privchat.ui.models
 import om.netonstream.privchat.sdk.dto.MessageEntry
 
 /**
- * 消息类型枚举
+ * 消息内容类型枚举（仅映射协议内容类型）。
  *
- * 从 SDK 的 content JSON 中解析得到
+ * 注意：撤回是状态 overlay（`MessageEntry.isRevoked`），不是内容类型——
+ * 不在此枚举内。撤回的显示层分派与文案由 `RenderType` / `isRevoked` 负责。
  */
 enum class MessageType {
     TEXT,
@@ -16,7 +17,6 @@ enum class MessageType {
     STICKER,
     LOCATION,
     SYSTEM,
-    REVOKED,
     UNKNOWN
 }
 
@@ -90,10 +90,6 @@ fun parseMessageType(content: String): MessageType {
                     content.contains("\"type\": \"system\"") ||
                     content.contains("\"type\":\"tip\"") ||
                     content.contains("\"type\": \"tip\"") -> MessageType.SYSTEM
-
-            content.contains("\"type\":\"revoked\"") ||
-                    content.contains("\"type\": \"revoked\"") ||
-                    content.contains("\"revoked\":true") -> MessageType.REVOKED
 
             // 默认当作纯文本处理
             else -> MessageType.TEXT
@@ -194,7 +190,7 @@ fun parseMessageContent(content: String): ParsedContent {
                 ?: extractJsonString(content, "emoji")
         )
 
-        MessageType.SYSTEM, MessageType.REVOKED -> ParsedContent(
+        MessageType.SYSTEM -> ParsedContent(
             type = type,
             text = extractJsonString(content, "text")
                 ?: extractJsonString(content, "tip")
@@ -210,12 +206,11 @@ fun parseMessageContent(content: String): ParsedContent {
 
 /**
  * 基于 MessageEntry（包含协议 messageType/extra）解析消息内容。
- * isRevoked 由 message_extra 表驱动，优先于 content 字符串检测。
+ *
+ * 仅做内容类型解析，不读取 `isRevoked` 状态——撤回的显示与文案由 `RenderType.REVOKED`
+ * 与 `textPreview`（看 `isRevoked`）负责。避免状态层污染内容解析。
  */
 fun parseMessageContent(message: MessageEntry): ParsedContent {
-    if (message.isRevoked) {
-        return ParsedContent(type = MessageType.REVOKED, text = "消息已被撤回")
-    }
     val content = message.content
     val extra = message.extra
     val type = parseMessageType(message.messageType, content, extra)
@@ -287,7 +282,7 @@ fun parseMessageContent(message: MessageEntry): ParsedContent {
                 ?: extractJsonString(extra, "emoji")
         )
 
-        MessageType.SYSTEM, MessageType.REVOKED -> ParsedContent(
+        MessageType.SYSTEM -> ParsedContent(
             type = type,
             text = extractPayloadContent(content)
                 ?: extractJsonString(content, "text")
@@ -303,23 +298,20 @@ fun parseMessageContent(message: MessageEntry): ParsedContent {
 }
 
 /**
- * MessageEntry 扩展：获取消息类型
- * 优先检查 isRevoked 字段（由 message_extra 表驱动），再回退到 content 解析
- */
-val MessageEntry.uiMessageType: MessageType
-    get() = if (isRevoked) MessageType.REVOKED else parseMessageType(messageType, content, extra)
-
-/**
  * MessageEntry 扩展：获取解析后的内容
  */
 val MessageEntry.parsedContent: ParsedContent
     get() = parseMessageContent(this)
 
 /**
- * MessageEntry 扩展：获取纯文本预览
+ * MessageEntry 扩展：获取纯文本预览。
+ *
+ * 撤回文案由状态（`isRevoked`）决定，与内容类型无关——
+ * 否则按内容类型映射预览。
  */
 val MessageEntry.textPreview: String
     get() {
+        if (isRevoked) return "撤回了一条消息"
         val parsed = parsedContent
         return when (parsed.type) {
             MessageType.TEXT -> parsed.text ?: ""
@@ -330,7 +322,6 @@ val MessageEntry.textPreview: String
             MessageType.STICKER -> "[表情]"
             MessageType.LOCATION -> "[位置] ${parsed.address ?: ""}"
             MessageType.SYSTEM -> parsed.text ?: "[系统消息]"
-            MessageType.REVOKED -> "撤回了一条消息"
             MessageType.UNKNOWN -> "[消息]"
         }
     }

@@ -737,8 +737,8 @@ private fun MessageRow(
     val colors = Theme.colors
     val parsed = message.parsedContent
 
-    // 系统消息居中显示
-    if (parsed.type == MessageType.SYSTEM || parsed.type == MessageType.REVOKED) {
+    // 撤回 / 系统消息走整行居中布局；其余走常规气泡。
+    if (message.renderType() != RenderType.BUBBLE) {
         SystemMessageRow(message = message)
         return
     }
@@ -808,10 +808,8 @@ private fun SystemMessageRow(
     val colors = Theme.colors
     val parsed = message.parsedContent
 
-    val text = when (parsed.type) {
-        MessageType.REVOKED -> strings.messageRevoked
-        else -> parsed.text ?: ""
-    }
+    // 文案按状态决定：撤回 → 本地化"消息已撤回"；系统 → 使用解析后文案。
+    val text = if (message.isRevoked) strings.messageRevoked else (parsed.text ?: "")
 
     Box(
         modifier = Modifier
