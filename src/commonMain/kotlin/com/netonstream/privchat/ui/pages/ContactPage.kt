@@ -72,12 +72,8 @@ fun ContactPage(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // 顶部导航栏 - 右上角添加按钮
         NavBar(
             title = strings.contactTitle,
-            rightItems = listOf(
-                NavBarItem(icon = Icons.add, onClick = onAddFriend)
-            ),
         )
         networkStatusBar?.invoke()
 

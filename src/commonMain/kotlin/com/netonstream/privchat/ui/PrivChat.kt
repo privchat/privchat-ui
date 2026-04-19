@@ -629,17 +629,21 @@ object PrivChat {
     }
 
     private fun choosePreferredMessage(a: MessageEntry, b: MessageEntry): MessageEntry {
-        if (a.id != b.id) return if (a.timestamp >= b.timestamp) a else b
-        if (a.isRevoked != b.isRevoked) return if (b.isRevoked) b else a
-        val statusA = statusRank(a.status)
-        val statusB = statusRank(b.status)
-        if (statusA != statusB) return if (statusA >= statusB) a else b
-        if ((a.serverMessageId ?: 0uL) != (b.serverMessageId ?: 0uL)) {
-            return if ((a.serverMessageId ?: 0uL) >= (b.serverMessageId ?: 0uL)) a else b
+        // delivered 是单调 0→1 标志（Rust SDK CAS 写入），合并时必须保留，
+        // 否则同 status 去重时会丢掉已送达状态。
+        val mergedDelivered = a.delivered || b.delivered
+        val preferred = when {
+            a.id != b.id -> if (a.timestamp >= b.timestamp) a else b
+            a.isRevoked != b.isRevoked -> if (b.isRevoked) b else a
+            statusRank(a.status) != statusRank(b.status) ->
+                if (statusRank(a.status) >= statusRank(b.status)) a else b
+            (a.serverMessageId ?: 0uL) != (b.serverMessageId ?: 0uL) ->
+                if ((a.serverMessageId ?: 0uL) >= (b.serverMessageId ?: 0uL)) a else b
+            // All criteria equal: prefer the incoming (b) — may carry updated localThumbnailPath / thumbStatus.
+            else -> if (a.timestamp > b.timestamp) a else b
         }
-        // When all criteria are equal, prefer the incoming message (b) —
-        // it may carry updated fields such as localThumbnailPath / thumbStatus.
-        return if (a.timestamp > b.timestamp) a else b
+        return if (preferred.delivered == mergedDelivered) preferred
+        else preferred.copy(delivered = mergedDelivered)
     }
 
     private fun statusRank(status: MessageStatus): Int = when (status) {
