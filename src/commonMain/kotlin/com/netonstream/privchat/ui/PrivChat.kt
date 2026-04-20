@@ -221,6 +221,27 @@ object PrivChat {
         }
     }
 
+    // ========== 消息 reactions（key = messageId） ==========
+
+    private val _messageReactions = MutableStateFlow<Map<ULong, List<ReactionChip>>>(emptyMap())
+
+    /** 消息表情反应（key = messageId） */
+    val messageReactions: StateFlow<Map<ULong, List<ReactionChip>>> = _messageReactions.asStateFlow()
+
+    /** 覆盖单条消息的 reactions（空列表等同于清除该条 key）。 */
+    fun setMessageReactions(messageId: ULong, chips: List<ReactionChip>) {
+        _messageReactions.value = _messageReactions.value.toMutableMap().apply {
+            if (chips.isEmpty()) remove(messageId) else this[messageId] = chips
+        }
+    }
+
+    /** 批量 merge 到现有 map（空列表等同于清除对应 key）。 */
+    fun mergeMessageReactions(batch: Map<ULong, List<ReactionChip>>) {
+        val merged = _messageReactions.value.toMutableMap()
+        batch.forEach { (k, v) -> if (v.isEmpty()) merged.remove(k) else merged[k] = v }
+        _messageReactions.value = merged
+    }
+
     // ========== 本地状态（UI 层独有） ==========
 
     private val _channelLocalStates = MutableStateFlow<Map<ULong, ChannelLocalState>>(emptyMap())
@@ -265,6 +286,7 @@ object PrivChat {
         _channelLocalStates.value = emptyMap()
         _uiState.value = UIState()
         _typingUsers.value = emptyMap()
+        _messageReactions.value = emptyMap()
     }
 
     // ========== 状态更新方法 ==========
@@ -882,15 +904,12 @@ object PrivChat {
     fun onRemoteTyping(channelId: ULong, userId: ULong) {
         val now = currentTimeMillis()
 
-        // 检查 suppress 窗口
+        // 检查 suppress 窗口（收到该用户消息后的短窗口内忽略迟到 typing）
         val suppressUntil = _typingSuppressUntil.value[channelId]?.get(userId) ?: 0L
         if (now < suppressUntil) return
 
-        // 检查过期
-        val lastTypingAt = _typingUsers.value[channelId]?.get(userId) ?: 0L
-        if (lastTypingAt > 0 && now - lastTypingAt >= TYPING_EXPIRE_MS) return
-
-        // 接受
+        // 任意新 typing 事件都刷新时间戳——之前依据"上次 typing 已过期"拒绝新事件的分支
+        // 语义与"心跳刷新"相反，会在对端停顿 > TYPING_EXPIRE_MS 再恢复输入时丢失事件。
         val current = _typingUsers.value.toMutableMap()
         val cm = current[channelId]?.toMutableMap() ?: mutableMapOf()
         cm[userId] = now

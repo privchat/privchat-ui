@@ -3,15 +3,21 @@ package com.netonstream.privchat.ui.pages
 import androidx.compose.runtime.*
 import om.netonstream.privchat.sdk.ConnectionState
 import om.netonstream.privchat.sdk.dto.ChannelListEntry
+import om.netonstream.privchat.sdk.dto.ContentMessageType
 import om.netonstream.privchat.sdk.dto.MessageEntry
 import om.netonstream.privchat.sdk.dto.MessageStatus
 import om.netonstream.privchat.sdk.dto.PresenceEntry
+import om.netonstream.privchat.sdk.dto.contentType
 import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.models.*
 import com.netonstream.privchat.ui.components.ChatAvatar
+import com.netonstream.privchat.ui.components.DefaultMessageReactions
 import com.netonstream.privchat.ui.components.MessageAction
+import com.netonstream.privchat.ui.components.MessageActionKind
+import com.netonstream.privchat.ui.components.MessageActionPolicy
 import com.netonstream.privchat.ui.components.MessageActionsMenu
 import com.netonstream.privchat.ui.components.MessageContent
+import com.netonstream.privchat.ui.platform.ClipboardBridge
 import com.tencent.kuikly.compose.foundation.gestures.detectTapGestures
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.offlineStatus
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.onlineStatus
@@ -38,6 +44,8 @@ import com.gearui.components.button.Button
 import com.gearui.components.button.ButtonTheme
 import com.gearui.components.button.ButtonSize
 import com.gearui.components.empty.EmptyState
+import com.gearui.components.dialog.ConfirmDialog
+import com.gearui.components.toast.Toast
 import com.gearui.components.swiper.Swiper
 import com.gearui.components.swiper.SwiperNavigation
 import com.gearui.components.swiper.SwiperIndicatorPosition
@@ -46,8 +54,11 @@ import com.tencent.kuikly.compose.ui.platform.LocalSoftwareKeyboardController
 import com.tencent.kuikly.compose.ui.platform.LocalFocusManager
 import com.tencent.kuikly.compose.ui.focus.FocusRequester
 import com.tencent.kuikly.compose.foundation.background
+import com.tencent.kuikly.compose.foundation.border
 import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.*
+import com.tencent.kuikly.compose.foundation.layout.ExperimentalLayoutApi
+import com.tencent.kuikly.compose.foundation.layout.FlowRow
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
 import com.tencent.kuikly.compose.foundation.lazy.rememberLazyListState
 import com.tencent.kuikly.compose.ui.Alignment
@@ -125,11 +136,13 @@ fun MessagePage(
     onVoiceStart: (() -> Boolean)? = null,
     onVoiceCancel: (() -> Unit)? = null,
     onSendVoice: (suspend (ULong, Int, durationMs: Long) -> Result<ULong>)? = null,
+    onRequestForward: ((MessageEntry) -> Unit)? = null,
     onError: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val strings = PrivChatI18n.strings
     val messages by PrivChat.messages.collectAsState()
+    val messageReactions by PrivChat.messageReactions.collectAsState()
     val currentUserId by PrivChat.currentUserId.collectAsState()
     val presences by PrivChat.presences.collectAsState()
     val peerReadPtsMap by PrivChat.peerReadPtsByChannel.collectAsState()
@@ -165,7 +178,7 @@ fun MessagePage(
                     delay(50)
                     val currentMessages = PrivChat.messages.value
                     if (currentMessages.isNotEmpty()) {
-                        listState.scrollToItem(currentMessages.size - 1)
+                        listState.animateScrollToItem(currentMessages.size - 1)
                     }
                 }
             }
@@ -234,6 +247,15 @@ fun MessagePage(
         }
     }
 
+    // 批量加载当前会话消息的 reactions（消息列表变化时增量刷新）
+    val messageIdsKey = remember(messages) { messages.map { it.id } }
+    LaunchedEffect(messageIdsKey) {
+        if (messageIdsKey.isEmpty()) return@LaunchedEffect
+        withContext(Dispatchers.Default) {
+            PrivChat.client.reactionsBatch(channel.channelId, messageIdsKey)
+        }.onSuccess { PrivChat.mergeMessageReactions(it) }
+    }
+
     // 重连后重新拉取对端在线状态
     val connectionState by PrivChat.connectionState.collectAsState()
     LaunchedEffect(connectionState) {
@@ -297,7 +319,7 @@ fun MessagePage(
         // 因为 layoutInfo 在新消息刚加入时可能尚未更新（stale），导致误判。
         val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
         if (sortedMessages.size - 1 - lastVisible <= 3) {
-            listState.scrollToItem(lastIndex)
+            listState.animateScrollToItem(lastIndex)
         }
         // 用户在会话中收到新消息时，即时上报已读
         if (hasInitialLoadCompleted) {
@@ -309,11 +331,16 @@ fun MessagePage(
         }
     }
 
-    // 对方"正在输入"气泡出现时自动滚到底部，确保用户能看到
-    val hasTypingBubble = PrivChat.activeTypingUsers(channel.channelId).isNotEmpty()
-    LaunchedEffect(channel.channelId, hasTypingBubble) {
-        if (hasTypingBubble && sortedMessages.isNotEmpty()) {
-            listState.scrollToItem(sortedMessages.size)
+    // 对方"正在输入"气泡更新时自动滚到底部。
+    // 用最新的 typing 心跳时间戳作为 LaunchedEffect key——只要对方每次心跳都会
+    // 刷新这个值，哪怕气泡短暂隐藏后又重新出现，也能触发新一轮滚动。
+    // （此前用 hasTypingBubble Boolean 作 key，_typingUsers 不主动清理过期条目，
+    // 气泡视觉消失时 Boolean 仍然是 true，下一次对方输入无状态跳变，滚动不触发。）
+    val typingMapForScroll by PrivChat.typingUserIds.collectAsState()
+    val latestPeerTypingMs = typingMapForScroll[channel.channelId]?.values?.maxOrNull() ?: 0L
+    LaunchedEffect(channel.channelId, latestPeerTypingMs) {
+        if (latestPeerTypingMs > 0L && sortedMessages.isNotEmpty()) {
+            listState.animateScrollToItem(sortedMessages.size)
         }
     }
 
@@ -324,7 +351,7 @@ fun MessagePage(
         if (currentBottomInset.value < baselineBottomInset) baselineBottomInset = currentBottomInset.value
         val keyboardVisible = currentBottomInset.value > baselineBottomInset + 80f
         if (keyboardVisible && sortedMessages.isNotEmpty()) {
-            listState.scrollToItem(sortedMessages.size - 1)
+            listState.animateScrollToItem(sortedMessages.size - 1)
         }
     }
 
@@ -409,10 +436,16 @@ fun MessagePage(
                                     channelDisplayName = channel.displayName,
                                     onAvatarClick = if (!isSelf) onAvatarClick else null,
                                     peerReadPts = peerReadPts,
+                                    reactions = messageReactions[message.id].orEmpty(),
+                                    selfUserId = currentUserId,
+                                    onRequestForward = onRequestForward,
                                 )
                             }
                             item {
-                                TypingBubble(channelId = channel.channelId)
+                                TypingBubble(
+                                    channelId = channel.channelId,
+                                    peerName = channel.displayName,
+                                )
                             }
                         }
                     }
@@ -432,10 +465,11 @@ fun MessagePage(
             text = inputText,
             onTextChange = { newText ->
                 inputText = newText
-                // 节流发送 typing：文本非空且距离上次发送超过 3 秒
+                // 节流发送 typing：文本非空且距离上次发送超过 1 秒（与接收侧 5s 过期窗口对齐，
+                // 确保用户持续输入时对端始终能收到心跳，不会因中间某次发送被延迟而误判停止）
                 if (newText.isNotBlank()) {
                     val now = currentTimeMillis()
-                    if (now - lastTypingSentMs > 3_000L) {
+                    if (now - lastTypingSentMs > 1_000L) {
                         lastTypingSentMs = now
                         typingActive = true
                         scope.launch {
@@ -484,7 +518,7 @@ fun MessagePage(
                         delay(50)
                         val currentMessages = PrivChat.messages.value
                         if (currentMessages.isNotEmpty()) {
-                            listState.scrollToItem(currentMessages.size - 1)
+                            listState.animateScrollToItem(currentMessages.size - 1)
                         }
                     }
                 }
@@ -605,7 +639,7 @@ fun MessagePage(
                         val currentMessages = PrivChat.messages.value
                         val lastIndex = (currentMessages.size - 1).coerceAtLeast(0)
                         if (currentMessages.isNotEmpty()) {
-                            listState.scrollToItem(lastIndex)
+                            listState.animateScrollToItem(lastIndex)
                         }
                     }
                 }
@@ -736,13 +770,63 @@ private fun MessageRow(
     channelDisplayName: String = "",
     onAvatarClick: ((ULong) -> Unit)? = null,
     peerReadPts: ULong? = null,
+    reactions: List<om.netonstream.privchat.sdk.dto.ReactionChip> = emptyList(),
+    selfUserId: ULong? = null,
+    onRequestForward: ((MessageEntry) -> Unit)? = null,
 ) {
     val colors = Theme.colors
+    val strings = PrivChatI18n.strings
     val parsed = message.parsedContent
+    val scope = rememberCoroutineScope()
+    var showRetryDialog by remember(message.id) { mutableStateOf(false) }
+    val onFailedClick: (() -> Unit)? = if (isSelf && message.status == MessageStatus.Failed) {
+        { showRetryDialog = true }
+    } else {
+        null
+    }
+
+    if (showRetryDialog) {
+        ConfirmDialog(
+            visible = true,
+            title = "重新发送",
+            message = "是否重新发送这条消息？",
+            confirmText = "重新发送",
+            cancelText = "取消",
+            onConfirm = {
+                showRetryDialog = false
+                scope.launch {
+                    withContext(Dispatchers.Default) {
+                        PrivChat.client.retryMessage(message.id)
+                    }.onFailure { error ->
+                        Toast.error(error.message ?: strings.networkError)
+                    }
+                }
+            },
+            onCancel = { showRetryDialog = false },
+        )
+    }
 
     // 撤回 / 系统消息走整行居中布局；其余走常规气泡。
     if (message.renderType() != RenderType.BUBBLE) {
-        SystemMessageRow(message = message)
+        val ctx = MessageActionPolicy.Context(
+            message = message,
+            isSelf = isSelf,
+            nowMs = currentTimeMillis(),
+        )
+        if (MessageActionPolicy.isMenuAvailable(ctx)) {
+            // 撤回消息：允许长按本地删除（Policy 只会返回 DeleteLocal 一项）。
+            // 外层 Box 保证系统气泡始终水平居中（MessageActionsWrapper 自身有 widthIn 限制）。
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                MessageActionsWrapper(message = message, isSelf = isSelf, onRequestForward = onRequestForward) {
+                    SystemMessageRow(message = message)
+                }
+            }
+        } else {
+            SystemMessageRow(message = message)
+        }
         return
     }
 
@@ -767,36 +851,37 @@ private fun MessageRow(
             HorizontalSpacer(8.dp)
         }
 
-        // 消息气泡（长按弹出动作菜单）
-        MessageActionsMenu(
-            actions = listOf(
-                MessageAction(label = "回复", icon = Icons.reply) {},
-                MessageAction(label = "复制", icon = Icons.content_copy) {},
-                MessageAction(label = "撤回", icon = Icons.autorenew) {},
-                MessageAction(label = "转发", icon = Icons.forward) {},
-                MessageAction(label = "删除", icon = Icons.delete, danger = true) {},
-                MessageAction(label = "选择", icon = Icons.check_box_outline_blank) {},
-            ),
-            modifier = Modifier.widthIn(max = 260.dp),
-            onReaction = {},
-            isSelf = isSelf,
+        // 消息气泡（长按弹出动作菜单） + reactions
+        Column(
+            horizontalAlignment = if (isSelf) Alignment.End else Alignment.Start,
         ) {
-            Box(
-                modifier = Modifier
-                    .clip(
-                        RoundedCornerShape(
-                            topStart = if (isSelf) 16.dp else 4.dp,
-                            topEnd = 16.dp,
-                            bottomStart = 16.dp,
-                            bottomEnd = if (isSelf) 4.dp else 16.dp,
+            MessageActionsWrapper(message = message, isSelf = isSelf, onRequestForward = onRequestForward) {
+                Box(
+                    modifier = Modifier
+                        .clip(
+                            RoundedCornerShape(
+                                topStart = if (isSelf) 16.dp else 4.dp,
+                                topEnd = 16.dp,
+                                bottomStart = 16.dp,
+                                bottomEnd = if (isSelf) 4.dp else 16.dp,
+                            )
                         )
+                        .background(if (isSelf) colors.bubbleSelf else colors.bubbleOther),
+                ) {
+                    MessageContent(
+                        message = message,
+                        isSelf = isSelf,
+                        peerReadPts = peerReadPts,
+                        onFailedClick = onFailedClick,
                     )
-                    .background(if (isSelf) colors.bubbleSelf else colors.bubbleOther),
-            ) {
-                MessageContent(
+                }
+            }
+            if (reactions.isNotEmpty()) {
+                VerticalSpacer(4.dp)
+                MessageReactionsRow(
                     message = message,
-                    isSelf = isSelf,
-                    peerReadPts = peerReadPts,
+                    reactions = reactions,
+                    selfUserId = selfUserId,
                 )
             }
         }
@@ -849,12 +934,81 @@ private fun SystemMessageRow(
 }
 
 /**
+ * 气泡下方的 reaction chips 行：按 emoji 聚合为胶囊芯片，
+ * 显示表情+数量；点击切换自己的反应（已反应则取消，未反应则添加）。
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun MessageReactionsRow(
+    message: MessageEntry,
+    reactions: List<om.netonstream.privchat.sdk.dto.ReactionChip>,
+    selfUserId: ULong?,
+) {
+    val colors = Theme.colors
+    val strings = PrivChatI18n.strings
+    val scope = rememberCoroutineScope()
+
+    suspend fun refreshReactions() {
+        val updated = withContext(Dispatchers.Default) {
+            PrivChat.client.reactions(message.channelId, message.id)
+        }
+        updated.onSuccess { PrivChat.setMessageReactions(message.id, it) }
+    }
+
+    FlowRow(
+        modifier = Modifier
+            .padding(horizontal = 4.dp)
+            .widthIn(max = 260.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        reactions.forEach { chip ->
+            val selfReacted = selfUserId != null && chip.userIds.contains(selfUserId)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(colors.surfaceVariant)
+                    .clickable {
+                        scope.launch {
+                            val result = withContext(Dispatchers.Default) {
+                                if (selfReacted) {
+                                    PrivChat.client.removeReaction(message.id, chip.emoji)
+                                } else {
+                                    PrivChat.client.addReaction(message.id, chip.emoji)
+                                }
+                            }
+                            result.onSuccess { refreshReactions() }
+                                .onFailure { error ->
+                                    Toast.error(error.message ?: strings.networkError)
+                                }
+                        }
+                    }
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
+            ) {
+                Text(
+                    text = chip.emoji,
+                    style = Typography.BodySmall,
+                    color = colors.textPrimary,
+                )
+                Text(
+                    text = chip.count.toString(),
+                    style = Typography.Label,
+                    color = colors.textSecondary,
+                )
+            }
+        }
+    }
+}
+
+/**
  * 输入状态指示器
  *
  * 显示"对方正在输入..."提示，自动过滤已过期的 typing 事件
  */
 @Composable
-private fun TypingBubble(channelId: ULong) {
+private fun TypingBubble(channelId: ULong, peerName: String) {
     val typingMap by PrivChat.typingUserIds.collectAsState()
     var tick by remember { mutableStateOf(0L) }
     LaunchedEffect(typingMap) {
@@ -897,7 +1051,7 @@ private fun TypingBubble(channelId: ULong) {
     ) {
         ChatAvatar(
             url = null,
-            name = "?",
+            name = peerName.ifBlank { "?" },
             size = AvatarSpecs.Size.small,
         )
         HorizontalSpacer(8.dp)
@@ -1549,4 +1703,156 @@ private fun PlusActionItem(
         VerticalSpacer(6.dp)
         Text(text = text, style = Typography.Label, color = colors.textSecondary)
     }
+}
+
+/**
+ * 给消息气泡包一层长按菜单：统一处理 Policy 查询、回调 dispatch、reaction 展开。
+ *
+ * 撤回消息走 [SystemMessageRow]、正常气泡走常规渲染路径，
+ * 两条路径共用同一套 action dispatcher 逻辑，因此抽到这个 helper。
+ */
+@Composable
+private fun MessageActionsWrapper(
+    message: MessageEntry,
+    isSelf: Boolean,
+    onRequestForward: ((MessageEntry) -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
+    val strings = PrivChatI18n.strings
+    val scope = rememberCoroutineScope()
+    val ctx = MessageActionPolicy.Context(
+        message = message,
+        isSelf = isSelf,
+        nowMs = currentTimeMillis(),
+    )
+    val menuActions = MessageActionPolicy.menuActions(ctx).map { kind ->
+        kind.toMessageAction(message) {
+            when (kind) {
+                MessageActionKind.Copy -> {
+                    when (message.contentType()) {
+                        ContentMessageType.TEXT -> {
+                            val text = message.parsedContent.text.orEmpty()
+                            if (text.isNotEmpty()) {
+                                ClipboardBridge.setText(text)
+                                Toast.success("已复制")
+                            }
+                        }
+                        ContentMessageType.LINK -> {
+                            val url = message.parsedContent.linkUrl
+                                ?: message.parsedContent.text.orEmpty()
+                            if (url.isNotEmpty()) {
+                                ClipboardBridge.setText(url)
+                                Toast.success("已复制")
+                            }
+                        }
+                        ContentMessageType.IMAGE -> Toast.show("暂不支持图片复制")
+                        else -> { /* Policy 不会派发到其他类型 */ }
+                    }
+                }
+                MessageActionKind.Recall -> {
+                    scope.launch {
+                        if (message.status == MessageStatus.Failed) {
+                            withContext(Dispatchers.Default) {
+                                PrivChat.client.deleteMessageLocal(message.id)
+                            }.onSuccess { PrivChat.removeMessage(message.id) }
+                                .onFailure { error ->
+                                    Toast.error(error.message ?: strings.networkError)
+                                }
+                        } else {
+                            withContext(Dispatchers.Default) {
+                                PrivChat.client.revokeMessage(message.id)
+                            }.onFailure { error ->
+                                Toast.error(error.message ?: strings.networkError)
+                            }
+                        }
+                    }
+                }
+                MessageActionKind.DeleteLocal -> {
+                    scope.launch {
+                        withContext(Dispatchers.Default) {
+                            PrivChat.client.deleteMessageLocal(message.id)
+                        }.onSuccess { PrivChat.removeMessage(message.id) }
+                            .onFailure { error ->
+                                Toast.error(error.message ?: strings.networkError)
+                            }
+                    }
+                }
+                MessageActionKind.DeleteForAll -> Toast.show("所有人删除即将支持")
+                MessageActionKind.Forward -> {
+                    val handler = onRequestForward
+                    if (handler != null) {
+                        handler(message)
+                    } else {
+                        Toast.show("转发功能即将支持")
+                    }
+                }
+                MessageActionKind.Reply -> Toast.show("回复功能即将支持")
+                MessageActionKind.Select -> Toast.show("多选功能即将支持")
+            }
+        }
+    }
+
+    val canReact = MessageActionPolicy.canReact(ctx)
+    val reactions = if (canReact) DefaultMessageReactions else emptyList()
+    val onReaction: ((String) -> Unit)? = if (canReact) {
+        { emoji ->
+            scope.launch {
+                val result = withContext(Dispatchers.Default) {
+                    PrivChat.client.addReaction(message.id, emoji)
+                }
+                result.onSuccess {
+                    // 刷新单条消息的 reactions 列表，驱动气泡下方 chips 更新。
+                    withContext(Dispatchers.Default) {
+                        PrivChat.client.reactions(message.channelId, message.id)
+                    }.onSuccess { chips -> PrivChat.setMessageReactions(message.id, chips) }
+                }.onFailure { error ->
+                    Toast.error(error.message ?: strings.networkError)
+                }
+            }
+        }
+    } else {
+        null
+    }
+
+    MessageActionsMenu(
+        actions = menuActions,
+        modifier = Modifier.widthIn(max = 260.dp),
+        reactions = reactions,
+        onReaction = onReaction,
+        isSelf = isSelf,
+        bubble = content,
+    )
+}
+
+/**
+ * 将 Policy 产出的 [MessageActionKind] 映射为带文案 / icon / 回调的 [MessageAction]。
+ *
+ * 文案对 pending/sending 消息会改用"取消发送"以贴合语义（DeleteLocal 枚举同时承担"本地删除"和
+ * "取消发送"两种状态，靠 [MessageEntry.status] 区分）。
+ */
+private fun MessageActionKind.toMessageAction(
+    message: MessageEntry,
+    onClick: () -> Unit,
+): MessageAction = when (this) {
+    MessageActionKind.Reply ->
+        MessageAction(label = "回复", icon = Icons.reply, onClick = onClick)
+    MessageActionKind.Copy -> {
+        val label = if (message.contentType() == ContentMessageType.IMAGE) "复制图片" else "复制文字"
+        MessageAction(label = label, icon = Icons.content_copy, onClick = onClick)
+    }
+    MessageActionKind.Recall ->
+        MessageAction(label = "撤回", icon = Icons.autorenew, onClick = onClick)
+    MessageActionKind.Forward ->
+        MessageAction(label = "转发", icon = Icons.forward, onClick = onClick)
+    MessageActionKind.DeleteLocal -> {
+        val label = when (message.status) {
+            MessageStatus.Pending, MessageStatus.Sending -> "取消发送"
+            else -> "本地删除"
+        }
+        MessageAction(label = label, icon = Icons.delete, danger = true, onClick = onClick)
+    }
+    MessageActionKind.DeleteForAll ->
+        MessageAction(label = "所有人删除", icon = Icons.delete, danger = true, onClick = onClick)
+    MessageActionKind.Select ->
+        MessageAction(label = "选择", icon = Icons.check_box_outline_blank, onClick = onClick)
 }

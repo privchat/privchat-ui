@@ -24,6 +24,8 @@ import com.gearui.components.searchbar.SearchBar
 import com.gearui.components.swipecell.SwipeCell
 import com.gearui.components.swipecell.SwipeCellAction
 import com.gearui.components.swipecell.SwipeCellActionTheme
+import com.gearui.components.swipecell.SwipeCellGroupState
+import com.gearui.components.swipecell.rememberSwipeCellGroupState
 import com.gearui.components.swipecell.rememberSwipeCellState
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.clickable
@@ -61,6 +63,7 @@ fun ConversationPage(
     onPinChannel: (suspend (ULong, Boolean) -> Result<Boolean>)? = null,
     onMuteChannel: (suspend (ULong, Boolean) -> Result<Boolean>)? = null,
     onHideChannel: (suspend (ULong) -> Result<Boolean>)? = null,
+    onDeleteChannel: (suspend (ULong) -> Result<Unit>)? = null,
     onError: ((String) -> Unit)? = null,
     showNavBar: Boolean = true,
     modifier: Modifier = Modifier,
@@ -70,6 +73,7 @@ fun ConversationPage(
     val localStates by PrivChat.channelLocalStates.collectAsState()
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+    val swipeGroup = rememberSwipeCellGroupState()
 
     // 搜索关键词
     var searchQuery by remember { mutableStateOf("") }
@@ -165,6 +169,7 @@ fun ConversationPage(
                     ChannelItem(
                         channel = channel,
                         draft = draft,
+                        swipeGroup = swipeGroup,
                         onClick = { onChannelClick(channel) },
                         onPin = { pin ->
                             scope.launch {
@@ -186,9 +191,16 @@ fun ConversationPage(
                         },
                         onHide = {
                             scope.launch {
-                                val result = onHideChannel?.invoke(channel.channelId)
-                                    ?: PrivChat.client.hideChannel(channel.channelId)
-                                result.onFailure { error ->
+                                val handler = onHideChannel ?: return@launch
+                                handler(channel.channelId).onFailure { error ->
+                                    onError?.invoke(error.message ?: strings.networkError)
+                                }
+                            }
+                        },
+                        onDelete = {
+                            scope.launch {
+                                val handler = onDeleteChannel ?: return@launch
+                                handler(channel.channelId).onFailure { error ->
                                     onError?.invoke(error.message ?: strings.networkError)
                                 }
                             }
@@ -219,15 +231,18 @@ fun ConversationPage(
 private fun ChannelItem(
     channel: ChannelListEntry,
     draft: String?,
+    swipeGroup: SwipeCellGroupState,
     onClick: () -> Unit,
     onPin: (Boolean) -> Unit,
     onMute: (Boolean) -> Unit,
     onHide: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     val strings = PrivChatI18n.strings
     val colors = Theme.colors
     val swipeCellState = rememberSwipeCellState()
     val presences by PrivChat.presences.collectAsState()
+    val scope = rememberCoroutineScope()
 
     // DM 会话在线状态
     val isOnline = channel.peerUserId?.let { presences[it]?.isOnline } == true
@@ -238,29 +253,41 @@ private fun ChannelItem(
         else -> colors.surface
     }
 
-    // 右滑操作：置顶/取消置顶、删除
+    // 右滑操作：置顶/取消置顶、隐藏、删除
     val rightActions = listOf(
         SwipeCellAction(
             label = if (channel.isPinned) strings.conversationUnpin else strings.conversationPin,
-            theme = SwipeCellActionTheme.PRIMARY,
+            theme = SwipeCellActionTheme.SUCCESS,
             onClick = { onPin(!channel.isPinned) },
         ),
         SwipeCellAction(
-            label = strings.delete,
-            theme = SwipeCellActionTheme.DANGER,
+            label = strings.conversationHide,
+            theme = SwipeCellActionTheme.WARNING,
             onClick = onHide,
+        ),
+        SwipeCellAction(
+            label = strings.conversationDelete,
+            theme = SwipeCellActionTheme.DANGER,
+            onClick = onDelete,
         ),
     )
 
     SwipeCell(
         state = swipeCellState,
+        groupState = swipeGroup,
         rightActions = rightActions,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(backgroundColor)
-                .clickable { onClick() }
+                .clickable {
+                    if (swipeGroup.isAnyOpen) {
+                        scope.launch { swipeGroup.closeAll() }
+                    } else {
+                        onClick()
+                    }
+                }
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {

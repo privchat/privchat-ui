@@ -51,6 +51,7 @@ fun MessageContent(
     isSelf: Boolean,
     modifier: Modifier = Modifier,
     peerReadPts: ULong? = null,
+    onFailedClick: (() -> Unit)? = null,
 ) {
     val colors = Theme.colors
     val textColor = if (isSelf) colors.onBubbleSelf else colors.onBubbleOther
@@ -93,6 +94,7 @@ fun MessageContent(
                 messagePts = message.pts,
                 peerReadPts = peerReadPts,
                 delivered = message.delivered,
+                onFailedClick = onFailedClick,
             )
         }
     }
@@ -443,6 +445,7 @@ private fun MessageFooter(
     messagePts: ULong? = null,
     peerReadPts: ULong? = null,
     delivered: Boolean = false,
+    onFailedClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -466,6 +469,7 @@ private fun MessageFooter(
                 color = secondaryTextColor,
                 isReadByPts = isReadByPts,
                 delivered = delivered,
+                onFailedClick = onFailedClick,
             )
         }
     }
@@ -482,6 +486,7 @@ private fun MessageStatusIcon(
     color: Color,
     isReadByPts: Boolean = false,
     delivered: Boolean = false,
+    onFailedClick: (() -> Unit)? = null,
 ) {
     val (icon, iconColor) = when {
         status == MessageStatus.Failed -> "❗" to Theme.colors.danger
@@ -491,9 +496,16 @@ private fun MessageStatusIcon(
         else -> "✓" to color
     }
 
+    val modifier = if (status == MessageStatus.Failed && onFailedClick != null) {
+        Modifier.clickable { onFailedClick() }
+    } else {
+        Modifier
+    }
+
     Text(
         text = icon,
         style = Typography.Label,
         color = iconColor,
+        modifier = modifier,
     )
 }
