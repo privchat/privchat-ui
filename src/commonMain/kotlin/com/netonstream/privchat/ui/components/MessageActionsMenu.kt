@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import com.gearui.Spacing
 import com.gearui.foundation.primitives.Icon
 import com.gearui.foundation.primitives.Text
+import com.gearui.foundation.typography.IconSizes
 import com.gearui.foundation.typography.Typography
 import com.gearui.overlay.GearOverlayOptions
 import com.gearui.overlay.GearOverlayPlacement
@@ -390,7 +391,7 @@ private fun ReactionBar(
         reactions.forEach { emoji ->
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(Spacing.spacer40.dp)
                     .clip(CircleShape)
                     .clickable { onReaction(emoji) },
                 contentAlignment = Alignment.Center,
@@ -401,7 +402,7 @@ private fun ReactionBar(
         if (onMoreReactions != null) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(Spacing.spacer40.dp)
                     .clip(CircleShape)
                     .background(colors.surfaceVariant)
                     .clickable { onMoreReactions() },
@@ -426,11 +427,11 @@ private fun ActionList(
         modifier = Modifier
             .widthIn(min = 140.dp, max = 200.dp)
             .wrapContentWidth()
-            .shadow(Spacing.spacer4.dp, shapes.default)
-            .clip(shapes.default)
+            .shadow(Spacing.spacer4.dp, shapes.extraLarge)
+            .clip(shapes.extraLarge)
             .background(colors.surface)
-            .border(1.dp, colors.border, shapes.default)
-            .padding(Spacing.spacer4.dp),
+            .border(1.dp, colors.border, shapes.extraLarge)
+            .padding(Spacing.spacer8.dp),
     ) {
         actions.forEachIndexed { index, item ->
             val tint = when {
@@ -450,11 +451,11 @@ private fun ActionList(
                         onActionClick(item)
                         onPressChange(null)
                     }
-                    .padding(horizontal = Spacing.spacer8.dp, vertical = 10.dp),
+                    .padding(horizontal = Spacing.spacer12.dp, vertical = Spacing.spacer12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.spacer8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.spacer12.dp),
             ) {
-                Icon(name = item.icon, size = 18.dp, tint = tint)
+                Icon(name = item.icon, size = IconSizes.Default.medium, tint = tint)
                 Text(
                     text = item.label,
                     style = Typography.BodySmall,
