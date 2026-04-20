@@ -9,7 +9,10 @@ import om.netonstream.privchat.sdk.dto.PresenceEntry
 import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.models.*
 import com.netonstream.privchat.ui.components.ChatAvatar
+import com.netonstream.privchat.ui.components.MessageAction
+import com.netonstream.privchat.ui.components.MessageActionsMenu
 import com.netonstream.privchat.ui.components.MessageContent
+import com.tencent.kuikly.compose.foundation.gestures.detectTapGestures
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.offlineStatus
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.onlineStatus
 import com.netonstream.privchat.ui.utils.Formatter
@@ -764,25 +767,38 @@ private fun MessageRow(
             HorizontalSpacer(8.dp)
         }
 
-        // 消息气泡
-        Box(
-            modifier = Modifier
-                .widthIn(max = 260.dp)
-                .clip(
-                    RoundedCornerShape(
-                        topStart = if (isSelf) 16.dp else 4.dp,
-                        topEnd = 16.dp,
-                        bottomStart = 16.dp,
-                        bottomEnd = if (isSelf) 4.dp else 16.dp,
-                    )
-                )
-                .background(if (isSelf) colors.bubbleSelf else colors.bubbleOther),
+        // 消息气泡（长按弹出动作菜单）
+        MessageActionsMenu(
+            actions = listOf(
+                MessageAction(label = "回复", icon = Icons.reply) {},
+                MessageAction(label = "复制", icon = Icons.content_copy) {},
+                MessageAction(label = "撤回", icon = Icons.autorenew) {},
+                MessageAction(label = "转发", icon = Icons.forward) {},
+                MessageAction(label = "删除", icon = Icons.delete, danger = true) {},
+                MessageAction(label = "选择", icon = Icons.check_box_outline_blank) {},
+            ),
+            modifier = Modifier.widthIn(max = 260.dp),
+            onReaction = {},
+            isSelf = isSelf,
         ) {
-            MessageContent(
-                message = message,
-                isSelf = isSelf,
-                peerReadPts = peerReadPts,
-            )
+            Box(
+                modifier = Modifier
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = if (isSelf) 16.dp else 4.dp,
+                            topEnd = 16.dp,
+                            bottomStart = 16.dp,
+                            bottomEnd = if (isSelf) 4.dp else 16.dp,
+                        )
+                    )
+                    .background(if (isSelf) colors.bubbleSelf else colors.bubbleOther),
+            ) {
+                MessageContent(
+                    message = message,
+                    isSelf = isSelf,
+                    peerReadPts = peerReadPts,
+                )
+            }
         }
 
         // 自己头像（可选）
