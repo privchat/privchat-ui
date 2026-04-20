@@ -23,6 +23,7 @@ import com.tencent.kuikly.compose.animation.core.tween
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.border
 import com.tencent.kuikly.compose.foundation.clickable
+import com.tencent.kuikly.compose.foundation.gestures.detectDragGestures
 import com.tencent.kuikly.compose.foundation.gestures.detectTapGestures
 import com.tencent.kuikly.compose.foundation.layout.Arrangement
 import com.tencent.kuikly.compose.foundation.layout.Box
@@ -161,6 +162,7 @@ fun MessageActionsMenu(
                         item.onClick()
                         visible = false
                     },
+                    onDismiss = { visible = false },
                     bubble = bubble,
                 )
             }
@@ -196,6 +198,7 @@ private fun MessageActionsOverlayContent(
     pressedActionIndex: Int?,
     onPressChange: (Int?) -> Unit,
     onActionClick: (MessageAction) -> Unit,
+    onDismiss: () -> Unit,
     bubble: @Composable () -> Unit,
 ) {
     val density = LocalDensity.current
@@ -275,10 +278,16 @@ private fun MessageActionsOverlayContent(
     ) {
         // 自绘遮罩（受 maskAlpha 控制，单独淡入）。
         // overlay 内容盒已是全屏，fillMaxSize 自然覆盖状态栏 / 底部导航栏。
+        // - 点击遮罩关闭菜单
+        // - 拦截拖动手势，避免菜单弹出期间底层页面发生滚动
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = maskAlpha)),
+                .background(Color.Black.copy(alpha = maskAlpha))
+                .pointerInput(Unit) {
+                    detectDragGestures { _, _ -> /* 消费拖动，阻断穿透 */ }
+                }
+                .clickable(onClick = onDismiss),
         )
 
         if (needsReaction) {

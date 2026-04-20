@@ -55,6 +55,7 @@ kotlin {
         // Android-specific dependencies
         androidMain.dependencies {
             implementation("androidx.annotation:annotation:1.9.1")
+            implementation("androidx.core:core-ktx:1.13.1")
         }
 
         // iOS-specific dependencies
