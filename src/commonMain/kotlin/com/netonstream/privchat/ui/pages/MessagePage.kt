@@ -339,7 +339,11 @@ fun MessagePage(
     val typingMapForScroll by PrivChat.typingUserIds.collectAsState()
     val latestPeerTypingMs = typingMapForScroll[channel.channelId]?.values?.maxOrNull() ?: 0L
     LaunchedEffect(channel.channelId, latestPeerTypingMs) {
-        if (latestPeerTypingMs > 0L && sortedMessages.isNotEmpty()) {
+        if (latestPeerTypingMs <= 0L || sortedMessages.isEmpty()) return@LaunchedEffect
+        // 仅当用户已在底部附近时才跟随 typing 气泡滚动，否则对方心跳会把用户的上滑手势强行拽回底部。
+        val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+        val totalItems = sortedMessages.size // 不含 typing 气泡本身
+        if (totalItems - 1 - lastVisible <= 3) {
             listState.animateScrollToItem(sortedMessages.size)
         }
     }
@@ -1019,8 +1023,6 @@ private fun TypingBubble(channelId: ULong, peerName: String) {
     }
     val activeUsers = remember(typingMap, tick) { PrivChat.activeTypingUsers(channelId) }
 
-    println("[PrivChat][TYPING] TypingBubble recompose: channelId=$channelId activeUsers=$activeUsers mapSize=${typingMap[channelId]?.size}")
-
     if (activeUsers.isEmpty()) {
         VerticalSpacer(4.dp)
         return
@@ -1028,7 +1030,6 @@ private fun TypingBubble(channelId: ULong, peerName: String) {
 
     val colors = Theme.colors
 
-    // 三个点逐步上下弹跳动画
     val infiniteTransition = rememberInfiniteTransition()
     val dot1 by infiniteTransition.animateFloat(
         initialValue = 0f, targetValue = 1f,
