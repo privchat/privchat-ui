@@ -1,10 +1,12 @@
 package com.netonstream.privchat.ui.components
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import om.netonstream.privchat.sdk.dto.MessageEntry
 import om.netonstream.privchat.sdk.dto.MessageStatus
 import com.netonstream.privchat.ui.models.*
 import com.netonstream.privchat.ui.utils.Formatter
+import com.netonstream.privchat.ui.voice.VoicePlayback
 import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.typography.Typography
@@ -13,11 +15,19 @@ import com.gearui.components.image.ImageFit
 import com.gearui.components.image.ImageShape
 import com.gearui.primitives.HorizontalSpacer
 import com.gearui.primitives.VerticalSpacer
+import com.tencent.kuikly.compose.animation.core.LinearEasing
+import com.tencent.kuikly.compose.animation.core.RepeatMode
+import com.tencent.kuikly.compose.animation.core.animateFloat
+import com.tencent.kuikly.compose.animation.core.infiniteRepeatable
+import com.tencent.kuikly.compose.animation.core.rememberInfiniteTransition
+import com.tencent.kuikly.compose.animation.core.tween
 import com.tencent.kuikly.compose.coil3.rememberAsyncImagePainter
 import com.tencent.kuikly.compose.foundation.Image
 import com.tencent.kuikly.compose.foundation.background
+import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.*
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.collectAsState
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.draw.clip
@@ -54,10 +64,15 @@ fun MessageContent(
             MessageType.TEXT -> TextContent(parsed, textColor)
             MessageType.IMAGE -> ImageContent(parsed, message)
             MessageType.VIDEO -> VideoContent(parsed, message)
-            MessageType.VOICE -> VoiceContent(parsed, textColor)
+            MessageType.VOICE -> VoiceContent(parsed, message, isSelf, textColor)
             MessageType.FILE -> FileContent(parsed, textColor, secondaryTextColor)
             MessageType.STICKER -> StickerContent(parsed)
             MessageType.LOCATION -> LocationContent(parsed, textColor, secondaryTextColor)
+            // LINK 占位：Link 气泡 UI 待设计；此分支保持 when 穷尽，同时降级为文本显示避免空白气泡。
+            MessageType.LINK -> TextContent(
+                parsed.copy(text = parsed.linkTitle ?: parsed.linkUrl ?: "", type = MessageType.TEXT),
+                textColor,
+            )
             MessageType.SYSTEM -> {
                 // 系统消息由 MessageRow 在 row 级早返回 SystemMessageRow 渲染，
                 // 不会走到这里；留空分支以保持 when 穷尽。
@@ -215,33 +230,106 @@ private fun VideoContent(
 }
 
 /**
- * 语音消息
+ * 语音消息（微信风格）
+ *
+ * - 点击切换播放/停止，单路播放（新点击会停掉旧的）
+ * - 自己发送：波纹图标在右，气泡整体右对齐
+ * - 对方发送：波纹图标在左
+ * - 播放中：三根竖条做 1s 的循环动画
+ * - 气泡宽度按时长动态调整：最短 72dp，每秒 +4dp，最长 200dp
  */
 @Composable
 private fun VoiceContent(
     parsed: ParsedContent,
+    message: MessageEntry,
+    isSelf: Boolean,
     textColor: Color,
 ) {
     val duration = parsed.duration ?: 0
-    // 根据时长计算宽度，最小 60dp，最大 160dp
-    val width = (60 + (duration * 3).coerceAtMost(100)).dp
+    val width = (72 + (duration.coerceAtLeast(1) * 4).coerceAtMost(128)).dp
+
+    val playing by VoicePlayback.playingMessageId.collectAsState()
+    val isPlaying = playing == message.id
+
+    val source = message.localMediaPath?.let { "file://$it" }
+        ?: parsed.attachmentUrl
 
     Row(
-        modifier = Modifier.width(width),
+        modifier = Modifier
+            .width(width)
+            .clickable { VoicePlayback.toggle(message.id, source) },
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = if (isSelf) Arrangement.End else Arrangement.Start,
     ) {
-        Text(
-            text = "🎵",
-            style = Typography.TitleSmall,
-        )
-        HorizontalSpacer(8.dp)
-        Text(
-            text = Formatter.voiceDuration(duration),
-            style = Typography.BodyMedium,
-            color = textColor,
-        )
+        if (isSelf) {
+            Text(
+                text = Formatter.voiceDuration(duration),
+                style = Typography.BodyMedium,
+                color = textColor,
+            )
+            HorizontalSpacer(8.dp)
+            VoiceWaveIcon(isPlaying = isPlaying, tint = textColor, facing = WaveFacing.LEFT)
+        } else {
+            VoiceWaveIcon(isPlaying = isPlaying, tint = textColor, facing = WaveFacing.RIGHT)
+            HorizontalSpacer(8.dp)
+            Text(
+                text = Formatter.voiceDuration(duration),
+                style = Typography.BodyMedium,
+                color = textColor,
+            )
+        }
     }
 }
+
+private enum class WaveFacing { LEFT, RIGHT }
+
+/**
+ * 微信语音的三根竖条波纹。播放中循环动画，静止时显示中等高度。
+ * facing=RIGHT 时高度从左到右递增（喇叭开口向右，用于对方气泡）；
+ * facing=LEFT 时反向（用于自己气泡）。
+ */
+@Composable
+private fun VoiceWaveIcon(
+    isPlaying: Boolean,
+    tint: Color,
+    facing: WaveFacing,
+) {
+    val baseHeights = listOf(6.dp, 10.dp, 14.dp)
+    val heights = if (facing == WaveFacing.RIGHT) baseHeights else baseHeights.asReversed()
+
+    // rememberInfiniteTransition 必须在顶层稳定调用；仅在 isPlaying 为 true 时读取 phase
+    val transition = rememberInfiniteTransition(label = "voice-wave")
+    val animatedPhase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 900, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "voice-wave-phase",
+    )
+    val phase: Float = if (isPlaying) animatedPhase else 1.5f
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        heights.forEachIndexed { index, h ->
+            val scale: Float = if (isPlaying) {
+                val local = (phase - index + 3f) % 3f
+                0.4f + 0.6f * (1f - kotlin.math.abs(local - 1.5f) / 1.5f)
+            } else {
+                1f
+            }
+            Box(
+                modifier = Modifier
+                    .width(3.dp)
+                    .height((h.value * scale).dp)
+                    .clip(RoundedCornerShape(1.5.dp))
+                    .background(tint),
+            )
+            if (index != heights.lastIndex) HorizontalSpacer(2.dp)
+        }
+    }
+}
+
 
 /**
  * 文件消息

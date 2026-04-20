@@ -16,21 +16,23 @@ enum class MessageType {
     FILE,
     STICKER,
     LOCATION,
+    LINK,
     SYSTEM,
     UNKNOWN
 }
 
 // privchat-protocol::message::ContentMessageType
+// 编号按业务优先级（0=文字 最常用 … 10=转发 最少用），与 Rust 协议保持一致。
 private const val PROTOCOL_TEXT = 0
-private const val PROTOCOL_IMAGE = 1
-private const val PROTOCOL_FILE = 2
-private const val PROTOCOL_VOICE = 3
-private const val PROTOCOL_VIDEO = 4
+private const val PROTOCOL_VOICE = 1
+private const val PROTOCOL_IMAGE = 2
+private const val PROTOCOL_VIDEO = 3
+private const val PROTOCOL_FILE = 4
 private const val PROTOCOL_SYSTEM = 5
-private const val PROTOCOL_AUDIO = 6
-private const val PROTOCOL_LOCATION = 7
-private const val PROTOCOL_CONTACT_CARD = 8
-private const val PROTOCOL_STICKER = 9
+private const val PROTOCOL_STICKER = 6
+private const val PROTOCOL_CONTACT_CARD = 7
+private const val PROTOCOL_LOCATION = 8
+private const val PROTOCOL_LINK = 9
 private const val PROTOCOL_FORWARD = 10
 
 /**
@@ -49,6 +51,10 @@ data class ParsedContent(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val address: String? = null,
+    // LINK 专用：url 必有；title/description/thumbnailUrl 由 SDK 宿主预览回调填充（未注册则全为空）。
+    val linkUrl: String? = null,
+    val linkTitle: String? = null,
+    val linkDescription: String? = null,
 )
 
 /**
@@ -86,6 +92,9 @@ fun parseMessageType(content: String): MessageType {
             content.contains("\"type\":\"location\"") ||
                     content.contains("\"type\": \"location\"") -> MessageType.LOCATION
 
+            content.contains("\"type\":\"link\"") ||
+                    content.contains("\"type\": \"link\"") -> MessageType.LINK
+
             content.contains("\"type\":\"system\"") ||
                     content.contains("\"type\": \"system\"") ||
                     content.contains("\"type\":\"tip\"") ||
@@ -110,10 +119,10 @@ fun parseMessageType(messageType: Int, content: String, extra: String): MessageT
         PROTOCOL_VOICE -> MessageType.VOICE
         PROTOCOL_VIDEO -> MessageType.VIDEO
         PROTOCOL_SYSTEM -> MessageType.SYSTEM
-        PROTOCOL_AUDIO -> MessageType.VOICE
         PROTOCOL_LOCATION -> MessageType.LOCATION
         PROTOCOL_CONTACT_CARD -> MessageType.FILE
         PROTOCOL_STICKER -> MessageType.STICKER
+        PROTOCOL_LINK -> MessageType.LINK
         PROTOCOL_FORWARD -> MessageType.TEXT
         else -> {
             val fromContent = parseMessageType(content)
@@ -195,6 +204,15 @@ fun parseMessageContent(content: String): ParsedContent {
             text = extractJsonString(content, "text")
                 ?: extractJsonString(content, "tip")
                 ?: content
+        )
+
+        MessageType.LINK -> ParsedContent(
+            type = type,
+            linkUrl = extractJsonString(content, "url"),
+            linkTitle = extractJsonString(content, "title"),
+            linkDescription = extractJsonString(content, "description"),
+            thumbnailUrl = extractJsonString(content, "thumbnail_url")
+                ?: extractJsonString(content, "thumbnail")
         )
 
         MessageType.UNKNOWN -> ParsedContent(
@@ -282,6 +300,17 @@ fun parseMessageContent(message: MessageEntry): ParsedContent {
                 ?: extractJsonString(extra, "emoji")
         )
 
+        MessageType.LINK -> ParsedContent(
+            type = type,
+            linkUrl = extractJsonString(content, "url")
+                ?: extractJsonString(extra, "url"),
+            linkTitle = extractJsonString(content, "title")
+                ?: extractJsonString(extra, "title"),
+            linkDescription = extractJsonString(content, "description")
+                ?: extractJsonString(extra, "description"),
+            thumbnailUrl = extractThumbnailUrl(content, extra)
+        )
+
         MessageType.SYSTEM -> ParsedContent(
             type = type,
             text = extractPayloadContent(content)
@@ -321,6 +350,7 @@ val MessageEntry.textPreview: String
             MessageType.FILE -> "[文件] ${parsed.fileName ?: ""}"
             MessageType.STICKER -> "[表情]"
             MessageType.LOCATION -> "[位置] ${parsed.address ?: ""}"
+            MessageType.LINK -> "[链接] ${parsed.linkTitle ?: parsed.linkUrl ?: ""}"
             MessageType.SYSTEM -> parsed.text ?: "[系统消息]"
             MessageType.UNKNOWN -> "[消息]"
         }
