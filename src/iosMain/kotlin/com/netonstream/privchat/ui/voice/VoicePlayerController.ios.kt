@@ -31,7 +31,8 @@ actual object VoicePlayerController {
         }
 
         AVAudioSession.sharedInstance().setCategory(AVAudioSessionCategoryPlayback, error = null)
-        AVAudioSession.sharedInstance().setActive(true, error = null)
+        // AVAudioSession.setActive 在部分 Konan 版本下解析不到重载，这里省略；
+        // 语音回放不强依赖显式激活会话，后续如需打断其他应用音频可用 ObjC 动态派发补回。
 
         memScoped {
             val err: ObjCObjectVar<NSError?> = alloc()

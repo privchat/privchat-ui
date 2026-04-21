@@ -16,10 +16,10 @@ import com.netonstream.privchat.sdk.dto.contentType
 enum class MessageActionKind {
     Reply,
     Copy,
+    SaveImage,
     Recall,
     Forward,
     DeleteLocal,
-    DeleteForAll,
     Select,
 }
 
@@ -31,19 +31,18 @@ enum class MessageActionKind {
  * - 撤回消息 → 仅 DeleteLocal
  * - pending / sending → 仅 DeleteLocal（文案层面显示"取消发送"）
  * - failed → 允许 Recall（语义等价本地删除，不调 revoke RPC）+ Copy/Forward/DeleteLocal/Select；
- *   不给 DeleteForAll（从未到达服务端）；不给 React（未到达服务端）；
- *   重试走气泡旁边的状态图标，非菜单内项。
+ *   不给 React（未到达服务端）；重试走气泡旁边的状态图标，非菜单内项。
  * - 正常（Sent / Read）→ 按类型矩阵，Recall 调服务端 revoke RPC
  *
  * 类型矩阵：
  * - Reply：所有类型（失败消息不能被引用）
- * - Copy：TEXT / IMAGE / LINK（图片复制字节，链接仅复制 URL）
+ * - Copy：TEXT / LINK（链接仅复制 URL）
+ * - SaveImage：IMAGE
  * - Recall：isSelf，且满足以下其一：
  *     Sent/Read 且发送时间 ≤ 5min（调 revokeMessage RPC）
  *     Failed（UI 层改为本地删除，不调 RPC）
  * - Forward：除 VOICE 外所有类型（VOICE 强绑说话人身份，禁止原样转发）
  * - DeleteLocal / Select：所有类型
- * - DeleteForAll：所有类型，但失败消息无意义（从未送达）
  *
  * 反应面板可见性：仅对 Sent / Read 状态的非撤回消息显示。
  */
@@ -98,12 +97,14 @@ object MessageActionPolicy {
         // Reply：失败消息不能被引用回复（还没到服务端）
         if (!isFailed) result += MessageActionKind.Reply
 
-        // Copy：文本 / 图片 / 链接
-        if (type == ContentMessageType.TEXT ||
-            type == ContentMessageType.IMAGE ||
-            type == ContentMessageType.LINK
-        ) {
+        // Copy：文本 / 链接
+        if (type == ContentMessageType.TEXT || type == ContentMessageType.LINK) {
             result += MessageActionKind.Copy
+        }
+
+        // SaveImage：图片
+        if (type == ContentMessageType.IMAGE) {
+            result += MessageActionKind.SaveImage
         }
 
         // Recall：isSelf 必须。Failed 任意时间都允许（UI 层改为本地删除，不调 RPC）；
@@ -123,9 +124,8 @@ object MessageActionPolicy {
             result += MessageActionKind.Forward
         }
 
-        // Delete：本端永远允许；所有人删除对失败消息无意义（从未送达）
+        // Delete：本端永远允许
         result += MessageActionKind.DeleteLocal
-        if (!isFailed) result += MessageActionKind.DeleteForAll
 
         // Select：批量操作，所有类型都支持
         result += MessageActionKind.Select

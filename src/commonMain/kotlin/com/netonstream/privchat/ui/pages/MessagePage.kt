@@ -137,6 +137,8 @@ fun MessagePage(
     onVoiceCancel: (() -> Unit)? = null,
     onSendVoice: (suspend (ULong, Int, durationMs: Long) -> Result<ULong>)? = null,
     onRequestForward: ((MessageEntry) -> Unit)? = null,
+    onVideoPreview: ((MessageEntry) -> Unit)? = null,
+    onImagePreview: ((MessageEntry) -> Unit)? = null,
     onError: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -443,6 +445,8 @@ fun MessagePage(
                                     reactions = messageReactions[message.id].orEmpty(),
                                     selfUserId = currentUserId,
                                     onRequestForward = onRequestForward,
+                                    onVideoPreview = onVideoPreview,
+                                    onImagePreview = onImagePreview,
                                 )
                             }
                             item {
@@ -777,6 +781,8 @@ private fun MessageRow(
     reactions: List<com.netonstream.privchat.sdk.dto.ReactionChip> = emptyList(),
     selfUserId: ULong? = null,
     onRequestForward: ((MessageEntry) -> Unit)? = null,
+    onVideoPreview: ((MessageEntry) -> Unit)? = null,
+    onImagePreview: ((MessageEntry) -> Unit)? = null,
 ) {
     val colors = Theme.colors
     val strings = PrivChatI18n.strings
@@ -877,6 +883,8 @@ private fun MessageRow(
                         isSelf = isSelf,
                         peerReadPts = peerReadPts,
                         onFailedClick = onFailedClick,
+                        onVideoPreview = onVideoPreview,
+                        onImagePreview = onImagePreview,
                     )
                 }
             }
@@ -1746,10 +1754,10 @@ private fun MessageActionsWrapper(
                                 Toast.success("已复制")
                             }
                         }
-                        ContentMessageType.IMAGE -> Toast.show("暂不支持图片复制")
                         else -> { /* Policy 不会派发到其他类型 */ }
                     }
                 }
+                MessageActionKind.SaveImage -> Toast.show("保存图片功能即将支持")
                 MessageActionKind.Recall -> {
                     scope.launch {
                         if (message.status == MessageStatus.Failed) {
@@ -1778,7 +1786,6 @@ private fun MessageActionsWrapper(
                             }
                     }
                 }
-                MessageActionKind.DeleteForAll -> Toast.show("所有人删除即将支持")
                 MessageActionKind.Forward -> {
                     val handler = onRequestForward
                     if (handler != null) {
@@ -1837,10 +1844,10 @@ private fun MessageActionKind.toMessageAction(
 ): MessageAction = when (this) {
     MessageActionKind.Reply ->
         MessageAction(label = "回复", icon = Icons.reply, onClick = onClick)
-    MessageActionKind.Copy -> {
-        val label = if (message.contentType() == ContentMessageType.IMAGE) "复制图片" else "复制文字"
-        MessageAction(label = label, icon = Icons.content_copy, onClick = onClick)
-    }
+    MessageActionKind.Copy ->
+        MessageAction(label = "复制文字", icon = Icons.content_copy, onClick = onClick)
+    MessageActionKind.SaveImage ->
+        MessageAction(label = "保存图片", icon = Icons.download, onClick = onClick)
     MessageActionKind.Recall ->
         MessageAction(label = "撤回", icon = Icons.autorenew, onClick = onClick)
     MessageActionKind.Forward ->
@@ -1852,8 +1859,6 @@ private fun MessageActionKind.toMessageAction(
         }
         MessageAction(label = label, icon = Icons.delete, danger = true, onClick = onClick)
     }
-    MessageActionKind.DeleteForAll ->
-        MessageAction(label = "所有人删除", icon = Icons.delete, danger = true, onClick = onClick)
     MessageActionKind.Select ->
         MessageAction(label = "选择", icon = Icons.check_box_outline_blank, onClick = onClick)
 }

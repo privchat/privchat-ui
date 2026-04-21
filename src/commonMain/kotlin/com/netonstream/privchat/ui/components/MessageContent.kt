@@ -58,6 +58,8 @@ fun MessageContent(
     modifier: Modifier = Modifier,
     peerReadPts: ULong? = null,
     onFailedClick: (() -> Unit)? = null,
+    onVideoPreview: ((MessageEntry) -> Unit)? = null,
+    onImagePreview: ((MessageEntry) -> Unit)? = null,
 ) {
     val colors = Theme.colors
     val textColor = if (isSelf) colors.onBubbleSelf else colors.onBubbleOther
@@ -69,8 +71,8 @@ fun MessageContent(
         // 根据消息类型渲染内容
         when (parsed.type) {
             MessageType.TEXT -> TextContent(parsed, textColor)
-            MessageType.IMAGE -> ImageContent(parsed, message)
-            MessageType.VIDEO -> VideoContent(parsed, message)
+            MessageType.IMAGE -> ImageContent(parsed, message, onImagePreview)
+            MessageType.VIDEO -> VideoContent(parsed, message, onVideoPreview)
             MessageType.VOICE -> VoiceContent(parsed, message, isSelf, textColor)
             MessageType.FILE -> FileContent(parsed, message, textColor, secondaryTextColor)
             MessageType.STICKER -> StickerContent(parsed)
@@ -136,6 +138,7 @@ private fun TextContent(
 @Composable
 private fun MediaDownloadBubble(
     message: MessageEntry,
+    onOpen: ((String) -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val downloadStates by MediaDownloadManager.states.collectAsState()
@@ -148,11 +151,15 @@ private fun MediaDownloadBubble(
     val hasLocal = !message.localMediaPath.isNullOrBlank()
     val showOverlay = !hasLocal && state !is MediaDownloadState.Done
 
+    fun openLocal(path: String) {
+        if (onOpen != null) onOpen(path) else MediaOpener.open(path, message.mimeType)
+    }
+
     Box(
         modifier = Modifier.clickable {
             when {
-                hasLocal -> MediaOpener.open(message.localMediaPath!!, message.mimeType)
-                state is MediaDownloadState.Done -> MediaOpener.open(state.path, message.mimeType)
+                hasLocal -> openLocal(message.localMediaPath!!)
+                state is MediaDownloadState.Done -> openLocal(state.path)
                 state is MediaDownloadState.Downloading -> MediaDownloadManager.pause(message.id)
                 state is MediaDownloadState.Paused -> MediaDownloadManager.resume(message.id)
                 else -> MediaDownloadManager.start(message)
@@ -216,56 +223,67 @@ private fun percentText(bytes: ULong, total: ULong?): String? {
 
 /**
  * 图片消息
- * 优先使用本地规范路径（thumb.webp / payload.{ext}），回退到远程 URL
+ *
+ * 气泡里显示缩略图（本地 thumb > 本地 payload > 远程 thumb > 远程原图）；
+ * 点击走 [onImagePreview] 进入全屏预览页查看大图，不经过 MediaDownloadBubble。
+ * 预览页优先使用本地原图，否则交给远程 URL（由 Coil 异步解码）。
  */
 @Composable
 private fun ImageContent(
     parsed: ParsedContent,
     message: MessageEntry,
+    onImagePreview: ((MessageEntry) -> Unit)? = null,
 ) {
     val width = parsed.width?.coerceIn(80, 200) ?: 150
     val height = parsed.height?.coerceIn(80, 250) ?: 200
-    // 本地路径优先：缩略图 > 媒体文件 > 远程 URL
-    val imageModel = message.localThumbnailPath?.let { "file://$it" }
+    // 气泡显示：优先本地缩略图 → 本地原图 → 远程缩略图 → 远程原图
+    val thumbModel = message.localThumbnailPath?.let { "file://$it" }
         ?: message.localMediaPath?.let { "file://$it" }
         ?: parsed.thumbnailUrl
         ?: parsed.attachmentUrl
 
-    MediaDownloadBubble(message = message) {
-        Box(
-            modifier = Modifier
-                .size(width.dp, height.dp)
-                .clip(RoundedCornerShape(8.dp))
-        ) {
-            if (!imageModel.isNullOrBlank()) {
-                Image(
-                    painter = rememberAsyncImagePainter(model = imageModel),
-                    contentDescription = "图片",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            } else {
-                GearImage(
-                    painter = null,
-                    placeholderText = "图片",
-                    fit = ImageFit.COVER,
-                    shape = ImageShape.ROUNDED,
-                    cornerRadius = 8.dp,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
+    val clickable = if (onImagePreview != null) {
+        Modifier.clickable { onImagePreview(message) }
+    } else {
+        Modifier
+    }
+
+    Box(
+        modifier = clickable
+            .size(width.dp, height.dp)
+            .clip(RoundedCornerShape(8.dp))
+    ) {
+        if (!thumbModel.isNullOrBlank()) {
+            Image(
+                painter = rememberAsyncImagePainter(model = thumbModel),
+                contentDescription = "图片",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        } else {
+            GearImage(
+                painter = null,
+                placeholderText = "图片",
+                fit = ImageFit.COVER,
+                shape = ImageShape.ROUNDED,
+                cornerRadius = 8.dp,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
 }
 
 /**
  * 视频消息
- * 优先使用本地规范路径（thumb.webp），回退到远程 URL
+ *
+ * 气泡显示缩略图 + 播放按钮；点击无论下载与否都进入全屏预览页。
+ * 下载/loading/播放切换全部由 VideoPreviewPage 内部接管，本组件不再叠加下载遮罩。
  */
 @Composable
 private fun VideoContent(
     parsed: ParsedContent,
     message: MessageEntry,
+    onVideoPreview: ((MessageEntry) -> Unit)? = null,
 ) {
     val width = parsed.width?.coerceIn(80, 200) ?: 150
     val height = parsed.height?.coerceIn(80, 250) ?: 200
@@ -273,62 +291,66 @@ private fun VideoContent(
         ?: parsed.thumbnailUrl
         ?: parsed.attachmentUrl
 
-    MediaDownloadBubble(message = message) {
+    val clickable = if (onVideoPreview != null) {
+        Modifier.clickable { onVideoPreview(message) }
+    } else {
+        Modifier
+    }
+
+    Box(
+        modifier = clickable
+            .size(width.dp, height.dp)
+            .clip(RoundedCornerShape(8.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (!videoThumb.isNullOrBlank()) {
+            Image(
+                painter = rememberAsyncImagePainter(model = videoThumb),
+                contentDescription = "视频",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        } else {
+            GearImage(
+                painter = null,
+                placeholderText = "视频",
+                fit = ImageFit.COVER,
+                shape = ImageShape.ROUNDED,
+                cornerRadius = 8.dp,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        // 播放按钮
         Box(
             modifier = Modifier
-                .size(width.dp, height.dp)
-                .clip(RoundedCornerShape(8.dp)),
+                .size(48.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color.Black.copy(alpha = 0.5f)),
             contentAlignment = Alignment.Center,
         ) {
-            if (!videoThumb.isNullOrBlank()) {
-                Image(
-                    painter = rememberAsyncImagePainter(model = videoThumb),
-                    contentDescription = "视频",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            } else {
-                GearImage(
-                    painter = null,
-                    placeholderText = "视频",
-                    fit = ImageFit.COVER,
-                    shape = ImageShape.ROUNDED,
-                    cornerRadius = 8.dp,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
+            Text(
+                text = "▶",
+                style = Typography.HeadlineMedium,
+                color = Color.White,
+            )
+        }
 
-            // 播放按钮
+        // 时长
+        if (parsed.duration != null && parsed.duration > 0) {
             Box(
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(Color.Black.copy(alpha = 0.5f)),
-                contentAlignment = Alignment.Center,
+                    .align(Alignment.BottomEnd)
+                    .padding(4.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
             ) {
                 Text(
-                    text = "▶",
-                    style = Typography.HeadlineMedium,
+                    text = Formatter.duration(parsed.duration),
+                    style = Typography.Label,
                     color = Color.White,
                 )
-            }
-
-            // 时长
-            if (parsed.duration != null && parsed.duration > 0) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(4.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(Color.Black.copy(alpha = 0.6f))
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
-                ) {
-                    Text(
-                        text = Formatter.duration(parsed.duration),
-                        style = Typography.Label,
-                        color = Color.White,
-                    )
-                }
             }
         }
     }

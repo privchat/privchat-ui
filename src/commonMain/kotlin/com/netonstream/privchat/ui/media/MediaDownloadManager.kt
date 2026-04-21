@@ -42,8 +42,10 @@ object MediaDownloadManager {
     fun onSdkEvent(envelope: SdkEventEnvelope) {
         val payload = envelope.event
         if (payload.type.lowercase() != "media_download_state_changed") return
-        val messageId = payload.messageId ?: return
-        val kind = payload.mediaDownloadStateKind ?: return
+        val messageId = payload.messageId
+        val kind = payload.mediaDownloadStateKind
+        println("[MediaDownloadManager] onSdkEvent messageId=$messageId kind=$kind bytes=${payload.mediaDownloadBytes} total=${payload.mediaDownloadTotal} path=${payload.mediaDownloadPath} err=${payload.errorCode}/${payload.reason}")
+        if (messageId == null || kind == null) return
         val next: MediaDownloadState = when (kind.lowercase()) {
             "idle" -> MediaDownloadState.Idle
             "downloading" -> MediaDownloadState.Downloading(
@@ -65,7 +67,12 @@ object MediaDownloadManager {
     }
 
     fun start(message: MessageEntry) {
-        val c = controller ?: return
+        val c = controller
+        if (c == null) {
+            println("[MediaDownloadManager] start SKIPPED: controller is null, messageId=${message.id}")
+            return
+        }
+        println("[MediaDownloadManager] start forwarding to controller, messageId=${message.id}")
         c.start(message)
     }
 
