@@ -1,7 +1,7 @@
 package com.netonstream.privchat.ui.models
 
-import om.netonstream.privchat.sdk.dto.*
-import om.netonstream.privchat.sdk.dto.MessageStatus
+import com.netonstream.privchat.sdk.dto.*
+import com.netonstream.privchat.sdk.dto.MessageStatus
 
 /**
  * SDK 类型扩展函数

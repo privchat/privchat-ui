@@ -1,9 +1,9 @@
 package com.netonstream.privchat.ui.components
 
-import om.netonstream.privchat.sdk.dto.ContentMessageType
-import om.netonstream.privchat.sdk.dto.MessageEntry
-import om.netonstream.privchat.sdk.dto.MessageStatus
-import om.netonstream.privchat.sdk.dto.contentType
+import com.netonstream.privchat.sdk.dto.ContentMessageType
+import com.netonstream.privchat.sdk.dto.MessageEntry
+import com.netonstream.privchat.sdk.dto.MessageStatus
+import com.netonstream.privchat.sdk.dto.contentType
 
 /**
  * 长按动作菜单的枚举集合。UI 层把 kind 映射到 label / icon / callback。

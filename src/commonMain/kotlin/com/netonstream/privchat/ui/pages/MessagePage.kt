@@ -1,13 +1,13 @@
 package com.netonstream.privchat.ui.pages
 
 import androidx.compose.runtime.*
-import om.netonstream.privchat.sdk.ConnectionState
-import om.netonstream.privchat.sdk.dto.ChannelListEntry
-import om.netonstream.privchat.sdk.dto.ContentMessageType
-import om.netonstream.privchat.sdk.dto.MessageEntry
-import om.netonstream.privchat.sdk.dto.MessageStatus
-import om.netonstream.privchat.sdk.dto.PresenceEntry
-import om.netonstream.privchat.sdk.dto.contentType
+import com.netonstream.privchat.sdk.ConnectionState
+import com.netonstream.privchat.sdk.dto.ChannelListEntry
+import com.netonstream.privchat.sdk.dto.ContentMessageType
+import com.netonstream.privchat.sdk.dto.MessageEntry
+import com.netonstream.privchat.sdk.dto.MessageStatus
+import com.netonstream.privchat.sdk.dto.PresenceEntry
+import com.netonstream.privchat.sdk.dto.contentType
 import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.models.*
 import com.netonstream.privchat.ui.components.ChatAvatar
@@ -774,7 +774,7 @@ private fun MessageRow(
     channelDisplayName: String = "",
     onAvatarClick: ((ULong) -> Unit)? = null,
     peerReadPts: ULong? = null,
-    reactions: List<om.netonstream.privchat.sdk.dto.ReactionChip> = emptyList(),
+    reactions: List<com.netonstream.privchat.sdk.dto.ReactionChip> = emptyList(),
     selfUserId: ULong? = null,
     onRequestForward: ((MessageEntry) -> Unit)? = null,
 ) {
@@ -945,7 +945,7 @@ private fun SystemMessageRow(
 @Composable
 private fun MessageReactionsRow(
     message: MessageEntry,
-    reactions: List<om.netonstream.privchat.sdk.dto.ReactionChip>,
+    reactions: List<com.netonstream.privchat.sdk.dto.ReactionChip>,
     selfUserId: ULong?,
 ) {
     val colors = Theme.colors

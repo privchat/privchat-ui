@@ -1,8 +1,8 @@
 package com.netonstream.privchat.ui
 
-import om.netonstream.privchat.sdk.PrivchatClient
-import om.netonstream.privchat.sdk.ConnectionState
-import om.netonstream.privchat.sdk.dto.*
+import com.netonstream.privchat.sdk.PrivchatClient
+import com.netonstream.privchat.sdk.ConnectionState
+import com.netonstream.privchat.sdk.dto.*
 import com.netonstream.privchat.ui.models.ChannelLocalState
 import com.netonstream.privchat.ui.models.UIState
 import com.netonstream.privchat.ui.common.base.currentTimeMillis

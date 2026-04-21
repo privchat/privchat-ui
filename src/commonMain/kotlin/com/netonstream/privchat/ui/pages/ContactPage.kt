@@ -1,8 +1,8 @@
 package com.netonstream.privchat.ui.pages
 
 import androidx.compose.runtime.*
-import om.netonstream.privchat.sdk.dto.FriendEntry
-import om.netonstream.privchat.sdk.dto.GroupEntry
+import com.netonstream.privchat.sdk.dto.FriendEntry
+import com.netonstream.privchat.sdk.dto.GroupEntry
 import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.models.displayName
 import com.netonstream.privchat.ui.components.ChatAvatar

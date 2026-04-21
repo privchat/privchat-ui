@@ -1,8 +1,8 @@
 package com.netonstream.privchat.ui.models
 
-import om.netonstream.privchat.sdk.dto.ContentMessageType
-import om.netonstream.privchat.sdk.dto.MessageEntry
-import om.netonstream.privchat.sdk.dto.contentType
+import com.netonstream.privchat.sdk.dto.ContentMessageType
+import com.netonstream.privchat.sdk.dto.MessageEntry
+import com.netonstream.privchat.sdk.dto.contentType
 
 /**
  * 本地 UI 显示类型。协议/服务端不感知，仅用于渲染分派。

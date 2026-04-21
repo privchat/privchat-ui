@@ -1,7 +1,7 @@
 package com.netonstream.privchat.ui.pages
 
 import androidx.compose.runtime.*
-import om.netonstream.privchat.sdk.dto.FriendEntry
+import com.netonstream.privchat.sdk.dto.FriendEntry
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.cell.Cell

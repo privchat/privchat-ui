@@ -1,6 +1,6 @@
 package com.netonstream.privchat.ui.models
 
-import om.netonstream.privchat.sdk.dto.MessageEntry
+import com.netonstream.privchat.sdk.dto.MessageEntry
 
 /**
  * 消息内容类型枚举（仅映射协议内容类型）。
@@ -482,4 +482,3 @@ private fun extractJsonDouble(json: String, key: String): Double? {
     }
     return null
 }
-

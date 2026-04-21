@@ -1,9 +1,13 @@
 package com.netonstream.privchat.ui.components
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import om.netonstream.privchat.sdk.dto.MessageEntry
-import om.netonstream.privchat.sdk.dto.MessageStatus
+import com.netonstream.privchat.sdk.dto.MessageEntry
+import com.netonstream.privchat.sdk.dto.MessageStatus
+import com.netonstream.privchat.ui.media.MediaDownloadManager
+import com.netonstream.privchat.ui.media.MediaDownloadState
+import com.netonstream.privchat.ui.media.MediaOpener
 import com.netonstream.privchat.ui.models.*
 import com.netonstream.privchat.ui.utils.Formatter
 import com.netonstream.privchat.ui.voice.VoicePlayback
@@ -13,6 +17,8 @@ import com.gearui.foundation.typography.Typography
 import com.gearui.components.image.GearImage
 import com.gearui.components.image.ImageFit
 import com.gearui.components.image.ImageShape
+import com.gearui.components.loading.Loading
+import com.gearui.components.loading.LoadingSize
 import com.gearui.primitives.HorizontalSpacer
 import com.gearui.primitives.VerticalSpacer
 import com.tencent.kuikly.compose.animation.core.LinearEasing
@@ -66,7 +72,7 @@ fun MessageContent(
             MessageType.IMAGE -> ImageContent(parsed, message)
             MessageType.VIDEO -> VideoContent(parsed, message)
             MessageType.VOICE -> VoiceContent(parsed, message, isSelf, textColor)
-            MessageType.FILE -> FileContent(parsed, textColor, secondaryTextColor)
+            MessageType.FILE -> FileContent(parsed, message, textColor, secondaryTextColor)
             MessageType.STICKER -> StickerContent(parsed)
             MessageType.LOCATION -> LocationContent(parsed, textColor, secondaryTextColor)
             // LINK 占位：Link 气泡 UI 待设计；此分支保持 when 穷尽，同时降级为文本显示避免空白气泡。
@@ -116,6 +122,99 @@ private fun TextContent(
 }
 
 /**
+ * Telegram 风格的附件下载气泡包装。
+ *
+ * UI 规则：
+ * - 已下载（localMediaPath 非空）：无遮罩，点击用 MediaOpener 打开；
+ * - 未下载（Idle / Failed）：覆盖半透明圆形按钮显示 ↓ / ↻，点击触发 start；
+ * - 下载中（Downloading）：覆盖圆形按钮显示 × + 百分比，点击触发 pause；
+ * - 暂停（Paused）：覆盖圆形按钮显示 ↓ + 百分比，点击触发 resume。
+ *
+ * 下载完成后 SDK 会发 `media_download_state_changed(done)` + 刷新消息条目，
+ * 新的 localMediaPath 写回后本 composable 会自动回到"无遮罩"分支。
+ */
+@Composable
+private fun MediaDownloadBubble(
+    message: MessageEntry,
+    content: @Composable () -> Unit,
+) {
+    val downloadStates by MediaDownloadManager.states.collectAsState()
+    val state = downloadStates[message.id] ?: MediaDownloadState.Idle
+
+    LaunchedEffect(message.localMediaPath) {
+        MediaDownloadManager.clearIfDone(message.id, message.localMediaPath)
+    }
+
+    val hasLocal = !message.localMediaPath.isNullOrBlank()
+    val showOverlay = !hasLocal && state !is MediaDownloadState.Done
+
+    Box(
+        modifier = Modifier.clickable {
+            when {
+                hasLocal -> MediaOpener.open(message.localMediaPath!!, message.mimeType)
+                state is MediaDownloadState.Done -> MediaOpener.open(state.path, message.mimeType)
+                state is MediaDownloadState.Downloading -> MediaDownloadManager.pause(message.id)
+                state is MediaDownloadState.Paused -> MediaDownloadManager.resume(message.id)
+                else -> MediaDownloadManager.start(message)
+            }
+        }
+    ) {
+        content()
+        if (showOverlay) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.Black.copy(alpha = 0.25f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                DownloadBadge(state = state)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DownloadBadge(state: MediaDownloadState) {
+    val icon = when (state) {
+        is MediaDownloadState.Downloading -> "×"
+        is MediaDownloadState.Paused -> "↓"
+        is MediaDownloadState.Failed -> "↻"
+        else -> "↓"
+    }
+    val percent = when (state) {
+        is MediaDownloadState.Downloading -> percentText(state.bytes, state.total)
+        is MediaDownloadState.Paused -> percentText(state.bytes, state.total)
+        else -> null
+    }
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color.Black.copy(alpha = 0.55f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (state is MediaDownloadState.Downloading) {
+                Loading(size = LoadingSize.SMALL, color = Color.White)
+            }
+            Text(text = icon, style = Typography.TitleMedium, color = Color.White)
+        }
+        if (percent != null) {
+            VerticalSpacer(4.dp)
+            Text(text = percent, style = Typography.Label, color = Color.White)
+        }
+    }
+}
+
+private fun percentText(bytes: ULong, total: ULong?): String? {
+    val t = total ?: return null
+    if (t == 0uL) return null
+    val pct = (bytes.toDouble() / t.toDouble() * 100.0).toInt().coerceIn(0, 100)
+    return "$pct%"
+}
+
+/**
  * 图片消息
  * 优先使用本地规范路径（thumb.webp / payload.{ext}），回退到远程 URL
  */
@@ -132,27 +231,29 @@ private fun ImageContent(
         ?: parsed.thumbnailUrl
         ?: parsed.attachmentUrl
 
-    Box(
-        modifier = Modifier
-            .size(width.dp, height.dp)
-            .clip(RoundedCornerShape(8.dp))
-    ) {
-        if (!imageModel.isNullOrBlank()) {
-            Image(
-                painter = rememberAsyncImagePainter(model = imageModel),
-                contentDescription = "图片",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
-        } else {
-            GearImage(
-                painter = null,
-                placeholderText = "图片",
-                fit = ImageFit.COVER,
-                shape = ImageShape.ROUNDED,
-                cornerRadius = 8.dp,
-                modifier = Modifier.fillMaxSize(),
-            )
+    MediaDownloadBubble(message = message) {
+        Box(
+            modifier = Modifier
+                .size(width.dp, height.dp)
+                .clip(RoundedCornerShape(8.dp))
+        ) {
+            if (!imageModel.isNullOrBlank()) {
+                Image(
+                    painter = rememberAsyncImagePainter(model = imageModel),
+                    contentDescription = "图片",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                GearImage(
+                    painter = null,
+                    placeholderText = "图片",
+                    fit = ImageFit.COVER,
+                    shape = ImageShape.ROUNDED,
+                    cornerRadius = 8.dp,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
     }
 }
@@ -172,60 +273,62 @@ private fun VideoContent(
         ?: parsed.thumbnailUrl
         ?: parsed.attachmentUrl
 
-    Box(
-        modifier = Modifier
-            .size(width.dp, height.dp)
-            .clip(RoundedCornerShape(8.dp)),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (!videoThumb.isNullOrBlank()) {
-            Image(
-                painter = rememberAsyncImagePainter(model = videoThumb),
-                contentDescription = "视频",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
-        } else {
-            GearImage(
-                painter = null,
-                placeholderText = "视频",
-                fit = ImageFit.COVER,
-                shape = ImageShape.ROUNDED,
-                cornerRadius = 8.dp,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-
-        // 播放按钮
+    MediaDownloadBubble(message = message) {
         Box(
             modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .background(Color.Black.copy(alpha = 0.5f)),
+                .size(width.dp, height.dp)
+                .clip(RoundedCornerShape(8.dp)),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = "▶",
-                style = Typography.HeadlineMedium,
-                color = Color.White,
-            )
-        }
+            if (!videoThumb.isNullOrBlank()) {
+                Image(
+                    painter = rememberAsyncImagePainter(model = videoThumb),
+                    contentDescription = "视频",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                GearImage(
+                    painter = null,
+                    placeholderText = "视频",
+                    fit = ImageFit.COVER,
+                    shape = ImageShape.ROUNDED,
+                    cornerRadius = 8.dp,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
 
-        // 时长
-        if (parsed.duration != null && parsed.duration > 0) {
+            // 播放按钮
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(4.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color.Black.copy(alpha = 0.6f))
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = Formatter.duration(parsed.duration),
-                    style = Typography.Label,
+                    text = "▶",
+                    style = Typography.HeadlineMedium,
                     color = Color.White,
                 )
+            }
+
+            // 时长
+            if (parsed.duration != null && parsed.duration > 0) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(4.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color.Black.copy(alpha = 0.6f))
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                ) {
+                    Text(
+                        text = Formatter.duration(parsed.duration),
+                        style = Typography.Label,
+                        color = Color.White,
+                    )
+                }
             }
         }
     }
@@ -334,22 +437,37 @@ private fun VoiceWaveIcon(
 
 
 /**
- * 文件消息
+ * 文件消息：左侧图标按钮即为下载/暂停/恢复控件，Telegram 风格。
  */
 @Composable
 private fun FileContent(
     parsed: ParsedContent,
+    message: MessageEntry,
     textColor: Color,
     secondaryTextColor: Color,
 ) {
+    val downloadStates by MediaDownloadManager.states.collectAsState()
+    val state = downloadStates[message.id] ?: MediaDownloadState.Idle
+
+    LaunchedEffect(message.localMediaPath) {
+        MediaDownloadManager.clearIfDone(message.id, message.localMediaPath)
+    }
+
+    val hasLocal = !message.localMediaPath.isNullOrBlank()
+
     Row(
+        modifier = Modifier.clickable {
+            when {
+                hasLocal -> MediaOpener.open(message.localMediaPath!!, message.mimeType)
+                state is MediaDownloadState.Done -> MediaOpener.open(state.path, message.mimeType)
+                state is MediaDownloadState.Downloading -> MediaDownloadManager.pause(message.id)
+                state is MediaDownloadState.Paused -> MediaDownloadManager.resume(message.id)
+                else -> MediaDownloadManager.start(message)
+            }
+        },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // 文件图标
-        Text(
-            text = "📄",
-            style = Typography.TitleMedium,
-        )
+        FileLeadingBadge(hasLocal = hasLocal, state = state)
         HorizontalSpacer(8.dp)
         Column {
             Text(
@@ -358,15 +476,75 @@ private fun FileContent(
                 color = textColor,
                 maxLines = 1,
             )
-            if (parsed.fileSize != null && parsed.fileSize > 0) {
+            val sub = fileSubtitle(parsed.fileSize, state, hasLocal)
+            if (sub != null) {
                 VerticalSpacer(2.dp)
                 Text(
-                    text = Formatter.fileSize(parsed.fileSize),
+                    text = sub,
                     style = Typography.Label,
                     color = secondaryTextColor,
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun FileLeadingBadge(
+    hasLocal: Boolean,
+    state: MediaDownloadState,
+) {
+    val icon = when {
+        hasLocal -> "📄"
+        state is MediaDownloadState.Done -> "📄"
+        state is MediaDownloadState.Downloading -> "×"
+        state is MediaDownloadState.Paused -> "↓"
+        state is MediaDownloadState.Failed -> "↻"
+        else -> "↓"
+    }
+    val bgColor = if (hasLocal || state is MediaDownloadState.Done) {
+        Color.Transparent
+    } else {
+        Theme.colors.primary.copy(alpha = 0.9f)
+    }
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(bgColor),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (state is MediaDownloadState.Downloading) {
+            Loading(size = LoadingSize.SMALL, color = Color.White)
+        }
+        Text(
+            text = icon,
+            style = Typography.TitleMedium,
+            color = if (hasLocal || state is MediaDownloadState.Done) null else Color.White,
+        )
+    }
+}
+
+private fun fileSubtitle(
+    fileSize: Long?,
+    state: MediaDownloadState,
+    hasLocal: Boolean,
+): String? {
+    if (hasLocal || state is MediaDownloadState.Done) {
+        return fileSize?.takeIf { it > 0 }?.let { Formatter.fileSize(it) }
+    }
+    val sizeStr = fileSize?.takeIf { it > 0 }?.let { Formatter.fileSize(it) }
+    return when (state) {
+        is MediaDownloadState.Downloading -> {
+            val pct = percentText(state.bytes, state.total)
+            listOfNotNull(sizeStr, pct).joinToString(" · ").ifBlank { null }
+        }
+        is MediaDownloadState.Paused -> {
+            val pct = percentText(state.bytes, state.total)
+            listOfNotNull(sizeStr, pct?.let { "已暂停 $it" } ?: "已暂停").joinToString(" · ")
+        }
+        is MediaDownloadState.Failed -> listOfNotNull(sizeStr, "下载失败").joinToString(" · ")
+        else -> sizeStr
     }
 }
 
