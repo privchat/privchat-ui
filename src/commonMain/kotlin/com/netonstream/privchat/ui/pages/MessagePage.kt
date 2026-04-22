@@ -45,6 +45,7 @@ import com.gearui.components.button.ButtonTheme
 import com.gearui.components.button.ButtonSize
 import com.gearui.components.empty.EmptyState
 import com.gearui.components.dialog.ConfirmDialog
+import com.gearui.components.dialog.Dialog
 import com.gearui.components.toast.Toast
 import com.gearui.components.swiper.Swiper
 import com.gearui.components.swiper.SwiperNavigation
@@ -130,9 +131,10 @@ fun MessagePage(
     onLoadMessages: (suspend (ULong, Int) -> Result<List<MessageEntry>>)? = null,
     onMarkRead: (suspend (ULong, Int) -> Result<Unit>)? = null,
     onSendText: (suspend (ULong, Int, String) -> Result<ULong>)? = null,
-    onSendImage: (suspend (ULong, Int) -> Result<ULong>)? = null, // 相册
-    onSendCamera: (suspend (ULong, Int) -> Result<ULong>)? = null, // 相机
-    onSendFile: (suspend (ULong, Int) -> Result<ULong>)? = null,
+    // 附件发送回调：在 picker 返回、准备阶段开始时调用 `onPrepStart(label)` 弹出全屏 loading。
+    onSendImage: (suspend (ULong, Int, onPrepStart: (String) -> Unit) -> Result<ULong>)? = null, // 相册
+    onSendCamera: (suspend (ULong, Int, onPrepStart: (String) -> Unit) -> Result<ULong>)? = null, // 相机
+    onSendFile: (suspend (ULong, Int, onPrepStart: (String) -> Unit) -> Result<ULong>)? = null,
     onVoiceStart: (() -> Boolean)? = null,
     onVoiceCancel: (() -> Unit)? = null,
     onSendVoice: (suspend (ULong, Int, durationMs: Long) -> Result<ULong>)? = null,
@@ -166,6 +168,9 @@ fun MessagePage(
     var panelMode by remember(channel.channelId) { mutableStateOf(InputPanelMode.NONE) }
     val hasOpenInputPanel = panelMode != InputPanelMode.NONE
     var voiceRecordingState by remember { mutableStateOf(VoiceRecordingState.IDLE) }
+    // 媒体预处理（复制原图/生成缩略图/压缩视频/复制文件）进行中时，全屏 loading 遮罩。
+    var mediaPrepBusy by remember { mutableStateOf(false) }
+    var mediaPrepLabel by remember { mutableStateOf("") }
     var recordingStartMs by remember { mutableStateOf(0L) }
 
     // 60秒自动停止
@@ -364,8 +369,9 @@ fun MessagePage(
     val truncatedTitle = channel.displayName.let { if (it.length > 15) it.take(15) + "..." else it }
     val peerPresence = peerUserId?.let { presences[it] }
 
+    Box(modifier = modifier.fillMaxSize()) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .then(
                 if (hasOpenInputPanel) {
@@ -537,9 +543,18 @@ fun MessagePage(
             },
             safeAreaBottom = runtimeEnv.safeArea.bottom,
             onPickImage = {
+                panelMode = InputPanelMode.NONE
                 scope.launch {
                     try {
-                        val result = onSendImage?.invoke(channel.channelId, channel.channelType)
+                        val result = onSendImage?.invoke(channel.channelId, channel.channelType) { label ->
+                            if (label.isEmpty()) {
+                                // SDK 告知文件+缩略图已就绪，关掉 loading；紧随其后的 DB 写入会 emit 气泡。
+                                mediaPrepBusy = false
+                            } else {
+                                mediaPrepLabel = label
+                                mediaPrepBusy = true
+                            }
+                        }
                         result?.onFailure { e ->
                             val message = e.message ?: strings.networkError
                             if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
@@ -551,13 +566,23 @@ fun MessagePage(
                         if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
                             onError?.invoke(message)
                         }
+                    } finally {
+                        mediaPrepBusy = false
                     }
                 }
             },
             onPickCamera = {
+                panelMode = InputPanelMode.NONE
                 scope.launch {
                     try {
-                        val result = onSendCamera?.invoke(channel.channelId, channel.channelType)
+                        val result = onSendCamera?.invoke(channel.channelId, channel.channelType) { label ->
+                            if (label.isEmpty()) {
+                                mediaPrepBusy = false
+                            } else {
+                                mediaPrepLabel = label
+                                mediaPrepBusy = true
+                            }
+                        }
                         result?.onFailure { e ->
                             val message = e.message ?: strings.networkError
                             if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
@@ -569,13 +594,23 @@ fun MessagePage(
                         if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
                             onError?.invoke(message)
                         }
+                    } finally {
+                        mediaPrepBusy = false
                     }
                 }
             },
             onPickFile = {
+                panelMode = InputPanelMode.NONE
                 scope.launch {
                     try {
-                        val result = onSendFile?.invoke(channel.channelId, channel.channelType)
+                        val result = onSendFile?.invoke(channel.channelId, channel.channelType) { label ->
+                            if (label.isEmpty()) {
+                                mediaPrepBusy = false
+                            } else {
+                                mediaPrepLabel = label
+                                mediaPrepBusy = true
+                            }
+                        }
                         result?.onFailure { e ->
                             val message = e.message ?: strings.networkError
                             if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
@@ -587,6 +622,8 @@ fun MessagePage(
                         if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
                             onError?.invoke(message)
                         }
+                    } finally {
+                        mediaPrepBusy = false
                     }
                 }
             },
@@ -653,6 +690,17 @@ fun MessagePage(
                 }
             },
         )
+    }
+    Dialog.Host(visible = mediaPrepBusy, dismissOnOutside = false) {
+        Box(
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            com.gearui.components.loading.Loading(
+                text = mediaPrepLabel.ifBlank { "处理中…" },
+            )
+        }
+    }
     }
 }
 

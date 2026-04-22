@@ -236,11 +236,15 @@ private fun ImageContent(
 ) {
     val width = parsed.width?.coerceIn(80, 200) ?: 150
     val height = parsed.height?.coerceIn(80, 250) ?: 200
-    // 气泡显示：优先本地缩略图 → 本地原图 → 远程缩略图 → 远程原图
-    val thumbModel = message.localThumbnailPath?.let { "file://$it" }
-        ?: message.localMediaPath?.let { "file://$it" }
-        ?: parsed.thumbnailUrl
-        ?: parsed.attachmentUrl
+    // thumb_status=3: 协议层无缩略图，直接渲染类型化静态占位
+    val thumbModel = if (message.thumbStatus == 3) {
+        null
+    } else {
+        message.localThumbnailPath?.let { "file://$it" }
+            ?: message.localMediaPath?.let { "file://$it" }
+            ?: parsed.thumbnailUrl
+            ?: parsed.attachmentUrl
+    }
 
     val clickable = if (onImagePreview != null) {
         Modifier.clickable { onImagePreview(message) }
@@ -287,9 +291,14 @@ private fun VideoContent(
 ) {
     val width = parsed.width?.coerceIn(80, 200) ?: 150
     val height = parsed.height?.coerceIn(80, 250) ?: 200
-    val videoThumb = message.localThumbnailPath?.let { "file://$it" }
-        ?: parsed.thumbnailUrl
-        ?: parsed.attachmentUrl
+    // thumb_status=3: 协议层无缩略图，跳过所有远程/本地 URL，直接走类型化占位
+    val videoThumb = if (message.thumbStatus == 3) {
+        null
+    } else {
+        message.localThumbnailPath?.let { "file://$it" }
+            ?: parsed.thumbnailUrl
+            ?: parsed.attachmentUrl
+    }
 
     val clickable = if (onVideoPreview != null) {
         Modifier.clickable { onVideoPreview(message) }
