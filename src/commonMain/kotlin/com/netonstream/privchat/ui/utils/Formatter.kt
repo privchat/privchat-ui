@@ -127,6 +127,51 @@ object Formatter {
      */
     fun messageSeparatorTime(timestamp: ULong): String = messageSeparatorTime(timestamp.toLong())
 
+    /**
+     * 日期标签（不含时间），用于 UX-5 浮动日期头 & 跨日期分隔线。
+     *
+     * - 今天 / 昨天
+     * - 本周内：周X
+     * - 同年：M月d日
+     * - 跨年：yyyy年M月d日
+     */
+    fun messageDateLabel(timestamp: Long): String {
+        if (timestamp <= 0) return ""
+        val zone = PrivChat.timeZoneId
+        val now = currentTimeMillis()
+        val nowLocal = epochMillisToLocalDateTime(now, zone)
+        val tsLocal = epochMillisToLocalDateTime(timestamp, zone)
+        if (nowLocal.year == tsLocal.year && nowLocal.month == tsLocal.month && nowLocal.day == tsLocal.day) {
+            return "今天"
+        }
+        val yesterdayLocal = epochMillisToLocalDateTime(now - 86_400_000L, zone)
+        if (yesterdayLocal.year == tsLocal.year && yesterdayLocal.month == tsLocal.month && yesterdayLocal.day == tsLocal.day) {
+            return "昨天"
+        }
+        if (timestamp >= now - 7 * 86_400_000L) {
+            return getDayOfWeek(tsLocal.dayOfWeek)
+        }
+        if (nowLocal.year == tsLocal.year) {
+            return "${tsLocal.month}月${tsLocal.day}日"
+        }
+        return "${tsLocal.year}年${tsLocal.month}月${tsLocal.day}日"
+    }
+
+    fun messageDateLabel(timestamp: ULong): String = messageDateLabel(timestamp.toLong())
+
+    /**
+     * 两个时间戳是否属于同一本地日。用于 UX-11 时间合并分组的跨日判断。
+     */
+    fun isSameLocalDay(a: Long, b: Long): Boolean {
+        if (a <= 0 || b <= 0) return false
+        val zone = PrivChat.timeZoneId
+        val la = epochMillisToLocalDateTime(a, zone)
+        val lb = epochMillisToLocalDateTime(b, zone)
+        return la.year == lb.year && la.month == lb.month && la.day == lb.day
+    }
+
+    fun isSameLocalDay(a: ULong, b: ULong): Boolean = isSameLocalDay(a.toLong(), b.toLong())
+
     // ========== 时长格式化 ==========
 
     /**

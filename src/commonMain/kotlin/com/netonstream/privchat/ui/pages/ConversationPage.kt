@@ -339,14 +339,36 @@ private fun ChannelItem(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // 消息预览
-                    Text(
-                        text = buildDescription(channel, draft, strings),
-                        style = Typography.BodySmall,
-                        color = colors.textSecondary,
-                        maxLines = 1,
-                        modifier = Modifier.weight(1f)
-                    )
+                    // 消息预览（UX-9.4：有草稿时 `[草稿]` 红色前缀 + 草稿正文灰色）
+                    if (!draft.isNullOrBlank()) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = strings.conversationDraft,
+                                style = Typography.BodySmall,
+                                color = colors.danger,
+                                maxLines = 1,
+                            )
+                            HorizontalSpacer(2.dp)
+                            Text(
+                                text = draft,
+                                style = Typography.BodySmall,
+                                color = colors.textSecondary,
+                                maxLines = 1,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = buildDescription(channel, draft, strings),
+                            style = Typography.BodySmall,
+                            color = colors.textSecondary,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
 
                     HorizontalSpacer(8.dp)
 
@@ -387,7 +409,7 @@ private fun UnreadBadge(count: Int) {
 }
 
 /**
- * 构建会话描述文本
+ * 构建会话描述文本（不含草稿分支——草稿态在 UI 层用独立的彩色 Text 渲染，见会话行）。
  */
 private fun buildDescription(
     channel: ChannelListEntry,
@@ -395,11 +417,6 @@ private fun buildDescription(
     strings: com.netonstream.privchat.ui.i18n.PrivChatStrings
 ): String {
     val builder = StringBuilder()
-
-    // 草稿优先
-    if (!draft.isNullOrBlank()) {
-        return "${strings.conversationDraft} $draft"
-    }
 
     // @提及
     if (channel.mentions > 0u) {

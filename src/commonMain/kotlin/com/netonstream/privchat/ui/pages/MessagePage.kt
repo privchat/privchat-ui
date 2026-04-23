@@ -4,6 +4,7 @@ import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.ConnectionState
 import com.netonstream.privchat.sdk.dto.ChannelListEntry
 import com.netonstream.privchat.sdk.dto.ContentMessageType
+import com.netonstream.privchat.sdk.dto.GroupMemberEntry
 import com.netonstream.privchat.sdk.dto.MessageEntry
 import com.netonstream.privchat.sdk.dto.MessageStatus
 import com.netonstream.privchat.sdk.dto.PresenceEntry
@@ -27,6 +28,7 @@ import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.primitives.ScrollView
+import com.gearui.foundation.typography.IconSizes
 import com.gearui.foundation.typography.Typography
 import com.gearui.foundation.AvatarSpecs
 import com.gearui.primitives.HorizontalSpacer
@@ -44,6 +46,7 @@ import com.gearui.components.button.Button
 import com.gearui.components.button.ButtonTheme
 import com.gearui.components.button.ButtonSize
 import com.gearui.components.empty.EmptyState
+import com.gearui.components.actionsheet.ActionSheet
 import com.gearui.components.dialog.ConfirmDialog
 import com.gearui.components.dialog.Dialog
 import com.gearui.components.toast.Toast
@@ -77,6 +80,7 @@ import com.tencent.kuikly.compose.foundation.gestures.awaitEachGesture
 import com.tencent.kuikly.compose.foundation.gestures.awaitFirstDown
 import com.tencent.kuikly.compose.animation.core.rememberInfiniteTransition
 import com.tencent.kuikly.compose.animation.core.animateFloat
+import com.tencent.kuikly.compose.animation.core.animateFloatAsState
 import com.tencent.kuikly.compose.animation.core.infiniteRepeatable
 import com.tencent.kuikly.compose.animation.core.tween
 import com.tencent.kuikly.compose.animation.core.RepeatMode
@@ -155,12 +159,39 @@ fun MessagePage(
     val listState = rememberLazyListState()
     val runtimeEnv = LocalGearRuntimeEnvironment.current
     val sortedMessages = messages
+    // REPLY_SPEC §4.3：按 server_message_id 建立索引，引用气泡渲染时 O(1) 定位原消息。
+    val messagesByServerId = remember(sortedMessages) {
+        val map = HashMap<String, MessageEntry>(sortedMessages.size)
+        for (m in sortedMessages) {
+            val sid = m.serverMessageId ?: continue
+            map[sid.toString()] = m
+        }
+        map
+    }
     // peer_user_id：优先从 channel 字段取，channel_member 表为空时回退到 dmPeerUserId()
     var peerUserId by remember(channel.channelId) { mutableStateOf(channel.peerUserId) }
     var initialPositioned by remember(channel.channelId) { mutableStateOf(false) }
     var hasInitialLoadCompleted by remember(channel.channelId) { mutableStateOf(false) }
     // 输入文本
     var inputText by remember { mutableStateOf(PrivChat.getDraft(channel.channelId) ?: "") }
+    // UX-10：@ 提及选择器（仅群聊）。mentionQuery=null 时隐藏 picker；
+    // mentionSpans 记录每段 `@name ` 的区间（含尾随空格），用于原子删除与回填 userId。
+    var mentionQuery by remember(channel.channelId) { mutableStateOf<String?>(null) }
+    val mentionSpans = remember(channel.channelId) { mutableStateListOf<MentionSpan>() }
+    // REPLY_SPEC：长按【回复】后进入回复态；onSend 发送时把 serverMessageId 透传给 SDK。
+    var pendingReply by remember(channel.channelId) { mutableStateOf<MessageEntry?>(null) }
+    // REPLY_SPEC §4.3：点击引用摘要后滚动到原消息并短暂高亮；800ms 后自动清除。
+    var highlightMessageId by remember(channel.channelId) { mutableStateOf<ULong?>(null) }
+    LaunchedEffect(highlightMessageId) {
+        if (highlightMessageId != null) {
+            delay(800)
+            highlightMessageId = null
+        }
+    }
+    val allGroupMembers by PrivChat.groupMembers.collectAsState()
+    val groupMembersForChannel = remember(allGroupMembers, channel.channelId) {
+        if (channel.isDm) emptyList() else allGroupMembers.filter { it.channelId == channel.channelId }
+    }
     // Typing 节流：记录上次发送 typing 的时间戳（毫秒）
     var lastTypingSentMs by remember { mutableStateOf(0L) }
     // 当前页面是否已经上报过“正在输入”
@@ -172,6 +203,16 @@ fun MessagePage(
     var mediaPrepBusy by remember { mutableStateOf(false) }
     var mediaPrepLabel by remember { mutableStateOf("") }
     var recordingStartMs by remember { mutableStateOf(0L) }
+
+    // UX-7 未读分隔线：进入会话时快照 unreadCount，并在消息首次填充后锚定到首条未读的 message id。
+    // 锚点只计算一次（进入会话那一瞬间）；后续收到新消息时分隔线位置保持稳定，直到退出会话。
+    val initialUnreadSnapshot = remember(channel.channelId) { channel.unreadCount }
+    var unreadDividerAnchorId by remember(channel.channelId) { mutableStateOf<ULong?>(null) }
+    var unreadDividerAnchorResolved by remember(channel.channelId) { mutableStateOf(false) }
+
+    // UX-8 新消息浮动气泡：用户滚到历史区时累计新消息数，点击胶囊回到底部。
+    var newMsgBubbleCount by remember(channel.channelId) { mutableStateOf(0) }
+    var lastSeenLastId by remember(channel.channelId) { mutableStateOf<ULong?>(null) }
 
     // 60秒自动停止
     LaunchedEffect(voiceRecordingState) {
@@ -285,6 +326,13 @@ fun MessagePage(
         }
     }
 
+    // UX-9：输入变化后 400ms 防抖 flush。避免高频键入每次都穿透到 SharedPreferences / NSUserDefaults。
+    // onDispose 分支依旧会在退出会话时做一次无条件兜底 flush。
+    LaunchedEffect(channel.channelId, inputText) {
+        delay(400L)
+        PrivChat.saveDraft(channel.channelId, inputText.takeIf { it.isNotBlank() })
+    }
+
     // 保存草稿 + 取消订阅 typing 事件
     DisposableEffect(Unit) {
         onDispose {
@@ -317,6 +365,18 @@ fun MessagePage(
     fun MessageEntry.stableKey(): ULong =
         localMessageId?.takeIf { it > 0uL } ?: id
 
+    // UX-7 未读分隔线：首次获取到消息列表后，按 unreadCount 向前回推定位到首条未读，并记住 id。
+    // 只解析一次；之后列表变化（新消息到达、上拉刷新）都不重算。
+    LaunchedEffect(channel.channelId, sortedMessages.size) {
+        if (unreadDividerAnchorResolved) return@LaunchedEffect
+        if (sortedMessages.isEmpty()) return@LaunchedEffect
+        if (initialUnreadSnapshot > 0 && sortedMessages.size >= initialUnreadSnapshot) {
+            val firstUnreadIndex = sortedMessages.size - initialUnreadSnapshot
+            unreadDividerAnchorId = sortedMessages[firstUnreadIndex].id
+        }
+        unreadDividerAnchorResolved = true
+    }
+
     // 首次进入直接定位到底部，并在定位完成前隐藏列表，避免看到"从上滚到下"。
     LaunchedEffect(channel.channelId, sortedMessages.lastOrNull()?.id, sortedMessages.size) {
         if (sortedMessages.isEmpty()) return@LaunchedEffect
@@ -325,15 +385,25 @@ fun MessagePage(
             delay(16)
             listState.scrollToItem(lastIndex)
             initialPositioned = true
+            lastSeenLastId = sortedMessages[lastIndex].id
             return@LaunchedEffect
         }
         // 收到新消息时：若用户已在底部附近（距底部 ≤ 3 条），自动滚到底部
         // 注意：用 sortedMessages.size 而非 layoutInfo.totalItemsCount，
         // 因为 layoutInfo 在新消息刚加入时可能尚未更新（stale），导致误判。
         val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-        if (sortedMessages.size - 1 - lastVisible <= 3) {
+        val nearBottom = sortedMessages.size - 1 - lastVisible <= 3
+        val newLastId = sortedMessages[lastIndex].id
+        if (nearBottom) {
             listState.animateScrollToItem(lastIndex)
+            newMsgBubbleCount = 0
+        } else if (newLastId != lastSeenLastId && lastSeenLastId != null) {
+            // UX-8：历史区有新消息时累加计数。仅统计对方消息（自己发送的会随 onSend 自动滚底）。
+            val lastSeenIdx = sortedMessages.indexOfFirst { it.id == lastSeenLastId }
+            val delta = if (lastSeenIdx >= 0) sortedMessages.size - 1 - lastSeenIdx else 1
+            newMsgBubbleCount += delta.coerceAtLeast(1)
         }
+        lastSeenLastId = newLastId
         // 用户在会话中收到新消息时，即时上报已读
         if (hasInitialLoadCompleted) {
             runCatching {
@@ -444,6 +514,28 @@ fun MessagePage(
                             )
                         }
                     } else {
+                        // UX-5 浮动日期胶囊：根据首条可见消息的日期显示；停止滚动 1.5 秒后淡出。
+                        val firstVisibleIdx by remember {
+                            derivedStateOf { listState.firstVisibleItemIndex }
+                        }
+                        val isScrolling by remember {
+                            derivedStateOf { listState.isScrollInProgress }
+                        }
+                        var dateHeaderVisible by remember(channel.channelId) { mutableStateOf(false) }
+                        LaunchedEffect(isScrolling) {
+                            if (isScrolling) {
+                                dateHeaderVisible = true
+                            } else {
+                                delay(1500)
+                                dateHeaderVisible = false
+                            }
+                        }
+                        val headerLabel = remember(firstVisibleIdx, sortedMessages) {
+                            sortedMessages.getOrNull(firstVisibleIdx)
+                                ?.let { Formatter.messageDateLabel(it.timestamp) }
+                                .orEmpty()
+                        }
+
                         GearLazyColumn(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -456,6 +548,14 @@ fun MessagePage(
                             ) { index ->
                                 val message = sortedMessages[index]
                                 val isSelf = currentUserId?.let { message.isSelf(it) } ?: false
+                                val previous = if (index > 0) sortedMessages[index - 1] else null
+
+                                // UX-11 时间合并 + UX-5 跨日分隔线（日期优先于时间）
+                                MessageGroupDivider(previous = previous, current = message)
+
+                                if (unreadDividerAnchorId == message.id && initialUnreadSnapshot > 0) {
+                                    UnreadDivider(count = initialUnreadSnapshot)
+                                }
 
                                 MessageRow(
                                     message = message,
@@ -463,12 +563,47 @@ fun MessagePage(
                                     showAvatar = !channel.isDm || !isSelf,
                                     channelDisplayName = channel.displayName,
                                     onAvatarClick = if (!isSelf) onAvatarClick else null,
+                                    onAvatarLongPress = if (!channel.isDm && !isSelf) { userId, name ->
+                                        val ins = appendMention(inputText, name, userId)
+                                        inputText = ins.text
+                                        mentionSpans.add(ins.span)
+                                        mentionQuery = null
+                                    } else null,
                                     peerReadPts = peerReadPts,
                                     reactions = messageReactions[message.id].orEmpty(),
                                     selfUserId = currentUserId,
                                     onRequestForward = onRequestForward,
                                     onVideoPreview = onVideoPreview,
                                     onImagePreview = onImagePreview,
+                                    onReply = { target ->
+                                        if (target.serverMessageId == null) {
+                                            Toast.error("原消息尚未发送")
+                                        } else {
+                                            pendingReply = target
+                                        }
+                                    },
+                                    replyLookup = { serverId -> messagesByServerId[serverId] },
+                                    senderLabelOf = { uid ->
+                                        when {
+                                            uid == currentUserId -> "我"
+                                            channel.isDm -> channel.displayName.ifBlank { uid.toString() }
+                                            else -> groupMembersForChannel
+                                                .firstOrNull { it.userId == uid }
+                                                ?.let { it.remark.ifBlank { it.name } }
+                                                ?.takeIf { it.isNotBlank() }
+                                                ?: uid.toString()
+                                        }
+                                    },
+                                    onReplyClick = { target ->
+                                        val idx = sortedMessages.indexOf(target)
+                                        if (idx >= 0) {
+                                            scope.launch {
+                                                listState.animateScrollToItem(idx)
+                                                highlightMessageId = target.id
+                                            }
+                                        }
+                                    },
+                                    isHighlighted = highlightMessageId == message.id,
                                 )
                             }
                             item {
@@ -478,7 +613,39 @@ fun MessagePage(
                                 )
                             }
                         }
+
+                        if (dateHeaderVisible && headerLabel.isNotBlank()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(top = 8.dp),
+                                contentAlignment = Alignment.TopCenter,
+                            ) {
+                                FloatingDateHeader(label = headerLabel)
+                            }
+                        }
                     }
+                }
+            }
+            // UX-8 新消息浮动气泡：用户在历史区时显示于右下角，点击回到底部。
+            if (newMsgBubbleCount > 0 && voiceRecordingState == VoiceRecordingState.IDLE) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(end = 16.dp, bottom = 12.dp),
+                    contentAlignment = Alignment.BottomEnd,
+                ) {
+                    NewMessagesBubble(
+                        count = newMsgBubbleCount,
+                        onClick = {
+                            scope.launch {
+                                if (sortedMessages.isNotEmpty()) {
+                                    listState.animateScrollToItem(sortedMessages.size - 1)
+                                }
+                                newMsgBubbleCount = 0
+                            }
+                        },
+                    )
                 }
             }
             // 录音浮层（覆盖在消息列表上方）
@@ -490,11 +657,53 @@ fun MessagePage(
             }
         }
 
+        // REPLY_SPEC §4.1：回复态窄条，锚定在输入栏上方；右侧 × 清除。
+        pendingReply?.let { reply ->
+            ReplyBar(
+                message = reply,
+                channelDisplayName = channel.displayName,
+                onDismiss = { pendingReply = null },
+            )
+        }
+
+        // UX-10：@ 提及选择器（仅群聊），锚定在输入栏上方。
+        if (!channel.isDm) {
+            val query = mentionQuery
+            val filteredMembers = remember(query, groupMembersForChannel, currentUserId) {
+                if (query == null) emptyList()
+                else groupMembersForChannel
+                    .asSequence()
+                    .filter { it.userId != currentUserId }
+                    .filter { query.isEmpty() || matchMemberQuery(it, query) }
+                    .toList()
+            }
+            if (query != null && filteredMembers.isNotEmpty()) {
+                MentionPicker(
+                    members = filteredMembers,
+                    onPick = { member ->
+                        val displayName = member.remark.ifBlank { member.name }
+                        val ins = replaceMentionQuery(inputText, displayName, member.userId)
+                        inputText = ins.text
+                        mentionSpans.add(ins.span)
+                        mentionQuery = null
+                    },
+                )
+            }
+        }
+
         // 输入框
         MessageInputBar(
             text = inputText,
-            onTextChange = { newText ->
+            onTextChange = { rawNewText ->
+                // UX-10：把用户编辑与已有 mention 区间做 diff 合并——触碰到任一 span 时整段抹除，
+                // 其它编辑保持不变；等价于 WeChat 的"pill 原子删除"但不需要富文本输入。
+                val (newText, newSpans) = resolveMentionEdit(inputText, rawNewText, mentionSpans.toList())
                 inputText = newText
+                if (newSpans != mentionSpans.toList()) {
+                    mentionSpans.clear()
+                    mentionSpans.addAll(newSpans)
+                }
+                mentionQuery = computeMentionQuery(newText, channel.isDm)
                 // 节流发送 typing：文本非空且距离上次发送超过 1 秒（与接收侧 5s 过期窗口对齐，
                 // 确保用户持续输入时对端始终能收到心跳，不会因中间某次发送被延迟而误判停止）
                 if (newText.isNotBlank()) {
@@ -655,7 +864,15 @@ fun MessagePage(
             onSend = {
                 if (inputText.isNotBlank()) {
                     val text = inputText
+                    val replyTargetServerId = pendingReply?.serverMessageId
+                    val mentionUserIds = mentionSpans.map { it.userId }.distinct()
+                    val needOptions = replyTargetServerId != null || mentionUserIds.isNotEmpty()
                     inputText = ""
+                    mentionQuery = null
+                    mentionSpans.clear()
+                    pendingReply = null
+                    // UX-9：成功调用发送路径后立刻清掉持久草稿；onDispose 只在退出会话时兜底。
+                    PrivChat.saveDraft(channel.channelId, null)
                     if (typingActive) {
                         typingActive = false
                         scope.launch {
@@ -668,11 +885,26 @@ fun MessagePage(
                     }
                     scope.launch {
                         try {
+                            // 仅当带回复 / @ 时走 options 路径（SDK 直接发，不经 onSendText 拦截）。
                             // sendTextMessage 内部会先插入 optimistic 消息到 UI，再异步 FFI
-                            val result = onSendText?.invoke(channel.channelId, channel.channelType, text)
-                                ?: withContext(Dispatchers.Default) {
-                                    PrivChat.client.sendText(channel.channelId, channel.channelType, text)
+                            val result = if (needOptions) {
+                                withContext(Dispatchers.Default) {
+                                    PrivChat.client.sendText(
+                                        channel.channelId,
+                                        channel.channelType,
+                                        text,
+                                        com.netonstream.privchat.sdk.dto.SendMessageOptions(
+                                            inReplyToMessageId = replyTargetServerId,
+                                            mentions = mentionUserIds,
+                                        ),
+                                    )
                                 }
+                            } else {
+                                onSendText?.invoke(channel.channelId, channel.channelType, text)
+                                    ?: withContext(Dispatchers.Default) {
+                                        PrivChat.client.sendText(channel.channelId, channel.channelType, text)
+                                    }
+                            }
                             result.onFailure { error ->
                                 if (error is CancellationException) return@onFailure
                                 val message = error.message.orEmpty()
@@ -705,6 +937,7 @@ fun MessagePage(
                     }
                 }
             },
+            replyPending = pendingReply != null,
         )
     }
     Dialog.Host(visible = mediaPrepBusy, dismissOnOutside = false) {
@@ -717,6 +950,9 @@ fun MessagePage(
             )
         }
     }
+    // UX-3 / UX-4：文本内联实体点击后的 ActionSheet 通过全局单例弹出，
+    // 必须有一个 Host 挂载在页面根部才能接收显示请求。
+    ActionSheet.Host()
     }
 }
 
@@ -841,12 +1077,18 @@ private fun MessageRow(
     showAvatar: Boolean = true,
     channelDisplayName: String = "",
     onAvatarClick: ((ULong) -> Unit)? = null,
+    onAvatarLongPress: ((ULong, String) -> Unit)? = null,
     peerReadPts: ULong? = null,
     reactions: List<com.netonstream.privchat.sdk.dto.ReactionChip> = emptyList(),
     selfUserId: ULong? = null,
     onRequestForward: ((MessageEntry) -> Unit)? = null,
     onVideoPreview: ((MessageEntry) -> Unit)? = null,
     onImagePreview: ((MessageEntry) -> Unit)? = null,
+    onReply: ((MessageEntry) -> Unit)? = null,
+    replyLookup: ((String) -> MessageEntry?)? = null,
+    senderLabelOf: ((ULong) -> String)? = null,
+    onReplyClick: ((MessageEntry) -> Unit)? = null,
+    isHighlighted: Boolean = false,
 ) {
     val colors = Theme.colors
     val strings = PrivChatI18n.strings
@@ -894,7 +1136,7 @@ private fun MessageRow(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center,
             ) {
-                MessageActionsWrapper(message = message, isSelf = isSelf, onRequestForward = onRequestForward) {
+                MessageActionsWrapper(message = message, isSelf = isSelf, onRequestForward = onRequestForward, onReply = onReply) {
                     SystemMessageRow(message = message)
                 }
             }
@@ -913,12 +1155,21 @@ private fun MessageRow(
     ) {
         // 对方头像
         if (!isSelf && showAvatar) {
-            Box(
-                modifier = if (onAvatarClick != null) Modifier.clickable { onAvatarClick(message.fromUid) } else Modifier
-            ) {
+            val peerAvatarName = channelDisplayName.ifBlank { message.fromUid.toString() }
+            val avatarModifier = if (onAvatarClick != null || onAvatarLongPress != null) {
+                Modifier.pointerInput(message.id) {
+                    detectTapGestures(
+                        onTap = { onAvatarClick?.invoke(message.fromUid) },
+                        onLongPress = { onAvatarLongPress?.invoke(message.fromUid, peerAvatarName) },
+                    )
+                }
+            } else {
+                Modifier
+            }
+            Box(modifier = avatarModifier) {
                 ChatAvatar(
                     url = null, // TODO: 从用户信息获取
-                    name = channelDisplayName.ifBlank { message.fromUid.toString() },
+                    name = peerAvatarName,
                     size = AvatarSpecs.Size.small,
                 )
             }
@@ -929,27 +1180,53 @@ private fun MessageRow(
         Column(
             horizontalAlignment = if (isSelf) Alignment.End else Alignment.Start,
         ) {
-            MessageActionsWrapper(message = message, isSelf = isSelf, onRequestForward = onRequestForward) {
+            // REPLY_SPEC §4.3：命中高亮时在气泡之上叠加一层主题色蒙版，800ms 后淡出。
+            val flashAlpha by animateFloatAsState(
+                targetValue = if (isHighlighted) 0.25f else 0f,
+                animationSpec = tween(durationMillis = 220),
+            )
+            val bubbleShape = RoundedCornerShape(
+                topStart = if (isSelf) 16.dp else 4.dp,
+                topEnd = 16.dp,
+                bottomStart = 16.dp,
+                bottomEnd = if (isSelf) 4.dp else 16.dp,
+            )
+            MessageActionsWrapper(message = message, isSelf = isSelf, onRequestForward = onRequestForward, onReply = onReply) {
                 Box(
                     modifier = Modifier
-                        .clip(
-                            RoundedCornerShape(
-                                topStart = if (isSelf) 16.dp else 4.dp,
-                                topEnd = 16.dp,
-                                bottomStart = 16.dp,
-                                bottomEnd = if (isSelf) 4.dp else 16.dp,
-                            )
-                        )
+                        .clip(bubbleShape)
                         .background(if (isSelf) colors.bubbleSelf else colors.bubbleOther),
                 ) {
-                    MessageContent(
-                        message = message,
-                        isSelf = isSelf,
-                        peerReadPts = peerReadPts,
-                        onFailedClick = onFailedClick,
-                        onVideoPreview = onVideoPreview,
-                        onImagePreview = onImagePreview,
-                    )
+                    Column {
+                        message.replyToServerMessageId?.let { replyId ->
+                            val original = replyLookup?.invoke(replyId)
+                            ReplyQuoteBanner(
+                                original = original,
+                                isSelf = isSelf,
+                                senderLabelOf = senderLabelOf,
+                                onClick = if (original != null && onReplyClick != null) {
+                                    { onReplyClick.invoke(original) }
+                                } else null,
+                            )
+                        }
+                        MessageContent(
+                            message = message,
+                            isSelf = isSelf,
+                            peerReadPts = peerReadPts,
+                            onFailedClick = onFailedClick,
+                            onVideoPreview = onVideoPreview,
+                            onImagePreview = onImagePreview,
+                        )
+                    }
+                    if (flashAlpha > 0f) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clip(bubbleShape)
+                                .alpha(flashAlpha)
+                                .background(colors.primary),
+                        )
+                    }
                 }
             }
             if (reactions.isNotEmpty()) {
@@ -1155,6 +1432,125 @@ private fun TypingBubble(channelId: ULong, peerName: String) {
 }
 
 /**
+ * 消息分组分隔线（UX-11 时间合并 + UX-5 跨日日期分隔线）。
+ *
+ * 规则：
+ * - 首条消息或跨自然日 → "今天 HH:mm" / "昨天 HH:mm" / "M月d日 HH:mm" / "yyyy年M月d日 HH:mm"
+ * - 同日 + 与上一条间隔 > 5 分钟 → "HH:mm"
+ * - 同日 + 间隔 ≤ 5 分钟 → 不渲染
+ */
+@Composable
+private fun MessageGroupDivider(previous: MessageEntry?, current: MessageEntry) {
+    val prevTs = previous?.timestamp?.toLong() ?: 0L
+    val currTs = current.timestamp.toLong()
+    val crossDay = previous == null || !Formatter.isSameLocalDay(prevTs, currTs)
+    val label = when {
+        crossDay -> Formatter.messageSeparatorTime(currTs)
+        (currTs - prevTs) > 5 * 60_000L -> Formatter.messageTime(currTs)
+        else -> null
+    } ?: return
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = label,
+            style = Typography.Caption,
+            color = Theme.colors.textSecondary,
+        )
+    }
+}
+
+/**
+ * 浮动日期胶囊（UX-5）。
+ *
+ * 显示于消息列表顶部，跟随首条可见消息的日期更新；停止滚动 1.5 秒后淡出。
+ */
+@Composable
+private fun FloatingDateHeader(label: String) {
+    val colors = Theme.colors
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(colors.textSecondary.copy(alpha = 0.55f))
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+    ) {
+        Text(
+            text = label,
+            style = Typography.Caption,
+            color = Color.White,
+        )
+    }
+}
+
+/**
+ * 未读消息分隔线（UX-7）。
+ * 居中灰色横条 + 文字：`── 以下为未读消息 (N) ──`。
+ */
+@Composable
+private fun UnreadDivider(count: Int) {
+    val colors = Theme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .background(colors.textSecondary.copy(alpha = 0.35f))
+                .padding(vertical = 0.5.dp),
+        )
+        HorizontalSpacer(8.dp)
+        Text(
+            text = "以下为未读消息 ($count)",
+            style = Typography.Caption,
+            color = colors.textSecondary,
+        )
+        HorizontalSpacer(8.dp)
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .background(colors.textSecondary.copy(alpha = 0.35f))
+                .padding(vertical = 0.5.dp),
+        )
+    }
+}
+
+/**
+ * 新消息浮动气泡（UX-8）。
+ * 用户在历史区滚动时显示，点击回到底部并清空计数。
+ */
+@Composable
+private fun NewMessagesBubble(count: Int, onClick: () -> Unit) {
+    val colors = Theme.colors
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(colors.surface)
+            .border(1.dp, colors.textSecondary.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "$count 条新消息",
+            style = Typography.Label,
+            color = colors.primary,
+        )
+        HorizontalSpacer(6.dp)
+        Icon(
+            name = Icons.keyboard_arrow_down,
+            tint = colors.primary,
+            size = IconSizes.Default.medium,
+        )
+    }
+}
+
+/**
  * 消息输入栏
  */
 @Composable
@@ -1179,6 +1575,7 @@ private fun MessageInputBar(
     onRedPacket: () -> Unit = {},
     onContact: () -> Unit = {},
     onSend: () -> Unit,
+    replyPending: Boolean = false,
 ) {
     val colors = Theme.colors
     val focusManager = LocalFocusManager.current
@@ -1191,6 +1588,12 @@ private fun MessageInputBar(
     var inputFocused by remember { mutableStateOf(false) }
     val inputFocusRequester = remember { FocusRequester() }
     var pendingAutoFocus by remember { mutableStateOf(false) }
+    // REPLY_SPEC §4.3：进入回复态后自动聚焦文本输入并弹键盘；语音模式不触发，避免打断录音体验。
+    LaunchedEffect(replyPending) {
+        if (replyPending && !voiceMode) {
+            pendingAutoFocus = true
+        }
+    }
     var collapsedBottomInset by remember { mutableStateOf(safeAreaBottom) }
     var lastKeyboardHeight by remember { mutableStateOf(0f) }
     val plusActions = remember {
@@ -1784,6 +2187,7 @@ private fun MessageActionsWrapper(
     message: MessageEntry,
     isSelf: Boolean,
     onRequestForward: ((MessageEntry) -> Unit)? = null,
+    onReply: ((MessageEntry) -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val strings = PrivChatI18n.strings
@@ -1853,7 +2257,10 @@ private fun MessageActionsWrapper(
                         Toast.show("转发功能即将支持")
                     }
                 }
-                MessageActionKind.Reply -> Toast.show("回复功能即将支持")
+                MessageActionKind.Reply -> {
+                    val handler = onReply
+                    if (handler != null) handler(message) else Toast.show("回复功能即将支持")
+                }
                 MessageActionKind.Select -> Toast.show("多选功能即将支持")
             }
         }
@@ -1887,6 +2294,7 @@ private fun MessageActionsWrapper(
         reactions = reactions,
         onReaction = onReaction,
         isSelf = isSelf,
+        pointerInputKey = message.id,
         bubble = content,
     )
 }
@@ -1920,4 +2328,280 @@ private fun MessageActionKind.toMessageAction(
     }
     MessageActionKind.Select ->
         MessageAction(label = "选择", icon = Icons.check_box_outline_blank, onClick = onClick)
+}
+
+// ==================== REPLY_SPEC 辅助 ====================
+
+/**
+ * REPLY_SPEC §4.2：按内容类型生成回复态摘要文案。
+ * 撤回状态优先兜底（直接显示"该消息已撤回"）。
+ */
+private fun summarizeForReply(message: MessageEntry): String {
+    if (message.isRevoked) return "该消息已撤回"
+    return when (message.contentType()) {
+        ContentMessageType.TEXT -> {
+            val t = message.parsedContent.text.orEmpty()
+            if (t.length > 40) t.take(40) + "…" else t
+        }
+        ContentMessageType.IMAGE -> "[图片]"
+        ContentMessageType.VIDEO -> "[视频]"
+        ContentMessageType.VOICE -> {
+            val secs = message.parsedContent.duration
+            if (secs != null && secs > 0) "[语音 ${secs}s]" else "[语音]"
+        }
+        ContentMessageType.FILE -> {
+            val name = message.parsedContent.fileName.orEmpty()
+            if (name.isNotBlank()) "[文件] $name" else "[文件]"
+        }
+        ContentMessageType.LINK -> message.parsedContent.linkTitle
+            ?: message.parsedContent.linkUrl
+            ?: "[链接]"
+        ContentMessageType.STICKER -> "[表情]"
+        ContentMessageType.CONTACT_CARD -> "[联系人]"
+        ContentMessageType.LOCATION -> "[位置]"
+        ContentMessageType.FORWARD -> "[转发]"
+        ContentMessageType.SYSTEM, null -> "[消息]"
+    }
+}
+
+/**
+ * REPLY_SPEC §4.1：输入栏上方的引用摘要窄条。
+ * 左侧 2px 主题色竖条 + 两行摘要；右侧 × 清除按钮。
+ */
+@Composable
+private fun ReplyBar(
+    message: MessageEntry,
+    channelDisplayName: String,
+    onDismiss: () -> Unit,
+) {
+    val colors = Theme.colors
+    val senderLabel = channelDisplayName.ifBlank { message.fromUid.toString() }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.surfaceVariant)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .width(2.dp)
+                .height(32.dp)
+                .background(colors.primary),
+        )
+        HorizontalSpacer(8.dp)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "回复 $senderLabel",
+                style = Typography.Label,
+                color = colors.textSecondary,
+            )
+            Text(
+                text = summarizeForReply(message),
+                style = Typography.BodySmall,
+                color = colors.textPrimary,
+            )
+        }
+        HorizontalSpacer(8.dp)
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clickable { onDismiss() },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(name = Icons.close, size = 16.dp, tint = colors.textSecondary)
+        }
+    }
+}
+
+/**
+ * REPLY_SPEC §4.3：气泡顶部的引用窄条。
+ * 2px 主题色竖条 + 两行：第一行被引用方名字，第二行摘要（原消息缺失时降级为占位文案）。
+ */
+@Composable
+private fun ReplyQuoteBanner(
+    original: MessageEntry?,
+    isSelf: Boolean,
+    senderLabelOf: ((ULong) -> String)? = null,
+    onClick: (() -> Unit)? = null,
+) {
+    val colors = Theme.colors
+    val summary = original?.let { summarizeForReply(it) } ?: "该消息已失效"
+    val senderText = original?.let { senderLabelOf?.invoke(it.fromUid) ?: it.fromUid.toString() }
+    val foreground = if (isSelf) colors.onPrimary else colors.textPrimary
+    val secondary = if (isSelf) colors.onPrimary else colors.textSecondary
+    val rowModifier = Modifier
+        .padding(start = 10.dp, end = 10.dp, top = 8.dp)
+        .fillMaxWidth()
+        .let { if (onClick != null) it.clickable(onClick = onClick) else it }
+    Row(
+        modifier = rowModifier,
+        verticalAlignment = Alignment.Top,
+    ) {
+        Box(
+            modifier = Modifier
+                .width(2.dp)
+                .height(if (senderText != null) 30.dp else 16.dp)
+                .background(if (isSelf) colors.onPrimary else colors.primary),
+        )
+        HorizontalSpacer(6.dp)
+        Column(modifier = Modifier.weight(1f)) {
+            if (senderText != null) {
+                Text(
+                    text = senderText,
+                    style = Typography.Label,
+                    color = secondary,
+                )
+            }
+            Text(
+                text = summary,
+                style = Typography.BodySmall,
+                color = foreground,
+            )
+        }
+    }
+}
+
+// ==================== UX-10 @ 提及工具函数 ====================
+
+/**
+ * 一条 `@name ` 的区间记录；`end` 为 exclusive，涵盖尾随空格，用于原子删除和偏移追踪。
+ */
+private data class MentionSpan(val start: Int, val end: Int, val userId: ULong)
+
+/** 一次插入操作的产出：更新后的文本与新增 span。*/
+private data class MentionInsertion(val text: String, val span: MentionSpan)
+
+/**
+ * 从当前输入文本末尾推断 @ 提及查询串：最后一个 `@` 必须位于行首或紧邻空白后，
+ * 且其后的子串中不含空白；否则视作非提及上下文（例如邮箱 `a@b`）。
+ */
+private fun computeMentionQuery(text: String, isDm: Boolean): String? {
+    if (isDm) return null
+    val atIdx = text.lastIndexOf('@')
+    if (atIdx < 0) return null
+    if (atIdx > 0 && !text[atIdx - 1].isWhitespace()) return null
+    val query = text.substring(atIdx + 1)
+    if (query.any { it.isWhitespace() }) return null
+    return query
+}
+
+/** 把输入尾部的 `@query` 片段替换为 `@<name> `（保留触发符，便于对方阅读）。*/
+private fun replaceMentionQuery(text: String, name: String, userId: ULong): MentionInsertion {
+    val atIdx = text.lastIndexOf('@')
+    val prefix = if (atIdx < 0) text else text.substring(0, atIdx)
+    val newText = "$prefix@$name "
+    val spanStart = prefix.length
+    return MentionInsertion(newText, MentionSpan(spanStart, newText.length, userId))
+}
+
+/** 头像长按直接追加 `@name `；若输入框末尾非空白，先补一个空格。*/
+private fun appendMention(text: String, name: String, userId: ULong): MentionInsertion {
+    val prefix = if (text.isEmpty() || text.last().isWhitespace()) text else "$text "
+    val newText = "$prefix@$name "
+    return MentionInsertion(newText, MentionSpan(prefix.length, newText.length, userId))
+}
+
+/**
+ * 把用户编辑后的文本与旧文本/旧 span 做 diff 合并：
+ * - 编辑未触碰任何 span → 原样应用，仅按增量偏移后续 span。
+ * - 编辑落在 span 区间内（哪怕只咬了一口）→ 把整段 span 从 *旧文本* 中摘掉，
+ *   本次用户的局部编辑一并丢弃；产生"一次 backspace 擦除整条 @mention"的手感。
+ *
+ * 之所以用 diff 而不是依赖光标位置，是因为 AutoResizeTextarea 只吐 `String`；
+ * 只能靠新旧文本的公共前后缀推断变更区间。覆盖"末尾退格"主场景足矣。
+ */
+private fun resolveMentionEdit(
+    oldText: String,
+    newText: String,
+    oldSpans: List<MentionSpan>,
+): Pair<String, List<MentionSpan>> {
+    if (oldText == newText) return newText to oldSpans
+    val minLen = minOf(oldText.length, newText.length)
+    var p = 0
+    while (p < minLen && oldText[p] == newText[p]) p++
+    var s = 0
+    while (s < minLen - p && oldText[oldText.length - 1 - s] == newText[newText.length - 1 - s]) s++
+    val changeEndOld = oldText.length - s
+    val delta = newText.length - oldText.length
+    val damaged = oldSpans.filter { it.end > p && it.start < changeEndOld }
+    if (damaged.isEmpty()) {
+        val shifted = oldSpans.map { span ->
+            if (span.end <= p) span
+            else MentionSpan(span.start + delta, span.end + delta, span.userId)
+        }
+        return newText to shifted
+    }
+    var output = oldText
+    for (span in damaged.sortedByDescending { it.start }) {
+        output = output.removeRange(span.start, span.end)
+    }
+    val survivors = oldSpans
+        .filter { it !in damaged }
+        .map { span ->
+            val removedBefore = damaged
+                .filter { it.end <= span.start }
+                .sumOf { it.end - it.start }
+            MentionSpan(span.start - removedBefore, span.end - removedBefore, span.userId)
+        }
+    return output to survivors
+}
+
+/** 在备注/昵称上做前缀匹配（忽略大小写）。*/
+private fun matchMemberQuery(member: GroupMemberEntry, query: String): Boolean {
+    val q = query.lowercase()
+    return member.name.lowercase().contains(q) || member.remark.lowercase().contains(q)
+}
+
+/**
+ * @ 提及选择器：垂直列表锚定在输入栏上方。
+ *
+ * 列表高度受限，支持滚动；每项点击后由父级替换输入文本并关闭 picker。
+ */
+@Composable
+private fun MentionPicker(
+    members: List<GroupMemberEntry>,
+    onPick: (GroupMemberEntry) -> Unit,
+) {
+    val colors = Theme.colors
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 220.dp)
+            .background(colors.surface)
+            .border(width = 1.dp, color = colors.divider, shape = RoundedCornerShape(0.dp)),
+    ) {
+        ScrollView(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                members.forEach { member ->
+                    val displayName = member.remark.ifBlank { member.name }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onPick(member) }
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        ChatAvatar(
+                            url = member.avatar.takeIf { it.isNotBlank() },
+                            name = displayName,
+                            size = AvatarSpecs.Size.small,
+                        )
+                        HorizontalSpacer(10.dp)
+                        Text(
+                            text = displayName,
+                            style = Typography.BodyMedium,
+                            color = colors.textPrimary,
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(colors.divider),
+                    )
+                }
+            }
+        }
+    }
 }

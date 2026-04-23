@@ -5,6 +5,8 @@ import com.netonstream.privchat.sdk.ConnectionState
 import com.netonstream.privchat.sdk.dto.*
 import com.netonstream.privchat.ui.models.ChannelLocalState
 import com.netonstream.privchat.ui.models.UIState
+import com.netonstream.privchat.ui.platform.DraftStore
+import com.netonstream.privchat.ui.platform.PersistedDraft
 import com.netonstream.privchat.ui.common.base.currentTimeMillis
 import com.netonstream.privchat.ui.common.base.systemDefaultTimeZoneId
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -263,6 +265,27 @@ object PrivChat {
      */
     fun init(client: PrivchatClient) {
         _client = client
+        restoreDraftsFromPersistence()
+    }
+
+    /**
+     * 把平台层（SharedPreferences / NSUserDefaults）里持久化的草稿合并进 `_channelLocalStates`。
+     *
+     * UX-9：应用冷启或重登后输入框需要自动恢复草稿与回复态。调用方式由 `init()` 触发，
+     * 也允许在会话列表刷新后再次调用做合并（以 store 里的版本为权威）。
+     */
+    fun restoreDraftsFromPersistence() {
+        val persisted = runCatching { DraftStore.loadAll() }.getOrNull().orEmpty()
+        if (persisted.isEmpty()) return
+        val current = _channelLocalStates.value.toMutableMap()
+        for ((id, draft) in persisted) {
+            val existing = current[id] ?: ChannelLocalState(channelId = id)
+            current[id] = existing.copy(
+                draftText = draft.text,
+                draftReplyTo = draft.replyTo,
+            )
+        }
+        _channelLocalStates.value = current
     }
 
     /**
@@ -698,17 +721,24 @@ object PrivChat {
 
     // ========== 本地状态管理 ==========
 
-    /** 保存草稿 */
+    /**
+     * 保存草稿（UX-9）。
+     *
+     * 变更同时写入内存 StateFlow 与平台 KV（DraftStore）；调用方无需关心持久化时机。
+     * 传入空文本且无 replyTo 时直接删除该 channel 的草稿条目。
+     */
     fun saveDraft(channelId: ULong, text: String?, replyTo: ULong? = null) {
         val current = _channelLocalStates.value.toMutableMap()
         if (text.isNullOrBlank() && replyTo == null) {
             current.remove(channelId)
+            runCatching { DraftStore.save(channelId, null) }
         } else {
-            current[channelId] = ChannelLocalState(
-                channelId = channelId,
+            val existing = current[channelId] ?: ChannelLocalState(channelId = channelId)
+            current[channelId] = existing.copy(
                 draftText = text,
-                draftReplyTo = replyTo
+                draftReplyTo = replyTo,
             )
+            runCatching { DraftStore.save(channelId, PersistedDraft(text = text, replyTo = replyTo)) }
         }
         _channelLocalStates.value = current
     }

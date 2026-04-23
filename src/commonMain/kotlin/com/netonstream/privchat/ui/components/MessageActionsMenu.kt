@@ -1,12 +1,14 @@
 package com.netonstream.privchat.ui.components
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import com.gearui.Spacing
 import com.gearui.foundation.primitives.Icon
 import com.gearui.foundation.primitives.Text
@@ -59,6 +61,18 @@ import kotlinx.coroutines.delay
 val DefaultMessageReactions: List<String> = listOf("👍", "❤️", "😂", "🎉", "🔥", "👀")
 
 /**
+ * 由 [MessageActionsMenu] 向 bubble 内部下发的「打开长按菜单」回调。
+ *
+ * 普通气泡（文本/语音等）直接靠 MessageActionsMenu 外层 `detectTapGestures(onLongPress)` 触发。
+ * 但图片 / 视频气泡内部自带 `onTap` 用于大图预览，与外层长按在 Kuikly 的手势分发下会互相冲突
+ * （`Modifier.clickable` 在 Main pass 消费 down，外层永远收不到 long-press）。
+ *
+ * 因此给 bubble 内容透出一个手动触发器：图片/视频内容使用 `detectTapGestures(onTap, onLongPress)`
+ * 自行处理两种手势，长按时调用本 local 打开菜单。
+ */
+val LocalMessageMenuTrigger = staticCompositionLocalOf<(() -> Unit)?> { null }
+
+/**
  * 长按消息时弹出的 action list 单项。
  *
  * @param label 文本
@@ -108,6 +122,11 @@ fun MessageActionsMenu(
     onReaction: ((String) -> Unit)? = null,
     onMoreReactions: (() -> Unit)? = null,
     isSelf: Boolean = false,
+    /**
+     * `pointerInput` 的 key。LazyColumn 回收 item 时默认 `Unit` 会让同一手势块跨消息复用，
+     * 滚动后再长按可能拿不到 down 事件。调用方应传入稳定的 message 标识（如 message.id）。
+     */
+    pointerInputKey: Any = Unit,
     bubble: @Composable () -> Unit,
 ) {
     val overlay = rememberGearOverlay()
@@ -174,16 +193,20 @@ fun MessageActionsMenu(
         }
     }
 
+    val openMenu: () -> Unit = remember { { if (!visible) visible = true } }
+
     Box(
         modifier = modifier
             .onGloballyPositioned { coordinates ->
                 anchorBounds = coordinates.boundsInRoot()
             }
-            .pointerInput(Unit) {
-                detectTapGestures(onLongPress = { if (!visible) visible = true })
+            .pointerInput(pointerInputKey) {
+                detectTapGestures(onLongPress = { openMenu() })
             },
     ) {
-        bubble()
+        CompositionLocalProvider(LocalMessageMenuTrigger provides openMenu) {
+            bubble()
+        }
     }
 }
 

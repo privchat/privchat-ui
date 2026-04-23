@@ -3,14 +3,21 @@ package com.netonstream.privchat.ui.components
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import com.netonstream.privchat.sdk.dto.MessageEntry
 import com.netonstream.privchat.sdk.dto.MessageStatus
 import com.netonstream.privchat.ui.media.MediaDownloadManager
 import com.netonstream.privchat.ui.media.MediaDownloadState
 import com.netonstream.privchat.ui.media.MediaOpener
 import com.netonstream.privchat.ui.models.*
+import com.netonstream.privchat.ui.platform.ClipboardBridge
+import com.netonstream.privchat.ui.platform.ExternalLinkBridge
 import com.netonstream.privchat.ui.utils.Formatter
+import com.netonstream.privchat.ui.utils.MessageEntityDetector
 import com.netonstream.privchat.ui.voice.VoicePlayback
+import com.gearui.components.actionsheet.ActionSheet
+import com.gearui.components.actionsheet.ActionSheetItem
+import com.gearui.components.toast.Toast
 import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.typography.Typography
@@ -31,6 +38,7 @@ import com.tencent.kuikly.compose.coil3.rememberAsyncImagePainter
 import com.tencent.kuikly.compose.foundation.Image
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.clickable
+import com.tencent.kuikly.compose.foundation.gestures.detectTapGestures
 import com.tencent.kuikly.compose.foundation.layout.*
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.collectAsState
@@ -38,8 +46,17 @@ import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.draw.clip
 import com.tencent.kuikly.compose.ui.graphics.Color
+import com.tencent.kuikly.compose.ui.input.pointer.pointerInput
 import com.tencent.kuikly.compose.ui.layout.ContentScale
+import com.tencent.kuikly.compose.ui.text.LinkAnnotation
+import com.tencent.kuikly.compose.ui.text.LinkInteractionListener
+import com.tencent.kuikly.compose.ui.text.SpanStyle
+import com.tencent.kuikly.compose.ui.text.TextLinkStyles
+import com.tencent.kuikly.compose.ui.text.buildAnnotatedString
+import com.tencent.kuikly.compose.ui.text.style.TextDecoration
+import com.tencent.kuikly.compose.ui.text.withLink
 import com.tencent.kuikly.compose.ui.unit.dp
+import com.tencent.kuikly.compose.material3.Text as KuiklyText
 
 /**
  * 消息内容渲染组件
@@ -109,18 +126,139 @@ fun MessageContent(
 }
 
 /**
- * 文本消息
+ * 文本消息。
+ *
+ * UX-3 / UX-4：在客户端识别 URL / 电话 / 邮箱，并把命中的区间渲染为带下划线、
+ * 可点击的 span（Kuikly AnnotatedString + `LinkAnnotation.Clickable`）。
+ * 点击任意实体弹出 `ActionSheet`，按类型分派 打开/拨号/发短信/发邮件/复制 等动作。
+ * 若文本中未识别到任何实体，仍走 gearui 的 `Text(String)`，避免无谓的 AnnotatedString 开销。
  */
 @Composable
 private fun TextContent(
     parsed: ParsedContent,
     textColor: Color,
 ) {
-    Text(
-        text = parsed.text ?: "",
-        style = Typography.BodyMedium,
-        color = textColor,
+    val text = parsed.text ?: ""
+    val entities = remember(text) { MessageEntityDetector.detect(text) }
+    if (entities.isEmpty()) {
+        Text(
+            text = text,
+            style = Typography.BodyMedium,
+            color = textColor,
+        )
+        return
+    }
+
+    val bodyStyle = Typography.BodyMedium
+    val linkColor = Theme.colors.primary
+    val linkStyle = TextLinkStyles(
+        style = SpanStyle(
+            color = linkColor,
+            textDecoration = TextDecoration.Underline,
+        ),
     )
+
+    val annotated = buildAnnotatedString {
+        var cursor = 0
+        entities.forEachIndexed { index, entity ->
+            if (entity.start > cursor) {
+                append(text.substring(cursor, entity.start))
+            }
+            withLink(
+                LinkAnnotation.Clickable(
+                    tag = "entity-$index",
+                    styles = linkStyle,
+                    linkInteractionListener = LinkInteractionListener { showEntityActionSheet(entity) },
+                ),
+            ) {
+                append(entity.text)
+            }
+            cursor = entity.end
+        }
+        if (cursor < text.length) {
+            append(text.substring(cursor))
+        }
+    }
+
+    KuiklyText(
+        text = annotated,
+        color = textColor,
+        fontSize = bodyStyle.fontSize,
+        fontWeight = bodyStyle.fontWeight,
+        lineHeight = bodyStyle.lineHeight,
+    )
+}
+
+/**
+ * 按实体类型弹出 ActionSheet；调用方只需传入一个 `Entity`，
+ * 所有 “打开链接 / 拨号 / 发短信 / 发邮件 / 复制” 都封装在这里。
+ * 依赖页面根部已挂载 `ActionSheet.Host()`（见 MessagePage）。
+ */
+private fun showEntityActionSheet(entity: MessageEntityDetector.Entity) {
+    when (entity.type) {
+        MessageEntityDetector.Type.URL -> {
+            val url = entity.text
+            ActionSheet.showList(
+                items = listOf(
+                    ActionSheetItem(label = "打开链接"),
+                    ActionSheetItem(label = "复制链接"),
+                ),
+                description = url,
+                onSelected = { _, index ->
+                    when (index) {
+                        0 -> if (!ExternalLinkBridge.openUri(url)) Toast.error("无法打开链接")
+                        1 -> {
+                            ClipboardBridge.setText(url)
+                            Toast.success("已复制")
+                        }
+                    }
+                },
+            )
+        }
+
+        MessageEntityDetector.Type.PHONE -> {
+            val phone = entity.text
+            val normalized = phone.filter { it.isDigit() || it == '+' }
+            ActionSheet.showList(
+                items = listOf(
+                    ActionSheetItem(label = "拨号"),
+                    ActionSheetItem(label = "发送短信"),
+                    ActionSheetItem(label = "复制号码"),
+                ),
+                description = phone,
+                onSelected = { _, index ->
+                    when (index) {
+                        0 -> if (!ExternalLinkBridge.openUri("tel:$normalized")) Toast.error("无法打开拨号面板")
+                        1 -> if (!ExternalLinkBridge.openUri("sms:$normalized")) Toast.error("无法打开短信")
+                        2 -> {
+                            ClipboardBridge.setText(phone)
+                            Toast.success("已复制")
+                        }
+                    }
+                },
+            )
+        }
+
+        MessageEntityDetector.Type.EMAIL -> {
+            val email = entity.text
+            ActionSheet.showList(
+                items = listOf(
+                    ActionSheetItem(label = "发送邮件"),
+                    ActionSheetItem(label = "复制邮箱"),
+                ),
+                description = email,
+                onSelected = { _, index ->
+                    when (index) {
+                        0 -> if (!ExternalLinkBridge.openUri("mailto:$email")) Toast.error("无法打开邮件")
+                        1 -> {
+                            ClipboardBridge.setText(email)
+                            Toast.success("已复制")
+                        }
+                    }
+                },
+            )
+        }
+    }
 }
 
 /**
@@ -246,14 +384,21 @@ private fun ImageContent(
             ?: parsed.attachmentUrl
     }
 
-    val clickable = if (onImagePreview != null) {
-        Modifier.clickable { onImagePreview(message) }
+    // UX-2：图片气泡点击预览 + 长按弹菜单。二合一 detectTapGestures 避免与外层长按冲突。
+    val menuTrigger = LocalMessageMenuTrigger.current
+    val gestureMod = if (onImagePreview != null || menuTrigger != null) {
+        Modifier.pointerInput(message.id) {
+            detectTapGestures(
+                onTap = { onImagePreview?.invoke(message) },
+                onLongPress = { menuTrigger?.invoke() },
+            )
+        }
     } else {
         Modifier
     }
 
     Box(
-        modifier = clickable
+        modifier = gestureMod
             .size(width.dp, height.dp)
             .clip(RoundedCornerShape(8.dp))
     ) {
@@ -300,14 +445,21 @@ private fun VideoContent(
             ?: parsed.attachmentUrl
     }
 
-    val clickable = if (onVideoPreview != null) {
-        Modifier.clickable { onVideoPreview(message) }
+    // UX-2：视频气泡点击预览 + 长按弹菜单。
+    val menuTrigger = LocalMessageMenuTrigger.current
+    val gestureMod = if (onVideoPreview != null || menuTrigger != null) {
+        Modifier.pointerInput(message.id) {
+            detectTapGestures(
+                onTap = { onVideoPreview?.invoke(message) },
+                onLongPress = { menuTrigger?.invoke() },
+            )
+        }
     } else {
         Modifier
     }
 
     Box(
-        modifier = clickable
+        modifier = gestureMod
             .size(width.dp, height.dp)
             .clip(RoundedCornerShape(8.dp)),
         contentAlignment = Alignment.Center,
@@ -685,9 +837,10 @@ private fun MessageFooter(
 }
 
 /**
- * 消息状态图标
+ * 消息状态图标 + 文案
  *
  * 优先级（高→低）：已读 > 已送达 > 已发送 > 发送中/失败
+ * 失败态文字可点击触发重试。
  */
 @Composable
 private fun MessageStatusIcon(
@@ -697,12 +850,14 @@ private fun MessageStatusIcon(
     delivered: Boolean = false,
     onFailedClick: (() -> Unit)? = null,
 ) {
-    val (icon, iconColor) = when {
-        status == MessageStatus.Failed -> "❗" to Theme.colors.danger
-        status == MessageStatus.Pending || status == MessageStatus.Sending -> "⏳" to color
-        isReadByPts || status == MessageStatus.Read -> "✓✓" to Theme.colors.primary
-        delivered -> "✓✓" to color
-        else -> "✓" to color
+    val (icon, label, iconColor) = when {
+        status == MessageStatus.Failed -> Triple("❗", "发送失败 · 重试", Theme.colors.danger)
+        status == MessageStatus.Pending || status == MessageStatus.Sending ->
+            Triple("⏳", "发送中", color)
+        isReadByPts || status == MessageStatus.Read ->
+            Triple("✓✓", "已读", Theme.colors.primary)
+        delivered -> Triple("✓✓", "已送达", color)
+        else -> Triple("✓", "已发送", color)
     }
 
     val modifier = if (status == MessageStatus.Failed && onFailedClick != null) {
@@ -711,10 +866,20 @@ private fun MessageStatusIcon(
         Modifier
     }
 
-    Text(
-        text = icon,
-        style = Typography.Label,
-        color = iconColor,
+    Row(
         modifier = modifier,
-    )
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = icon,
+            style = Typography.Label,
+            color = iconColor,
+        )
+        HorizontalSpacer(3.dp)
+        Text(
+            text = label,
+            style = Typography.Label,
+            color = iconColor,
+        )
+    }
 }
