@@ -311,6 +311,12 @@ fun MessagePage(
         }
     }
 
+    // 用 localMessageId（若存在）作为 LazyColumn item key：出站消息在 placeholder → 服务端确认时
+    // DB id 会变（旧 placeholder 行被删、真实行被新建），但 localMessageId 保持不变，
+    // 用它做 key 可以让 LazyColumn 复用同一个 slot，避免状态更新时重建 row。
+    fun MessageEntry.stableKey(): ULong =
+        localMessageId?.takeIf { it > 0uL } ?: id
+
     // 首次进入直接定位到底部，并在定位完成前隐藏列表，避免看到"从上滚到下"。
     LaunchedEffect(channel.channelId, sortedMessages.lastOrNull()?.id, sortedMessages.size) {
         if (sortedMessages.isEmpty()) return@LaunchedEffect
@@ -362,6 +368,13 @@ fun MessagePage(
         if (currentBottomInset.value < baselineBottomInset) baselineBottomInset = currentBottomInset.value
         val keyboardVisible = currentBottomInset.value > baselineBottomInset + 80f
         if (keyboardVisible && sortedMessages.isNotEmpty()) {
+            listState.animateScrollToItem(sortedMessages.size - 1)
+        }
+    }
+
+    // 表情/+ 面板弹起时同样滚到底部（面板是应用内的 layout 变化，没有系统 inset 事件）
+    LaunchedEffect(hasOpenInputPanel) {
+        if (hasOpenInputPanel && sortedMessages.isNotEmpty()) {
             listState.animateScrollToItem(sortedMessages.size - 1)
         }
     }
@@ -437,7 +450,10 @@ fun MessagePage(
                                 .alpha(if (initialPositioned || sortedMessages.isEmpty()) 1f else 0f),
                             state = listState,
                         ) {
-                            items(sortedMessages.size) { index ->
+                            items(
+                                count = sortedMessages.size,
+                                key = { sortedMessages[it].stableKey().toLong() },
+                            ) { index ->
                                 val message = sortedMessages[index]
                                 val isSelf = currentUserId?.let { message.isSelf(it) } ?: false
 
@@ -1311,6 +1327,7 @@ private fun MessageInputBar(
         }
     }
 
+
     LaunchedEffect(panelMode, displayedPanelMode, pendingPanelMode, reservePanelHost, overlayReservedPanelHost, inputFocused, keyboardVisible, hostVisible) {
         logMessageInputBar(
             "state panelMode=$panelMode displayed=$displayedPanelMode pending=$pendingPanelMode reserve=$reservePanelHost overlayReserve=$overlayReservedPanelHost hostVisible=$hostVisible focused=$inputFocused keyboardVisible=$keyboardVisible inset=${safeAreaBottom.value}"
@@ -1466,13 +1483,7 @@ private fun MessageInputBar(
                         size = ButtonSize.SMALL,
                         disabled = loading,
                         loading = loading,
-                        onClick = {
-                            // 先锁住键盘，再发送（发送会清空 text 触发 recompose，可能导致焦点丢失）
-                            if (displayedPanelMode == InputPanelMode.NONE) {
-                                keyboardController?.show()
-                            }
-                            onSend()
-                        },
+                        onClick = { onSend() },
                     )
                 } else {
                 CircleIconButton(
