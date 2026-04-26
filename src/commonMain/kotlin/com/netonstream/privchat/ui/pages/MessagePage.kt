@@ -18,6 +18,9 @@ import com.netonstream.privchat.ui.components.MessageActionKind
 import com.netonstream.privchat.ui.components.MessageActionPolicy
 import com.netonstream.privchat.ui.components.MessageActionsMenu
 import com.netonstream.privchat.ui.components.MessageContent
+import com.netonstream.privchat.ui.media.MediaDownloadManager
+import com.netonstream.privchat.ui.media.MediaDownloadState
+import com.netonstream.privchat.ui.media.MediaSaver
 import com.netonstream.privchat.ui.platform.ClipboardBridge
 import com.tencent.kuikly.compose.foundation.gestures.detectTapGestures
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.offlineStatus
@@ -2220,7 +2223,23 @@ private fun MessageActionsWrapper(
                         else -> { /* Policy 不会派发到其他类型 */ }
                     }
                 }
-                MessageActionKind.SaveImage -> Toast.show("保存图片功能即将支持")
+                MessageActionKind.SaveImage -> {
+                    scope.launch {
+                        val localPath = resolveLocalImagePath(message)
+                        if (localPath == null) {
+                            Toast.error("保存失败：图片未下载完成")
+                            return@launch
+                        }
+                        Toast.show("正在保存…")
+                        val result = withContext(Dispatchers.Default) {
+                            MediaSaver.saveImage(localPath)
+                        }
+                        result.fold(
+                            onSuccess = { Toast.success("已保存到相册") },
+                            onFailure = { Toast.error(it.message ?: "保存失败") },
+                        )
+                    }
+                }
                 MessageActionKind.Recall -> {
                     scope.launch {
                         if (message.status == MessageStatus.Failed) {
@@ -2328,6 +2347,40 @@ private fun MessageActionKind.toMessageAction(
     }
     MessageActionKind.Select ->
         MessageAction(label = "选择", icon = Icons.check_box_outline_blank, onClick = onClick)
+}
+
+/**
+ * 解析消息对应的本地原图绝对路径：
+ * - 已有 [MessageEntry.localMediaPath] 直接返回；
+ * - 否则尝试拉一次最新的 PrivChat.messages 缓存（覆盖刚下载完未刷的场景）；
+ * - 仍没有则 trigger MediaDownloadManager.start，并最多等 30s 直到 Done。
+ *
+ * 不阻塞 UI；失败返回 null，调用方负责 Toast 提示。
+ */
+private suspend fun resolveLocalImagePath(message: MessageEntry): String? {
+    message.localMediaPath?.takeIf { it.isNotBlank() }?.let { return it }
+
+    PrivChat.messages.value.firstOrNull { it.id == message.id }
+        ?.localMediaPath?.takeIf { it.isNotBlank() }
+        ?.let { return it }
+
+    MediaDownloadManager.start(message)
+    val timeoutMs = 30_000L
+    val pollMs = 250L
+    var waited = 0L
+    while (waited < timeoutMs) {
+        val state = MediaDownloadManager.states.value[message.id]
+        if (state is MediaDownloadState.Done) {
+            return state.path.takeIf { it.isNotBlank() }
+        }
+        if (state is MediaDownloadState.Failed) return null
+        PrivChat.messages.value.firstOrNull { it.id == message.id }
+            ?.localMediaPath?.takeIf { it.isNotBlank() }
+            ?.let { return it }
+        delay(pollMs)
+        waited += pollMs
+    }
+    return null
 }
 
 // ==================== REPLY_SPEC 辅助 ====================
