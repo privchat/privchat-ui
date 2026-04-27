@@ -4,11 +4,19 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.os.Build
+import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 
 actual object MessageAlertController {
+
+    /**
+     * 同一时间窗口内只响一次，避免离线追平时一次推 100 条消息就响 100 声。
+     * 取 3 秒覆盖典型批量到达；普通节奏聊天也合并到一次提示，与 WeChat 一致。
+     */
+    private const val MIN_INTERVAL_MS: Long = 3_000L
+    private var lastPlayedAtMs: Long = 0L
 
     private var appContext: Context? = null
 
@@ -22,6 +30,9 @@ actual object MessageAlertController {
 
     actual fun playIncomingMessageAlert() {
         val ctx = appContext ?: return
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastPlayedAtMs < MIN_INTERVAL_MS) return
+        lastPlayedAtMs = now
         playSound(ctx)
         vibrate(ctx)
     }
