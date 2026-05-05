@@ -1,12 +1,6 @@
 package com.netonstream.privchat.ui.i18n
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.staticCompositionLocalOf
-import com.gearui.i18n.normalizeLanguageTag
-import com.gearui.i18n.resolveLanguagePack
 
 /**
  * PrivChat 多语言字符串定义
@@ -264,7 +258,7 @@ data class PrivChatStrings(
 /**
  * 内置语言包
  */
-object PrivChatStringSets {
+object PrivChatStringPacks {
 
     val Chinese = PrivChatStrings(
         // 通用
@@ -782,63 +776,4 @@ object PrivChatStringSets {
         VIETNAMESE_TAG to Vietnamese,
         "vi" to Vietnamese,
     )
-}
-
-/**
- * CompositionLocal 存储当前语言包
- */
-val LocalPrivChatStrings = staticCompositionLocalOf {
-    PrivChatStringSets.Chinese  // 默认中文
-}
-
-val LocalPrivChatLanguageTag = staticCompositionLocalOf {
-    PrivChatStringSets.CHINESE_SIMPLIFIED_TAG
-}
-
-/**
- * PrivChat 国际化包装 Composable
- */
-@Composable
-fun PrivChatI18n(
-    strings: PrivChatStrings = PrivChatStringSets.Chinese,
-    content: @Composable () -> Unit
-) {
-    CompositionLocalProvider(
-        LocalPrivChatStrings provides strings,
-        LocalPrivChatLanguageTag provides PrivChatStringSets.CHINESE_SIMPLIFIED_TAG,
-        content = content
-    )
-}
-
-@Composable
-fun PrivChatI18n(
-    languageTag: String,
-    packs: Map<String, PrivChatStrings> = PrivChatStringSets.builtIn,
-    defaultTag: String = PrivChatStringSets.DEFAULT_LANGUAGE_TAG,
-    content: @Composable () -> Unit
-) {
-    val normalizedTag = remember(languageTag) { normalizeLanguageTag(languageTag) }
-    val strings = remember(normalizedTag, packs, defaultTag) {
-        resolveLanguagePack(
-            languageTag = normalizedTag,
-            packs = packs,
-            defaultTag = defaultTag,
-        )
-    }
-    CompositionLocalProvider(
-        LocalPrivChatStrings provides strings,
-        LocalPrivChatLanguageTag provides normalizedTag,
-        content = content
-    )
-}
-
-/**
- * 获取当前语言包的便捷访问器
- */
-object PrivChatI18n {
-    val strings: PrivChatStrings
-        @Composable get() = LocalPrivChatStrings.current
-
-    val languageTag: String
-        @Composable get() = LocalPrivChatLanguageTag.current
 }
