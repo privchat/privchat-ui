@@ -38,6 +38,7 @@ import kotlinx.coroutines.launch
  * @param onMuteChange 免打扰状态变化回调
  * @param onPinChange 置顶状态变化回调
  * @param onLeaveGroup 退出群聊回调
+ * @param showMute 是否显示消息免打扰开关（默认显示；客服等单一会话场景可隐藏）
  * @param modifier Modifier
  */
 @Composable
@@ -53,6 +54,7 @@ fun ChatSettingsPage(
     onMuteChange: suspend (Boolean) -> Result<Boolean> = { Result.success(it) },
     onPinChange: suspend (Boolean) -> Result<Boolean> = { Result.success(it) },
     onLeaveGroup: suspend () -> Result<Boolean> = { Result.success(true) },
+    showMute: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val strings = PrivChatI18n.strings
@@ -133,22 +135,24 @@ fun ChatSettingsPage(
             }
 
             // 消息免打扰
-            item {
-                Cell(
-                    title = strings.chatSettingsMute,
-                    trailing = {
-                        Switch(
-                            checked = isMuted,
-                            onCheckedChange = { newValue ->
-                                scope.launch {
-                                    onMuteChange(newValue).onSuccess {
-                                        isMuted = newValue
+            if (showMute) {
+                item {
+                    Cell(
+                        title = strings.chatSettingsMute,
+                        trailing = {
+                            Switch(
+                                checked = isMuted,
+                                onCheckedChange = { newValue ->
+                                    scope.launch {
+                                        onMuteChange(newValue).onSuccess {
+                                            isMuted = newValue
+                                        }
                                     }
                                 }
-                            }
-                        )
-                    },
-                )
+                            )
+                        },
+                    )
+                }
             }
 
             // 置顶聊天
