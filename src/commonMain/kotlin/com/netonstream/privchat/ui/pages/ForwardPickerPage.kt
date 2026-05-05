@@ -12,8 +12,8 @@ import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.typography.Typography
 import com.gearui.foundation.AvatarSpecs
-import com.gearui.runtime.LocalGearRuntimeEnvironment
-import com.gearui.runtime.LocalGearRuntimeFlags
+import com.gearui.runtime.LocalRuntimeEnvironment
+import com.gearui.runtime.LocalRuntimeFlags
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.cell.Cell
 import com.gearui.components.checkbox.Checkbox
@@ -96,8 +96,8 @@ fun ForwardPickerPage(
     modifier: Modifier = Modifier,
 ) {
     val colors = Theme.colors
-    val runtimeFlags = LocalGearRuntimeFlags.current
-    val runtimeEnvironment = LocalGearRuntimeEnvironment.current
+    val runtimeFlags = LocalRuntimeFlags.current
+    val runtimeEnvironment = LocalRuntimeEnvironment.current
     val safeAreaBottom = if (runtimeFlags.unifiedSafeAreaPipeline) {
         runtimeEnvironment.safeArea.bottom
     } else {

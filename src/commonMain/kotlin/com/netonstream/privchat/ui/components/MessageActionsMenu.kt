@@ -14,11 +14,11 @@ import com.gearui.foundation.primitives.Icon
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.typography.IconSizes
 import com.gearui.foundation.typography.Typography
-import com.gearui.overlay.GearOverlayOptions
-import com.gearui.overlay.GearOverlayPlacement
+import com.gearui.overlay.OverlayOptions
+import com.gearui.overlay.OverlayPlacement
 import com.gearui.overlay.OverlayDismissPolicy
-import com.gearui.overlay.rememberGearOverlay
-import com.gearui.runtime.LocalGearRuntimeEnvironment
+import com.gearui.overlay.rememberOverlay
+import com.gearui.runtime.LocalRuntimeEnvironment
 import com.gearui.theme.Theme
 import com.tencent.kuikly.compose.animation.core.animateFloatAsState
 import com.tencent.kuikly.compose.animation.core.animateIntAsState
@@ -129,7 +129,7 @@ fun MessageActionsMenu(
     pointerInputKey: Any = Unit,
     bubble: @Composable () -> Unit,
 ) {
-    val overlay = rememberGearOverlay()
+    val overlay = rememberOverlay()
 
     var visible by remember { mutableStateOf(false) }
     var anchorBounds by remember { mutableStateOf<Rect?>(null) }
@@ -142,8 +142,8 @@ fun MessageActionsMenu(
         DisposableEffect(bounds) {
             val id = overlay.show(
                 anchorBounds = null, // Fullscreen 不依赖 anchor
-                options = GearOverlayOptions(
-                    placement = GearOverlayPlacement.Fullscreen,
+                options = OverlayOptions(
+                    placement = OverlayPlacement.Fullscreen,
                     modal = true,
                     // 自绘遮罩，用于做淡入；这里把 overlay 自带遮罩关掉。
                     maskColor = Color.Transparent,
@@ -230,7 +230,7 @@ private fun MessageActionsOverlayContent(
     val edgePaddingPx = with(density) { 16.dp.roundToPx() }
 
     // overlay 的 Fullscreen 内容盒子被 safeArea 内缩过，遮罩需要向外反扩回去。
-    val safeArea = LocalGearRuntimeEnvironment.current.safeArea
+    val safeArea = LocalRuntimeEnvironment.current.safeArea
     val safeTopPx = with(density) { safeArea.top.roundToPx() }
     val safeBottomPx = with(density) { safeArea.bottom.roundToPx() }
     val safeLeftPx = with(density) { safeArea.left.roundToPx() }

@@ -56,7 +56,7 @@ import com.gearui.components.toast.Toast
 import com.gearui.components.swiper.Swiper
 import com.gearui.components.swiper.SwiperNavigation
 import com.gearui.components.swiper.SwiperIndicatorPosition
-import com.gearui.runtime.LocalGearRuntimeEnvironment
+import com.gearui.runtime.LocalRuntimeEnvironment
 import com.tencent.kuikly.compose.ui.platform.LocalSoftwareKeyboardController
 import com.tencent.kuikly.compose.ui.platform.LocalFocusManager
 import com.tencent.kuikly.compose.ui.focus.FocusRequester
@@ -160,7 +160,7 @@ fun MessagePage(
     val peerReadPts = peerReadPtsMap[channel.channelId]
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
-    val runtimeEnv = LocalGearRuntimeEnvironment.current
+    val runtimeEnv = LocalRuntimeEnvironment.current
     val sortedMessages = messages
     // REPLY_SPEC §4.3：按 server_message_id 建立索引，引用气泡渲染时 O(1) 定位原消息。
     val messagesByServerId = remember(sortedMessages) {
