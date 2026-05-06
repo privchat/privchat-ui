@@ -146,6 +146,17 @@ data class PrivChatStringsPatch(
     val profileLoadFailed: String? = null,
     val profileUpdateFailed: String? = null,
     val profileSessionExpired: String? = null,
+    val settingsUsernameRule: String? = null,
+    val settingsUsernameLockedDaysPrefix: String? = null,
+    val settingsUsernameLockedDaysSuffix: String? = null,
+    val settingsUsernameErrorInvalidFormat: String? = null,
+    val settingsUsernameErrorReserved: String? = null,
+    val settingsUsernameErrorTaken: String? = null,
+    val settingsUsernameErrorRateLimited: String? = null,
+    val settingsMobileNotEditableTip: String? = null,
+    val profileAvatarUploading: String? = null,
+    val profileAvatarPendingSave: String? = null,
+    val profileAvatarChange: String? = null,
     val settingsFriendPermission: String? = null,
     val settingsAppearance: String? = null,
     val settingsLanguage: String? = null,
@@ -350,6 +361,17 @@ val PrivChatStringsPatch.isEmpty: Boolean
         profileLoadFailed == null &&
         profileUpdateFailed == null &&
         profileSessionExpired == null &&
+        settingsUsernameRule == null &&
+        settingsUsernameLockedDaysPrefix == null &&
+        settingsUsernameLockedDaysSuffix == null &&
+        settingsUsernameErrorInvalidFormat == null &&
+        settingsUsernameErrorReserved == null &&
+        settingsUsernameErrorTaken == null &&
+        settingsUsernameErrorRateLimited == null &&
+        settingsMobileNotEditableTip == null &&
+        profileAvatarUploading == null &&
+        profileAvatarPendingSave == null &&
+        profileAvatarChange == null &&
         settingsFriendPermission == null &&
         settingsAppearance == null &&
         settingsLanguage == null &&
@@ -559,6 +581,17 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         profileLoadFailed = patch.profileLoadFailed ?: profileLoadFailed,
         profileUpdateFailed = patch.profileUpdateFailed ?: profileUpdateFailed,
         profileSessionExpired = patch.profileSessionExpired ?: profileSessionExpired,
+        settingsUsernameRule = patch.settingsUsernameRule ?: settingsUsernameRule,
+        settingsUsernameLockedDaysPrefix = patch.settingsUsernameLockedDaysPrefix ?: settingsUsernameLockedDaysPrefix,
+        settingsUsernameLockedDaysSuffix = patch.settingsUsernameLockedDaysSuffix ?: settingsUsernameLockedDaysSuffix,
+        settingsUsernameErrorInvalidFormat = patch.settingsUsernameErrorInvalidFormat ?: settingsUsernameErrorInvalidFormat,
+        settingsUsernameErrorReserved = patch.settingsUsernameErrorReserved ?: settingsUsernameErrorReserved,
+        settingsUsernameErrorTaken = patch.settingsUsernameErrorTaken ?: settingsUsernameErrorTaken,
+        settingsUsernameErrorRateLimited = patch.settingsUsernameErrorRateLimited ?: settingsUsernameErrorRateLimited,
+        settingsMobileNotEditableTip = patch.settingsMobileNotEditableTip ?: settingsMobileNotEditableTip,
+        profileAvatarUploading = patch.profileAvatarUploading ?: profileAvatarUploading,
+        profileAvatarPendingSave = patch.profileAvatarPendingSave ?: profileAvatarPendingSave,
+        profileAvatarChange = patch.profileAvatarChange ?: profileAvatarChange,
         settingsFriendPermission = patch.settingsFriendPermission ?: settingsFriendPermission,
         settingsAppearance = patch.settingsAppearance ?: settingsAppearance,
         settingsLanguage = patch.settingsLanguage ?: settingsLanguage,
