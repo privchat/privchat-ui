@@ -164,6 +164,7 @@ val PrivChatStringsViVn = PrivChatStrings(
     profileLoadFailed = "Tải hồ sơ thất bại",
     profileUpdateFailed = "Lưu thất bại",
     profileSessionExpired = "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại",
+    profileBuiltinSaveUnsupported = "Chế độ không phải PLATFORM không hỗ trợ lưu",
     settingsUsernameRule = "3–32 ký tự, bắt đầu bằng chữ thường; chỉ chứa chữ, số, gạch dưới",
     settingsUsernameLockedDaysPrefix = "Còn ",
     settingsUsernameLockedDaysSuffix = " ngày nữa mới có thể đổi lại",

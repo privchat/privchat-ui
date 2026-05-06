@@ -83,6 +83,14 @@ fun MessageContent(
     val secondaryTextColor = if (isSelf) colors.onBubbleSelf.copy(alpha = 0.7f) else colors.textSecondary
 
     val parsed = message.parsedContent
+    // [TRACE] 排查 Bug2：气泡右下角时间+状态不显示。footer 只在 parsed.type == SYSTEM 时
+    // 被跳过——但走到这里说明已经按 BUBBLE 渲染（RenderType.BUBBLE）。如果 parsed.type 是
+    // SYSTEM，意味着 contentType() != SYSTEM 但 parseMessageType(messageType, content, extra)
+    // 还是把这条消息归到 SYSTEM——典型成因：messageType 落在 [0..10] 之外（fromValue 返 null →
+    // BUBBLE 渲染），又走 else 分支扫到 content 里的 "type":"tip" / "system" 标志。
+    if (parsed.type == MessageType.SYSTEM) {
+        println("[MsgNoFooter] id=${message.id} svr=${message.serverMessageId} status=${message.status} mtype=${message.messageType} parsedType=${parsed.type} text=[${parsed.text}] content=[${message.content}] extra=[${message.extra}] revoked=${message.isRevoked}")
+    }
 
     Column(modifier = modifier.padding(10.dp)) {
         // 根据消息类型渲染内容
@@ -138,7 +146,8 @@ private fun TextContent(
     parsed: ParsedContent,
     textColor: Color,
 ) {
-    val text = parsed.text ?: ""
+    // 渲染前 trim 头尾空白：发送方常误带前后换行 / 空格，气泡内显示时去掉以贴合 IM 习惯。
+    val text = (parsed.text ?: "").trim()
     val entities = remember(text) { MessageEntityDetector.detect(text) }
     if (entities.isEmpty()) {
         Text(

@@ -146,6 +146,7 @@ data class PrivChatStringsPatch(
     val profileLoadFailed: String? = null,
     val profileUpdateFailed: String? = null,
     val profileSessionExpired: String? = null,
+    val profileBuiltinSaveUnsupported: String? = null,
     val settingsUsernameRule: String? = null,
     val settingsUsernameLockedDaysPrefix: String? = null,
     val settingsUsernameLockedDaysSuffix: String? = null,
@@ -361,6 +362,7 @@ val PrivChatStringsPatch.isEmpty: Boolean
         profileLoadFailed == null &&
         profileUpdateFailed == null &&
         profileSessionExpired == null &&
+        profileBuiltinSaveUnsupported == null &&
         settingsUsernameRule == null &&
         settingsUsernameLockedDaysPrefix == null &&
         settingsUsernameLockedDaysSuffix == null &&
@@ -581,6 +583,7 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         profileLoadFailed = patch.profileLoadFailed ?: profileLoadFailed,
         profileUpdateFailed = patch.profileUpdateFailed ?: profileUpdateFailed,
         profileSessionExpired = patch.profileSessionExpired ?: profileSessionExpired,
+        profileBuiltinSaveUnsupported = patch.profileBuiltinSaveUnsupported ?: profileBuiltinSaveUnsupported,
         settingsUsernameRule = patch.settingsUsernameRule ?: settingsUsernameRule,
         settingsUsernameLockedDaysPrefix = patch.settingsUsernameLockedDaysPrefix ?: settingsUsernameLockedDaysPrefix,
         settingsUsernameLockedDaysSuffix = patch.settingsUsernameLockedDaysSuffix ?: settingsUsernameLockedDaysSuffix,

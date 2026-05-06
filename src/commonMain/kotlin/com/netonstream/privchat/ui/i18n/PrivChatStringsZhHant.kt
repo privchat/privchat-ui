@@ -164,6 +164,7 @@ val PrivChatStringsZhHant = PrivChatStrings(
     profileLoadFailed = "資料載入失敗",
     profileUpdateFailed = "儲存失敗",
     profileSessionExpired = "登入狀態已失效，請重新登入",
+    profileBuiltinSaveUnsupported = "非 PLATFORM 模式不支持儲存",
     settingsUsernameRule = "3–32 個字元，小寫字母開頭，可含字母、數字、底線",
     settingsUsernameLockedDaysPrefix = "還需 ",
     settingsUsernameLockedDaysSuffix = " 天後可再次修改",
