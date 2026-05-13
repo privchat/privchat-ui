@@ -52,11 +52,21 @@ fun UserProfilePage(
     onSendMessage: () -> Unit = {},
     onAddFriend: suspend (remark: String?) -> Result<ULong> = { Result.failure(NotImplementedError()) },
     onAcceptFriendRequest: suspend () -> Result<ULong> = { Result.failure(NotImplementedError()) },
+    /**
+     * Bot 关注回调（spec `02-server/SERVICE_ACCOUNT_FOLLOW_SPEC` §3.1）。
+     * 仅在 `user.userType == 2` 时触发；成功后由调用方决定 navigate（典型用法：
+     * 先调 [onSendMessage] 打开会话）。
+     */
+    onFollowBot: suspend () -> Result<Unit> = { Result.failure(NotImplementedError()) },
     modifier: Modifier = Modifier,
 ) {
     val strings = PrivChatI18n.strings
     val isSystemUser = user.userType.toInt() == 1
+    val isBot = user.userType.toInt() == 2
     var isAddingFriend by remember { mutableStateOf(false) }
+    var isFollowingBot by remember { mutableStateOf(false) }
+    // 关注状态由 server 端 user 信息驱动；点关注成功后本地翻转，避免回退页面重进时重置
+    var hasFollowedBot by remember(user.userId, user.isFollow) { mutableStateOf(user.isFollow) }
     val scope = rememberCoroutineScope()
 
     // Dialog 状态
@@ -123,12 +133,11 @@ fun UserProfilePage(
 
             // 操作按钮 - 独立区域
             item {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Theme.colors.surface)
                         .padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     if (isFriend || isSystemUser) {
                         // 已是好友或系统账号，显示发送消息按钮
@@ -147,6 +156,49 @@ fun UserProfilePage(
                             theme = ButtonTheme.DEFAULT,
                             onClick = {},
                             disabled = true,
+                            block = true
+                        )
+                    } else if (isBot) {
+                        // Bot（user_type=2）：双入口（与微信服务号 / Telegram bot 一致）。
+                        //   - 主按钮"发消息"：直接 onSendMessage → channel/direct/get_or_create 拿 channel
+                        //     →不写 follow 表（spec SERVICE_ACCOUNT_FOLLOW_SPEC §7：B 路径）
+                        //   - 次按钮"关注 / 已关注"：onFollowBot → 写 follow 表 + 触发 application binding
+                        //     →server 幂等；已关注后按钮变 disabled，避免误点
+                        Button(
+                            text = strings.userProfileSendMessage,
+                            type = ButtonType.FILL,
+                            theme = ButtonTheme.PRIMARY,
+                            onClick = onSendMessage,
+                            block = true
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            text = when {
+                                isFollowingBot -> strings.userProfileFollowingBot
+                                hasFollowedBot -> strings.userProfileFollowedBotToast
+                                else -> strings.userProfileFollowBot
+                            },
+                            type = ButtonType.FILL,
+                            theme = ButtonTheme.DEFAULT,
+                            disabled = hasFollowedBot,
+                            onClick = {
+                                if (!isFollowingBot && !hasFollowedBot) {
+                                    isFollowingBot = true
+                                    scope.launch {
+                                        onFollowBot().fold(
+                                            onSuccess = {
+                                                isFollowingBot = false
+                                                hasFollowedBot = true
+                                                Toast.success(strings.userProfileFollowedBotToast)
+                                            },
+                                            onFailure = { error ->
+                                                isFollowingBot = false
+                                                Toast.error(error.message ?: strings.networkError)
+                                            }
+                                        )
+                                    }
+                                }
+                            },
                             block = true
                         )
                     } else {

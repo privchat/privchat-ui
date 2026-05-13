@@ -50,6 +50,20 @@ import com.gearui.components.button.ButtonTheme
 import com.gearui.components.button.ButtonSize
 import com.gearui.components.empty.EmptyState
 import com.gearui.components.actionsheet.ActionSheet
+import com.gearui.components.actionsheet.ActionSheetItem
+import com.netonstream.privchat.sdk.dto.BotMenu
+import com.netonstream.privchat.sdk.dto.BotMenuAction
+import com.netonstream.privchat.sdk.dto.BotMenuItem
+import com.netonstream.privchat.sdk.dto.SendMessageOptions
+import com.netonstream.privchat.ui.platform.ExternalLinkBridge
+import com.netonstream.privchat.ui.utils.BotMenuController
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import com.gearui.components.dialog.ConfirmDialog
 import com.gearui.components.dialog.Dialog
 import com.gearui.components.toast.Toast
@@ -119,6 +133,202 @@ private fun logMessageInputBar(message: String) {
 }
 
 /**
+ * 拉 / 弹 bot 菜单。BOT_INTERACTION_SPEC §3.2-§3.3：菜单获取走 transfer，
+ * 命中缓存秒开；失败 toast 不阻塞聊天。
+ */
+private fun showBotMenu(
+    channel: ChannelListEntry,
+    scope: kotlinx.coroutines.CoroutineScope,
+    onError: ((String) -> Unit)?,
+) {
+    BotMenuController.getCached(channel.channelId)?.let { menu ->
+        presentBotMenuSheet(channel, menu, scope, onError)
+        return
+    }
+    Toast.show("加载菜单…")
+    scope.launch {
+        BotMenuController.loadOrCached(
+            channelId = channel.channelId,
+            scope = scope,
+        ) { route, body, timeoutMs ->
+            withContext(Dispatchers.Default) {
+                PrivChat.client.transfer(channel.channelId, route, body, timeoutMs)
+            }
+        }.fold(
+            onSuccess = { menu -> presentBotMenuSheet(channel, menu, scope, onError) },
+            onFailure = { e ->
+                onError?.invoke("菜单加载失败：${e.message ?: "未知错误"}")
+            },
+        )
+    }
+}
+
+private fun presentBotMenuSheet(
+    channel: ChannelListEntry,
+    menu: BotMenu,
+    scope: kotlinx.coroutines.CoroutineScope,
+    onError: ((String) -> Unit)?,
+) {
+    if (menu.items.isEmpty()) {
+        Toast.show("当前会话没有可用菜单")
+        return
+    }
+    ActionSheet.showList(
+        items = menu.items.map { ActionSheetItem(label = it.title) },
+        onSelected = { _, index ->
+            val item = menu.items.getOrNull(index) ?: return@showList
+            dispatchBotMenuAction(item, channel, scope, onError)
+        },
+    )
+}
+
+/**
+ * BOT_INTERACTION_SPEC §4：menu action 三类分发。
+ * 严格按 spec 强约束：transfer 不入 timeline；message 走 SendMessage；web 打开 URL。
+ */
+private fun dispatchBotMenuAction(
+    item: BotMenuItem,
+    channel: ChannelListEntry,
+    scope: kotlinx.coroutines.CoroutineScope,
+    onError: ((String) -> Unit)?,
+) {
+    when (val action = item.action) {
+        is BotMenuAction.Transfer -> dispatchTransferAction(item, action, channel, scope, onError)
+        is BotMenuAction.Message -> dispatchMessageAction(item, action, channel, scope, onError)
+        is BotMenuAction.Web -> dispatchWebAction(action, channel, scope, onError)
+    }
+}
+
+private val botActionJson = Json { ignoreUnknownKeys = true }
+
+private fun dispatchTransferAction(
+    item: BotMenuItem,
+    action: BotMenuAction.Transfer,
+    channel: ChannelListEntry,
+    scope: kotlinx.coroutines.CoroutineScope,
+    onError: ((String) -> Unit)?,
+) {
+    if (!action.route.startsWith("bot/")) {
+        onError?.invoke("非法 transfer route：${action.route}")
+        return
+    }
+    val bodyBytes = action.body
+        ?.let { botActionJson.encodeToString(JsonObject.serializer(), it).encodeToByteArray() }
+        ?: ByteArray(0)
+    Toast.show("处理中…")
+    scope.launch {
+        val result = withContext(Dispatchers.Default) {
+            PrivChat.client.transfer(channel.channelId, action.route, bodyBytes, 0u)
+        }
+        result.fold(
+            onSuccess = { reply ->
+                if (reply.isOk) {
+                    val preview = reply.data.takeIf { it.isNotEmpty() }
+                        ?.decodeToString()
+                        ?.takeIf { it.length <= 200 }
+                    Toast.success(preview ?: "已完成")
+                } else {
+                    onError?.invoke("[${reply.code}] ${reply.message.ifBlank { "操作失败" }}")
+                }
+            },
+            onFailure = { e ->
+                onError?.invoke("调用失败：${e.message ?: "未知错误"}")
+            },
+        )
+    }
+}
+
+private fun dispatchMessageAction(
+    item: BotMenuItem,
+    action: BotMenuAction.Message,
+    channel: ChannelListEntry,
+    scope: kotlinx.coroutines.CoroutineScope,
+    onError: ((String) -> Unit)?,
+) {
+    val text = action.text.ifBlank {
+        onError?.invoke("菜单消息内容为空：${item.id}")
+        return
+    }
+    // BOT_INTERACTION_SPEC §5.1：from_menu / menu_item_id / command 必须透传到
+    // SendMessageRequest.metadata；这里走 extraJson 进入 SDK，server 持久化后
+    // 由 application 端 BotMessageEventHandler 解析。
+    val extra = buildJsonObject {
+        put("from_menu", JsonPrimitive(true))
+        put("menu_item_id", JsonPrimitive(item.id))
+        action.metadata?.forEach { (k, v) -> put(k, v) }
+    }
+    val options = SendMessageOptions(
+        extraJson = botActionJson.encodeToString(JsonObject.serializer(), extra),
+    )
+    scope.launch {
+        val result = withContext(Dispatchers.Default) {
+            PrivChat.client.sendText(
+                channel.channelId,
+                channel.channelType,
+                text,
+                options,
+            )
+        }
+        result.onFailure { e ->
+            onError?.invoke("发送失败：${e.message ?: "未知错误"}")
+        }
+    }
+}
+
+private fun dispatchWebAction(
+    action: BotMenuAction.Web,
+    channel: ChannelListEntry,
+    scope: kotlinx.coroutines.CoroutineScope,
+    onError: ((String) -> Unit)?,
+) {
+    if (!action.url.startsWith("https://")) {
+        // BOT_INTERACTION_SPEC §8.2：v1 强制 HTTPS。
+        onError?.invoke("仅允许 HTTPS 链接")
+        return
+    }
+    val prefetch = action.prefetchSignedUrlRoute
+    if (prefetch.isNullOrBlank()) {
+        if (!ExternalLinkBridge.openUri(action.url)) {
+            onError?.invoke("无法打开链接")
+        }
+        return
+    }
+    if (!prefetch.startsWith("bot/")) {
+        onError?.invoke("非法 prefetch route：$prefetch")
+        return
+    }
+    // 先走 transfer 拿一次性 signed URL（reply.data 是 JSON {"url": "..."}）。
+    Toast.show("准备中…")
+    scope.launch {
+        val result = withContext(Dispatchers.Default) {
+            PrivChat.client.transfer(channel.channelId, prefetch, ByteArray(0), 0u)
+        }
+        result.fold(
+            onSuccess = { reply ->
+                if (!reply.isOk) {
+                    onError?.invoke("[${reply.code}] ${reply.message.ifBlank { "签名失败" }}")
+                    return@fold
+                }
+                val signed = runCatching {
+                    botActionJson
+                        .parseToJsonElement(reply.data.decodeToString())
+                        .jsonObject["url"]
+                        ?.jsonPrimitive
+                        ?.contentOrNull
+                }.getOrNull()
+                val target = signed?.takeIf { it.startsWith("https://") } ?: action.url
+                if (!ExternalLinkBridge.openUri(target)) {
+                    onError?.invoke("无法打开链接")
+                }
+            },
+            onFailure = { e ->
+                onError?.invoke("准备链接失败：${e.message ?: "未知错误"}")
+            },
+        )
+    }
+}
+
+/**
  * 聊天页面
  *
  * 直接使用 SDK 的数据类型
@@ -173,6 +383,9 @@ fun MessagePage(
     }
     // peer_user_id：优先从 channel 字段取，channel_member 表为空时回退到 dmPeerUserId()
     var peerUserId by remember(channel.channelId) { mutableStateOf(channel.peerUserId) }
+    // BOT_INTERACTION_SPEC §3.1：私聊对端 user_type ∈ {1=System, 2=Bot} 时显示菜单入口。
+    // peerUserType 异步解析（getUserProfileLocalFirst → 本地优先，未知再拉服务端）。
+    var peerUserType by remember(channel.channelId) { mutableStateOf<Short?>(null) }
     var initialPositioned by remember(channel.channelId) { mutableStateOf(false) }
     var hasInitialLoadCompleted by remember(channel.channelId) { mutableStateOf(false) }
     // 输入文本
@@ -292,6 +505,17 @@ fun MessagePage(
                             .getOrNull()
                             ?.firstOrNull()
                             ?.let { PrivChat.updatePresence(it) }
+                    }
+                }
+                // BOT_INTERACTION_SPEC §3.1：拉对端 user_type，决定输入栏菜单按钮是否显示。
+                // 用 getUserProfileLocalFirst 而不是 listUsersByIds：前者本地没记录时会自动
+                // 从 server 拉一次并 upsert 本地 users 表，避免 bot/system 等还没缓存的对端
+                // 因为本地查空导致菜单按钮 / 昵称都缺失。
+                runCatching {
+                    withContext(Dispatchers.Default) {
+                        PrivChat.client.getUserProfileLocalFirst(uid)
+                            .getOrNull()
+                            ?.let { peerUserType = it.userType }
                     }
                 }
             }
@@ -941,6 +1165,16 @@ fun MessagePage(
                 }
             },
             replyPending = pendingReply != null,
+            // BOT_INTERACTION_SPEC §3.1：DM 对端 user_type ∈ {1=System, 2=Bot} 时显示菜单按钮。
+            showMenuButton = channel.isDm
+                && peerUserType?.let { it == 1.toShort() || it == 2.toShort() } == true,
+            onMenuClick = {
+                showBotMenu(
+                    channel = channel,
+                    scope = scope,
+                    onError = onError,
+                )
+            },
         )
     }
     Dialog.Host(visible = mediaPrepBusy, dismissOnOutside = false) {
@@ -1579,6 +1813,9 @@ private fun MessageInputBar(
     onContact: () -> Unit = {},
     onSend: () -> Unit,
     replyPending: Boolean = false,
+    // BOT_INTERACTION_SPEC §3.1：bot/system/official 会话在输入栏最前面显示菜单按钮。
+    showMenuButton: Boolean = false,
+    onMenuClick: () -> Unit = {},
 ) {
     val colors = Theme.colors
     val focusManager = LocalFocusManager.current
@@ -1761,6 +1998,18 @@ private fun MessageInputBar(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Bottom,
             ) {
+            // 最左：bot/system/official 会话的菜单按钮（BOT_INTERACTION_SPEC §3.1）
+            if (showMenuButton) {
+                CircleIconButton(
+                    icon = Icons.menu,
+                    onClick = {
+                        closeAllPanels()
+                        onMenuClick()
+                    }
+                )
+                HorizontalSpacer(8.dp)
+            }
+
             // 左侧：语音/键盘切换
                 CircleIconButton(
                     icon = if (voiceMode) Icons.chat else Icons.mic,

@@ -1,6 +1,7 @@
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.compose")
+    kotlin("plugin.serialization") version "2.1.21"
     id("com.android.library")
     id("org.jetbrains.compose")
 }
@@ -50,6 +51,10 @@ kotlin {
 
             // PrivChat SDK - 直接使用 SDK 数据类型，零转换
             api("com.netonstream.privchat:sdk")
+
+            // BOT_INTERACTION_SPEC §4：菜单 action 解析与 metadata 序列化用 kotlinx.serialization。
+            // sdk 那边是 implementation 依赖，不会传递；此处显式声明保证 Android target 也能解析。
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
         }
 
         // Android-specific dependencies

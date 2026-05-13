@@ -97,6 +97,9 @@ data class PrivChatStringsPatch(
     val userProfileNickname: String? = null,
     val userProfileSendMessage: String? = null,
     val userProfileAddFriend: String? = null,
+    val userProfileFollowBot: String? = null,
+    val userProfileFollowingBot: String? = null,
+    val userProfileFollowedBotToast: String? = null,
     val userProfileCannotAddSelf: String? = null,
     val userProfileAcceptFriendRequest: String? = null,
     val userProfileAdding: String? = null,
@@ -313,6 +316,9 @@ val PrivChatStringsPatch.isEmpty: Boolean
         userProfileNickname == null &&
         userProfileSendMessage == null &&
         userProfileAddFriend == null &&
+        userProfileFollowBot == null &&
+        userProfileFollowingBot == null &&
+        userProfileFollowedBotToast == null &&
         userProfileCannotAddSelf == null &&
         userProfileAcceptFriendRequest == null &&
         userProfileAdding == null &&
@@ -534,6 +540,9 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         userProfileNickname = patch.userProfileNickname ?: userProfileNickname,
         userProfileSendMessage = patch.userProfileSendMessage ?: userProfileSendMessage,
         userProfileAddFriend = patch.userProfileAddFriend ?: userProfileAddFriend,
+        userProfileFollowBot = patch.userProfileFollowBot ?: userProfileFollowBot,
+        userProfileFollowingBot = patch.userProfileFollowingBot ?: userProfileFollowingBot,
+        userProfileFollowedBotToast = patch.userProfileFollowedBotToast ?: userProfileFollowedBotToast,
         userProfileCannotAddSelf = patch.userProfileCannotAddSelf ?: userProfileCannotAddSelf,
         userProfileAcceptFriendRequest = patch.userProfileAcceptFriendRequest ?: userProfileAcceptFriendRequest,
         userProfileAdding = patch.userProfileAdding ?: userProfileAdding,
