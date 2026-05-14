@@ -9,48 +9,46 @@ import com.gearui.foundation.AvatarSpecs
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.typography.Typography
+import com.gearui.components.navbar.NavBar
 import com.gearui.components.cell.Cell
 import com.gearui.components.checkbox.Checkbox
 import com.gearui.components.checkbox.CheckboxSize
 import com.gearui.components.empty.EmptyState
-import com.gearui.components.navbar.NavBar
+import com.gearui.components.input.Input
+import com.gearui.components.input.InputSize
 import com.gearui.components.searchbar.SearchBar
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.clickable
-import com.tencent.kuikly.compose.foundation.layout.Box
-import com.tencent.kuikly.compose.foundation.layout.Column
-import com.tencent.kuikly.compose.foundation.layout.Row
-import com.tencent.kuikly.compose.foundation.layout.Spacer
-import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
-import com.tencent.kuikly.compose.foundation.layout.fillMaxWidth
-import com.tencent.kuikly.compose.foundation.layout.height
-import com.tencent.kuikly.compose.foundation.layout.padding
+import com.tencent.kuikly.compose.foundation.layout.*
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
-private const val GROUP_INVITE_MAX_BATCH = 49
+/** 群成员上限（含自己）。微信/Telegram 普通群一般 200/500，这里按客户端选择阶段限 50。 */
+private const val GROUP_CREATE_MAX_MEMBERS = 49
 
 /**
- * 群邀请页（多选）：选好友打勾，点右上"邀请"批量提交。
+ * 群创建页：多选好友 + 可选群名输入 + "创建"按钮。
  *
- * - 不在群里的好友才会出现在列表中（调用方过滤）
- * - 调用 [onInvite] 后由调用方处理 SDK + 失败展示
+ * - 不输群名时调用方应基于成员昵称自动拼一个（"张三、李四、王五"）
+ * - [onCreate] 返回成功后由调用方导航到新会话；失败时显示 [onError]
+ * - 列表头部固定一条搜索栏 + "已选 N/[GROUP_CREATE_MAX_MEMBERS]" 计数
  */
 @Composable
-fun GroupInvitePage(
+fun GroupCreatePage(
     friends: List<FriendEntry>,
     onBack: () -> Unit,
-    onInvite: suspend (List<FriendEntry>) -> Result<Unit>,
+    onCreate: suspend (name: String, memberIds: List<ULong>) -> Result<Unit>,
     onError: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val colors = Theme.colors
+
+    var groupName by remember { mutableStateOf("") }
     var searchQuery by remember { mutableStateOf("") }
     val selected = remember { mutableStateMapOf<ULong, FriendEntry>() }
-    var isSubmitting by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
+    var isCreating by remember { mutableStateOf(false) }
 
     val filtered = remember(friends, searchQuery) {
         val q = searchQuery.trim()
@@ -62,28 +60,33 @@ fun GroupInvitePage(
         }
     }
 
-    val canSubmit = selected.isNotEmpty() && !isSubmitting
+    val coroutineScope = rememberCoroutineScope()
+    val canCreate = selected.isNotEmpty() && !isCreating
 
     Column(modifier = modifier.fillMaxSize().background(colors.background)) {
         NavBar(
-            title = "邀请好友",
+            title = "创建群聊",
             useDefaultBack = true,
             onBackClick = onBack,
             rightWidgetWidth = 96.dp,
             rightWidget = {
-                val label = if (selected.isEmpty()) "邀请" else "邀请(${selected.size})"
-                val color = if (canSubmit) colors.primary else colors.textDisabled
+                val label = if (selected.isEmpty()) "创建" else "创建(${selected.size})"
+                val color = if (canCreate) colors.primary else colors.textDisabled
                 Box(
                     modifier = Modifier
                         .padding(horizontal = 12.dp, vertical = 8.dp)
-                        .clickable(enabled = canSubmit) {
-                            isSubmitting = true
+                        .clickable(enabled = canCreate) {
+                            val ids = selected.values.map { it.userId }
+                            val displayName = groupName.trim().ifEmpty {
+                                selected.values.joinToString("、") { it.displayName }.take(40)
+                            }
+                            isCreating = true
                             coroutineScope.launch {
-                                onInvite(selected.values.toList()).fold(
-                                    onSuccess = { isSubmitting = false },
+                                onCreate(displayName, ids).fold(
+                                    onSuccess = { isCreating = false },
                                     onFailure = { e ->
-                                        isSubmitting = false
-                                        onError(e.message ?: "邀请失败")
+                                        isCreating = false
+                                        onError(e.message ?: "创建失败")
                                     },
                                 )
                             }
@@ -100,6 +103,21 @@ fun GroupInvitePage(
             },
         )
 
+        // 群名输入 + 搜索栏 + 计数提示，三段固定在列表上方
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(colors.surface)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+        ) {
+            Input(
+                value = groupName,
+                onValueChange = { groupName = it },
+                placeholder = "群名称（选填，留空将自动生成）",
+                size = InputSize.LARGE,
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
         SearchBar(
             value = searchQuery,
             onValueChange = { searchQuery = it },
@@ -107,17 +125,17 @@ fun GroupInvitePage(
             shape = com.gearui.components.searchbar.SearchBarShape.SQUARE,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp, vertical = 4.dp),
         )
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "已选 ${selected.size}/$GROUP_INVITE_MAX_BATCH",
+                text = "已选 ${selected.size}/$GROUP_CREATE_MAX_MEMBERS",
                 style = Typography.BodySmall,
                 color = colors.textSecondary,
             )
@@ -125,14 +143,14 @@ fun GroupInvitePage(
 
         if (filtered.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                EmptyState(message = if (friends.isEmpty()) "暂无可邀请好友" else "未匹配到好友")
+                EmptyState(message = if (friends.isEmpty()) "暂无好友可加入" else "未匹配到好友")
             }
         } else {
             GearLazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(filtered.size) { idx ->
                     val friend = filtered[idx]
                     val isSelected = selected.containsKey(friend.userId)
-                    val atLimit = selected.size >= GROUP_INVITE_MAX_BATCH && !isSelected
+                    val atLimit = selected.size >= GROUP_CREATE_MAX_MEMBERS && !isSelected
                     Cell(
                         title = friend.displayName,
                         description = friend.username,
@@ -163,7 +181,7 @@ fun GroupInvitePage(
                             } else if (!atLimit) {
                                 selected[friend.userId] = friend
                             } else {
-                                onError("最多选择 $GROUP_INVITE_MAX_BATCH 位好友")
+                                onError("最多选择 $GROUP_CREATE_MAX_MEMBERS 位好友")
                             }
                         },
                     )

@@ -25,6 +25,7 @@ import com.gearui.foundation.typography.Typography
 import com.gearui.foundation.AvatarSpecs
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.layout.*
+import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.unit.dp
@@ -64,6 +65,9 @@ fun UserProfilePage(
     val isSystemUser = user.userType.toInt() == 1
     val isBot = user.userType.toInt() == 2
     var isAddingFriend by remember { mutableStateOf(false) }
+    // 本地已发送标记：发送成功后保留在页面上，按钮变"已发送"且 disable，
+    // 避免重复发申请；同时也让 Toast 有空间渲染（不被 onBackToRoot 立刻打断）。
+    var hasSentFriendRequest by remember(user.userId) { mutableStateOf(false) }
     var isFollowingBot by remember { mutableStateOf(false) }
     // 关注状态由 server 端 user 信息驱动；点关注成功后本地翻转，避免回退页面重进时重置
     var hasFollowedBot by remember(user.userId, user.isFollow) { mutableStateOf(user.isFollow) }
@@ -103,12 +107,18 @@ fun UserProfilePage(
 
                     // 右侧信息
                     Column(modifier = Modifier.weight(1f)) {
-                        // 昵称
-                        Text(
-                            text = user.nickname ?: user.username,
-                            style = Typography.TitleLarge,
-                            color = Theme.colors.textPrimary
-                        )
+                        // 昵称 + 用户类型标记（系统/机器人）
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = user.nickname ?: user.username,
+                                style = Typography.TitleLarge,
+                                color = Theme.colors.textPrimary
+                            )
+                            UserTypeBadge(
+                                userType = user.userType,
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(6.dp))
 
@@ -202,19 +212,22 @@ fun UserProfilePage(
                             block = true
                         )
                     } else {
-                        // 非好友，显示添加好友按钮
+                        // 非好友，显示添加好友按钮。三个互斥状态：
+                        //   - isAddingFriend：网络中（loading）
+                        //   - hasSentFriendRequest：刚发完，结果"已发送"，按钮 disable 防重复
+                        //   - 默认：可点击
                         Button(
-                            text = if (isAddingFriend) {
-                                strings.userProfileAdding
-                            } else if (isFromFriendRequest) {
-                                strings.userProfileAcceptFriendRequest
-                            } else {
-                                strings.userProfileAddFriend
+                            text = when {
+                                isAddingFriend -> strings.userProfileAdding
+                                hasSentFriendRequest -> strings.userProfileRequestSent
+                                isFromFriendRequest -> strings.userProfileAcceptFriendRequest
+                                else -> strings.userProfileAddFriend
                             },
                             type = ButtonType.FILL,
                             theme = ButtonTheme.PRIMARY,
+                            disabled = hasSentFriendRequest,
                             onClick = {
-                                if (!isAddingFriend) {
+                                if (!isAddingFriend && !hasSentFriendRequest) {
                                     if (isFromFriendRequest) {
                                         isAddingFriend = true
                                         scope.launch {
@@ -286,8 +299,11 @@ fun UserProfilePage(
                             onAddFriend(remarkInput.ifBlank { null }).fold(
                                 onSuccess = {
                                     isAddingFriend = false
+                                    hasSentFriendRequest = true
                                     Toast.success(strings.userProfileRequestSent)
-                                    onBackToRoot()
+                                    // 不再立即 onBackToRoot——避免 page unmount + scope cancel
+                                    // 跟 Toast 的 overlay LaunchedEffect 抢渲染，导致用户看不到提示。
+                                    // 按钮已切到"申请已发送"disable 态，用户读完 toast 自行返回。
                                 },
                                 onFailure = { error ->
                                     isAddingFriend = false
@@ -357,11 +373,17 @@ fun FriendProfilePage(
                         val remark = friend.remark
                         // 备注名（如果有）
                         if (!remark.isNullOrBlank()) {
-                            Text(
-                                text = remark,
-                                style = Typography.TitleLarge,
-                                color = Theme.colors.textPrimary
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = remark,
+                                    style = Typography.TitleLarge,
+                                    color = Theme.colors.textPrimary
+                                )
+                                UserTypeBadge(
+                                    userType = friend.userType,
+                                    modifier = Modifier.padding(start = 8.dp),
+                                )
+                            }
 
                             Spacer(modifier = Modifier.height(6.dp))
 
@@ -380,11 +402,17 @@ fun FriendProfilePage(
                             }
                         } else {
                             // 没有备注，昵称作为主标题
-                            Text(
-                                text = friend.nickname ?: friend.username,
-                                style = Typography.TitleLarge,
-                                color = Theme.colors.textPrimary
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = friend.nickname ?: friend.username,
+                                    style = Typography.TitleLarge,
+                                    color = Theme.colors.textPrimary
+                                )
+                                UserTypeBadge(
+                                    userType = friend.userType,
+                                    modifier = Modifier.padding(start = 8.dp),
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(6.dp))
@@ -428,5 +456,32 @@ fun FriendProfilePage(
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
+    }
+}
+
+/**
+ * 用户类型标记：系统账号 / 机器人 显示彩色 pill；普通用户（userType=0）不展示。
+ *
+ * - userType=1 SYSTEM → warning 色系（橙黄，"官方/系统")
+ * - userType=2 BOT    → primary 色系（品牌蓝，"自动化"）
+ */
+@Composable
+private fun UserTypeBadge(userType: Short, modifier: Modifier = Modifier) {
+    val strings = PrivChatI18n.strings
+    val (label, fg, bg) = when (userType.toInt()) {
+        1 -> Triple(strings.userBadgeSystem, Theme.colors.warning, Theme.colors.warningLight)
+        2 -> Triple(strings.userBadgeBot, Theme.colors.primary, Theme.colors.primaryLight)
+        else -> return
+    }
+    Box(
+        modifier = modifier
+            .background(bg, RoundedCornerShape(4.dp))
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+    ) {
+        Text(
+            text = label,
+            style = Typography.Label,
+            color = fg,
+        )
     }
 }

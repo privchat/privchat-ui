@@ -46,10 +46,13 @@ fun ChatSettingsPage(
     channel: ChannelListEntry,
     groupMemberCount: Int = channel.memberCount.toInt(),
     isAdmin: Boolean = false,
+    /** 当前用户是否为该群群主；群主时禁用"退出群聊"按钮（需先转让 / 解散）。 */
+    isOwner: Boolean = false,
     onBack: () -> Unit,
     onGroupNameClick: () -> Unit = {},
     onGroupQrCodeClick: () -> Unit = {},
     onGroupMembersClick: () -> Unit = {},
+    onGroupInviteClick: () -> Unit = {},
     onGroupManageClick: () -> Unit = {},
     onMuteChange: suspend (Boolean) -> Result<Boolean> = { Result.success(it) },
     onPinChange: suspend (Boolean) -> Result<Boolean> = { Result.success(it) },
@@ -117,6 +120,15 @@ fun ChatSettingsPage(
                     )
                 }
 
+                // 邀请成员
+                item {
+                    Cell(
+                        title = "邀请成员",
+                        arrow = true,
+                        onClick = onGroupInviteClick,
+                    )
+                }
+
                 // 群管理（仅管理员可见）
                 if (isAdmin) {
                     item {
@@ -181,21 +193,36 @@ fun ChatSettingsPage(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                // 退出群聊
+                // 退出群聊：群主不可直接退出（须先转让群主或解散群——后续 Phase B 实现）
                 item {
+                    val leaveEnabled = !isOwner
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(colors.surface)
-                            .clickable { showLeaveConfirmDialog = true }
+                            .clickable(enabled = leaveEnabled) { showLeaveConfirmDialog = true }
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
                             text = strings.chatSettingsLeaveGroup,
                             style = Typography.BodyMedium,
-                            color = colors.danger
+                            color = if (leaveEnabled) colors.danger else colors.textDisabled
                         )
+                    }
+                    if (isOwner) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            Text(
+                                text = "群主无法直接退出群聊，请先转让群主或解散群",
+                                style = Typography.BodySmall,
+                                color = colors.textSecondary,
+                            )
+                        }
                     }
                 }
             }

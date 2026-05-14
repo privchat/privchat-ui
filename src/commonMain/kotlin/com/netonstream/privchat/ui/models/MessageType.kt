@@ -36,6 +36,16 @@ private const val PROTOCOL_LINK = 9
 private const val PROTOCOL_FORWARD = 10
 
 /**
+ * MessageRef 引用片段（见 spec/05-feature/MESSAGE_REF_SPEC）。
+ * `target_id` 统一字符串；`text` 是兜底显示名 / i18n key（语义由 `type` 决定）。
+ */
+data class MessageRef(
+    val type: String,
+    val targetId: String,
+    val text: String,
+)
+
+/**
  * 解析后的消息内容
  */
 data class ParsedContent(
@@ -55,6 +65,10 @@ data class ParsedContent(
     val linkUrl: String? = null,
     val linkTitle: String? = null,
     val linkDescription: String? = null,
+    // SYSTEM 专用（spec/05-feature/SYSTEM_MESSAGE_SPEC）：
+    // template 是模板字符串或 i18n key（如 `system.member_invited`），refs 按下标替换 `{i}` 占位。
+    val systemTemplate: String? = null,
+    val systemRefs: List<MessageRef>? = null,
 )
 
 /**
@@ -311,13 +325,20 @@ fun parseMessageContent(message: MessageEntry): ParsedContent {
             thumbnailUrl = extractThumbnailUrl(content, extra)
         )
 
-        MessageType.SYSTEM -> ParsedContent(
-            type = type,
-            text = extractPayloadContent(content)
-                ?: extractJsonString(content, "text")
-                ?: extractJsonString(content, "tip")
-                ?: content
-        )
+        MessageType.SYSTEM -> {
+            // spec/05-feature/SYSTEM_MESSAGE_SPEC §3：优先按 template + refs 结构解析
+            val template = extractJsonString(content, "template")
+            val refs = if (template != null) extractMessageRefs(content) else null
+            ParsedContent(
+                type = type,
+                text = extractPayloadContent(content)
+                    ?: extractJsonString(content, "text")
+                    ?: extractJsonString(content, "tip")
+                    ?: content,
+                systemTemplate = template,
+                systemRefs = refs,
+            )
+        }
 
         MessageType.UNKNOWN -> ParsedContent(
             type = type,
@@ -333,11 +354,20 @@ val MessageEntry.parsedContent: ParsedContent
     get() = parseMessageContent(this)
 
 /**
- * MessageEntry 扩展：获取纯文本预览。
+ * MessageEntry 扩展：获取**纯文本**预览（**已弃用**，因为没有 i18n 上下文，
+ * 还硬编码了中文 + 系统消息有泄漏 JSON 的风险）。
  *
- * 撤回文案由状态（`isRevoked`）决定，与内容类型无关——
- * 否则按内容类型映射预览。
+ * 新代码请用 [com.netonstream.privchat.ui.i18n.PrivChatStrings] 的 `previewOf`
+ * 扩展函数（在文件 PreviewRenderer.kt 里），它接受 i18n 字典 + 走系统消息
+ * 模板渲染，保证：
+ * 1. 永不返回原始 JSON（spec/SYSTEM_MESSAGE_SPEC §3）
+ * 2. 所有标签走本地化（"[图片]" / "[Image]" 自动切换）
+ * 3. 系统消息按 template + refs 渲染（与气泡同一渲染器）
  */
+@Deprecated(
+    "Use PrivChatStrings.previewOf(message) for i18n-aware preview; this hardcodes Chinese.",
+    ReplaceWith("PrivChatI18n.strings.previewOf(this)"),
+)
 val MessageEntry.textPreview: String
     get() {
         if (isRevoked) return "撤回了一条消息"
@@ -351,7 +381,7 @@ val MessageEntry.textPreview: String
             MessageType.STICKER -> "[表情]"
             MessageType.LOCATION -> "[位置] ${parsed.address ?: ""}"
             MessageType.LINK -> "[链接] ${parsed.linkTitle ?: parsed.linkUrl ?: ""}"
-            MessageType.SYSTEM -> parsed.text ?: "[系统消息]"
+            MessageType.SYSTEM -> "[系统消息]" // 注意：不再 fallback 到 raw content
             MessageType.UNKNOWN -> "[消息]"
         }
     }
@@ -391,6 +421,28 @@ private fun extractPayloadContent(content: String): String? {
     return extractJsonString(content, "content")
         ?.takeIf { it.isNotBlank() }
         ?: extractJsonString(content, "text")?.takeIf { it.isNotBlank() }
+}
+
+/**
+ * 从系统消息 JSON 里抽 `refs: [{type, target_id, text}, ...]` 数组。
+ *
+ * 用简易扫描而非真正 JSON 解析（项目里没引 kotlinx.serialization runtime，全靠正则）：
+ * - 先用 regex 切出 refs 数组段
+ * - 再逐个 object 抽 type/target_id/text 三个字符串字段
+ * 解析失败一律返回空列表，让上层走 "{0}/{1}" 字面降级（spec §4.1 容错要求）。
+ */
+private fun extractMessageRefs(content: String): List<MessageRef> {
+    val arrayMatch = Regex("\"refs\"\\s*:\\s*\\[(.*?)\\](?=\\s*[,}])", RegexOption.DOT_MATCHES_ALL)
+        .find(content) ?: return emptyList()
+    val inner = arrayMatch.groupValues[1]
+    val objectRegex = Regex("\\{[^{}]*\\}")
+    return objectRegex.findAll(inner).mapNotNull { match ->
+        val obj = match.value
+        val type = extractJsonString(obj, "type") ?: return@mapNotNull null
+        val targetId = extractJsonString(obj, "target_id") ?: return@mapNotNull null
+        val text = extractJsonString(obj, "text") ?: ""
+        MessageRef(type = type, targetId = targetId, text = text)
+    }.toList()
 }
 
 private fun normalizeUrl(url: String?): String? {

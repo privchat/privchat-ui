@@ -88,6 +88,10 @@ data class PrivChatStrings(
     val friendRequestTime: String,
     val friendRequestAccepted: String,
     val friendRequestRejected: String,
+    /** "查看"按钮——好友申请列表里 trailing 区，点击跳用户资料。 */
+    val friendRequestView: String,
+    /** "已添加"状态——申请已被同意时显示为灰色只读文案。 */
+    val friendRequestAdded: String,
 
     // ========== 搜索用户 ==========
     val searchUserTitle: String,
@@ -106,6 +110,8 @@ data class PrivChatStrings(
     val userProfileTitle: String,
     val userProfileUserId: String,
     val userProfileSystemAccount: String,
+    val userBadgeSystem: String,
+    val userBadgeBot: String,
     val userProfileBio: String,
     val userProfileRemark: String,
     val userProfileRemarkPlaceholder: String,
@@ -268,6 +274,50 @@ data class PrivChatStrings(
     val timeThursday: String,
     val timeFriday: String,
     val timeSaturday: String,
+
+    /**
+     * 系统消息模板（spec/05-feature/SYSTEM_MESSAGE_SPEC §4）。
+     *
+     * key 形如 `system.member_invited`，value 内含 `{i}` 占位符（i 对应 `refs[i].text`），
+     * 或 `{n+}` 列表展开占位符（消费 refs[n..]，用 [systemListSeparator] 串联）。
+     * 渲染器先 lookup 这个 map 找模板，找不到时把 key 当字面量模板，再做占位符替换。
+     */
+    val systemTemplates: Map<String, String>,
+
+    /** 列表展开占位符 `{n+}` 的元素分隔符（zh="、", en=", "）。 */
+    val systemListSeparator: String,
+
+    // ========== 会话列表 / 预览（架构归正：SDK 不再做 preview 改写，UI 统一渲染）==========
+    /** `[图片]` */
+    val previewImage: String,
+    /** `[视频]` */
+    val previewVideo: String,
+    /** `[语音]` 简短版（无时长） */
+    val previewVoice: String,
+    /** `[语音] N"` 含时长版，`{0}` = 秒数 */
+    val previewVoiceWithDuration: String,
+    /** `[文件]` 简短版 */
+    val previewFile: String,
+    /** `[文件] {0}` 含文件名版（`{0}` = filename） */
+    val previewFileWithName: String,
+    /** `[表情]` */
+    val previewSticker: String,
+    /** `[位置]` 简短版 */
+    val previewLocation: String,
+    /** `[位置] {0}` 含地址版（`{0}` = address） */
+    val previewLocationWithAddress: String,
+    /** `[链接] {0}` 含标题 */
+    val previewLink: String,
+    /** `[名片]` */
+    val previewContactCard: String,
+    /** `[红包]` */
+    val previewRedPacket: String,
+    /** `[系统消息]` — 系统消息模板未命中时的兜底 */
+    val previewSystemFallback: String,
+    /** `[消息]` — 未知类型 */
+    val previewUnknown: String,
+    /** `撤回了一条消息` — 撤回兜底（不带具体用户名版本，用于 channel preview） */
+    val previewRecalled: String,
 )
 
 /**
@@ -355,6 +405,8 @@ object PrivChatStringPacks {
         friendRequestTime = "申请时间",
         friendRequestAccepted = "已同意",
         friendRequestRejected = "已拒绝",
+        friendRequestView = "查看",
+        friendRequestAdded = "已添加",
 
         // 搜索用户
         searchUserTitle = "添加朋友",
@@ -373,6 +425,8 @@ object PrivChatStringPacks {
         userProfileTitle = "用户资料",
         userProfileUserId = "用户 ID",
         userProfileSystemAccount = "系统账号",
+        userBadgeSystem = "系统",
+        userBadgeBot = "机器人",
         userProfileBio = "简介",
         userProfileRemark = "备注",
         userProfileRemarkPlaceholder = "请输入备注名",
@@ -535,6 +589,32 @@ object PrivChatStringPacks {
         timeThursday = "周四",
         timeFriday = "周五",
         timeSaturday = "周六",
+        systemTemplates = mapOf(
+            // {1+} 是列表展开占位符：消费 refs[1..] 用 listSeparator 串联，
+            // 用于人数不定的批量邀请（spec §4.1 的本地扩展）。
+            "system.member_invited" to "{0} 邀请 {1+} 加入了群聊",
+            "system.member_joined"  to "{0} 加入了群聊",
+            "system.member_left"    to "{0} 退出了群聊",
+            "system.member_kicked"  to "{0} 将 {1+} 移出群聊",
+            "system.owner_transferred" to "{0} 已将群主转让给 {1}",
+            "system.message_recalled"  to "{0} 撤回了一条消息",
+        ),
+        systemListSeparator = "、",
+        previewImage = "[图片]",
+        previewVideo = "[视频]",
+        previewVoice = "[语音]",
+        previewVoiceWithDuration = "[语音] {0}\"",
+        previewFile = "[文件]",
+        previewFileWithName = "[文件] {0}",
+        previewSticker = "[表情]",
+        previewLocation = "[位置]",
+        previewLocationWithAddress = "[位置] {0}",
+        previewLink = "[链接] {0}",
+        previewContactCard = "[名片]",
+        previewRedPacket = "[红包]",
+        previewSystemFallback = "[系统消息]",
+        previewUnknown = "[消息]",
+        previewRecalled = "撤回了一条消息",
     )
 
     val English = PrivChatStrings(
@@ -617,6 +697,8 @@ object PrivChatStringPacks {
         friendRequestTime = "Request time",
         friendRequestAccepted = "Accepted",
         friendRequestRejected = "Rejected",
+        friendRequestView = "View",
+        friendRequestAdded = "Added",
 
         // Search User
         searchUserTitle = "Add Friend",
@@ -635,6 +717,8 @@ object PrivChatStringPacks {
         userProfileTitle = "User Profile",
         userProfileUserId = "User ID",
         userProfileSystemAccount = "System Account",
+        userBadgeSystem = "System",
+        userBadgeBot = "Bot",
         userProfileBio = "Bio",
         userProfileRemark = "Remark",
         userProfileRemarkPlaceholder = "Enter a remark name",
@@ -797,6 +881,30 @@ object PrivChatStringPacks {
         timeThursday = "Thu",
         timeFriday = "Fri",
         timeSaturday = "Sat",
+        systemTemplates = mapOf(
+            "system.member_invited" to "{0} invited {1+} to the group",
+            "system.member_joined"  to "{0} joined the group",
+            "system.member_left"    to "{0} left the group",
+            "system.member_kicked"  to "{0} removed {1+} from the group",
+            "system.owner_transferred" to "{0} transferred ownership to {1}",
+            "system.message_recalled"  to "{0} recalled a message",
+        ),
+        systemListSeparator = ", ",
+        previewImage = "[Image]",
+        previewVideo = "[Video]",
+        previewVoice = "[Voice]",
+        previewVoiceWithDuration = "[Voice] {0}\"",
+        previewFile = "[File]",
+        previewFileWithName = "[File] {0}",
+        previewSticker = "[Sticker]",
+        previewLocation = "[Location]",
+        previewLocationWithAddress = "[Location] {0}",
+        previewLink = "[Link] {0}",
+        previewContactCard = "[Contact]",
+        previewRedPacket = "[Red Packet]",
+        previewSystemFallback = "[System]",
+        previewUnknown = "[Message]",
+        previewRecalled = "recalled a message",
     )
 
     val ChineseTraditional: PrivChatStrings = PrivChatStringsZhHant

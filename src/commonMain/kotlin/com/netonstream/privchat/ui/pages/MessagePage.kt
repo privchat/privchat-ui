@@ -90,6 +90,13 @@ import com.tencent.kuikly.compose.ui.zIndex
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.netonstream.privchat.ui.common.base.currentTimeMillis
 import com.tencent.kuikly.compose.ui.graphics.Color
+import com.tencent.kuikly.compose.ui.text.LinkAnnotation
+import com.tencent.kuikly.compose.ui.text.LinkInteractionListener
+import com.tencent.kuikly.compose.ui.text.SpanStyle
+import com.tencent.kuikly.compose.ui.text.TextLinkStyles
+import com.tencent.kuikly.compose.ui.text.buildAnnotatedString
+import com.tencent.kuikly.compose.ui.text.withLink
+import com.tencent.kuikly.compose.material3.Text as KuiklyText
 import com.tencent.kuikly.compose.ui.input.pointer.pointerInput
 import com.tencent.kuikly.compose.ui.input.pointer.changedToUp
 import com.tencent.kuikly.compose.ui.platform.LocalDensity
@@ -693,33 +700,40 @@ fun MessagePage(
                 }
             ),
     ) {
-        // 顶部导航栏
+        // 顶部导航栏；点中央昵称：DM → 跳用户/好友资料（复用 onAvatarClick），群 → 群信息页（onProfileClick）
+        // 右上 "…" 仍走 onProfileClick（保持原行为，作为"更多/设置"入口）
+        val onTitleClick: () -> Unit = {
+            if (channel.isDm) {
+                peerUserId?.let { onAvatarClick?.invoke(it) }
+            } else {
+                onProfileClick()
+            }
+        }
         NavBar(
-            title = if (channel.isDm) "" else truncatedTitle,
+            title = "",
             useDefaultBack = true,
             onBackClick = onBack,
-            titleWidget = if (channel.isDm) {
-                {
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
+            titleWidget = {
+                Row(
+                    modifier = Modifier.clickable(onClick = onTitleClick),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = truncatedTitle,
+                        style = Typography.TitleMedium,
+                        color = Theme.colors.textPrimary,
+                    )
+                    if (channel.isDm && peerPresence?.isOnline == true) {
+                        HorizontalSpacer(6.dp)
                         Text(
-                            text = truncatedTitle,
-                            style = Typography.TitleMedium,
-                            color = Theme.colors.textPrimary,
+                            text = strings.presenceOnline,
+                            style = Typography.Label,
+                            color = Theme.colors.onlineStatus,
                         )
-                        if (peerPresence?.isOnline == true) {
-                            HorizontalSpacer(6.dp)
-                            Text(
-                                text = strings.presenceOnline,
-                                style = Typography.Label,
-                                color = Theme.colors.onlineStatus,
-                            )
-                        }
                     }
                 }
-            } else null,
+            },
             rightItems = listOf(
                 NavBarItem(icon = Icons.more_horiz, onClick = onProfileClick)
             ),
@@ -1374,11 +1388,11 @@ private fun MessageRow(
                 contentAlignment = Alignment.Center,
             ) {
                 MessageActionsWrapper(message = message, isSelf = isSelf, onRequestForward = onRequestForward, onReply = onReply) {
-                    SystemMessageRow(message = message)
+                    SystemMessageRow(message = message, onUserClick = onAvatarClick)
                 }
             }
         } else {
-            SystemMessageRow(message = message)
+            SystemMessageRow(message = message, onUserClick = onAvatarClick)
         }
         return
     }
@@ -1489,18 +1503,21 @@ private fun MessageRow(
 }
 
 /**
- * 系统消息行
+ * 系统消息行（spec/05-feature/SYSTEM_MESSAGE_SPEC）。
+ *
+ * 文案优先级：
+ * 1. 撤回状态 → `strings.messageRevoked` 本地化兜底
+ * 2. 协议 `template + refs` → 走 [SystemTemplateText]（AnnotatedString，user 类型可点击）
+ * 3. 都没有 → 渲染 `parsed.text` 原文（向后兼容老的纯文本系统消息）
  */
 @Composable
 private fun SystemMessageRow(
     message: MessageEntry,
+    onUserClick: ((ULong) -> Unit)? = null,
 ) {
     val strings = PrivChatI18n.strings
     val colors = Theme.colors
     val parsed = message.parsedContent
-
-    // 文案按状态决定：撤回 → 本地化"消息已撤回"；系统 → 使用解析后文案。
-    val text = if (message.isRevoked) strings.messageRevoked else (parsed.text ?: "")
 
     Box(
         modifier = Modifier
@@ -1514,12 +1531,135 @@ private fun SystemMessageRow(
                 .background(colors.surfaceVariant)
                 .padding(horizontal = 12.dp, vertical = 4.dp),
         ) {
-            Text(
-                text = text,
-                style = Typography.Label,
-                color = colors.textSecondary,
-            )
+            when {
+                message.isRevoked -> Text(
+                    text = strings.messageRevoked,
+                    style = Typography.Label,
+                    color = colors.textSecondary,
+                )
+                parsed.systemTemplate != null -> SystemTemplateText(
+                    template = parsed.systemTemplate,
+                    refs = parsed.systemRefs ?: emptyList(),
+                    templateDict = strings.systemTemplates,
+                    listSeparator = strings.systemListSeparator,
+                    textColor = colors.textSecondary,
+                    linkColor = colors.primary,
+                    onUserClick = onUserClick,
+                )
+                else -> Text(
+                    text = parsed.text ?: "",
+                    style = Typography.Label,
+                    color = colors.textSecondary,
+                )
+            }
         }
+    }
+}
+
+/**
+ * 系统消息模板渲染（spec/05-feature/SYSTEM_MESSAGE_SPEC §4.1）。
+ *
+ * 占位符两种：
+ * - `{i}`  → 替换为 `refs[i].text`
+ * - `{n+}` → 列表展开：消费 `refs[n..]`，元素之间用 [listSeparator] 拼接（处理"X 邀请 A、B、C 加入了群聊"这种不定数量）
+ *
+ * `type == "user"` 的 ref 渲染为可点击 [LinkAnnotation.Clickable]，点击调 [onUserClick]
+ * （target_id 是 ULong 字符串）；其它类型作纯文本渲染。
+ *
+ * i18n key 判定（spec §4.1）：含点号且全为 `[a-z0-9._]` 视为 key，否则字面量。
+ * 异常路径（key 未命中、占位越界、target_id 非数字）一律降级为字面文本，不抛错。
+ */
+@Composable
+private fun SystemTemplateText(
+    template: String,
+    refs: List<com.netonstream.privchat.ui.models.MessageRef>,
+    templateDict: Map<String, String>,
+    listSeparator: String,
+    textColor: Color,
+    linkColor: Color,
+    onUserClick: ((ULong) -> Unit)?,
+) {
+    val isI18nKey = template.contains('.') &&
+        template.all { it.isLowerCase() || it.isDigit() || it == '.' || it == '_' }
+    val effective = if (isI18nKey) templateDict[template] ?: template else template
+
+    val linkStyle = TextLinkStyles(style = SpanStyle(color = linkColor))
+
+    val annotated = buildAnnotatedString {
+        // 占位符正则：`{i}` 或 `{i+}`
+        val regex = Regex("\\{(\\d+)(\\+)?\\}")
+        var cursor = 0
+        regex.findAll(effective).forEach { match ->
+            // append literal slice before placeholder
+            if (match.range.first > cursor) {
+                append(effective.substring(cursor, match.range.first))
+            }
+            val startIdx = match.groupValues[1].toIntOrNull() ?: -1
+            val isList = match.groupValues[2] == "+"
+
+            if (startIdx < 0) {
+                append(match.value)
+            } else if (isList) {
+                // {n+}: refs[n..] joined with listSeparator
+                val tail = if (startIdx < refs.size) refs.subList(startIdx, refs.size) else emptyList()
+                tail.forEachIndexed { i, ref ->
+                    if (i > 0) append(listSeparator)
+                    appendRefSpan(ref, linkStyle, onUserClick)
+                }
+            } else {
+                // {i}: single ref
+                val ref = refs.getOrNull(startIdx)
+                if (ref == null) {
+                    append(match.value) // 越界：保留占位符字面，不抛错
+                } else {
+                    appendRefSpan(ref, linkStyle, onUserClick)
+                }
+            }
+            cursor = match.range.last + 1
+        }
+        if (cursor < effective.length) {
+            append(effective.substring(cursor))
+        }
+    }
+
+    KuiklyText(
+        text = annotated,
+        color = textColor,
+        fontSize = Typography.Label.fontSize,
+        fontWeight = Typography.Label.fontWeight,
+        lineHeight = Typography.Label.lineHeight,
+    )
+}
+
+/**
+ * 把一个 [com.netonstream.privchat.ui.models.MessageRef] 渲染为 AnnotatedString 片段。
+ *
+ * `user` 类型加 [LinkAnnotation.Clickable] 包裹（点击触发 [onUserClick]），其他类型纯文本。
+ * Spec §4 + MESSAGE_REF_SPEC §3：未知类型降级为纯文本。
+ */
+private fun com.tencent.kuikly.compose.ui.text.AnnotatedString.Builder.appendRefSpan(
+    ref: com.netonstream.privchat.ui.models.MessageRef,
+    linkStyle: TextLinkStyles,
+    onUserClick: ((ULong) -> Unit)?,
+) {
+    when (ref.type) {
+        "user" -> {
+            val targetUid = ref.targetId.toULongOrNull()
+            if (targetUid != null && onUserClick != null) {
+                withLink(
+                    LinkAnnotation.Clickable(
+                        tag = "user-${ref.targetId}",
+                        styles = linkStyle,
+                        linkInteractionListener = LinkInteractionListener { onUserClick(targetUid) },
+                    ),
+                ) {
+                    append(ref.text)
+                }
+            } else {
+                append(ref.text)
+            }
+        }
+        else -> append(ref.text)
     }
 }
 

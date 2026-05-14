@@ -2,6 +2,7 @@ package com.netonstream.privchat.ui.models
 
 import com.netonstream.privchat.sdk.dto.*
 import com.netonstream.privchat.sdk.dto.MessageStatus
+import com.netonstream.privchat.ui.i18n.PrivChatStrings
 
 /**
  * SDK 类型扩展函数
@@ -27,9 +28,35 @@ val ChannelListEntry.unreadCount: Int
 val ChannelListEntry.isGroup: Boolean
     get() = !isDm
 
-/** 最后消息预览文本 */
+/**
+ * 最后消息**纯字符串预览**（兼容老调用方；不带 i18n 渲染能力）。
+ *
+ * **不推荐**新代码直接用这个。新代码应该用 [previewText]（在调用处传 PrivChatStrings）
+ * 拿到本地化的预览文案——架构归正后 SDK 不再做"[图片]"等改写，preview 渲染 100%
+ * 在 UI 层完成，参见 `SYSTEM_MESSAGE_SPEC` 与 `lastMessagePreviewLocalized`。
+ *
+ * 老路径返回的是 raw content：TEXT 类型可读，非文本类型会是 JSON 串——
+ * 调用方应尽快迁移到本地化版本。
+ */
+@Deprecated(
+    "Use ChannelListEntry.lastMessagePreviewLocalized(strings) to get i18n preview.",
+    ReplaceWith("lastMessagePreviewLocalized(strings)"),
+)
 val ChannelListEntry.lastMessagePreview: String
     get() = latestEvent?.content ?: ""
+
+/**
+ * 最后消息**本地化预览**（架构归正后的唯一推荐入口）。
+ *
+ * - 走 [PrivChatStrings] 字典（多语言），不再硬编码中文
+ * - 系统消息按 `template + refs` 模板化渲染（spec/SYSTEM_MESSAGE_SPEC）
+ * - 撤回 → `previewRecalled`；图片 → `previewImage`...
+ * - **永不**返回原始 JSON
+ *
+ * 实现见 `PreviewRenderer.previewOf(ChannelListEntry)`。
+ */
+fun ChannelListEntry.lastMessagePreviewLocalized(strings: PrivChatStrings): String =
+    strings.previewOf(this)
 
 /** 最后消息时间戳 */
 val ChannelListEntry.lastMessageTime: ULong

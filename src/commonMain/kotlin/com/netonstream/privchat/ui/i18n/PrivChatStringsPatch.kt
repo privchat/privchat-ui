@@ -77,6 +77,8 @@ data class PrivChatStringsPatch(
     val friendRequestTime: String? = null,
     val friendRequestAccepted: String? = null,
     val friendRequestRejected: String? = null,
+    val friendRequestView: String? = null,
+    val friendRequestAdded: String? = null,
     val searchUserTitle: String? = null,
     val searchUserPlaceholder: String? = null,
     val searchUserSearching: String? = null,
@@ -91,6 +93,8 @@ data class PrivChatStringsPatch(
     val userProfileTitle: String? = null,
     val userProfileUserId: String? = null,
     val userProfileSystemAccount: String? = null,
+    val userBadgeSystem: String? = null,
+    val userBadgeBot: String? = null,
     val userProfileBio: String? = null,
     val userProfileRemark: String? = null,
     val userProfileRemarkPlaceholder: String? = null,
@@ -227,6 +231,26 @@ data class PrivChatStringsPatch(
     val timeThursday: String? = null,
     val timeFriday: String? = null,
     val timeSaturday: String? = null,
+    /** 系统消息模板覆盖（patch 优先于内置语言包；只覆盖给定 key，未给的保留原值）。 */
+    val systemTemplates: Map<String, String>? = null,
+    /** 列表展开占位符 `{n+}` 的元素分隔符覆盖。 */
+    val systemListSeparator: String? = null,
+    // 会话列表预览覆盖
+    val previewImage: String? = null,
+    val previewVideo: String? = null,
+    val previewVoice: String? = null,
+    val previewVoiceWithDuration: String? = null,
+    val previewFile: String? = null,
+    val previewFileWithName: String? = null,
+    val previewSticker: String? = null,
+    val previewLocation: String? = null,
+    val previewLocationWithAddress: String? = null,
+    val previewLink: String? = null,
+    val previewContactCard: String? = null,
+    val previewRedPacket: String? = null,
+    val previewSystemFallback: String? = null,
+    val previewUnknown: String? = null,
+    val previewRecalled: String? = null,
 )
 
 val PrivChatStringsPatch.isEmpty: Boolean
@@ -296,6 +320,8 @@ val PrivChatStringsPatch.isEmpty: Boolean
         friendRequestTime == null &&
         friendRequestAccepted == null &&
         friendRequestRejected == null &&
+        friendRequestView == null &&
+        friendRequestAdded == null &&
         searchUserTitle == null &&
         searchUserPlaceholder == null &&
         searchUserSearching == null &&
@@ -310,6 +336,8 @@ val PrivChatStringsPatch.isEmpty: Boolean
         userProfileTitle == null &&
         userProfileUserId == null &&
         userProfileSystemAccount == null &&
+        userBadgeSystem == null &&
+        userBadgeBot == null &&
         userProfileBio == null &&
         userProfileRemark == null &&
         userProfileRemarkPlaceholder == null &&
@@ -445,7 +473,24 @@ val PrivChatStringsPatch.isEmpty: Boolean
         timeWednesday == null &&
         timeThursday == null &&
         timeFriday == null &&
-        timeSaturday == null
+        timeSaturday == null &&
+        systemTemplates == null &&
+        systemListSeparator == null &&
+        previewImage == null &&
+        previewVideo == null &&
+        previewVoice == null &&
+        previewVoiceWithDuration == null &&
+        previewFile == null &&
+        previewFileWithName == null &&
+        previewSticker == null &&
+        previewLocation == null &&
+        previewLocationWithAddress == null &&
+        previewLink == null &&
+        previewContactCard == null &&
+        previewRedPacket == null &&
+        previewSystemFallback == null &&
+        previewUnknown == null &&
+        previewRecalled == null
 
 /**
  * Apply [patch] on top of base strings. Returns the receiver unchanged when
@@ -520,6 +565,8 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         friendRequestTime = patch.friendRequestTime ?: friendRequestTime,
         friendRequestAccepted = patch.friendRequestAccepted ?: friendRequestAccepted,
         friendRequestRejected = patch.friendRequestRejected ?: friendRequestRejected,
+        friendRequestView = patch.friendRequestView ?: friendRequestView,
+        friendRequestAdded = patch.friendRequestAdded ?: friendRequestAdded,
         searchUserTitle = patch.searchUserTitle ?: searchUserTitle,
         searchUserPlaceholder = patch.searchUserPlaceholder ?: searchUserPlaceholder,
         searchUserSearching = patch.searchUserSearching ?: searchUserSearching,
@@ -534,6 +581,8 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         userProfileTitle = patch.userProfileTitle ?: userProfileTitle,
         userProfileUserId = patch.userProfileUserId ?: userProfileUserId,
         userProfileSystemAccount = patch.userProfileSystemAccount ?: userProfileSystemAccount,
+        userBadgeSystem = patch.userBadgeSystem ?: userBadgeSystem,
+        userBadgeBot = patch.userBadgeBot ?: userBadgeBot,
         userProfileBio = patch.userProfileBio ?: userProfileBio,
         userProfileRemark = patch.userProfileRemark ?: userProfileRemark,
         userProfileRemarkPlaceholder = patch.userProfileRemarkPlaceholder ?: userProfileRemarkPlaceholder,
@@ -670,5 +719,24 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         timeThursday = patch.timeThursday ?: timeThursday,
         timeFriday = patch.timeFriday ?: timeFriday,
         timeSaturday = patch.timeSaturday ?: timeSaturday,
+        systemTemplates = patch.systemTemplates
+            ?.let { override -> systemTemplates + override }
+            ?: systemTemplates,
+        systemListSeparator = patch.systemListSeparator ?: systemListSeparator,
+        previewImage = patch.previewImage ?: previewImage,
+        previewVideo = patch.previewVideo ?: previewVideo,
+        previewVoice = patch.previewVoice ?: previewVoice,
+        previewVoiceWithDuration = patch.previewVoiceWithDuration ?: previewVoiceWithDuration,
+        previewFile = patch.previewFile ?: previewFile,
+        previewFileWithName = patch.previewFileWithName ?: previewFileWithName,
+        previewSticker = patch.previewSticker ?: previewSticker,
+        previewLocation = patch.previewLocation ?: previewLocation,
+        previewLocationWithAddress = patch.previewLocationWithAddress ?: previewLocationWithAddress,
+        previewLink = patch.previewLink ?: previewLink,
+        previewContactCard = patch.previewContactCard ?: previewContactCard,
+        previewRedPacket = patch.previewRedPacket ?: previewRedPacket,
+        previewSystemFallback = patch.previewSystemFallback ?: previewSystemFallback,
+        previewUnknown = patch.previewUnknown ?: previewUnknown,
+        previewRecalled = patch.previewRecalled ?: previewRecalled,
     )
 }

@@ -17,6 +17,9 @@ import com.gearui.primitives.VerticalSpacer
 import com.tencent.kuikly.compose.ui.unit.Dp
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.navbar.NavBarItem
+import com.gearui.components.contextmenu.ContextMenu
+import com.gearui.components.contextmenu.ContextMenuItem
+import com.gearui.components.popover.PopoverPlacement
 import com.gearui.components.icon.Icons
 import com.gearui.components.cell.Cell
 import com.gearui.components.empty.EmptyState
@@ -114,18 +117,52 @@ fun ConversationPage(
         }
     }
 
-    // 下拉菜单状态
-    var showPlusMenu by remember { mutableStateOf(false) }
-
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             // 顶部导航栏
             if (showNavBar) {
                 NavBar(
                     title = strings.conversationTitle,
-                    rightItems = listOf(
-                        NavBarItem(icon = Icons.add, onClick = { showPlusMenu = true })
-                    )
+                    rightWidget = {
+                        // gearui ContextMenu：定位、阴影、点击外部消失、按下高亮都内置好了
+                        ContextMenu(
+                            placement = PopoverPlacement.BOTTOM_RIGHT,
+                            items = listOf(
+                                ContextMenuItem(
+                                    label = strings.menuCreateGroup,
+                                    icon = Icons.groups,
+                                    onClick = onCreateGroup,
+                                ),
+                                ContextMenuItem(
+                                    label = strings.menuAddFriend,
+                                    icon = Icons.person_add,
+                                    onClick = onAddFriend,
+                                ),
+                                ContextMenuItem(
+                                    label = strings.menuScan,
+                                    icon = Icons.camera_alt,
+                                    onClick = onScan,
+                                ),
+                                ContextMenuItem(
+                                    label = strings.menuMyQrCode,
+                                    icon = Icons.open_in_new,
+                                    onClick = onMyQrCode,
+                                ),
+                            ),
+                        ) { onOpen ->
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                                    .clickable(onClick = onOpen),
+                            ) {
+                                Icon(
+                                    name = Icons.add,
+                                    size = 24.dp,
+                                    tint = Theme.colors.textPrimary,
+                                )
+                            }
+                        }
+                    },
                 )
             }
             networkStatusBar?.invoke()
@@ -211,16 +248,6 @@ fun ConversationPage(
         }
         }
 
-        // "+" 下拉菜单浮层（覆盖在整个页面之上）
-        if (showNavBar && showPlusMenu) {
-            PlusDropdownMenu(
-                onDismiss = { showPlusMenu = false },
-                onCreateGroup = { showPlusMenu = false; onCreateGroup() },
-                onAddFriend = { showPlusMenu = false; onAddFriend() },
-                onScan = { showPlusMenu = false; onScan() },
-                onMyQrCode = { showPlusMenu = false; onMyQrCode() },
-            )
-        }
     }
 }
 
@@ -423,75 +450,9 @@ private fun buildDescription(
         builder.append("${strings.conversationAtMe} ")
     }
 
-    // 最后消息预览
-    builder.append(channel.lastMessagePreview)
+    // 最后消息预览（i18n + 系统消息模板渲染）——架构归正后的唯一入口
+    builder.append(channel.lastMessagePreviewLocalized(strings))
 
     return builder.toString()
 }
 
-/**
- * 首页 "+" 下拉菜单（仿微信风格）
- */
-@Composable
-private fun PlusDropdownMenu(
-    onDismiss: () -> Unit,
-    onCreateGroup: () -> Unit,
-    onAddFriend: () -> Unit,
-    onScan: () -> Unit,
-    onMyQrCode: () -> Unit,
-) {
-    val strings = PrivChatI18n.strings
-
-    // 全屏透明遮罩，点击关闭菜单
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .zIndex(100f)
-            .clickable { onDismiss() }
-    ) {
-        // 菜单面板，定位到右上角
-        Column(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 56.dp, end = 12.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xFF353535))
-                .width(160.dp)
-        ) {
-            PlusMenuItem(icon = Icons.groups, text = strings.menuCreateGroup, onClick = onCreateGroup)
-            PlusMenuItem(icon = Icons.person_add, text = strings.menuAddFriend, onClick = onAddFriend)
-            PlusMenuItem(icon = Icons.camera_alt, text = strings.menuScan, onClick = onScan)
-            PlusMenuItem(icon = Icons.open_in_new, text = strings.menuMyQrCode, onClick = onMyQrCode)
-        }
-    }
-}
-
-/**
- * 下拉菜单项
- */
-@Composable
-private fun PlusMenuItem(
-    icon: String,
-    text: String,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            name = icon,
-            size = 20.dp,
-            tint = Color.White,
-        )
-        HorizontalSpacer(12.dp)
-        Text(
-            text = text,
-            style = Typography.BodyMedium,
-            color = Color.White,
-        )
-    }
-}
