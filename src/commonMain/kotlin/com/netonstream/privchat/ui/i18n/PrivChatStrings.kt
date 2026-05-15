@@ -108,28 +108,22 @@ data class PrivChatStrings(
     val friendRequestSourceUnknown: String,
     /** Sent 列表空状态。 */
     val friendRequestSentEmpty: String,
-    /** 申请副标题：通过搜索添加（source="search"）。 */
-    val friendRequestSourceSearch: String,
-    /** 通过手机号添加（source="phone"）。 */
-    val friendRequestSourcePhone: String,
-    /** 扫码添加（source="qrcode"）。 */
-    val friendRequestSourceQrcode: String,
-    /** 群成员添加（source="group"）。 */
-    val friendRequestSourceGroup: String,
-    /** 名片分享添加（source="card_share"）。 */
-    val friendRequestSourceCardShare: String,
-    /** 聊天会话添加（source="conversation"）。 */
-    val friendRequestSourceConversation: String,
-    /** Sent tab 状态：等待对方验证（status=pending）。 */
-    val friendRequestStatusWaiting: String,
-    /** Sent tab 状态：对方已通过（status=accepted）。 */
-    val friendRequestStatusAccepted: String,
-    /** Sent tab 状态：对方已拒绝（status=rejected）。 */
-    val friendRequestStatusRejected: String,
-    /** Sent tab 状态：我已撤回（status=recalled）。 */
-    val friendRequestStatusRecalled: String,
-    /** Sent tab 状态：申请已过期（status=expired）。 */
-    val friendRequestStatusExpired: String,
+    /**
+     * 申请来源类型 → 显示标签。key 与 server `FriendRequestSource` 字符串对齐：
+     * `search` / `phone` / `qrcode` / `group` / `card_share` / `conversation`。
+     * 缺失时 UI 应回退到 [friendRequestSourceUnknown]。
+     *
+     * **合并理由**：PrivChatStrings 之前 256 个构造参数命中 JVM/Dalvik
+     * 单方法 255 参数硬上限，导致 dex verifier 拒绝加载 PrivChatStringPacks
+     * `<clinit>`，应用启动闪退。把零碎 source/status key 合到 Map 后参数
+     * 数回到安全区。后续新增 source 类型不再需要动构造签名。
+     */
+    val friendRequestSourceLabels: Map<String, String>,
+    /**
+     * Sent tab 状态 → 显示标签。key 即 friendships.status 数值（0/1/3/4/5），
+     * value 是本地化字符串。缺失时按空串处理（防御性）。
+     */
+    val friendRequestStatusLabels: Map<Int, String>,
 
     // ========== 搜索用户 ==========
     val searchUserTitle: String,
@@ -453,17 +447,21 @@ object PrivChatStringPacks {
         friendRequestSectionOlder = "更早",
         friendRequestSourceUnknown = "想加你为好友",
         friendRequestSentEmpty = "暂无已发送的申请",
-        friendRequestSourceSearch = "通过搜索添加",
-        friendRequestSourcePhone = "通过手机号添加",
-        friendRequestSourceQrcode = "扫码添加",
-        friendRequestSourceGroup = "群成员添加",
-        friendRequestSourceCardShare = "名片分享添加",
-        friendRequestSourceConversation = "聊天会话添加",
-        friendRequestStatusWaiting = "等待验证",
-        friendRequestStatusAccepted = "已通过",
-        friendRequestStatusRejected = "已拒绝",
-        friendRequestStatusRecalled = "已撤回",
-        friendRequestStatusExpired = "已过期",
+        friendRequestSourceLabels = mapOf(
+            "search" to "通过搜索添加",
+            "phone" to "通过手机号添加",
+            "qrcode" to "扫码添加",
+            "group" to "群成员添加",
+            "card_share" to "名片分享添加",
+            "conversation" to "聊天会话添加",
+        ),
+        friendRequestStatusLabels = mapOf(
+            0 to "等待验证",
+            1 to "已通过",
+            3 to "已拒绝",
+            4 to "已撤回",
+            5 to "已过期",
+        ),
 
         // 搜索用户
         searchUserTitle = "添加朋友",
@@ -764,17 +762,21 @@ object PrivChatStringPacks {
         friendRequestSectionOlder = "Older",
         friendRequestSourceUnknown = "Wants to be friends",
         friendRequestSentEmpty = "No sent requests yet",
-        friendRequestSourceSearch = "From search",
-        friendRequestSourcePhone = "From phone number",
-        friendRequestSourceQrcode = "From QR code",
-        friendRequestSourceGroup = "From group",
-        friendRequestSourceCardShare = "From shared card",
-        friendRequestSourceConversation = "From chat conversation",
-        friendRequestStatusWaiting = "Waiting",
-        friendRequestStatusAccepted = "Accepted",
-        friendRequestStatusRejected = "Declined",
-        friendRequestStatusRecalled = "Recalled",
-        friendRequestStatusExpired = "Expired",
+        friendRequestSourceLabels = mapOf(
+            "search" to "From search",
+            "phone" to "From phone number",
+            "qrcode" to "From QR code",
+            "group" to "From group",
+            "card_share" to "From shared card",
+            "conversation" to "From chat conversation",
+        ),
+        friendRequestStatusLabels = mapOf(
+            0 to "Waiting",
+            1 to "Accepted",
+            3 to "Declined",
+            4 to "Recalled",
+            5 to "Expired",
+        ),
 
         // Search User
         searchUserTitle = "Add Friend",

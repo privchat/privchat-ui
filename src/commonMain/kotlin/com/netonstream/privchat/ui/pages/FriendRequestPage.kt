@@ -371,29 +371,18 @@ private fun SectionHeaderRow(title: String) {
     }
 }
 
-private fun sourceLabel(source: String?, strings: PrivChatStrings): String = when (source) {
-    "search" -> strings.friendRequestSourceSearch
-    "phone" -> strings.friendRequestSourcePhone
-    "qrcode" -> strings.friendRequestSourceQrcode
-    "group" -> strings.friendRequestSourceGroup
-    "card_share" -> strings.friendRequestSourceCardShare
-    "conversation" -> strings.friendRequestSourceConversation
-    else -> strings.friendRequestSourceUnknown
+private fun sourceLabel(source: String?, strings: PrivChatStrings): String {
+    val key = source ?: return strings.friendRequestSourceUnknown
+    return strings.friendRequestSourceLabels[key] ?: strings.friendRequestSourceUnknown
 }
 
-private fun receivedStatusLabel(status: Short, strings: PrivChatStrings): String = when (status) {
-    STATUS_ACCEPTED -> strings.friendRequestAdded
-    STATUS_REJECTED -> strings.friendRequestStatusRejected
-    STATUS_RECALLED -> strings.friendRequestStatusRecalled
-    STATUS_EXPIRED -> strings.friendRequestStatusExpired
-    else -> ""
-}
+// Received tab：accepted 用 friendRequestAdded 独立文案（"已添加" 比 "已通过" 更贴近收件人语境），
+// 其他态走 status map。
+private fun receivedStatusLabel(status: Short, strings: PrivChatStrings): String =
+    when (status) {
+        STATUS_ACCEPTED -> strings.friendRequestAdded
+        else -> strings.friendRequestStatusLabels[status.toInt()].orEmpty()
+    }
 
-private fun sentStatusLabel(status: Short, strings: PrivChatStrings): String = when (status) {
-    STATUS_PENDING -> strings.friendRequestStatusWaiting
-    STATUS_ACCEPTED -> strings.friendRequestStatusAccepted
-    STATUS_REJECTED -> strings.friendRequestStatusRejected
-    STATUS_RECALLED -> strings.friendRequestStatusRecalled
-    STATUS_EXPIRED -> strings.friendRequestStatusExpired
-    else -> ""
-}
+private fun sentStatusLabel(status: Short, strings: PrivChatStrings): String =
+    strings.friendRequestStatusLabels[status.toInt()].orEmpty()

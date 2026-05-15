@@ -87,17 +87,10 @@ data class PrivChatStringsPatch(
     val friendRequestSectionOlder: String? = null,
     val friendRequestSourceUnknown: String? = null,
     val friendRequestSentEmpty: String? = null,
-    val friendRequestSourceSearch: String? = null,
-    val friendRequestSourcePhone: String? = null,
-    val friendRequestSourceQrcode: String? = null,
-    val friendRequestSourceGroup: String? = null,
-    val friendRequestSourceCardShare: String? = null,
-    val friendRequestSourceConversation: String? = null,
-    val friendRequestStatusWaiting: String? = null,
-    val friendRequestStatusAccepted: String? = null,
-    val friendRequestStatusRejected: String? = null,
-    val friendRequestStatusRecalled: String? = null,
-    val friendRequestStatusExpired: String? = null,
+    /** Patch overlay：增量覆写 source 标签；merge 时与基线 map 取 union（patch 覆盖）。 */
+    val friendRequestSourceLabels: Map<String, String>? = null,
+    /** 同上，针对 status 标签。 */
+    val friendRequestStatusLabels: Map<Int, String>? = null,
     val searchUserTitle: String? = null,
     val searchUserPlaceholder: String? = null,
     val searchUserSearching: String? = null,
@@ -349,17 +342,8 @@ val PrivChatStringsPatch.isEmpty: Boolean
         friendRequestSectionOlder == null &&
         friendRequestSourceUnknown == null &&
         friendRequestSentEmpty == null &&
-        friendRequestSourceSearch == null &&
-        friendRequestSourcePhone == null &&
-        friendRequestSourceQrcode == null &&
-        friendRequestSourceGroup == null &&
-        friendRequestSourceCardShare == null &&
-        friendRequestSourceConversation == null &&
-        friendRequestStatusWaiting == null &&
-        friendRequestStatusAccepted == null &&
-        friendRequestStatusRejected == null &&
-        friendRequestStatusRecalled == null &&
-        friendRequestStatusExpired == null &&
+        friendRequestSourceLabels == null &&
+        friendRequestStatusLabels == null &&
         searchUserTitle == null &&
         searchUserPlaceholder == null &&
         searchUserSearching == null &&
@@ -613,17 +597,12 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         friendRequestSectionOlder = patch.friendRequestSectionOlder ?: friendRequestSectionOlder,
         friendRequestSourceUnknown = patch.friendRequestSourceUnknown ?: friendRequestSourceUnknown,
         friendRequestSentEmpty = patch.friendRequestSentEmpty ?: friendRequestSentEmpty,
-        friendRequestSourceSearch = patch.friendRequestSourceSearch ?: friendRequestSourceSearch,
-        friendRequestSourcePhone = patch.friendRequestSourcePhone ?: friendRequestSourcePhone,
-        friendRequestSourceQrcode = patch.friendRequestSourceQrcode ?: friendRequestSourceQrcode,
-        friendRequestSourceGroup = patch.friendRequestSourceGroup ?: friendRequestSourceGroup,
-        friendRequestSourceCardShare = patch.friendRequestSourceCardShare ?: friendRequestSourceCardShare,
-        friendRequestSourceConversation = patch.friendRequestSourceConversation ?: friendRequestSourceConversation,
-        friendRequestStatusWaiting = patch.friendRequestStatusWaiting ?: friendRequestStatusWaiting,
-        friendRequestStatusAccepted = patch.friendRequestStatusAccepted ?: friendRequestStatusAccepted,
-        friendRequestStatusRejected = patch.friendRequestStatusRejected ?: friendRequestStatusRejected,
-        friendRequestStatusRecalled = patch.friendRequestStatusRecalled ?: friendRequestStatusRecalled,
-        friendRequestStatusExpired = patch.friendRequestStatusExpired ?: friendRequestStatusExpired,
+        friendRequestSourceLabels = patch.friendRequestSourceLabels
+            ?.let { friendRequestSourceLabels + it }
+            ?: friendRequestSourceLabels,
+        friendRequestStatusLabels = patch.friendRequestStatusLabels
+            ?.let { friendRequestStatusLabels + it }
+            ?: friendRequestStatusLabels,
         searchUserTitle = patch.searchUserTitle ?: searchUserTitle,
         searchUserPlaceholder = patch.searchUserPlaceholder ?: searchUserPlaceholder,
         searchUserSearching = patch.searchUserSearching ?: searchUserSearching,
