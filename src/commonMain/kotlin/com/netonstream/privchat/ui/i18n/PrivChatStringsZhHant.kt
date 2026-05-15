@@ -93,6 +93,17 @@ val PrivChatStringsZhHant = PrivChatStrings(
     friendRequestSectionOlder = "更早",
     friendRequestSourceUnknown = "想加你為好友",
     friendRequestSentEmpty = "暫無已發送的申請",
+    friendRequestSourceSearch = "透過搜尋新增",
+    friendRequestSourcePhone = "透過手機號新增",
+    friendRequestSourceQrcode = "掃碼新增",
+    friendRequestSourceGroup = "群成員新增",
+    friendRequestSourceCardShare = "名片分享新增",
+    friendRequestSourceConversation = "聊天會話新增",
+    friendRequestStatusWaiting = "等待驗證",
+    friendRequestStatusAccepted = "已通過",
+    friendRequestStatusRejected = "已拒絕",
+    friendRequestStatusRecalled = "已撤回",
+    friendRequestStatusExpired = "已過期",
 
     // 搜尋用戶
     searchUserTitle = "新增朋友",

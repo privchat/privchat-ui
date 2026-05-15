@@ -158,8 +158,23 @@ object PrivChat {
 
     private val _friendRequests = MutableStateFlow<List<FriendPendingEntry>>(emptyList())
 
-    /** 好友申请列表 */
+    /** 好友申请列表（旧版——来自 friend/pending RPC，等价于"我收到的"）。
+     *  保留兼容老调用方；新代码应该用 [receivedFriendRequests] / [sentFriendRequests]。 */
     val friendRequests: StateFlow<List<FriendPendingEntry>> = _friendRequests.asStateFlow()
+
+    private val _receivedFriendRequests =
+        MutableStateFlow<List<FriendRequestEntry>>(emptyList())
+
+    /** F-sync.3: 我收到的好友申请（本地 friendships 投影，is_outgoing=false）。
+     *  默认只返 pending(0) + rejected(3) + recalled(4) + expired(5)。 */
+    val receivedFriendRequests: StateFlow<List<FriendRequestEntry>> =
+        _receivedFriendRequests.asStateFlow()
+
+    private val _sentFriendRequests = MutableStateFlow<List<FriendRequestEntry>>(emptyList())
+
+    /** F-sync.3: 我发出的好友申请（本地 friendships 投影，is_outgoing=true）。 */
+    val sentFriendRequests: StateFlow<List<FriendRequestEntry>> =
+        _sentFriendRequests.asStateFlow()
 
     // ========== 群组数据（直接用 SDK 类型） ==========
 
@@ -302,6 +317,8 @@ object PrivChat {
         _messagesByChannel.value = emptyMap()
         _friends.value = emptyList()
         _friendRequests.value = emptyList()
+        _receivedFriendRequests.value = emptyList()
+        _sentFriendRequests.value = emptyList()
         _groups.value = emptyList()
         _groupMembers.value = emptyList()
         _presences.value = emptyMap()
@@ -707,6 +724,16 @@ object PrivChat {
     /** 更新好友申请列表 */
     fun updateFriendRequests(list: List<FriendPendingEntry>) {
         _friendRequests.value = list
+    }
+
+    /** F-sync.3: 更新我收到的好友申请（本地 friendships 投影）。 */
+    fun updateReceivedFriendRequests(list: List<FriendRequestEntry>) {
+        _receivedFriendRequests.value = list
+    }
+
+    /** F-sync.3: 更新我发出的好友申请（本地 friendships 投影）。 */
+    fun updateSentFriendRequests(list: List<FriendRequestEntry>) {
+        _sentFriendRequests.value = list
     }
 
     /** 更新群组列表 */

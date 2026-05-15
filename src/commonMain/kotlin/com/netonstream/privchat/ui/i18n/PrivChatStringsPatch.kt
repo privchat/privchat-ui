@@ -87,6 +87,17 @@ data class PrivChatStringsPatch(
     val friendRequestSectionOlder: String? = null,
     val friendRequestSourceUnknown: String? = null,
     val friendRequestSentEmpty: String? = null,
+    val friendRequestSourceSearch: String? = null,
+    val friendRequestSourcePhone: String? = null,
+    val friendRequestSourceQrcode: String? = null,
+    val friendRequestSourceGroup: String? = null,
+    val friendRequestSourceCardShare: String? = null,
+    val friendRequestSourceConversation: String? = null,
+    val friendRequestStatusWaiting: String? = null,
+    val friendRequestStatusAccepted: String? = null,
+    val friendRequestStatusRejected: String? = null,
+    val friendRequestStatusRecalled: String? = null,
+    val friendRequestStatusExpired: String? = null,
     val searchUserTitle: String? = null,
     val searchUserPlaceholder: String? = null,
     val searchUserSearching: String? = null,
@@ -338,6 +349,17 @@ val PrivChatStringsPatch.isEmpty: Boolean
         friendRequestSectionOlder == null &&
         friendRequestSourceUnknown == null &&
         friendRequestSentEmpty == null &&
+        friendRequestSourceSearch == null &&
+        friendRequestSourcePhone == null &&
+        friendRequestSourceQrcode == null &&
+        friendRequestSourceGroup == null &&
+        friendRequestSourceCardShare == null &&
+        friendRequestSourceConversation == null &&
+        friendRequestStatusWaiting == null &&
+        friendRequestStatusAccepted == null &&
+        friendRequestStatusRejected == null &&
+        friendRequestStatusRecalled == null &&
+        friendRequestStatusExpired == null &&
         searchUserTitle == null &&
         searchUserPlaceholder == null &&
         searchUserSearching == null &&
@@ -591,6 +613,17 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         friendRequestSectionOlder = patch.friendRequestSectionOlder ?: friendRequestSectionOlder,
         friendRequestSourceUnknown = patch.friendRequestSourceUnknown ?: friendRequestSourceUnknown,
         friendRequestSentEmpty = patch.friendRequestSentEmpty ?: friendRequestSentEmpty,
+        friendRequestSourceSearch = patch.friendRequestSourceSearch ?: friendRequestSourceSearch,
+        friendRequestSourcePhone = patch.friendRequestSourcePhone ?: friendRequestSourcePhone,
+        friendRequestSourceQrcode = patch.friendRequestSourceQrcode ?: friendRequestSourceQrcode,
+        friendRequestSourceGroup = patch.friendRequestSourceGroup ?: friendRequestSourceGroup,
+        friendRequestSourceCardShare = patch.friendRequestSourceCardShare ?: friendRequestSourceCardShare,
+        friendRequestSourceConversation = patch.friendRequestSourceConversation ?: friendRequestSourceConversation,
+        friendRequestStatusWaiting = patch.friendRequestStatusWaiting ?: friendRequestStatusWaiting,
+        friendRequestStatusAccepted = patch.friendRequestStatusAccepted ?: friendRequestStatusAccepted,
+        friendRequestStatusRejected = patch.friendRequestStatusRejected ?: friendRequestStatusRejected,
+        friendRequestStatusRecalled = patch.friendRequestStatusRecalled ?: friendRequestStatusRecalled,
+        friendRequestStatusExpired = patch.friendRequestStatusExpired ?: friendRequestStatusExpired,
         searchUserTitle = patch.searchUserTitle ?: searchUserTitle,
         searchUserPlaceholder = patch.searchUserPlaceholder ?: searchUserPlaceholder,
         searchUserSearching = patch.searchUserSearching ?: searchUserSearching,

@@ -66,7 +66,10 @@ fun ContactPage(
     val strings = PrivChatI18n.strings
     val friends by PrivChat.friends.collectAsState()
     val groups by PrivChat.groups.collectAsState()
-    val friendRequests by PrivChat.friendRequests.collectAsState()
+    // F-sync.3: 联系人页"好友申请"入口的红点 count 切到本地投影。
+    // pending 行才需要标红——rejected/recalled/expired 不应该再提示用户。
+    val receivedFriendRequests by PrivChat.receivedFriendRequests.collectAsState()
+    val pendingReceivedCount = receivedFriendRequests.count { it.status.toInt() == 0 }
     val presences by PrivChat.presences.collectAsState()
 
     var selectedTab by remember { mutableStateOf(CONTACT_TAB_FRIENDS) }
@@ -110,7 +113,7 @@ fun ContactPage(
             CONTACT_TAB_FRIENDS -> FriendsTabContent(
                 friends = friends,
                 presences = presences,
-                friendRequestCount = friendRequests.size,
+                friendRequestCount = pendingReceivedCount,
                 searchQuery = searchQuery,
                 onFriendClick = onFriendClick,
                 onFriendRequestClick = onFriendRequestClick,

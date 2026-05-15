@@ -1,10 +1,11 @@
 package com.netonstream.privchat.ui.pages
 
 import androidx.compose.runtime.*
-import com.netonstream.privchat.sdk.dto.FriendPendingEntry
+import com.netonstream.privchat.sdk.dto.FriendRequestEntry
 import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.components.ChatAvatar
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
+import com.netonstream.privchat.ui.i18n.PrivChatStrings
 import com.netonstream.privchat.ui.utils.Formatter
 import com.gearui.theme.Theme
 import com.gearui.foundation.AvatarSpecs
@@ -32,39 +33,47 @@ import com.tencent.kuikly.compose.ui.unit.dp
 private const val TAB_RECEIVED = "received"
 private const val TAB_SENT = "sent"
 
+// friendships.status 值；与 server FriendshipStatus 对齐。
+private const val STATUS_PENDING: Short = 0
+private const val STATUS_ACCEPTED: Short = 1
+private const val STATUS_REJECTED: Short = 3
+private const val STATUS_RECALLED: Short = 4
+private const val STATUS_EXPIRED: Short = 5
+
 /**
- * 好友申请页。
+ * 好友申请页（F-sync.3：数据源切到本地 friendships 投影）。
  *
- * 顶部 Tabs 切换【收到的 / 我发送的】两个面板。
+ * 顶部 Tabs：【收到的 / 我发送的】。两个 tab 的数据都来自
+ * [PrivChat.receivedFriendRequests] / [PrivChat.sentFriendRequests]，由 SDK 通过
+ * `entity/sync_entities("friend")` 多端同步——离线后第一次连接也能正确回放。
  *
- * - **收到的**：分两段——当前 local 月份的申请（标题 "YYYY 年 M 月"）+ 更早
- *   （标题 "更早"）。每行显示头像 + 名字 + 副标题（含申请附言或默认 "想加你为
- *   好友"），右侧是【拒绝】【接受】两个按钮；行整体点击仍然跳用户资料页保留
- *   旧入口（兼容老 [onRequestClick] 行为）。已被同意的行（user.isFriend）显
- *   示灰色"已添加"占位，按钮区移除。
- * - **我发送的**：v1 暂未接 SDK（缺 friend/sent_list RPC），显示 EmptyState
- *   占位。后续补 RPC 后再接数据 + Recall 按钮。
+ * - **收到的**：按 local 月份分两段（当月 / 更早）。pending(0) 行显示 Accept/Decline
+ *   按钮；rejected/recalled/expired 行显示只读状态文本。
+ * - **我发送的**：按时间倒序排列。pending 行带 Recall 按钮；rejected/recalled/
+ *   expired/accepted 行只读显示状态。
  *
- * @param onAccept 接受好友申请回调（点击行内"接受"按钮）
- * @param onDecline 拒绝好友申请回调（点击行内"拒绝"按钮）
- * @param onRequestClick 点击整行回调（跳用户资料页，与旧版兼容）
+ * @param onAccept Received tab 行内"接受"按钮
+ * @param onDecline Received tab 行内"拒绝"按钮
+ * @param onRecall Sent tab 行内"撤回"按钮
+ * @param onRequestClick 点击整行——跳用户资料页（兼容旧入口）
  */
 @Composable
 fun FriendRequestPage(
     onBack: () -> Unit,
-    onRequestClick: (FriendPendingEntry) -> Unit = {},
-    onAccept: (FriendPendingEntry) -> Unit = {},
-    onDecline: (FriendPendingEntry) -> Unit = {},
+    onRequestClick: (FriendRequestEntry) -> Unit = {},
+    onAccept: (FriendRequestEntry) -> Unit = {},
+    onDecline: (FriendRequestEntry) -> Unit = {},
+    onRecall: (FriendRequestEntry) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val strings = PrivChatI18n.strings
-    val friendRequests by PrivChat.friendRequests.collectAsState()
+    val received by PrivChat.receivedFriendRequests.collectAsState()
+    val sent by PrivChat.sentFriendRequests.collectAsState()
 
     var selectedTab by remember { mutableStateOf(TAB_RECEIVED) }
 
-    // 截图风格：tab label 带 count，如 "收到的 4"
-    val receivedLabel = "${strings.friendRequestTabReceived} ${friendRequests.size}"
-    val sentLabel = "${strings.friendRequestTabSent} 0"
+    val receivedLabel = "${strings.friendRequestTabReceived} ${received.size}"
+    val sentLabel = "${strings.friendRequestTabSent} ${sent.size}"
 
     Column(modifier = modifier.fillMaxSize()) {
         NavBar(
@@ -87,22 +96,30 @@ fun FriendRequestPage(
 
         when (selectedTab) {
             TAB_RECEIVED -> ReceivedTabContent(
-                requests = friendRequests,
+                requests = received,
                 onRequestClick = onRequestClick,
                 onAccept = onAccept,
                 onDecline = onDecline,
             )
-            TAB_SENT -> SentTabContent()
+            TAB_SENT -> SentTabContent(
+                requests = sent,
+                onRequestClick = onRequestClick,
+                onRecall = onRecall,
+            )
         }
     }
 }
 
+// ---------------------------------------------------------------------------
+// Received tab
+// ---------------------------------------------------------------------------
+
 @Composable
 private fun ReceivedTabContent(
-    requests: List<FriendPendingEntry>,
-    onRequestClick: (FriendPendingEntry) -> Unit,
-    onAccept: (FriendPendingEntry) -> Unit,
-    onDecline: (FriendPendingEntry) -> Unit,
+    requests: List<FriendRequestEntry>,
+    onRequestClick: (FriendRequestEntry) -> Unit,
+    onAccept: (FriendRequestEntry) -> Unit,
+    onDecline: (FriendRequestEntry) -> Unit,
 ) {
     val strings = PrivChatI18n.strings
 
@@ -113,7 +130,6 @@ private fun ReceivedTabContent(
         return
     }
 
-    // 按"当前月 vs 更早"分两段；列表内仍按 createdAt DESC 排序
     val sorted = requests.sortedByDescending { it.createdAt }
     val (current, older) = sorted.partition { Formatter.isInCurrentLocalMonth(it.createdAt) }
 
@@ -122,7 +138,7 @@ private fun ReceivedTabContent(
             item { SectionHeaderRow(title = Formatter.currentLocalMonthLabel()) }
             items(current.size) { idx ->
                 val r = current[idx]
-                FriendRequestReceivedRow(
+                ReceivedRow(
                     request = r,
                     showDateInSubtitle = true,
                     onRowClick = { onRequestClick(r) },
@@ -135,7 +151,7 @@ private fun ReceivedTabContent(
             item { SectionHeaderRow(title = strings.friendRequestSectionOlder) }
             items(older.size) { idx ->
                 val r = older[idx]
-                FriendRequestReceivedRow(
+                ReceivedRow(
                     request = r,
                     showDateInSubtitle = false,
                     onRowClick = { onRequestClick(r) },
@@ -148,33 +164,8 @@ private fun ReceivedTabContent(
 }
 
 @Composable
-private fun SentTabContent() {
-    val strings = PrivChatI18n.strings
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        EmptyState(message = strings.friendRequestSentEmpty)
-    }
-}
-
-@Composable
-private fun SectionHeaderRow(title: String) {
-    val colors = Theme.colors
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.background)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-    ) {
-        Text(
-            text = title,
-            style = Typography.Label,
-            color = colors.textSecondary,
-        )
-    }
-}
-
-@Composable
-private fun FriendRequestReceivedRow(
-    request: FriendPendingEntry,
+private fun ReceivedRow(
+    request: FriendRequestEntry,
     showDateInSubtitle: Boolean,
     onRowClick: () -> Unit,
     onAccept: () -> Unit,
@@ -183,31 +174,31 @@ private fun FriendRequestReceivedRow(
     val strings = PrivChatI18n.strings
     val colors = Theme.colors
 
-    val displayName = request.user.nickname.takeIf { it.isNotBlank() }
-        ?: request.user.username.takeIf { it.isNotBlank() }
-        ?: "User ${request.fromUserId}"
-    val alreadyFriend = request.user.isFriend
+    val displayName = request.nickname?.takeIf { it.isNotBlank() }
+        ?: request.username.takeIf { it.isNotBlank() }
+        ?: "User ${request.userId}"
 
-    // 副标题：date · message-or-fallback（当月） / message-or-fallback（更早）
     val subtitleBody = request.message?.takeIf { it.isNotBlank() }
-        ?: strings.friendRequestSourceUnknown
+        ?: sourceLabel(request.source, strings)
     val subtitle = if (showDateInSubtitle) {
         "${Formatter.friendRequestShortDate(request.createdAt)} · $subtitleBody"
     } else {
         subtitleBody
     }
 
+    val isPending = request.status == STATUS_PENDING
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(colors.surface)
-            .clickable(onClick = if (alreadyFriend) ({ }) else onRowClick)
+            .clickable(onClick = onRowClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             ChatAvatar(
-                url = request.user.avatarUrl,
+                url = request.avatarUrl,
                 name = displayName,
                 size = AvatarSpecs.Size.medium,
             )
@@ -225,16 +216,16 @@ private fun FriendRequestReceivedRow(
                     color = colors.textSecondary,
                 )
             }
-            if (alreadyFriend) {
+            if (!isPending) {
                 Text(
-                    text = strings.friendRequestAdded,
+                    text = receivedStatusLabel(request.status, strings),
                     style = Typography.BodyMedium,
                     color = colors.textSecondary,
                 )
             }
         }
 
-        if (!alreadyFriend) {
+        if (isPending) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -262,4 +253,147 @@ private fun FriendRequestReceivedRow(
             }
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Sent tab
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun SentTabContent(
+    requests: List<FriendRequestEntry>,
+    onRequestClick: (FriendRequestEntry) -> Unit,
+    onRecall: (FriendRequestEntry) -> Unit,
+) {
+    val strings = PrivChatI18n.strings
+
+    if (requests.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            EmptyState(message = strings.friendRequestSentEmpty)
+        }
+        return
+    }
+
+    val sorted = requests.sortedByDescending { it.updatedAt }
+
+    GearLazyColumn(modifier = Modifier.fillMaxSize()) {
+        items(sorted.size) { idx ->
+            val r = sorted[idx]
+            SentRow(
+                request = r,
+                onRowClick = { onRequestClick(r) },
+                onRecall = { onRecall(r) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun SentRow(
+    request: FriendRequestEntry,
+    onRowClick: () -> Unit,
+    onRecall: () -> Unit,
+) {
+    val strings = PrivChatI18n.strings
+    val colors = Theme.colors
+
+    val displayName = request.nickname?.takeIf { it.isNotBlank() }
+        ?: request.username.takeIf { it.isNotBlank() }
+        ?: "User ${request.userId}"
+    val subtitle = sourceLabel(request.source, strings) +
+        " · ${Formatter.friendRequestRelativeShort(request.updatedAt)}"
+    val isPending = request.status == STATUS_PENDING
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.surface)
+            .clickable(onClick = onRowClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ChatAvatar(
+            url = request.avatarUrl,
+            name = displayName,
+            size = AvatarSpecs.Size.medium,
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = displayName,
+                style = Typography.BodyLarge,
+                color = colors.textPrimary,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                style = Typography.BodySmall,
+                color = colors.textSecondary,
+            )
+        }
+        if (isPending) {
+            Button(
+                text = strings.friendRequestRecall,
+                onClick = onRecall,
+                theme = ButtonTheme.DEFAULT,
+                type = ButtonType.FILL,
+                size = ButtonSize.SMALL,
+                shape = ButtonShape.ROUND,
+            )
+        } else {
+            Text(
+                text = sentStatusLabel(request.status, strings),
+                style = Typography.BodyMedium,
+                color = colors.textSecondary,
+            )
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Shared components & helpers
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun SectionHeaderRow(title: String) {
+    val colors = Theme.colors
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.background)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = title,
+            style = Typography.Label,
+            color = colors.textSecondary,
+        )
+    }
+}
+
+private fun sourceLabel(source: String?, strings: PrivChatStrings): String = when (source) {
+    "search" -> strings.friendRequestSourceSearch
+    "phone" -> strings.friendRequestSourcePhone
+    "qrcode" -> strings.friendRequestSourceQrcode
+    "group" -> strings.friendRequestSourceGroup
+    "card_share" -> strings.friendRequestSourceCardShare
+    "conversation" -> strings.friendRequestSourceConversation
+    else -> strings.friendRequestSourceUnknown
+}
+
+private fun receivedStatusLabel(status: Short, strings: PrivChatStrings): String = when (status) {
+    STATUS_ACCEPTED -> strings.friendRequestAdded
+    STATUS_REJECTED -> strings.friendRequestStatusRejected
+    STATUS_RECALLED -> strings.friendRequestStatusRecalled
+    STATUS_EXPIRED -> strings.friendRequestStatusExpired
+    else -> ""
+}
+
+private fun sentStatusLabel(status: Short, strings: PrivChatStrings): String = when (status) {
+    STATUS_PENDING -> strings.friendRequestStatusWaiting
+    STATUS_ACCEPTED -> strings.friendRequestStatusAccepted
+    STATUS_REJECTED -> strings.friendRequestStatusRejected
+    STATUS_RECALLED -> strings.friendRequestStatusRecalled
+    STATUS_EXPIRED -> strings.friendRequestStatusExpired
+    else -> ""
 }

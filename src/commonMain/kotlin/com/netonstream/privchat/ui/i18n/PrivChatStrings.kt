@@ -108,6 +108,28 @@ data class PrivChatStrings(
     val friendRequestSourceUnknown: String,
     /** Sent 列表空状态。 */
     val friendRequestSentEmpty: String,
+    /** 申请副标题：通过搜索添加（source="search"）。 */
+    val friendRequestSourceSearch: String,
+    /** 通过手机号添加（source="phone"）。 */
+    val friendRequestSourcePhone: String,
+    /** 扫码添加（source="qrcode"）。 */
+    val friendRequestSourceQrcode: String,
+    /** 群成员添加（source="group"）。 */
+    val friendRequestSourceGroup: String,
+    /** 名片分享添加（source="card_share"）。 */
+    val friendRequestSourceCardShare: String,
+    /** 聊天会话添加（source="conversation"）。 */
+    val friendRequestSourceConversation: String,
+    /** Sent tab 状态：等待对方验证（status=pending）。 */
+    val friendRequestStatusWaiting: String,
+    /** Sent tab 状态：对方已通过（status=accepted）。 */
+    val friendRequestStatusAccepted: String,
+    /** Sent tab 状态：对方已拒绝（status=rejected）。 */
+    val friendRequestStatusRejected: String,
+    /** Sent tab 状态：我已撤回（status=recalled）。 */
+    val friendRequestStatusRecalled: String,
+    /** Sent tab 状态：申请已过期（status=expired）。 */
+    val friendRequestStatusExpired: String,
 
     // ========== 搜索用户 ==========
     val searchUserTitle: String,
@@ -431,6 +453,17 @@ object PrivChatStringPacks {
         friendRequestSectionOlder = "更早",
         friendRequestSourceUnknown = "想加你为好友",
         friendRequestSentEmpty = "暂无已发送的申请",
+        friendRequestSourceSearch = "通过搜索添加",
+        friendRequestSourcePhone = "通过手机号添加",
+        friendRequestSourceQrcode = "扫码添加",
+        friendRequestSourceGroup = "群成员添加",
+        friendRequestSourceCardShare = "名片分享添加",
+        friendRequestSourceConversation = "聊天会话添加",
+        friendRequestStatusWaiting = "等待验证",
+        friendRequestStatusAccepted = "已通过",
+        friendRequestStatusRejected = "已拒绝",
+        friendRequestStatusRecalled = "已撤回",
+        friendRequestStatusExpired = "已过期",
 
         // 搜索用户
         searchUserTitle = "添加朋友",
@@ -731,6 +764,17 @@ object PrivChatStringPacks {
         friendRequestSectionOlder = "Older",
         friendRequestSourceUnknown = "Wants to be friends",
         friendRequestSentEmpty = "No sent requests yet",
+        friendRequestSourceSearch = "From search",
+        friendRequestSourcePhone = "From phone number",
+        friendRequestSourceQrcode = "From QR code",
+        friendRequestSourceGroup = "From group",
+        friendRequestSourceCardShare = "From shared card",
+        friendRequestSourceConversation = "From chat conversation",
+        friendRequestStatusWaiting = "Waiting",
+        friendRequestStatusAccepted = "Accepted",
+        friendRequestStatusRejected = "Declined",
+        friendRequestStatusRecalled = "Recalled",
+        friendRequestStatusExpired = "Expired",
 
         // Search User
         searchUserTitle = "Add Friend",
