@@ -67,7 +67,9 @@ fun ContactPage(
     val friends by PrivChat.friends.collectAsState()
     val groups by PrivChat.groups.collectAsState()
     // F-sync.3: 联系人页"好友申请"入口的红点 count 切到本地投影。
-    // pending 行才需要标红——rejected/recalled/expired 不应该再提示用户。
+    // PrivChatSDKManager.loadReceivedFriendRequests 默认 statuses=[0]，所以
+    // receivedFriendRequests 天然只含 pending；防御性再过滤一次 status==0
+    // 防御 server 误发或本地数据脏。
     val receivedFriendRequests by PrivChat.receivedFriendRequests.collectAsState()
     val pendingReceivedCount = receivedFriendRequests.count { it.status.toInt() == 0 }
     val presences by PrivChat.presences.collectAsState()
