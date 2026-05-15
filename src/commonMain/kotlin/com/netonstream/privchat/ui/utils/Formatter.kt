@@ -172,6 +172,65 @@ object Formatter {
 
     fun isSameLocalDay(a: ULong, b: ULong): Boolean = isSameLocalDay(a.toLong(), b.toLong())
 
+    /** 好友申请页行内短日期——`dd/MM` 格式（零填充）。 */
+    fun friendRequestShortDate(timestamp: Long): String {
+        if (timestamp <= 0) return ""
+        val local = epochMillisToLocalDateTime(timestamp, PrivChat.timeZoneId)
+        return "${local.day.toString().padStart(2, '0')}/${local.month.toString().padStart(2, '0')}"
+    }
+
+    fun friendRequestShortDate(timestamp: ULong): String = friendRequestShortDate(timestamp.toLong())
+
+    /**
+     * 好友申请页"我发送的"行的相对时间——`刚刚 / N 分钟前 / N 小时前 /
+     * N 天前 / MM-dd / yyyy-MM-dd`。中文兜底（与 Formatter 其他方法一致）。
+     */
+    fun friendRequestRelativeShort(timestamp: Long): String {
+        if (timestamp <= 0) return ""
+        val now = currentTimeMillis()
+        val diffSec = (now - timestamp) / 1000L
+        return when {
+            diffSec < 60 -> "刚刚"
+            diffSec < 3600 -> "${diffSec / 60} 分钟前"
+            diffSec < 86_400 -> "${diffSec / 3600} 小时前"
+            diffSec < 7 * 86_400 -> "${diffSec / 86_400} 天前"
+            else -> {
+                val local = epochMillisToLocalDateTime(timestamp, PrivChat.timeZoneId)
+                val nowLocal = epochMillisToLocalDateTime(now, PrivChat.timeZoneId)
+                if (nowLocal.year == local.year) {
+                    formatMMdd(local)
+                } else {
+                    "${local.year}-${formatMMdd(local)}"
+                }
+            }
+        }
+    }
+
+    fun friendRequestRelativeShort(timestamp: ULong): String =
+        friendRequestRelativeShort(timestamp.toLong())
+
+    /**
+     * 好友申请"收到的"列表的月份分组判断：当前 local-year/month 是 ts 所在月吗？
+     *
+     * UI 据此把当月申请归到"{年}年{月}月"标题下，其余归到"更早"。
+     */
+    fun isInCurrentLocalMonth(timestamp: Long): Boolean {
+        if (timestamp <= 0) return false
+        val zone = PrivChat.timeZoneId
+        val now = currentTimeMillis()
+        val nowLocal = epochMillisToLocalDateTime(now, zone)
+        val tsLocal = epochMillisToLocalDateTime(timestamp, zone)
+        return nowLocal.year == tsLocal.year && nowLocal.month == tsLocal.month
+    }
+
+    fun isInCurrentLocalMonth(timestamp: ULong): Boolean = isInCurrentLocalMonth(timestamp.toLong())
+
+    /** 当前 local 月份的展示标签（zh-flavor），用作"收到的"列表当月分组标题。 */
+    fun currentLocalMonthLabel(): String {
+        val nowLocal = epochMillisToLocalDateTime(currentTimeMillis(), PrivChat.timeZoneId)
+        return "${nowLocal.year}年${nowLocal.month}月"
+    }
+
     // ========== 时长格式化 ==========
 
     /**

@@ -92,6 +92,22 @@ data class PrivChatStrings(
     val friendRequestView: String,
     /** "已添加"状态——申请已被同意时显示为灰色只读文案。 */
     val friendRequestAdded: String,
+    /** 申请页 Tab：收到的（带 count，如"收到 4"）。 */
+    val friendRequestTabReceived: String,
+    /** 申请页 Tab：我发送的（带 count）。 */
+    val friendRequestTabSent: String,
+    /** Decline 按钮（次要按钮，文案上可与 friendRequestReject 区分但语义同源）。 */
+    val friendRequestDecline: String,
+    /** Recall 按钮（撤回我发送的申请，v2 才真正落地，v1 是占位）。 */
+    val friendRequestRecall: String,
+    /** Recall v1 占位 toast：撤回功能即将上线。 */
+    val friendRequestRecallSoon: String,
+    /** 时间分组兜底标题——"更早"（7 天以前但还在当月或更早）。 */
+    val friendRequestSectionOlder: String,
+    /** 申请副标题——无 source / source 为兜底时的提示。 */
+    val friendRequestSourceUnknown: String,
+    /** Sent 列表空状态。 */
+    val friendRequestSentEmpty: String,
 
     // ========== 搜索用户 ==========
     val searchUserTitle: String,
@@ -407,6 +423,14 @@ object PrivChatStringPacks {
         friendRequestRejected = "已拒绝",
         friendRequestView = "查看",
         friendRequestAdded = "已添加",
+        friendRequestTabReceived = "收到的",
+        friendRequestTabSent = "我发送的",
+        friendRequestDecline = "拒绝",
+        friendRequestRecall = "撤回",
+        friendRequestRecallSoon = "撤回功能即将上线",
+        friendRequestSectionOlder = "更早",
+        friendRequestSourceUnknown = "想加你为好友",
+        friendRequestSentEmpty = "暂无已发送的申请",
 
         // 搜索用户
         searchUserTitle = "添加朋友",
@@ -699,6 +723,14 @@ object PrivChatStringPacks {
         friendRequestRejected = "Rejected",
         friendRequestView = "View",
         friendRequestAdded = "Added",
+        friendRequestTabReceived = "Received",
+        friendRequestTabSent = "Sent",
+        friendRequestDecline = "Decline",
+        friendRequestRecall = "Recall",
+        friendRequestRecallSoon = "Recall coming soon",
+        friendRequestSectionOlder = "Older",
+        friendRequestSourceUnknown = "Wants to be friends",
+        friendRequestSentEmpty = "No sent requests yet",
 
         // Search User
         searchUserTitle = "Add Friend",

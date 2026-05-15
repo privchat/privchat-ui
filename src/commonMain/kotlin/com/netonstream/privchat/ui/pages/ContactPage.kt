@@ -14,11 +14,14 @@ import com.gearui.foundation.typography.Typography
 import com.gearui.foundation.AvatarSpecs
 import com.gearui.primitives.Badge
 import com.gearui.components.navbar.NavBar
-import com.gearui.components.navbar.NavBarItem
 import com.gearui.components.icon.Icons
 import com.gearui.components.cell.Cell
 import com.gearui.components.empty.EmptyState
 import com.gearui.components.searchbar.SearchBar
+import com.gearui.components.tabs.Tab
+import com.gearui.components.tabs.Tabs
+import com.gearui.components.tabs.TabsOutlineType
+import com.gearui.components.tabs.TabsSize
 import com.gearui.foundation.primitives.Icon
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
@@ -28,16 +31,26 @@ import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.draw.clip
 import com.tencent.kuikly.compose.ui.unit.dp
 
+private const val CONTACT_TAB_FRIENDS = "friends"
+private const val CONTACT_TAB_GROUPS = "groups"
+
 /**
- * 联系人页面
+ * 联系人页面。
+ *
+ * 顶部 Tabs 切换【好友 / 群组】两个面板。
+ * - **好友**：保留"好友申请"入口（带 badge），下方是按首字母分组的好友列表 +
+ *   搜索过滤。
+ * - **群组**：列出本人参与的所有群（按 [PrivChat.groups]）+ 搜索过滤。点击进
+ *   入群会话。
+ *
+ * 旧的"我的群组"二级页（GroupListPage）保留但不再是默认入口——本页 group tab
+ * 已经把它的列表平铺出来。`onMyGroupsClick` 回调保留兼容老调用方，建议宿主
+ * 删除关联导航。
  *
  * @param onFriendClick 点击好友回调
  * @param onGroupClick 点击群组回调
- * @param onAddFriend 添加好友/搜索用户回调
- * @param onFriendRequestClick 点击好友申请回调
- * @param onMyGroupsClick 点击我的群组回调
- * @param onFriendSettings 点击好友设置回调
- * @param modifier Modifier
+ * @param onFriendRequestClick 点击好友申请入口回调
+ * @param onMyGroupsClick （deprecated）保留兼容；当前 tab 已平铺群组列表
  */
 @Composable
 fun ContactPage(
@@ -45,7 +58,7 @@ fun ContactPage(
     onGroupClick: (GroupEntry) -> Unit = {},
     onAddFriend: () -> Unit = {},
     onFriendRequestClick: () -> Unit = {},
-    onMyGroupsClick: () -> Unit = {},
+    @Suppress("UNUSED_PARAMETER") onMyGroupsClick: () -> Unit = {},
     onFriendSettings: (FriendEntry) -> Unit = {},
     networkStatusBar: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -56,28 +69,32 @@ fun ContactPage(
     val friendRequests by PrivChat.friendRequests.collectAsState()
     val presences by PrivChat.presences.collectAsState()
 
-    // 搜索关键词
+    var selectedTab by remember { mutableStateOf(CONTACT_TAB_FRIENDS) }
     var searchQuery by remember { mutableStateOf("") }
 
-    // 过滤后的好友列表
-    val filteredFriends = remember(friends, searchQuery) {
-        if (searchQuery.isBlank()) {
-            friends
-        } else {
-            friends.filter { friend ->
-                friend.displayName.contains(searchQuery, ignoreCase = true) ||
-                        friend.username.contains(searchQuery, ignoreCase = true)
-            }
-        }
-    }
+    // Tab label 带 count，与好友申请页一致
+    val friendsTabLabel = "${strings.contactFriends} ${friends.size}"
+    val groupsTabLabel = "${strings.contactGroups} ${groups.size}"
 
     Column(modifier = modifier.fillMaxSize()) {
-        NavBar(
-            title = strings.contactTitle,
-        )
+        NavBar(title = strings.contactTitle)
         networkStatusBar?.invoke()
 
-        // 搜索栏 - 方形居中
+        Tabs(
+            items = listOf(
+                Tab(id = CONTACT_TAB_FRIENDS, label = friendsTabLabel),
+                Tab(id = CONTACT_TAB_GROUPS, label = groupsTabLabel),
+            ),
+            selectedId = selectedTab,
+            onSelect = {
+                selectedTab = it
+                searchQuery = ""
+            },
+            size = TabsSize.MEDIUM,
+            outlineType = TabsOutlineType.UNDERLINE,
+            showDivider = true,
+        )
+
         SearchBar(
             value = searchQuery,
             onValueChange = { searchQuery = it },
@@ -86,148 +103,167 @@ fun ContactPage(
             alignment = com.gearui.components.searchbar.SearchBarAlignment.CENTER,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
         )
 
-        // 联系人列表
-        GearLazyColumn(modifier = Modifier.fillMaxSize()) {
-            // 好友申请入口
+        when (selectedTab) {
+            CONTACT_TAB_FRIENDS -> FriendsTabContent(
+                friends = friends,
+                presences = presences,
+                friendRequestCount = friendRequests.size,
+                searchQuery = searchQuery,
+                onFriendClick = onFriendClick,
+                onFriendRequestClick = onFriendRequestClick,
+            )
+            CONTACT_TAB_GROUPS -> GroupsTabContent(
+                groups = groups,
+                searchQuery = searchQuery,
+                onGroupClick = onGroupClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun FriendsTabContent(
+    friends: List<FriendEntry>,
+    presences: Map<ULong, com.netonstream.privchat.sdk.dto.PresenceEntry>,
+    friendRequestCount: Int,
+    searchQuery: String,
+    onFriendClick: (FriendEntry) -> Unit,
+    onFriendRequestClick: () -> Unit,
+) {
+    val strings = PrivChatI18n.strings
+
+    val filtered = if (searchQuery.isBlank()) friends else friends.filter { f ->
+        f.displayName.contains(searchQuery, ignoreCase = true) ||
+            f.username.contains(searchQuery, ignoreCase = true)
+    }
+
+    GearLazyColumn(modifier = Modifier.fillMaxSize()) {
+        // 好友申请入口（始终顶置；搜索时也保留，便于直接进入）
+        item {
+            FriendRequestEntry(
+                requestCount = friendRequestCount,
+                onClick = onFriendRequestClick,
+            )
+        }
+
+        if (filtered.isNotEmpty()) {
             item {
-                FriendRequestEntry(
-                    requestCount = friendRequests.size,
-                    onClick = onFriendRequestClick
-                )
+                SectionHeader(title = "${strings.contactFriends} (${filtered.size})")
             }
 
-            // 我的群组入口
-            item {
-                MyGroupsEntry(
-                    groupCount = groups.size,
-                    onClick = onMyGroupsClick
-                )
+            val grouped = filtered.groupBy {
+                it.displayName.firstOrNull()?.uppercaseChar() ?: '#'
             }
-
-            // 好友列表标题
-            if (filteredFriends.isNotEmpty()) {
-                item {
-                    SectionHeader(title = "${strings.contactFriends} (${filteredFriends.size})")
+            grouped.entries.sortedBy { it.key }.forEach { entry ->
+                val letter = entry.key
+                val list = entry.value
+                item { LetterHeader(letter = letter.toString()) }
+                items(list.size) { idx ->
+                    val friend = list[idx]
+                    FriendItem(
+                        friend = friend,
+                        isOnline = presences[friend.userId]?.isOnline == true,
+                        onClick = { onFriendClick(friend) },
+                    )
                 }
-
-                // 按首字母分组的好友列表
-                val grouped = filteredFriends.groupBy {
-                    it.displayName.firstOrNull()?.uppercaseChar() ?: '#'
-                }
-
-                grouped.entries.sortedBy { it.key }.forEach { entry ->
-                    val letter = entry.key
-                    val friendsInGroup = entry.value
-                    // 字母标签
-                    item {
-                        LetterHeader(letter = letter.toString())
-                    }
-
-                    // 该字母下的好友
-                    items(friendsInGroup.size) { index ->
-                        val friend = friendsInGroup[index]
-                        FriendItem(
-                            friend = friend,
-                            isOnline = presences[friend.userId]?.isOnline == true,
-                            onClick = { onFriendClick(friend) },
-                        )
-                    }
-                }
-            } else {
-                // 空状态
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        EmptyState(
-                            message = strings.contactEmpty,
-                            description = strings.contactAddFriend,
-                        )
-                    }
+            }
+        } else {
+            item {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(200.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    EmptyState(
+                        message = strings.contactEmpty,
+                        description = strings.contactAddFriend,
+                    )
                 }
             }
         }
     }
 }
 
-/**
- * 好友申请入口
- */
+@Composable
+private fun GroupsTabContent(
+    groups: List<GroupEntry>,
+    searchQuery: String,
+    onGroupClick: (GroupEntry) -> Unit,
+) {
+    val strings = PrivChatI18n.strings
+
+    val filtered = if (searchQuery.isBlank()) groups else groups.filter { g ->
+        g.displayName.contains(searchQuery, ignoreCase = true)
+    }
+
+    if (filtered.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            EmptyState(message = strings.contactGroupsEmpty)
+        }
+        return
+    }
+
+    GearLazyColumn(modifier = Modifier.fillMaxSize()) {
+        items(filtered.size) { idx ->
+            val group = filtered[idx]
+            Cell(
+                onClick = { onGroupClick(group) },
+                compact = true,
+                leading = {
+                    ChatAvatar(
+                        url = group.avatar.ifBlank { null },
+                        name = group.displayName,
+                        size = AvatarSpecs.Size.small,
+                    )
+                },
+                title = group.displayName,
+                arrow = true,
+            )
+        }
+    }
+}
+
 @Composable
 private fun FriendRequestEntry(
     requestCount: Int,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val strings = PrivChatI18n.strings
 
     Cell(
         onClick = onClick,
         compact = true,
-        leading = {
-            ContactEntryIcon(Icons.person_add)
-        },
+        leading = { ContactEntryIcon(Icons.person_add) },
         title = strings.contactFriendRequest,
         arrow = true,
         trailing = if (requestCount > 0) {
             { Badge(count = requestCount) }
-        } else null
-    )
-}
-
-/**
- * 我的群组入口
- */
-@Composable
-private fun MyGroupsEntry(
-    groupCount: Int,
-    onClick: () -> Unit
-) {
-    val strings = PrivChatI18n.strings
-
-    Cell(
-        onClick = onClick,
-        compact = true,
-        leading = {
-            ContactEntryIcon(Icons.groups)
-        },
-        title = strings.contactMyGroups,
-        description = "$groupCount ${strings.contactGroups}",
-        arrow = true,
+        } else null,
     )
 }
 
 @Composable
 private fun ContactEntryIcon(icon: String) {
     val colors = Theme.colors
-
     Box(
         modifier = Modifier
             .size(AvatarSpecs.Size.small)
             .clip(RoundedCornerShape(8.dp))
             .background(colors.primaryLight),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            name = icon,
-            size = 18.dp,
-            tint = colors.primary
-        )
+        Icon(name = icon, size = 18.dp, tint = colors.primary)
     }
 }
 
-/**
- * 分组标题
- */
 @Composable
 private fun SectionHeader(title: String) {
     val colors = Theme.colors
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -242,13 +278,9 @@ private fun SectionHeader(title: String) {
     }
 }
 
-/**
- * 字母标题
- */
 @Composable
 private fun LetterHeader(letter: String) {
     val colors = Theme.colors
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -263,9 +295,6 @@ private fun LetterHeader(letter: String) {
     }
 }
 
-/**
- * 好友项
- */
 @Composable
 private fun FriendItem(
     friend: FriendEntry,

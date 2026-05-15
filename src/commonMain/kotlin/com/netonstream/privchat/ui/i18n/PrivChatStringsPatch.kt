@@ -79,6 +79,14 @@ data class PrivChatStringsPatch(
     val friendRequestRejected: String? = null,
     val friendRequestView: String? = null,
     val friendRequestAdded: String? = null,
+    val friendRequestTabReceived: String? = null,
+    val friendRequestTabSent: String? = null,
+    val friendRequestDecline: String? = null,
+    val friendRequestRecall: String? = null,
+    val friendRequestRecallSoon: String? = null,
+    val friendRequestSectionOlder: String? = null,
+    val friendRequestSourceUnknown: String? = null,
+    val friendRequestSentEmpty: String? = null,
     val searchUserTitle: String? = null,
     val searchUserPlaceholder: String? = null,
     val searchUserSearching: String? = null,
@@ -322,6 +330,14 @@ val PrivChatStringsPatch.isEmpty: Boolean
         friendRequestRejected == null &&
         friendRequestView == null &&
         friendRequestAdded == null &&
+        friendRequestTabReceived == null &&
+        friendRequestTabSent == null &&
+        friendRequestDecline == null &&
+        friendRequestRecall == null &&
+        friendRequestRecallSoon == null &&
+        friendRequestSectionOlder == null &&
+        friendRequestSourceUnknown == null &&
+        friendRequestSentEmpty == null &&
         searchUserTitle == null &&
         searchUserPlaceholder == null &&
         searchUserSearching == null &&
@@ -567,6 +583,14 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         friendRequestRejected = patch.friendRequestRejected ?: friendRequestRejected,
         friendRequestView = patch.friendRequestView ?: friendRequestView,
         friendRequestAdded = patch.friendRequestAdded ?: friendRequestAdded,
+        friendRequestTabReceived = patch.friendRequestTabReceived ?: friendRequestTabReceived,
+        friendRequestTabSent = patch.friendRequestTabSent ?: friendRequestTabSent,
+        friendRequestDecline = patch.friendRequestDecline ?: friendRequestDecline,
+        friendRequestRecall = patch.friendRequestRecall ?: friendRequestRecall,
+        friendRequestRecallSoon = patch.friendRequestRecallSoon ?: friendRequestRecallSoon,
+        friendRequestSectionOlder = patch.friendRequestSectionOlder ?: friendRequestSectionOlder,
+        friendRequestSourceUnknown = patch.friendRequestSourceUnknown ?: friendRequestSourceUnknown,
+        friendRequestSentEmpty = patch.friendRequestSentEmpty ?: friendRequestSentEmpty,
         searchUserTitle = patch.searchUserTitle ?: searchUserTitle,
         searchUserPlaceholder = patch.searchUserPlaceholder ?: searchUserPlaceholder,
         searchUserSearching = patch.searchUserSearching ?: searchUserSearching,

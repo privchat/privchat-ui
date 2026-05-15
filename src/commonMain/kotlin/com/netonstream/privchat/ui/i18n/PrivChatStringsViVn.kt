@@ -85,6 +85,14 @@ val PrivChatStringsViVn = PrivChatStrings(
     friendRequestRejected = "Đã từ chối",
     friendRequestView = "Xem",
     friendRequestAdded = "Đã thêm",
+    friendRequestTabReceived = "Đã nhận",
+    friendRequestTabSent = "Đã gửi",
+    friendRequestDecline = "Từ chối",
+    friendRequestRecall = "Thu hồi",
+    friendRequestRecallSoon = "Tính năng thu hồi sắp ra mắt",
+    friendRequestSectionOlder = "Cũ hơn",
+    friendRequestSourceUnknown = "Muốn kết bạn với bạn",
+    friendRequestSentEmpty = "Chưa có yêu cầu đã gửi",
 
     // Tìm người dùng
     searchUserTitle = "Thêm bạn",
