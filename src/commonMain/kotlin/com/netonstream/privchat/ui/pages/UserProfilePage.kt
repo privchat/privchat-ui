@@ -22,7 +22,7 @@ import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.typography.Typography
-import com.gearui.foundation.AvatarSpecs
+import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.layout.*
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
@@ -100,7 +100,7 @@ fun UserProfilePage(
                     ChatAvatar(
                         url = user.avatarUrl,
                         name = user.nickname ?: user.username,
-                        size = AvatarSpecs.Size.large,
+                        size = AvatarSizeTokens.Large.size,
                     )
 
                     Spacer(modifier = Modifier.width(16.dp))
@@ -112,7 +112,7 @@ fun UserProfilePage(
                             Text(
                                 text = user.nickname ?: user.username,
                                 style = Typography.TitleLarge,
-                                color = Theme.colors.textPrimary
+                                color = Theme.colors.foreground
                             )
                             UserTypeBadge(
                                 userType = user.userType,
@@ -130,7 +130,7 @@ fun UserProfilePage(
                                 "${strings.userProfileUserId}: ${user.username}"
                             },
                             style = Typography.BodySmall,
-                            color = Theme.colors.textSecondary
+                            color = Theme.colors.mutedForeground
                         )
                     }
                 }
@@ -363,7 +363,7 @@ fun FriendProfilePage(
                     ChatAvatar(
                         url = friend.avatarUrl,
                         name = friend.remark ?: friend.nickname ?: friend.username,
-                        size = AvatarSpecs.Size.large,
+                        size = AvatarSizeTokens.Large.size,
                     )
 
                     Spacer(modifier = Modifier.width(16.dp))
@@ -377,7 +377,7 @@ fun FriendProfilePage(
                                 Text(
                                     text = remark,
                                     style = Typography.TitleLarge,
-                                    color = Theme.colors.textPrimary
+                                    color = Theme.colors.foreground
                                 )
                                 UserTypeBadge(
                                     userType = friend.userType,
@@ -392,12 +392,12 @@ fun FriendProfilePage(
                                 Text(
                                     text = "${strings.userProfileNickname}: ",
                                     style = Typography.BodySmall,
-                                    color = Theme.colors.textSecondary
+                                    color = Theme.colors.mutedForeground
                                 )
                                 Text(
                                     text = friend.nickname ?: friend.username,
                                     style = Typography.BodySmall,
-                                    color = Theme.colors.textSecondary
+                                    color = Theme.colors.mutedForeground
                                 )
                             }
                         } else {
@@ -406,7 +406,7 @@ fun FriendProfilePage(
                                 Text(
                                     text = friend.nickname ?: friend.username,
                                     style = Typography.TitleLarge,
-                                    color = Theme.colors.textPrimary
+                                    color = Theme.colors.foreground
                                 )
                                 UserTypeBadge(
                                     userType = friend.userType,
@@ -421,7 +421,7 @@ fun FriendProfilePage(
                         Text(
                             text = "${strings.userProfileUserId}: ${friend.username}",
                             style = Typography.BodySmall,
-                            color = Theme.colors.textSecondary
+                            color = Theme.colors.mutedForeground
                         )
                     }
                 }
@@ -469,8 +469,8 @@ fun FriendProfilePage(
 private fun UserTypeBadge(userType: Short, modifier: Modifier = Modifier) {
     val strings = PrivChatI18n.strings
     val (label, fg, bg) = when (userType.toInt()) {
-        1 -> Triple(strings.userBadgeSystem, Theme.colors.warning, Theme.colors.warningLight)
-        2 -> Triple(strings.userBadgeBot, Theme.colors.primary, Theme.colors.primaryLight)
+        1 -> Triple(strings.userBadgeSystem, Theme.colors.warning, Theme.colors.warning.copy(alpha = 0.12f))
+        2 -> Triple(strings.userBadgeBot, Theme.colors.primary, Theme.colors.muted)
         else -> return
     }
     Box(

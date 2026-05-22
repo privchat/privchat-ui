@@ -15,6 +15,8 @@ import com.netonstream.privchat.ui.platform.ExternalLinkBridge
 import com.netonstream.privchat.ui.utils.Formatter
 import com.netonstream.privchat.ui.utils.MessageEntityDetector
 import com.netonstream.privchat.ui.voice.VoicePlayback
+import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageTextOther
+import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageTextSelf
 import com.gearui.components.actionsheet.ActionSheet
 import com.gearui.components.actionsheet.ActionSheetItem
 import com.gearui.components.toast.Toast
@@ -79,8 +81,8 @@ fun MessageContent(
     onImagePreview: ((MessageEntry) -> Unit)? = null,
 ) {
     val colors = Theme.colors
-    val textColor = if (isSelf) colors.onBubbleSelf else colors.onBubbleOther
-    val secondaryTextColor = if (isSelf) colors.onBubbleSelf.copy(alpha = 0.7f) else colors.textSecondary
+    val textColor = if (isSelf) colors.messageTextSelf else colors.messageTextOther
+    val secondaryTextColor = if (isSelf) colors.messageTextSelf.copy(alpha = 0.7f) else colors.mutedForeground
 
     val parsed = message.parsedContent
     // [TRACE] 排查 Bug2：气泡右下角时间+状态不显示。footer 只在 parsed.type == SYSTEM 时
@@ -860,7 +862,7 @@ private fun MessageStatusIcon(
     onFailedClick: (() -> Unit)? = null,
 ) {
     val (icon, label, iconColor) = when {
-        status == MessageStatus.Failed -> Triple("❗", "发送失败 · 重试", Theme.colors.danger)
+        status == MessageStatus.Failed -> Triple("❗", "发送失败 · 重试", Theme.colors.destructive)
         status == MessageStatus.Pending || status == MessageStatus.Sending ->
             Triple("⏳", "发送中", color)
         isReadByPts || status == MessageStatus.Read ->

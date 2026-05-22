@@ -52,7 +52,7 @@ fun GroupNameEditPage(
             Text(
                 text = strings.chatSettingsGroupName,
                 style = Typography.BodySmall,
-                color = Theme.colors.textSecondary,
+                color = Theme.colors.mutedForeground,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Input(

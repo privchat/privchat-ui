@@ -8,7 +8,7 @@ import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.typography.Typography
-import com.gearui.foundation.AvatarSpecs
+import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.cell.Cell
 import com.gearui.components.switch.Switch
@@ -207,7 +207,7 @@ fun ChatSettingsPage(
                         Text(
                             text = strings.chatSettingsLeaveGroup,
                             style = Typography.BodyMedium,
-                            color = if (leaveEnabled) colors.danger else colors.textDisabled
+                            color = if (leaveEnabled) colors.destructive else colors.mutedForeground
                         )
                     }
                     if (isOwner) {
@@ -220,7 +220,7 @@ fun ChatSettingsPage(
                             Text(
                                 text = "群主无法直接退出群聊，请先转让群主或解散群",
                                 style = Typography.BodySmall,
-                                color = colors.textSecondary,
+                                color = colors.mutedForeground,
                             )
                         }
                     }

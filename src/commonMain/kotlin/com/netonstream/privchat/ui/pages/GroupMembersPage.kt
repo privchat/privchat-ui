@@ -6,7 +6,7 @@ import com.netonstream.privchat.ui.components.ChatAvatar
 import com.netonstream.privchat.ui.models.displayName
 import com.netonstream.privchat.ui.models.roleName
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
-import com.gearui.foundation.AvatarSpecs
+import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.components.cell.Cell
 import com.gearui.components.empty.EmptyState
@@ -83,7 +83,7 @@ fun GroupMembersPage(
                                 ChatAvatar(
                                     url = member.avatar,
                                     name = member.displayName,
-                                    size = AvatarSpecs.Size.small,
+                                    size = AvatarSizeTokens.Small.size,
                                 )
                             },
                         )

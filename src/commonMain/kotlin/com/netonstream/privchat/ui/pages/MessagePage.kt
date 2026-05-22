@@ -25,6 +25,9 @@ import com.netonstream.privchat.ui.platform.ClipboardBridge
 import com.tencent.kuikly.compose.foundation.gestures.detectTapGestures
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.offlineStatus
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.onlineStatus
+import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageBubbleOther
+import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageBubbleSelf
+import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageTextOther
 import com.netonstream.privchat.ui.utils.Formatter
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.gearui.theme.Theme
@@ -33,7 +36,7 @@ import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.primitives.ScrollView
 import com.gearui.foundation.typography.IconSizes
 import com.gearui.foundation.typography.Typography
-import com.gearui.foundation.AvatarSpecs
+import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.primitives.HorizontalSpacer
 import com.gearui.primitives.VerticalSpacer
 import com.tencent.kuikly.compose.ui.unit.Dp
@@ -722,7 +725,7 @@ fun MessagePage(
                     Text(
                         text = truncatedTitle,
                         style = Typography.TitleMedium,
-                        color = Theme.colors.textPrimary,
+                        color = Theme.colors.foreground,
                     )
                     if (channel.isDm && peerPresence?.isOnline == true) {
                         HorizontalSpacer(6.dp)
@@ -1421,7 +1424,7 @@ private fun MessageRow(
                 ChatAvatar(
                     url = null, // TODO: 从用户信息获取
                     name = peerAvatarName,
-                    size = AvatarSpecs.Size.small,
+                    size = AvatarSizeTokens.Small.size,
                 )
             }
             HorizontalSpacer(8.dp)
@@ -1446,7 +1449,7 @@ private fun MessageRow(
                 Box(
                     modifier = Modifier
                         .clip(bubbleShape)
-                        .background(if (isSelf) colors.bubbleSelf else colors.bubbleOther),
+                        .background(if (isSelf) colors.messageBubbleSelf else colors.messageBubbleOther),
                 ) {
                     Column {
                         message.replyToServerMessageId?.let { replyId ->
@@ -1496,7 +1499,7 @@ private fun MessageRow(
             ChatAvatar(
                 url = null,
                 name = "我",
-                size = AvatarSpecs.Size.small,
+                size = AvatarSizeTokens.Small.size,
             )
         }
     }
@@ -1528,28 +1531,28 @@ private fun SystemMessageRow(
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(4.dp))
-                .background(colors.surfaceVariant)
+                .background(colors.muted)
                 .padding(horizontal = 12.dp, vertical = 4.dp),
         ) {
             when {
                 message.isRevoked -> Text(
                     text = strings.messageRevoked,
                     style = Typography.Label,
-                    color = colors.textSecondary,
+                    color = colors.mutedForeground,
                 )
                 parsed.systemTemplate != null -> SystemTemplateText(
                     template = parsed.systemTemplate,
                     refs = parsed.systemRefs ?: emptyList(),
                     templateDict = strings.systemTemplates,
                     listSeparator = strings.systemListSeparator,
-                    textColor = colors.textSecondary,
+                    textColor = colors.mutedForeground,
                     linkColor = colors.primary,
                     onUserClick = onUserClick,
                 )
                 else -> Text(
                     text = parsed.text ?: "",
                     style = Typography.Label,
-                    color = colors.textSecondary,
+                    color = colors.mutedForeground,
                 )
             }
         }
@@ -1699,7 +1702,7 @@ private fun MessageReactionsRow(
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .background(colors.surfaceVariant)
+                    .background(colors.muted)
                     .clickable {
                         scope.launch {
                             val result = withContext(Dispatchers.Default) {
@@ -1720,12 +1723,12 @@ private fun MessageReactionsRow(
                 Text(
                     text = chip.emoji,
                     style = Typography.BodySmall,
-                    color = colors.textPrimary,
+                    color = colors.foreground,
                 )
                 Text(
                     text = chip.count.toString(),
                     style = Typography.Label,
-                    color = colors.textSecondary,
+                    color = colors.mutedForeground,
                 )
             }
         }
@@ -1779,13 +1782,13 @@ private fun TypingBubble(channelId: ULong, peerName: String) {
         ChatAvatar(
             url = null,
             name = peerName.ifBlank { "?" },
-            size = AvatarSpecs.Size.small,
+            size = AvatarSizeTokens.Small.size,
         )
         HorizontalSpacer(8.dp)
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 16.dp))
-                .background(colors.bubbleOther)
+                .background(colors.messageBubbleOther)
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             contentAlignment = Alignment.Center,
         ) {
@@ -1800,7 +1803,7 @@ private fun TypingBubble(channelId: ULong, peerName: String) {
                             .size(7.dp)
                             .offset(y = offsetY)
                             .clip(RoundedCornerShape(50))
-                            .background(colors.onBubbleOther.copy(alpha = 0.5f + 0.5f * anim))
+                            .background(colors.messageTextOther.copy(alpha = 0.5f + 0.5f * anim))
                     )
                 }
             }
@@ -1835,7 +1838,7 @@ private fun MessageGroupDivider(previous: MessageEntry?, current: MessageEntry) 
         Text(
             text = label,
             style = Typography.Caption,
-            color = Theme.colors.textSecondary,
+            color = Theme.colors.mutedForeground,
         )
     }
 }
@@ -1851,7 +1854,7 @@ private fun FloatingDateHeader(label: String) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(colors.textSecondary.copy(alpha = 0.55f))
+            .background(colors.mutedForeground.copy(alpha = 0.55f))
             .padding(horizontal = 10.dp, vertical = 4.dp),
     ) {
         Text(
@@ -1878,20 +1881,20 @@ private fun UnreadDivider(count: Int) {
         Box(
             modifier = Modifier
                 .weight(1f)
-                .background(colors.textSecondary.copy(alpha = 0.35f))
+                .background(colors.mutedForeground.copy(alpha = 0.35f))
                 .padding(vertical = 0.5.dp),
         )
         HorizontalSpacer(8.dp)
         Text(
             text = "以下为未读消息 ($count)",
             style = Typography.Caption,
-            color = colors.textSecondary,
+            color = colors.mutedForeground,
         )
         HorizontalSpacer(8.dp)
         Box(
             modifier = Modifier
                 .weight(1f)
-                .background(colors.textSecondary.copy(alpha = 0.35f))
+                .background(colors.mutedForeground.copy(alpha = 0.35f))
                 .padding(vertical = 0.5.dp),
         )
     }
@@ -1908,7 +1911,7 @@ private fun NewMessagesBubble(count: Int, onClick: () -> Unit) {
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
             .background(colors.surface)
-            .border(1.dp, colors.textSecondary.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
+            .border(1.dp, colors.mutedForeground.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
             .clickable { onClick() }
             .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -2127,7 +2130,7 @@ private fun MessageInputBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(colors.divider),
+                .background(colors.border),
         )
         Box(
             modifier = Modifier
@@ -2175,7 +2178,7 @@ private fun MessageInputBar(
                     val btnBackground = when {
                         isInCancelZone -> Color(0xFFE53935)
                         isRecording -> colors.primary
-                        else -> colors.surfaceVariant
+                        else -> colors.muted
                     }
                     val btnText = when {
                         isInCancelZone -> "松开 取消"
@@ -2183,8 +2186,8 @@ private fun MessageInputBar(
                         else -> "按住 说话"
                     }
                     val btnTextColor = if (isInCancelZone) Color.White
-                                      else if (isRecording) colors.onPrimary
-                                      else colors.textPrimary
+                                      else if (isRecording) colors.primaryForeground
+                                      else colors.foreground
                     // 取消阈值：手指上滑 60dp
                     val cancelThresholdPx = with(LocalDensity.current) { 60.dp.toPx() }
                     Box(
@@ -2525,14 +2528,14 @@ private fun CircleIconButton(
         modifier = Modifier
             .size(32.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(colors.surfaceVariant)
+            .background(colors.muted)
             .clickable { onClick() },
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             name = icon,
             size = 18.dp,
-            tint = colors.textPrimary,
+            tint = colors.foreground,
         )
     }
 }
@@ -2558,13 +2561,13 @@ private fun PlusActionItem(
             modifier = Modifier
                 .size(46.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(colors.surfaceVariant),
+                .background(colors.muted),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(name = icon, size = 22.dp, tint = colors.textPrimary)
+            Icon(name = icon, size = 22.dp, tint = colors.foreground)
         }
         VerticalSpacer(6.dp)
-        Text(text = text, style = Typography.Label, color = colors.textSecondary)
+        Text(text = text, style = Typography.Label, color = colors.mutedForeground)
     }
 }
 
@@ -2821,7 +2824,7 @@ private fun ReplyBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(colors.surfaceVariant)
+            .background(colors.muted)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -2836,12 +2839,12 @@ private fun ReplyBar(
             Text(
                 text = "回复 $senderLabel",
                 style = Typography.Label,
-                color = colors.textSecondary,
+                color = colors.mutedForeground,
             )
             Text(
                 text = summarizeForReply(message),
                 style = Typography.BodySmall,
-                color = colors.textPrimary,
+                color = colors.foreground,
             )
         }
         HorizontalSpacer(8.dp)
@@ -2851,7 +2854,7 @@ private fun ReplyBar(
                 .clickable { onDismiss() },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(name = Icons.close, size = 16.dp, tint = colors.textSecondary)
+            Icon(name = Icons.close, size = 16.dp, tint = colors.mutedForeground)
         }
     }
 }
@@ -2870,8 +2873,8 @@ private fun ReplyQuoteBanner(
     val colors = Theme.colors
     val summary = original?.let { summarizeForReply(it) } ?: "该消息已失效"
     val senderText = original?.let { senderLabelOf?.invoke(it.fromUid) ?: it.fromUid.toString() }
-    val foreground = if (isSelf) colors.onPrimary else colors.textPrimary
-    val secondary = if (isSelf) colors.onPrimary else colors.textSecondary
+    val foreground = if (isSelf) colors.primaryForeground else colors.foreground
+    val secondary = if (isSelf) colors.primaryForeground else colors.mutedForeground
     val rowModifier = Modifier
         .padding(start = 10.dp, end = 10.dp, top = 8.dp)
         .fillMaxWidth()
@@ -2884,7 +2887,7 @@ private fun ReplyQuoteBanner(
             modifier = Modifier
                 .width(2.dp)
                 .height(if (senderText != null) 30.dp else 16.dp)
-                .background(if (isSelf) colors.onPrimary else colors.primary),
+                .background(if (isSelf) colors.primaryForeground else colors.primary),
         )
         HorizontalSpacer(6.dp)
         Column(modifier = Modifier.weight(1f)) {
@@ -3011,7 +3014,7 @@ private fun MentionPicker(
             .fillMaxWidth()
             .heightIn(max = 220.dp)
             .background(colors.surface)
-            .border(width = 1.dp, color = colors.divider, shape = RoundedCornerShape(0.dp)),
+            .border(width = 1.dp, color = colors.border, shape = RoundedCornerShape(0.dp)),
     ) {
         ScrollView(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxWidth()) {
@@ -3027,20 +3030,20 @@ private fun MentionPicker(
                         ChatAvatar(
                             url = member.avatar.takeIf { it.isNotBlank() },
                             name = displayName,
-                            size = AvatarSpecs.Size.small,
+                            size = AvatarSizeTokens.Small.size,
                         )
                         HorizontalSpacer(10.dp)
                         Text(
                             text = displayName,
                             style = Typography.BodyMedium,
-                            color = colors.textPrimary,
+                            color = colors.foreground,
                         )
                     }
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(1.dp)
-                            .background(colors.divider),
+                            .background(colors.border),
                     )
                 }
             }

@@ -9,7 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
-import com.gearui.Spacing
+import com.gearui.foundation.layout.Spacing
 import com.gearui.foundation.primitives.Icon
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.typography.IconSizes
@@ -226,7 +226,7 @@ private fun MessageActionsOverlayContent(
     bubble: @Composable () -> Unit,
 ) {
     val density = LocalDensity.current
-    val gapPx = with(density) { Spacing.spacer8.dp.roundToPx() }
+    val gapPx = with(density) { Spacing.sm.roundToPx() }
     val edgePaddingPx = with(density) { 16.dp.roundToPx() }
 
     // overlay 的 Fullscreen 内容盒子被 safeArea 内缩过，遮罩需要向外反扩回去。
@@ -404,17 +404,17 @@ private fun ReactionBar(
     val pillShape = CircleShape
     Row(
         modifier = Modifier
-            .shadow(Spacing.spacer4.dp, pillShape)
+            .shadow(Spacing.xs, pillShape)
             .clip(pillShape)
             .background(colors.surface)
-            .padding(horizontal = Spacing.spacer8.dp, vertical = Spacing.spacer4.dp),
+            .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.spacer4.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         reactions.forEach { emoji ->
             Box(
                 modifier = Modifier
-                    .size(Spacing.spacer40.dp)
+                    .size(Spacing.xxxl)
                     .clip(CircleShape)
                     .clickable { onReaction(emoji) },
                 contentAlignment = Alignment.Center,
@@ -425,13 +425,13 @@ private fun ReactionBar(
         if (onMoreReactions != null) {
             Box(
                 modifier = Modifier
-                    .size(Spacing.spacer40.dp)
+                    .size(Spacing.xxxl)
                     .clip(CircleShape)
-                    .background(colors.surfaceVariant)
+                    .background(colors.muted)
                     .clickable { onMoreReactions() },
                 contentAlignment = Alignment.Center,
             ) {
-                Text(text = "+", style = Typography.TitleExtraLarge, color = colors.textSecondary)
+                Text(text = "+", style = Typography.TitleExtraLarge, color = colors.mutedForeground)
             }
         }
     }
@@ -450,33 +450,33 @@ private fun ActionList(
         modifier = Modifier
             .widthIn(min = 140.dp, max = 200.dp)
             .wrapContentWidth()
-            .shadow(Spacing.spacer4.dp, shapes.extraLarge)
-            .clip(shapes.extraLarge)
+            .shadow(Spacing.xs, shapes.xl)
+            .clip(shapes.xl)
             .background(colors.surface)
-            .border(1.dp, colors.border, shapes.extraLarge)
-            .padding(Spacing.spacer8.dp),
+            .border(1.dp, colors.border, shapes.xl)
+            .padding(Spacing.sm),
     ) {
         actions.forEachIndexed { index, item ->
             val tint = when {
-                item.disabled -> colors.textDisabled
-                item.danger -> colors.danger
-                else -> colors.textPrimary
+                item.disabled -> colors.mutedForeground
+                item.danger -> colors.destructive
+                else -> colors.foreground
             }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(shapes.small)
+                    .clip(shapes.sm)
                     .background(
-                        if (pressedIndex == index) colors.surfaceVariant else colors.surface,
+                        if (pressedIndex == index) colors.muted else colors.surface,
                     )
                     .clickable(enabled = !item.disabled) {
                         onPressChange(index)
                         onActionClick(item)
                         onPressChange(null)
                     }
-                    .padding(horizontal = Spacing.spacer12.dp, vertical = Spacing.spacer12.dp),
+                    .padding(horizontal = Spacing.md, vertical = Spacing.md),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.spacer12.dp),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             ) {
                 Icon(name = item.icon, size = IconSizes.Default.medium, tint = tint)
                 Text(

@@ -91,7 +91,7 @@ fun FriendSettingsPage(
                     .fillMaxWidth()
                     .padding(start = 16.dp)
                     .height(0.5.dp)
-                    .background(colors.divider)
+                    .background(colors.border)
             )
 
             // 推荐分享给别人
@@ -126,7 +126,7 @@ fun FriendSettingsPage(
                     .fillMaxWidth()
                     .padding(start = 16.dp)
                     .height(0.5.dp)
-                    .background(colors.divider)
+                    .background(colors.border)
             )
 
             // 加入黑名单
@@ -157,7 +157,7 @@ fun FriendSettingsPage(
                 trailing = {
                     Text(
                         text = "",
-                        color = colors.danger
+                        color = colors.destructive
                     )
                 }
             )

@@ -8,7 +8,7 @@ import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.netonstream.privchat.ui.i18n.PrivChatStrings
 import com.netonstream.privchat.ui.utils.Formatter
 import com.gearui.theme.Theme
-import com.gearui.foundation.AvatarSpecs
+import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.typography.Typography
@@ -200,27 +200,27 @@ private fun ReceivedRow(
             ChatAvatar(
                 url = request.avatarUrl,
                 name = displayName,
-                size = AvatarSpecs.Size.medium,
+                size = AvatarSizeTokens.Medium.size,
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = displayName,
                     style = Typography.BodyLarge,
-                    color = colors.textPrimary,
+                    color = colors.foreground,
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = subtitle,
                     style = Typography.BodySmall,
-                    color = colors.textSecondary,
+                    color = colors.mutedForeground,
                 )
             }
             if (!isPending) {
                 Text(
                     text = receivedStatusLabel(request.status, strings),
                     style = Typography.BodyMedium,
-                    color = colors.textSecondary,
+                    color = colors.mutedForeground,
                 )
             }
         }
@@ -315,20 +315,20 @@ private fun SentRow(
         ChatAvatar(
             url = request.avatarUrl,
             name = displayName,
-            size = AvatarSpecs.Size.medium,
+            size = AvatarSizeTokens.Medium.size,
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = displayName,
                 style = Typography.BodyLarge,
-                color = colors.textPrimary,
+                color = colors.foreground,
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = subtitle,
                 style = Typography.BodySmall,
-                color = colors.textSecondary,
+                color = colors.mutedForeground,
             )
         }
         if (isPending) {
@@ -344,7 +344,7 @@ private fun SentRow(
             Text(
                 text = sentStatusLabel(request.status, strings),
                 style = Typography.BodyMedium,
-                color = colors.textSecondary,
+                color = colors.mutedForeground,
             )
         }
     }
@@ -366,7 +366,7 @@ private fun SectionHeaderRow(title: String) {
         Text(
             text = title,
             style = Typography.Label,
-            color = colors.textSecondary,
+            color = colors.mutedForeground,
         )
     }
 }

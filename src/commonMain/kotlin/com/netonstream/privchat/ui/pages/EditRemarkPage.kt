@@ -79,7 +79,7 @@ fun EditRemarkPage(
                     Text(
                         text = strings.save,
                         style = Typography.BodyMedium,
-                        color = if (canSave) Theme.colors.primary else Theme.colors.textDisabled,
+                        color = if (canSave) Theme.colors.primary else Theme.colors.mutedForeground,
                     )
                 }
             }

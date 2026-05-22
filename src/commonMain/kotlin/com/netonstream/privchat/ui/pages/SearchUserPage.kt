@@ -122,7 +122,7 @@ fun SearchUserPage(
                     isSearching -> {
                         Text(
                             text = strings.searchUserSearching,
-                            color = colors.textSecondary
+                            color = colors.mutedForeground
                         )
                     }
 

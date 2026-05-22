@@ -2,7 +2,7 @@ package com.netonstream.privchat.ui.components
 
 import androidx.compose.runtime.Composable
 import com.gearui.primitives.Avatar
-import com.gearui.foundation.AvatarSpecs
+import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.theme.Theme
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.onlineStatus
 import com.tencent.kuikly.compose.foundation.background
@@ -35,7 +35,7 @@ import com.tencent.kuikly.compose.ui.unit.dp
 fun ChatAvatar(
     url: String?,
     name: String,
-    size: Dp = AvatarSpecs.Size.medium,
+    size: Dp = AvatarSizeTokens.Medium.size,
     unreadCount: Int = 0,
     isMuted: Boolean = false,
     isOnline: Boolean = false,
@@ -56,7 +56,7 @@ fun ChatAvatar(
             text = avatarText,
             size = size,
             // 方形圆角头像
-            radius = AvatarSpecs.squareRadius,
+            radius = 6.dp,
             // 未读消息数：免打扰时不显示数字，正常显示数字，0 时不显示
             badgeCount = if (isMuted || unreadCount <= 0) null else unreadCount,
             // 小红点：免打扰有未读时显示
@@ -67,7 +67,7 @@ fun ChatAvatar(
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .size(if (size <= AvatarSpecs.Size.small) 9.dp else 10.dp)
+                    .size(if (size <= AvatarSizeTokens.Small.size) 9.dp else 10.dp)
                     .clip(CircleShape)
                     .background(colors.onlineStatus)
                     .border(2.dp, colors.surface, CircleShape)
@@ -92,7 +92,7 @@ fun ChatAvatar(
 fun GroupAvatar(
     url: String?,
     name: String,
-    size: Dp = AvatarSpecs.Size.medium,
+    size: Dp = AvatarSizeTokens.Medium.size,
     unreadCount: Int = 0,
     isMuted: Boolean = false,
     isOnline: Boolean = false,

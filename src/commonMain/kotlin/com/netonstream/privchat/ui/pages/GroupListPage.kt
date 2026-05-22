@@ -8,7 +8,7 @@ import com.netonstream.privchat.ui.components.ChatAvatar
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.GearLazyColumn
-import com.gearui.foundation.AvatarSpecs
+import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.navbar.NavBarItem
 import com.gearui.components.icon.Icons
@@ -60,7 +60,7 @@ fun GroupListPage(
                             ChatAvatar(
                                 url = group.avatar.ifBlank { null },
                                 name = group.displayName,
-                                size = AvatarSpecs.Size.small,
+                                size = AvatarSizeTokens.Small.size,
                             )
                         },
                         title = group.displayName,

@@ -11,7 +11,7 @@ import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.typography.Typography
-import com.gearui.foundation.AvatarSpecs
+import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.runtime.LocalRuntimeEnvironment
 import com.gearui.runtime.LocalRuntimeFlags
 import com.gearui.components.navbar.NavBar
@@ -247,7 +247,7 @@ fun ForwardPickerPage(
                     Text(
                         text = "已选 ${selected.size}/$FORWARD_MAX_TARGETS",
                         style = Typography.Label,
-                        color = colors.textSecondary,
+                        color = colors.mutedForeground,
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     Button(
@@ -279,7 +279,7 @@ private fun ForwardSectionHeader(title: String) {
         Text(
             text = title,
             style = Typography.TitleSmall,
-            color = colors.textPrimary,
+            color = colors.foreground,
         )
     }
 }
@@ -297,7 +297,7 @@ private fun ForwardTargetRow(
             ChatAvatar(
                 url = target.avatarUrl,
                 name = target.displayName,
-                size = AvatarSpecs.Size.small,
+                size = AvatarSizeTokens.Small.size,
             )
         },
         title = target.displayName,

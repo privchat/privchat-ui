@@ -5,7 +5,7 @@ import com.netonstream.privchat.sdk.dto.FriendEntry
 import com.netonstream.privchat.ui.components.ChatAvatar
 import com.netonstream.privchat.ui.models.displayName
 import com.gearui.theme.Theme
-import com.gearui.foundation.AvatarSpecs
+import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.typography.Typography
@@ -72,7 +72,7 @@ fun GroupInvitePage(
             rightWidgetWidth = 96.dp,
             rightWidget = {
                 val label = if (selected.isEmpty()) "邀请" else "邀请(${selected.size})"
-                val color = if (canSubmit) colors.primary else colors.textDisabled
+                val color = if (canSubmit) colors.primary else colors.mutedForeground
                 Box(
                     modifier = Modifier
                         .padding(horizontal = 12.dp, vertical = 8.dp)
@@ -119,7 +119,7 @@ fun GroupInvitePage(
             Text(
                 text = "已选 ${selected.size}/$GROUP_INVITE_MAX_BATCH",
                 style = Typography.BodySmall,
-                color = colors.textSecondary,
+                color = colors.mutedForeground,
             )
         }
 
@@ -140,7 +140,7 @@ fun GroupInvitePage(
                             ChatAvatar(
                                 url = friend.avatarUrl,
                                 name = friend.displayName,
-                                size = AvatarSpecs.Size.small,
+                                size = AvatarSizeTokens.Small.size,
                             )
                         },
                         trailing = {

@@ -11,7 +11,7 @@ import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.typography.Typography
-import com.gearui.foundation.AvatarSpecs
+import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.primitives.Badge
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.icon.Icons
@@ -223,7 +223,7 @@ private fun GroupsTabContent(
                     ChatAvatar(
                         url = group.avatar.ifBlank { null },
                         name = group.displayName,
-                        size = AvatarSpecs.Size.small,
+                        size = AvatarSizeTokens.Small.size,
                     )
                 },
                 title = group.displayName,
@@ -257,9 +257,9 @@ private fun ContactEntryIcon(icon: String) {
     val colors = Theme.colors
     Box(
         modifier = Modifier
-            .size(AvatarSpecs.Size.small)
+            .size(AvatarSizeTokens.Small.size)
             .clip(RoundedCornerShape(8.dp))
-            .background(colors.primaryLight),
+            .background(colors.muted),
         contentAlignment = Alignment.Center,
     ) {
         Icon(name = icon, size = 18.dp, tint = colors.primary)
@@ -278,7 +278,7 @@ private fun SectionHeader(title: String) {
         Text(
             text = title,
             style = Typography.TitleSmall,
-            color = colors.textPrimary,
+            color = colors.foreground,
         )
     }
 }
@@ -289,13 +289,13 @@ private fun LetterHeader(letter: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(colors.surfaceVariant)
+            .background(colors.muted)
             .padding(horizontal = 16.dp, vertical = 4.dp),
     ) {
         Text(
             text = letter,
             style = Typography.Label,
-            color = colors.textSecondary,
+            color = colors.mutedForeground,
         )
     }
 }
@@ -313,7 +313,7 @@ private fun FriendItem(
             ChatAvatar(
                 url = friend.avatarUrl,
                 name = friend.displayName,
-                size = AvatarSpecs.Size.small,
+                size = AvatarSizeTokens.Small.size,
                 isOnline = isOnline,
             )
         },

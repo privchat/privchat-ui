@@ -5,7 +5,7 @@ import com.netonstream.privchat.sdk.dto.FriendEntry
 import com.netonstream.privchat.ui.components.ChatAvatar
 import com.netonstream.privchat.ui.models.displayName
 import com.gearui.theme.Theme
-import com.gearui.foundation.AvatarSpecs
+import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.typography.Typography
@@ -71,7 +71,7 @@ fun GroupCreatePage(
             rightWidgetWidth = 96.dp,
             rightWidget = {
                 val label = if (selected.isEmpty()) "创建" else "创建(${selected.size})"
-                val color = if (canCreate) colors.primary else colors.textDisabled
+                val color = if (canCreate) colors.primary else colors.mutedForeground
                 Box(
                     modifier = Modifier
                         .padding(horizontal = 12.dp, vertical = 8.dp)
@@ -137,7 +137,7 @@ fun GroupCreatePage(
             Text(
                 text = "已选 ${selected.size}/$GROUP_CREATE_MAX_MEMBERS",
                 style = Typography.BodySmall,
-                color = colors.textSecondary,
+                color = colors.mutedForeground,
             )
         }
 
@@ -158,7 +158,7 @@ fun GroupCreatePage(
                             ChatAvatar(
                                 url = friend.avatarUrl,
                                 name = friend.displayName,
-                                size = AvatarSpecs.Size.small,
+                                size = AvatarSizeTokens.Small.size,
                             )
                         },
                         trailing = {

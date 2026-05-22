@@ -11,7 +11,7 @@ import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.typography.Typography
-import com.gearui.foundation.AvatarSpecs
+import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.primitives.HorizontalSpacer
 import com.gearui.primitives.VerticalSpacer
 import com.tencent.kuikly.compose.ui.unit.Dp
@@ -158,7 +158,7 @@ fun ConversationPage(
                                 Icon(
                                     name = Icons.add,
                                     size = 24.dp,
-                                    tint = Theme.colors.textPrimary,
+                                    tint = Theme.colors.foreground,
                                 )
                             }
                         }
@@ -276,7 +276,7 @@ private fun ChannelItem(
 
     // 背景色
     val backgroundColor = when {
-        channel.isPinned -> colors.surfaceVariant
+        channel.isPinned -> colors.muted
         else -> colors.surface
     }
 
@@ -322,7 +322,7 @@ private fun ChannelItem(
             ChatAvatar(
                 url = channel.avatarUrl,
                 name = channel.displayName,
-                size = AvatarSpecs.Size.medium,
+                size = AvatarSizeTokens.Medium.size,
                 isOnline = isOnline,
             )
 
@@ -339,7 +339,7 @@ private fun ChannelItem(
                     Text(
                         text = channel.displayName,
                         style = Typography.BodyLarge,
-                        color = colors.textPrimary,
+                        color = colors.foreground,
                         maxLines = 1,
                         modifier = Modifier.weight(1f)
                     )
@@ -351,7 +351,7 @@ private fun ChannelItem(
                         Icon(
                             name = Icons.notifications_off,
                             size = 14.dp,
-                            tint = colors.textSecondary
+                            tint = colors.mutedForeground
                         )
                     } else if (channel.unreadCount.toInt() > 0) {
                         // 未读消息气泡
@@ -375,14 +375,14 @@ private fun ChannelItem(
                             Text(
                                 text = strings.conversationDraft,
                                 style = Typography.BodySmall,
-                                color = colors.danger,
+                                color = colors.destructive,
                                 maxLines = 1,
                             )
                             HorizontalSpacer(2.dp)
                             Text(
                                 text = draft,
                                 style = Typography.BodySmall,
-                                color = colors.textSecondary,
+                                color = colors.mutedForeground,
                                 maxLines = 1,
                                 modifier = Modifier.weight(1f),
                             )
@@ -391,7 +391,7 @@ private fun ChannelItem(
                         Text(
                             text = buildDescription(channel, draft, strings),
                             style = Typography.BodySmall,
-                            color = colors.textSecondary,
+                            color = colors.mutedForeground,
                             maxLines = 1,
                             modifier = Modifier.weight(1f)
                         )
@@ -403,7 +403,7 @@ private fun ChannelItem(
                     Text(
                         text = Formatter.conversationTime(channel.lastMessageTime),
                         style = Typography.Label,
-                        color = colors.textSecondary,
+                        color = colors.mutedForeground,
                     )
                 }
             }
@@ -423,14 +423,14 @@ private fun UnreadBadge(count: Int) {
         modifier = Modifier
             .height(18.dp)
             .widthIn(min = 18.dp)
-            .background(colors.danger, shape = com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape(9.dp))
+            .background(colors.destructive, shape = com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape(9.dp))
             .padding(horizontal = 5.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = displayText,
             style = Typography.Label,
-            color = colors.textAnti,
+            color = colors.primaryForeground,
         )
     }
 }
