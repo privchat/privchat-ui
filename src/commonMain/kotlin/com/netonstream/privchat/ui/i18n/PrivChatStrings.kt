@@ -178,6 +178,8 @@ data class PrivChatStrings(
     // ========== 聊天设置 ==========
     val chatSettingsTitle: String,
     val chatSettingsGroupName: String,
+    /** 群名称编辑页标题（"修改群名称"）。 */
+    val groupNameEditTitle: String,
     val chatSettingsGroupQrCode: String,
     val chatSettingsGroupMembers: String,
     val chatSettingsGroupManage: String,
@@ -516,6 +518,7 @@ object PrivChatStringPacks {
         // 聊天设置
         chatSettingsTitle = "聊天设置",
         chatSettingsGroupName = "群名称",
+        groupNameEditTitle = "修改群名称",
         chatSettingsGroupQrCode = "群二维码",
         chatSettingsGroupMembers = "群成员",
         chatSettingsGroupManage = "群管理",
@@ -831,6 +834,7 @@ object PrivChatStringPacks {
         // Chat Settings
         chatSettingsTitle = "Chat Settings",
         chatSettingsGroupName = "Group Name",
+        groupNameEditTitle = "Edit Group Name",
         chatSettingsGroupQrCode = "Group QR Code",
         chatSettingsGroupMembers = "Group Members",
         chatSettingsGroupManage = "Group Management",

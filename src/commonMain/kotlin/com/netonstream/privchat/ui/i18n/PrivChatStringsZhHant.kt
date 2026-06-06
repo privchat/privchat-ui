@@ -162,6 +162,7 @@ val PrivChatStringsZhHant = PrivChatStrings(
     // 聊天設定
     chatSettingsTitle = "聊天設定",
     chatSettingsGroupName = "群名稱",
+    groupNameEditTitle = "修改群名稱",
     chatSettingsGroupQrCode = "群 QR Code",
     chatSettingsGroupMembers = "群成員",
     chatSettingsGroupManage = "群管理",

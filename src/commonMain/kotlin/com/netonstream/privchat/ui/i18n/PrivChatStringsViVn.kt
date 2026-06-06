@@ -162,6 +162,7 @@ val PrivChatStringsViVn = PrivChatStrings(
     // Cài đặt chat
     chatSettingsTitle = "Cài đặt chat",
     chatSettingsGroupName = "Tên nhóm",
+    groupNameEditTitle = "Sửa tên nhóm",
     chatSettingsGroupQrCode = "Mã QR nhóm",
     chatSettingsGroupMembers = "Thành viên nhóm",
     chatSettingsGroupManage = "Quản lý nhóm",

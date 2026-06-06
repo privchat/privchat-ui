@@ -30,6 +30,7 @@ fun GroupMembersPage(
     members: List<GroupMemberEntry>,
     onBack: () -> Unit,
     onInviteClick: () -> Unit = {},
+    onMemberClick: (GroupMemberEntry) -> Unit = {},
     onRemoveMember: suspend (GroupMemberEntry) -> Result<Unit> = { Result.success(Unit) },
     onError: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -79,6 +80,7 @@ fun GroupMembersPage(
                         Cell(
                             title = member.displayName,
                             description = "${member.roleName} · ${member.userId}",
+                            onClick = { onMemberClick(member) },
                             leading = {
                                 ChatAvatar(
                                     url = member.avatar,

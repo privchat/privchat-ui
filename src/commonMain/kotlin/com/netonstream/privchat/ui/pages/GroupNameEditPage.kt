@@ -6,25 +6,27 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
-import com.gearui.components.button.Button
-import com.gearui.components.button.ButtonSize
-import com.gearui.components.button.ButtonTheme
 import com.gearui.components.input.Input
+import com.gearui.components.input.InputSize
 import com.gearui.components.navbar.NavBar
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.typography.Typography
 import com.gearui.theme.Theme
 import com.tencent.kuikly.compose.foundation.background
+import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.Column
-import com.tencent.kuikly.compose.foundation.layout.Spacer
 import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
-import com.tencent.kuikly.compose.foundation.layout.fillMaxWidth
-import com.tencent.kuikly.compose.foundation.layout.height
 import com.tencent.kuikly.compose.foundation.layout.padding
 import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
+/**
+ * 群名称编辑页。
+ *
+ * 当前群名通过 gearui [Input] 的 `value` 预填到可编辑文本框；用户进入即可在原名基础上
+ * 修改。autoFocus=true 弹键盘。Save 按钮挂在 NavBar 右上角，仅在内容变化且非空时高亮。
+ */
 @Composable
 fun GroupNameEditPage(
     currentName: String,
@@ -34,47 +36,57 @@ fun GroupNameEditPage(
     modifier: Modifier = Modifier,
 ) {
     val strings = PrivChatI18n.strings
-    var groupName by remember(currentName) { mutableStateOf(currentName) }
+    val colors = Theme.colors
     val scope = androidx.compose.runtime.rememberCoroutineScope()
+
+    var groupName by remember { mutableStateOf(currentName) }
+
+    val trimmed = groupName.trim()
+    val canSave = trimmed.isNotEmpty() && trimmed != currentName
+
+    val doSave: () -> Unit = {
+        if (canSave) {
+            scope.launch {
+                onSave(trimmed).fold(
+                    onSuccess = { onBack() },
+                    onFailure = { onError?.invoke(it.message ?: strings.networkError) },
+                )
+            }
+        }
+    }
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Theme.colors.background)
+            .background(colors.background)
     ) {
         NavBar(
-            title = strings.chatSettingsGroupName,
+            title = strings.groupNameEditTitle,
             useDefaultBack = true,
             onBackClick = onBack,
+            rightWidget = {
+                Text(
+                    text = strings.save,
+                    style = Typography.BodyLarge,
+                    color = if (canSave) colors.primary else colors.mutedForeground,
+                    modifier = if (canSave) {
+                        Modifier.clickable(onClick = doSave).padding(horizontal = 4.dp)
+                    } else {
+                        Modifier.padding(horizontal = 4.dp)
+                    },
+                )
+            },
+            rightWidgetWidth = 64.dp,
         )
 
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = strings.chatSettingsGroupName,
-                style = Typography.BodySmall,
-                color = Theme.colors.mutedForeground,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
             Input(
                 value = groupName,
                 onValueChange = { groupName = it },
-                placeholder = strings.chatSettingsGroupName,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                text = strings.confirm,
-                theme = ButtonTheme.PRIMARY,
-                size = ButtonSize.SMALL,
-                disabled = groupName.trim().isEmpty() || groupName.trim() == currentName,
-                onClick = {
-                    scope.launch {
-                        onSave(groupName.trim()).fold(
-                            onSuccess = { onBack() },
-                            onFailure = { onError?.invoke(it.message ?: strings.networkError) },
-                        )
-                    }
-                }
+                size = InputSize.LARGE,
+                clearable = true,
+                onClear = { groupName = "" },
+                autoFocus = true,
             )
         }
     }

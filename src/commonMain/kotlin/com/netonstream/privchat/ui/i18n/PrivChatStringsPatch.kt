@@ -137,6 +137,7 @@ data class PrivChatStringsPatch(
     val friendSettingsDelete: String? = null,
     val chatSettingsTitle: String? = null,
     val chatSettingsGroupName: String? = null,
+    val groupNameEditTitle: String? = null,
     val chatSettingsGroupQrCode: String? = null,
     val chatSettingsGroupMembers: String? = null,
     val chatSettingsGroupManage: String? = null,
@@ -390,6 +391,7 @@ val PrivChatStringsPatch.isEmpty: Boolean
         friendSettingsDelete == null &&
         chatSettingsTitle == null &&
         chatSettingsGroupName == null &&
+        groupNameEditTitle == null &&
         chatSettingsGroupQrCode == null &&
         chatSettingsGroupMembers == null &&
         chatSettingsGroupManage == null &&
@@ -649,6 +651,7 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         friendSettingsDelete = patch.friendSettingsDelete ?: friendSettingsDelete,
         chatSettingsTitle = patch.chatSettingsTitle ?: chatSettingsTitle,
         chatSettingsGroupName = patch.chatSettingsGroupName ?: chatSettingsGroupName,
+        groupNameEditTitle = patch.groupNameEditTitle ?: groupNameEditTitle,
         chatSettingsGroupQrCode = patch.chatSettingsGroupQrCode ?: chatSettingsGroupQrCode,
         chatSettingsGroupMembers = patch.chatSettingsGroupMembers ?: chatSettingsGroupMembers,
         chatSettingsGroupManage = patch.chatSettingsGroupManage ?: chatSettingsGroupManage,
