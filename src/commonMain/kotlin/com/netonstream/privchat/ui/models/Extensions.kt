@@ -103,9 +103,17 @@ val FriendEntry.displayName: String
         ?: nickname?.takeIf { it.isNotBlank() }
         ?: username
 
-/** 头像首字母（用于无头像时显示） */
+/**
+ * 头像首字母（用于无头像时显示）。
+ * **不要在新代码里直接读此 property**——业务页面只调
+ * [com.netonstream.privchat.ui.avatar.PrivChatAvatar]；这里保留供旧 call site 使用，
+ * 内部统一走 [com.netonstream.privchat.ui.avatar.AvatarText.initialsOf]。
+ */
 val FriendEntry.avatarLetter: String
-    get() = displayName.firstOrNull()?.uppercase() ?: "?"
+    get() = com.netonstream.privchat.ui.avatar.AvatarText.initialsOf(
+        name = remark ?: nickname,
+        username = username,
+    )
 
 // ========== UserEntry 扩展 ==========
 
@@ -113,9 +121,12 @@ val FriendEntry.avatarLetter: String
 val UserEntry.displayName: String
     get() = nickname?.takeIf { it.isNotBlank() } ?: username
 
-/** 头像首字母 */
+/** 头像首字母（同 [FriendEntry.avatarLetter] 说明）。 */
 val UserEntry.avatarLetter: String
-    get() = displayName.firstOrNull()?.uppercase() ?: "?"
+    get() = com.netonstream.privchat.ui.avatar.AvatarText.initialsOf(
+        name = nickname,
+        username = username,
+    )
 
 // ========== GroupEntry 扩展 ==========
 
@@ -123,9 +134,9 @@ val UserEntry.avatarLetter: String
 val GroupEntry.displayName: String
     get() = name ?: "群聊"
 
-/** 头像首字母 */
+/** 头像首字母（同 [FriendEntry.avatarLetter] 说明）。 */
 val GroupEntry.avatarLetter: String
-    get() = displayName.firstOrNull()?.uppercase() ?: "G"
+    get() = com.netonstream.privchat.ui.avatar.AvatarText.initialsOf(name = name)
 
 // ========== GroupMemberEntry 扩展 ==========
 
