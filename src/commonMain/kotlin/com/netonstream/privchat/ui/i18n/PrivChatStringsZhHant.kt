@@ -250,6 +250,12 @@ val PrivChatStringsZhHant = PrivChatStrings(
     setNicknameTitle = "設置暱稱",
     setNicknameHint = "給自己取個名字吧",
     setNicknameSubmit = "完成",
+    setNicknameError = "暱稱需要 2-32 個字元",
+
+    // Required Actions — Unsupported
+    requiredActionUnsupportedTitle = "需要更新用戶端",
+    requiredActionUnsupportedMessage = "你的帳號有一個本版本暫不支援的待辦操作，請升級 PrivChat 後繼續使用。",
+    requiredActionUnsupportedReload = "已升級，重新載入",
 
     // 好友權限
     permissionAllowAny = "允許任何人",

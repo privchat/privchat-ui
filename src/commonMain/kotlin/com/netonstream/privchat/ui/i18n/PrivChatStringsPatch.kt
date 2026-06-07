@@ -235,6 +235,10 @@ data class PrivChatStringsPatch(
     val setNicknameTitle: String? = null,
     val setNicknameHint: String? = null,
     val setNicknameSubmit: String? = null,
+    val setNicknameError: String? = null,
+    val requiredActionUnsupportedTitle: String? = null,
+    val requiredActionUnsupportedMessage: String? = null,
+    val requiredActionUnsupportedReload: String? = null,
     val timeYesterday: String? = null,
     val timeToday: String? = null,
     val timeSunday: String? = null,
@@ -489,6 +493,10 @@ val PrivChatStringsPatch.isEmpty: Boolean
         setNicknameTitle == null &&
         setNicknameHint == null &&
         setNicknameSubmit == null &&
+        setNicknameError == null &&
+        requiredActionUnsupportedTitle == null &&
+        requiredActionUnsupportedMessage == null &&
+        requiredActionUnsupportedReload == null &&
         timeYesterday == null &&
         timeToday == null &&
         timeSunday == null &&
@@ -749,6 +757,10 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         setNicknameTitle = patch.setNicknameTitle ?: setNicknameTitle,
         setNicknameHint = patch.setNicknameHint ?: setNicknameHint,
         setNicknameSubmit = patch.setNicknameSubmit ?: setNicknameSubmit,
+        setNicknameError = patch.setNicknameError ?: setNicknameError,
+        requiredActionUnsupportedTitle = patch.requiredActionUnsupportedTitle ?: requiredActionUnsupportedTitle,
+        requiredActionUnsupportedMessage = patch.requiredActionUnsupportedMessage ?: requiredActionUnsupportedMessage,
+        requiredActionUnsupportedReload = patch.requiredActionUnsupportedReload ?: requiredActionUnsupportedReload,
         timeYesterday = patch.timeYesterday ?: timeYesterday,
         timeToday = patch.timeToday ?: timeToday,
         timeSunday = patch.timeSunday ?: timeSunday,

@@ -250,6 +250,12 @@ val PrivChatStringsViVn = PrivChatStrings(
     setNicknameTitle = "Đặt biệt danh",
     setNicknameHint = "Hãy đặt tên cho mình",
     setNicknameSubmit = "Hoàn thành",
+    setNicknameError = "Biệt danh phải dài 2-32 ký tự",
+
+    // Required Actions — Unsupported
+    requiredActionUnsupportedTitle = "Cần cập nhật ứng dụng",
+    requiredActionUnsupportedMessage = "Tài khoản của bạn có một thao tác cần xử lý mà phiên bản hiện tại chưa hỗ trợ. Vui lòng cập nhật PrivChat để tiếp tục.",
+    requiredActionUnsupportedReload = "Đã cập nhật, tải lại",
 
     // Quyền bạn bè
     permissionAllowAny = "Cho phép tất cả",

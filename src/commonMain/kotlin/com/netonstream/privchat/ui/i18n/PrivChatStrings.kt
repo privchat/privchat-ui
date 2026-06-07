@@ -297,6 +297,16 @@ data class PrivChatStrings(
     val setNicknameTitle: String,
     val setNicknameHint: String,
     val setNicknameSubmit: String,
+    /** 昵称校验失败统一文案（trim 后 2-32 字符）。 */
+    val setNicknameError: String,
+
+    // ========== Required Actions — Unsupported (fail-closed) ==========
+    /** Required action 未识别时的阻断页标题。 */
+    val requiredActionUnsupportedTitle: String,
+    /** Required action 未识别时的阻断页正文（不含变量；spec §4.4 fallback）。 */
+    val requiredActionUnsupportedMessage: String,
+    /** 重新加载按钮文案。 */
+    val requiredActionUnsupportedReload: String,
 
     // ========== 时间 ==========
     val timeYesterday: String,
@@ -636,6 +646,10 @@ object PrivChatStringPacks {
         setNicknameTitle = "设置昵称",
         setNicknameHint = "给自己取个名字吧",
         setNicknameSubmit = "完成",
+        setNicknameError = "昵称需要 2-32 个字符",
+        requiredActionUnsupportedTitle = "需要更新客户端",
+        requiredActionUnsupportedMessage = "你的账号有一个本版本暂不支持的待办操作，请升级 PrivChat 后继续使用。",
+        requiredActionUnsupportedReload = "已升级，重新加载",
 
         // 时间
         timeYesterday = "昨天",
@@ -952,6 +966,10 @@ object PrivChatStringPacks {
         setNicknameTitle = "Set Nickname",
         setNicknameHint = "Give yourself a name",
         setNicknameSubmit = "Done",
+        setNicknameError = "Nickname must be 2-32 characters",
+        requiredActionUnsupportedTitle = "Client update required",
+        requiredActionUnsupportedMessage = "Your account has a pending action this version cannot complete. Please upgrade PrivChat to continue.",
+        requiredActionUnsupportedReload = "Upgraded, reload",
 
         // Time
         timeYesterday = "Yesterday",
