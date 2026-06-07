@@ -56,14 +56,16 @@ fun PrivChatAvatar(
         isGroup = isGroup,
     )
     val colors = Theme.colors
-    // resolved.backgroundColor / foregroundColor 当前不直接传给 gearui Avatar（它内部固定
-    // 用 muted / mutedForeground，跟我们 resolver 的当前选择一致；下阶段若要自定义配色
-    // 再在 gearui 暴露 color 参数）。
+    // 强制把 fallback 配色固定到 [AvatarPalette]，不让 gearui Avatar 回退到 Theme.colors.muted——
+    // 否则 dark theme 下「我」tab 头像会变暗色，而 QR bitmap 头像永远是 light 色（保存到相册的
+    // 图片跟 app theme 解耦），两条管道视觉就割裂了。
     Box(modifier = modifier) {
         Avatar(
             text = resolved.initials,
             size = size,
             radius = radius,
+            backgroundColor = resolved.backgroundColor,
+            contentColor = resolved.foregroundColor,
             badgeCount = if (isMuted || unreadCount <= 0) null else unreadCount,
             badgeDot = isMuted && unreadCount > 0,
         )

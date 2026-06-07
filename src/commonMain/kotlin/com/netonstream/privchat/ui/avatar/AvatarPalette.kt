@@ -1,17 +1,20 @@
 package com.netonstream.privchat.ui.avatar
 
 /**
- * 头像 fallback 调色板的**唯一来源**。Compose 端通过 [AvatarResolver] 取主题敏感版本，
- * Bitmap 渲染（QR 中心头像等无法读 [com.gearui.theme.Theme]）直接用这里的 ARGB 常量，
- * 保证两条管道颜色一致。
+ * 头像 fallback 调色板的**唯一**来源。
  *
- * 当前固定按 light theme 的 `muted` / `mutedForeground` 取色——QR 等 bitmap 产物多在
- * 白底 / 相册里看，统一一套 light token 视觉更稳定；远程头像加载是下一阶段。
+ * 设计取向：fallback 头像配色**不跟随 light/dark theme**，永远是同一套（浅灰底 + 深灰字）。
+ * 理由：
+ * - bitmap 渲染（QR 中心头像）保存到相册后跟应用 theme 解耦，theme 切了图也不会变；
+ *   如果 Compose 端跟着 theme 变色，dark theme 下两条路径就视觉割裂
+ * - 业务头像在 Compose 与 bitmap 间必须一致是整个 avatar 包的硬不变式（spec §3）
+ *
+ * Compose 端通过 [AvatarResolver] 转 `Color`；Bitmap 端（QrPngRenderer 等）直接用 ARGB int。
  */
 object AvatarPalette {
-    /** light theme `muted` (0xFFF4F4F5)。Compose ARGB 与 Android `Color.rgb` 通用。 */
+    /** fallback 背景（浅灰，Compose ARGB / Android `Color.rgb` 通用）。 */
     const val DEFAULT_BACKGROUND_ARGB: Int = 0xFFF4F4F5.toInt()
 
-    /** light theme `mutedForeground` (0xFF52525B)。 */
+    /** fallback 前景（深灰）。 */
     const val DEFAULT_FOREGROUND_ARGB: Int = 0xFF52525B.toInt()
 }
