@@ -12,6 +12,8 @@ import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.typography.Typography
 import com.gearui.foundation.avatar.AvatarSizeTokens
+import com.gearui.primitives.Badge
+import com.gearui.primitives.BadgeTheme
 import com.gearui.primitives.HorizontalSpacer
 import com.gearui.primitives.VerticalSpacer
 import com.tencent.kuikly.compose.ui.unit.Dp
@@ -354,8 +356,11 @@ private fun ChannelItem(
                             tint = colors.mutedForeground
                         )
                     } else if (channel.unreadCount.toInt() > 0) {
-                        // 未读消息气泡
-                        UnreadBadge(count = channel.unreadCount.toInt())
+                        // 未读消息气泡：走 gearui-kit Badge 规范（红底白字由 BadgeTheme.Error token 决定）
+                        Badge(
+                            count = channel.unreadCount.toInt(),
+                            theme = BadgeTheme.Error,
+                        )
                     }
                 }
 
@@ -411,29 +416,6 @@ private fun ChannelItem(
     }
 }
 
-/**
- * 未读消息气泡
- */
-@Composable
-private fun UnreadBadge(count: Int) {
-    val colors = Theme.colors
-    val displayText = if (count > 99) "99+" else count.toString()
-
-    Box(
-        modifier = Modifier
-            .height(18.dp)
-            .widthIn(min = 18.dp)
-            .background(colors.destructive, shape = com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape(9.dp))
-            .padding(horizontal = 5.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = displayText,
-            style = Typography.Label,
-            color = colors.primaryForeground,
-        )
-    }
-}
 
 /**
  * 构建会话描述文本（不含草稿分支——草稿态在 UI 层用独立的彩色 Text 渲染，见会话行）。
