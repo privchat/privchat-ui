@@ -17,11 +17,12 @@ actual object MessageAlertController {
     private const val MIN_INTERVAL_MS: Long = 3_000L
     private var lastPlayedAtMs: Long = 0L
 
-    actual fun playIncomingMessageAlert() {
+    actual fun playIncomingMessageAlert(sound: Boolean, vibration: Boolean) {
+        if (!sound && !vibration) return
         val now = (NSDate().timeIntervalSince1970 * 1000.0).toLong()
         if (now - lastPlayedAtMs < MIN_INTERVAL_MS) return
         lastPlayedAtMs = now
-        AudioServicesPlaySystemSound(SOUND_ID_SMS_RECEIVED)
-        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+        if (sound) AudioServicesPlaySystemSound(SOUND_ID_SMS_RECEIVED)
+        if (vibration) AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
     }
 }

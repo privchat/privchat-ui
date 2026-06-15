@@ -7,6 +7,11 @@ package com.netonstream.privchat.ui.platform
  * 调用方负责判断是否应该提示（当前会话内的入站不应触发）。
  */
 expect object MessageAlertController {
-    /** 播放系统消息提示音 + 短震动；失败静默忽略。 */
-    fun playIncomingMessageAlert()
+    /**
+     * 播放系统消息提示音 + 短震动；失败静默忽略。
+     *
+     * [sound] / [vibration] 由账号级通知设置（notifications.sound_enabled /
+     * notifications.vibration_enabled）控制，调用方读 [AppSettings] 后传入。
+     */
+    fun playIncomingMessageAlert(sound: Boolean = true, vibration: Boolean = true)
 }

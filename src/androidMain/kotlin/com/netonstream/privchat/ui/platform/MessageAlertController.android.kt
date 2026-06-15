@@ -28,13 +28,14 @@ actual object MessageAlertController {
         appContext = null
     }
 
-    actual fun playIncomingMessageAlert() {
+    actual fun playIncomingMessageAlert(sound: Boolean, vibration: Boolean) {
+        if (!sound && !vibration) return
         val ctx = appContext ?: return
         val now = SystemClock.elapsedRealtime()
         if (now - lastPlayedAtMs < MIN_INTERVAL_MS) return
         lastPlayedAtMs = now
-        playSound(ctx)
-        vibrate(ctx)
+        if (sound) playSound(ctx)
+        if (vibration) vibrate(ctx)
     }
 
     private fun playSound(ctx: Context) {
