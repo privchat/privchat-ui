@@ -12,4 +12,14 @@ actual object ExternalLinkBridge {
         app.openURL(url)
         return true
     }
+
+    actual fun openMap(latitude: Double, longitude: Double, label: String?): Boolean {
+        // Apple Maps：maps://?ll=lat,lng[&q=label]。label 含特殊字符解析失败时退回纯坐标。
+        val base = "maps://?ll=$latitude,$longitude"
+        if (!label.isNullOrBlank()) {
+            val q = label.replace(" ", "%20")
+            if (openUri("$base&q=$q")) return true
+        }
+        return openUri(base)
+    }
 }

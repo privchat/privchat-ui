@@ -11,4 +11,10 @@ package com.netonstream.privchat.ui.platform
  */
 expect object ExternalLinkBridge {
     fun openUri(uri: String): Boolean
+
+    /**
+     * 在系统地图打开经纬度坐标（Android `geo:`→默认地图 App / iOS Apple Maps）。
+     * [label] 是可选标注名。打不开返回 false（UI 静默忽略）。
+     */
+    fun openMap(latitude: Double, longitude: Double, label: String?): Boolean
 }

@@ -24,4 +24,11 @@ actual object ExternalLinkBridge {
         }
         return runCatching { ctx.startActivity(intent) }.isSuccess
     }
+
+    actual fun openMap(latitude: Double, longitude: Double, label: String?): Boolean {
+        // geo:lat,lng?q=lat,lng(label) —— 系统选择默认地图 App（高德/百度/Google 等）。
+        val q = if (label.isNullOrBlank()) "$latitude,$longitude"
+        else "$latitude,$longitude(${Uri.encode(label)})"
+        return openUri("geo:$latitude,$longitude?q=$q")
+    }
 }

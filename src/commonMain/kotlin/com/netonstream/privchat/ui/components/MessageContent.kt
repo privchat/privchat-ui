@@ -10,6 +10,8 @@ import com.netonstream.privchat.ui.media.MediaDownloadManager
 import com.netonstream.privchat.ui.media.MediaDownloadState
 import com.netonstream.privchat.ui.media.MediaOpener
 import com.netonstream.privchat.ui.models.*
+import com.netonstream.privchat.ui.PrivChat
+import com.netonstream.privchat.ui.avatar.PrivChatAvatar
 import com.netonstream.privchat.ui.platform.ClipboardBridge
 import com.netonstream.privchat.ui.platform.ExternalLinkBridge
 import com.netonstream.privchat.ui.utils.Formatter
@@ -79,6 +81,7 @@ fun MessageContent(
     onFailedClick: (() -> Unit)? = null,
     onVideoPreview: ((MessageEntry) -> Unit)? = null,
     onImagePreview: ((MessageEntry) -> Unit)? = null,
+    onContactClick: ((ULong) -> Unit)? = null,
 ) {
     val colors = Theme.colors
     val textColor = if (isSelf) colors.messageTextSelf else colors.messageTextOther
@@ -104,11 +107,8 @@ fun MessageContent(
             MessageType.FILE -> FileContent(parsed, message, textColor, secondaryTextColor)
             MessageType.STICKER -> StickerContent(parsed)
             MessageType.LOCATION -> LocationContent(parsed, textColor, secondaryTextColor)
-            // LINK 占位：Link 气泡 UI 待设计；此分支保持 when 穷尽，同时降级为文本显示避免空白气泡。
-            MessageType.LINK -> TextContent(
-                parsed.copy(text = parsed.linkTitle ?: parsed.linkUrl ?: "", type = MessageType.TEXT),
-                textColor,
-            )
+            MessageType.LINK -> LinkContent(parsed, textColor, secondaryTextColor)
+            MessageType.CONTACT -> ContactContent(parsed, textColor, secondaryTextColor, onContactClick)
             MessageType.SYSTEM -> {
                 // 系统消息由 MessageRow 在 row 级早返回 SystemMessageRow 渲染，
                 // 不会走到这里；留空分支以保持 when 穷尽。
@@ -765,7 +765,10 @@ private fun StickerContent(
 }
 
 /**
- * 位置消息
+ * 位置消息（Phase 1：协议 LocationMetadata 只保证 lat/lng）。
+ *
+ * 点击 → 系统地图（ExternalLinkBridge.openMap）。address 是 best-effort legacy
+ * （协议不保证），有就显示；POI 名 / 静态地图缩略图属 Phase 2 协议扩展。
  */
 @Composable
 private fun LocationContent(
@@ -773,21 +776,148 @@ private fun LocationContent(
     textColor: Color,
     secondaryTextColor: Color,
 ) {
-    Column {
+    val lat = parsed.latitude
+    val lng = parsed.longitude
+    val clickMod = if (lat != null && lng != null) {
+        Modifier.clickable { ExternalLinkBridge.openMap(lat, lng, parsed.address) }
+    } else {
+        Modifier
+    }
+    Column(modifier = clickMod.width(220.dp)) {
+        // 静态地图缩略图占位（协议暂无缩略图字段，Phase 1 用视觉块；Phase 2 由发送端生成）。
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(110.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Theme.colors.muted),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(text = "📍", style = Typography.TitleLarge)
+        }
+        VerticalSpacer(6.dp)
         Text(
-            text = "📍 位置",
+            text = parsed.address?.takeIf { it.isNotBlank() } ?: "位置",
             style = Typography.BodyMedium,
             color = textColor,
+            maxLines = 2,
         )
-        if (!parsed.address.isNullOrBlank()) {
-            VerticalSpacer(4.dp)
+        if (lat != null && lng != null) {
+            VerticalSpacer(2.dp)
             Text(
-                text = parsed.address,
-                style = Typography.BodySmall,
+                text = "${fmtCoord(lat)}, ${fmtCoord(lng)}",
+                style = Typography.Label,
                 color = secondaryTextColor,
-                maxLines = 2,
+                maxLines = 1,
             )
         }
+    }
+}
+
+private fun fmtCoord(v: Double): String = ((v * 100000).toLong() / 100000.0).toString()
+
+/**
+ * 链接卡片消息（协议 LinkMetadata：url / title / description / thumbnail）。
+ *
+ * 缩略图由发送端 SDK 预览钩子生成（server 不爬，接收端不爬）。Phase 1 只渲染：
+ * 缩略图可用 → 图 + 标题 + 描述 + url；不可用 → 纯文本卡片。点击 → 外部浏览器。
+ */
+@Composable
+private fun LinkContent(
+    parsed: ParsedContent,
+    textColor: Color,
+    secondaryTextColor: Color,
+) {
+    val url = parsed.linkUrl
+    val title = parsed.linkTitle?.takeIf { it.isNotBlank() } ?: url ?: ""
+    val desc = parsed.linkDescription?.takeIf { it.isNotBlank() }
+    val thumb = parsed.thumbnailUrl?.takeIf { it.isNotBlank() }
+    val clickMod = if (!url.isNullOrBlank()) {
+        Modifier.clickable { ExternalLinkBridge.openUri(url) }
+    } else {
+        Modifier
+    }
+    Column(modifier = clickMod.width(240.dp)) {
+        if (thumb != null) {
+            Image(
+                painter = rememberAsyncImagePainter(model = thumb),
+                contentDescription = title,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop,
+            )
+            VerticalSpacer(6.dp)
+        }
+        if (title.isNotBlank()) {
+            Text(text = title, style = Typography.BodyMedium, color = textColor, maxLines = 2)
+        }
+        if (desc != null) {
+            VerticalSpacer(2.dp)
+            Text(text = desc, style = Typography.BodySmall, color = secondaryTextColor, maxLines = 2)
+        }
+        if (!url.isNullOrBlank()) {
+            VerticalSpacer(4.dp)
+            Text(text = url, style = Typography.Label, color = secondaryTextColor, maxLines = 1)
+        }
+    }
+}
+
+/**
+ * 名片消息（协议 ContactCardMetadata：只有 user_id）。
+ *
+ * Phase 1：user_id → 本地 friends 缓存解析 头像/昵称；查不到降级「用户 #id」。
+ * 点击 → 复用 onContactClick（= MessagePage.onAvatarClick → 用户资料页）。
+ */
+@Composable
+private fun ContactContent(
+    parsed: ParsedContent,
+    textColor: Color,
+    secondaryTextColor: Color,
+    onContactClick: ((ULong) -> Unit)?,
+) {
+    val uid = parsed.contactUserId
+    val friends by PrivChat.friends.collectAsState()
+    val friend = remember(friends, uid) { uid?.let { id -> friends.firstOrNull { it.userId == id } } }
+    val displayName = friend?.remark?.takeIf { it.isNotBlank() }
+        ?: friend?.nickname?.takeIf { it.isNotBlank() }
+        ?: parsed.contactName?.takeIf { it.isNotBlank() }
+        ?: friend?.username
+        ?: uid?.let { "用户 #$it" }
+        ?: "用户名片"
+    val avatarUrl = friend?.avatarUrl ?: parsed.contactAvatarUrl
+    val clickMod = if (uid != null && onContactClick != null) {
+        Modifier.clickable { onContactClick(uid) }
+    } else {
+        Modifier
+    }
+    Column(modifier = clickMod.width(220.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            PrivChatAvatar(
+                name = displayName,
+                username = friend?.username,
+                avatarUrl = avatarUrl,
+                userId = uid?.toLong(),
+                size = 44.dp,
+            )
+            HorizontalSpacer(10.dp)
+            Text(
+                text = displayName,
+                style = Typography.BodyMedium,
+                color = textColor,
+                maxLines = 1,
+            )
+        }
+        VerticalSpacer(8.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(Theme.colors.border),
+        )
+        VerticalSpacer(6.dp)
+        Text(text = "个人名片", style = Typography.Label, color = secondaryTextColor)
     }
 }
 

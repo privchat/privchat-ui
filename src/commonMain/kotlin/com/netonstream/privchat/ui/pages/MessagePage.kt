@@ -1470,6 +1470,7 @@ private fun MessageRow(
                             onFailedClick = onFailedClick,
                             onVideoPreview = onVideoPreview,
                             onImagePreview = onImagePreview,
+                            onContactClick = onAvatarClick,
                         )
                     }
                     if (flashAlpha > 0f) {

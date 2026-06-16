@@ -115,6 +115,8 @@ private fun renderPreview(
             strings.previewLink.replace("{0}", title)
         }
 
+        MessageType.CONTACT -> strings.previewContactCard
+
         MessageType.SYSTEM -> renderSystemPreview(strings, effectiveParsed, rawContent)
 
         MessageType.UNKNOWN -> strings.previewUnknown

@@ -17,6 +17,7 @@ enum class MessageType {
     STICKER,
     LOCATION,
     LINK,
+    CONTACT,
     SYSTEM,
     UNKNOWN
 }
@@ -58,13 +59,23 @@ data class ParsedContent(
     val duration: Int? = null,
     val width: Int? = null,
     val height: Int? = null,
+    // LOCATION：协议（content.fbs LocationMetadata）只保证 latitude/longitude。
     val latitude: Double? = null,
     val longitude: Double? = null,
+    // best-effort legacy：协议未保证，仅当历史 JSON 里恰好带了 address/name 才有值。
+    // 微信级 POI 名/地址要等 Phase 2 扩 LocationMetadata，不要把它当协议契约。
     val address: String? = null,
-    // LINK 专用：url 必有；title/description/thumbnailUrl 由 SDK 宿主预览回调填充（未注册则全为空）。
+    // LINK（content.fbs LinkMetadata）：url 必有；title/description/thumbnail 由发送端 SDK
+    // 预览钩子填（server 不爬）；thumbnailUrl 是 best-effort（协议是 thumbnail_file_id）。
     val linkUrl: String? = null,
     val linkTitle: String? = null,
     val linkDescription: String? = null,
+    // CONTACT（content.fbs ContactCardMetadata）：协议只保证 user_id。
+    // name/avatar 由接收端按 user_id 查用户得到；contactName/contactAvatarUrl 是
+    // best-effort legacy 快照（历史 JSON 若带了就用，否则空，渲染层兜底为「用户 #id」）。
+    val contactUserId: ULong? = null,
+    val contactName: String? = null,
+    val contactAvatarUrl: String? = null,
     // SYSTEM 专用（spec/05-feature/SYSTEM_MESSAGE_SPEC）：
     // template 是模板字符串或 i18n key（如 `system.member_invited`），refs 按下标替换 `{i}` 占位。
     val systemTemplate: String? = null,
@@ -109,6 +120,11 @@ fun parseMessageType(content: String): MessageType {
             content.contains("\"type\":\"link\"") ||
                     content.contains("\"type\": \"link\"") -> MessageType.LINK
 
+            content.contains("\"type\":\"contact\"") ||
+                    content.contains("\"type\": \"contact\"") ||
+                    content.contains("\"type\":\"contact_card\"") ||
+                    content.contains("\"type\": \"contact_card\"") -> MessageType.CONTACT
+
             content.contains("\"type\":\"system\"") ||
                     content.contains("\"type\": \"system\"") ||
                     content.contains("\"type\":\"tip\"") ||
@@ -134,7 +150,7 @@ fun parseMessageType(messageType: Int, content: String, extra: String): MessageT
         PROTOCOL_VIDEO -> MessageType.VIDEO
         PROTOCOL_SYSTEM -> MessageType.SYSTEM
         PROTOCOL_LOCATION -> MessageType.LOCATION
-        PROTOCOL_CONTACT_CARD -> MessageType.FILE
+        PROTOCOL_CONTACT_CARD -> MessageType.CONTACT
         PROTOCOL_STICKER -> MessageType.STICKER
         PROTOCOL_LINK -> MessageType.LINK
         PROTOCOL_FORWARD -> MessageType.TEXT
@@ -227,6 +243,18 @@ fun parseMessageContent(content: String): ParsedContent {
             linkDescription = extractJsonString(content, "description"),
             thumbnailUrl = extractJsonString(content, "thumbnail_url")
                 ?: extractJsonString(content, "thumbnail")
+        )
+
+        MessageType.CONTACT -> ParsedContent(
+            type = type,
+            // 协议保证字段：user_id（ContactCardMetadata）。
+            contactUserId = (extractJsonLong(content, "user_id")
+                ?: extractJsonLong(content, "userId"))?.toULong(),
+            // best-effort legacy 快照：协议不保证，历史 JSON 带了才用。
+            contactName = extractJsonString(content, "name")
+                ?: extractJsonString(content, "nickname"),
+            contactAvatarUrl = extractJsonString(content, "avatar")
+                ?: extractJsonString(content, "avatar_url")
         )
 
         MessageType.UNKNOWN -> ParsedContent(
@@ -325,6 +353,22 @@ fun parseMessageContent(message: MessageEntry): ParsedContent {
             thumbnailUrl = extractThumbnailUrl(content, extra)
         )
 
+        MessageType.CONTACT -> ParsedContent(
+            type = type,
+            contactUserId = (extractJsonLong(content, "user_id")
+                ?: extractJsonLong(content, "userId")
+                ?: extractJsonLong(extra, "user_id")
+                ?: extractJsonLong(extra, "userId"))?.toULong(),
+            contactName = extractJsonString(content, "name")
+                ?: extractJsonString(content, "nickname")
+                ?: extractJsonString(extra, "name")
+                ?: extractJsonString(extra, "nickname"),
+            contactAvatarUrl = extractJsonString(content, "avatar")
+                ?: extractJsonString(content, "avatar_url")
+                ?: extractJsonString(extra, "avatar")
+                ?: extractJsonString(extra, "avatar_url")
+        )
+
         MessageType.SYSTEM -> {
             // spec/05-feature/SYSTEM_MESSAGE_SPEC §3：优先按 template + refs 结构解析
             val template = extractJsonString(content, "template")
@@ -381,6 +425,7 @@ val MessageEntry.textPreview: String
             MessageType.STICKER -> "[表情]"
             MessageType.LOCATION -> "[位置] ${parsed.address ?: ""}"
             MessageType.LINK -> "[链接] ${parsed.linkTitle ?: parsed.linkUrl ?: ""}"
+            MessageType.CONTACT -> "[名片] ${parsed.contactName ?: ""}"
             MessageType.SYSTEM -> "[系统消息]" // 注意：不再 fallback 到 raw content
             MessageType.UNKNOWN -> "[消息]"
         }
