@@ -49,6 +49,7 @@ fun FriendSettingsPage(
     onSetSpecialFollow: (Boolean) -> Unit = {},
     onSetBlocked: suspend (Boolean) -> Result<Boolean> = { Result.success(true) },
     onDeleteFriend: suspend () -> Result<Boolean> = { Result.failure(NotImplementedError()) },
+    onReportUser: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val strings = PrivChatI18n.strings
@@ -148,6 +149,17 @@ fun FriendSettingsPage(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        // 举报用户（App Store UGC 1.2；与拉黑同区域）
+        if (onReportUser != null) {
+            Column(modifier = Modifier.fillMaxWidth().background(colors.surface)) {
+                Cell(
+                    title = "举报",
+                    onClick = { onReportUser.invoke() },
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         // 删除联系人
         Column(modifier = Modifier.fillMaxWidth().background(colors.surface)) {

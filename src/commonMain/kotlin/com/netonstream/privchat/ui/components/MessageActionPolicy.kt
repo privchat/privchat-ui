@@ -21,6 +21,7 @@ enum class MessageActionKind {
     Forward,
     DeleteLocal,
     Select,
+    Report,
 }
 
 /**
@@ -129,6 +130,9 @@ object MessageActionPolicy {
 
         // Select：批量操作，所有类型都支持
         result += MessageActionKind.Select
+
+        // Report：仅他人消息（不举报自己），失败消息（未到服务端）不给。App Store UGC 1.2。
+        if (!ctx.isSelf && !isFailed) result += MessageActionKind.Report
 
         return result
     }

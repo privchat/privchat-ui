@@ -366,6 +366,7 @@ fun MessagePage(
     onVoiceCancel: (() -> Unit)? = null,
     onSendVoice: (suspend (ULong, Int, durationMs: Long) -> Result<ULong>)? = null,
     onRequestForward: ((MessageEntry) -> Unit)? = null,
+    onReportMessage: ((MessageEntry) -> Unit)? = null,
     onVideoPreview: ((MessageEntry) -> Unit)? = null,
     onImagePreview: ((MessageEntry) -> Unit)? = null,
     onError: ((String) -> Unit)? = null,
@@ -817,6 +818,7 @@ fun MessagePage(
                                     reactions = messageReactions[message.id].orEmpty(),
                                     selfUserId = currentUserId,
                                     onRequestForward = onRequestForward,
+                                    onReportMessage = onReportMessage,
                                     onVideoPreview = onVideoPreview,
                                     onImagePreview = onImagePreview,
                                     onReply = { target ->
@@ -1336,6 +1338,7 @@ private fun MessageRow(
     reactions: List<com.netonstream.privchat.sdk.dto.ReactionChip> = emptyList(),
     selfUserId: ULong? = null,
     onRequestForward: ((MessageEntry) -> Unit)? = null,
+    onReportMessage: ((MessageEntry) -> Unit)? = null,
     onVideoPreview: ((MessageEntry) -> Unit)? = null,
     onImagePreview: ((MessageEntry) -> Unit)? = null,
     onReply: ((MessageEntry) -> Unit)? = null,
@@ -1390,7 +1393,7 @@ private fun MessageRow(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center,
             ) {
-                MessageActionsWrapper(message = message, isSelf = isSelf, onRequestForward = onRequestForward, onReply = onReply) {
+                MessageActionsWrapper(message = message, isSelf = isSelf, onRequestForward = onRequestForward, onReply = onReply, onReportMessage = onReportMessage) {
                     SystemMessageRow(message = message, onUserClick = onAvatarClick)
                 }
             }
@@ -2584,6 +2587,7 @@ private fun MessageActionsWrapper(
     isSelf: Boolean,
     onRequestForward: ((MessageEntry) -> Unit)? = null,
     onReply: ((MessageEntry) -> Unit)? = null,
+    onReportMessage: ((MessageEntry) -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val strings = PrivChatI18n.strings
@@ -2674,6 +2678,10 @@ private fun MessageActionsWrapper(
                     if (handler != null) handler(message) else Toast.show("回复功能即将支持")
                 }
                 MessageActionKind.Select -> Toast.show("多选功能即将支持")
+                MessageActionKind.Report -> {
+                    val handler = onReportMessage
+                    if (handler != null) handler(message) else Toast.show("举报功能暂不可用")
+                }
             }
         }
     }
@@ -2740,6 +2748,8 @@ private fun MessageActionKind.toMessageAction(
     }
     MessageActionKind.Select ->
         MessageAction(label = "选择", icon = Icons.check_box_outline_blank, onClick = onClick)
+    MessageActionKind.Report ->
+        MessageAction(label = "举报", icon = Icons.flag, danger = true, onClick = onClick)
 }
 
 /**
