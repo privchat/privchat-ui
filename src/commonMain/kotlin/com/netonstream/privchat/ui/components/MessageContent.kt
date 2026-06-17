@@ -765,10 +765,11 @@ private fun StickerContent(
 }
 
 /**
- * 位置消息（Phase 1：协议 LocationMetadata 只保证 lat/lng）。
+ * 位置消息（协议 LocationMetadata，Phase 2 已扩展）。
  *
- * 点击 → 系统地图（ExternalLinkBridge.openMap）。address 是 best-effort legacy
- * （协议不保证），有就显示；POI 名 / 静态地图缩略图属 Phase 2 协议扩展。
+ * 展示优先级：POI name > address > lat/lng 兜底。点击 → 系统地图，按 coordinate_system
+ * 转成 WGS-84 再打开（gcj02/bd09 不转会偏几百米）。缩略图：协议是 thumbnail_file_id，
+ * 接收端用 server 解析后的 thumbnailUrl 显示；只有 file_id 拿不到 url 时退视觉占位块。
  */
 @Composable
 private fun LocationContent(
@@ -778,13 +779,18 @@ private fun LocationContent(
 ) {
     val lat = parsed.latitude
     val lng = parsed.longitude
+    val title = parsed.locationName?.takeIf { it.isNotBlank() }
+        ?: parsed.address?.takeIf { it.isNotBlank() }
+        ?: "位置"
     val clickMod = if (lat != null && lng != null) {
-        Modifier.clickable { ExternalLinkBridge.openMap(lat, lng, parsed.address) }
+        Modifier.clickable {
+            ExternalLinkBridge.openMap(lat, lng, parsed.coordinateSystem, title.takeIf { it != "位置" })
+        }
     } else {
         Modifier
     }
+    val thumb = parsed.thumbnailUrl?.takeIf { it.isNotBlank() }
     Column(modifier = clickMod.width(220.dp)) {
-        // 静态地图缩略图占位（协议暂无缩略图字段，Phase 1 用视觉块；Phase 2 由发送端生成）。
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -793,22 +799,36 @@ private fun LocationContent(
                 .background(Theme.colors.muted),
             contentAlignment = Alignment.Center,
         ) {
-            Text(text = "📍", style = Typography.TitleLarge)
+            if (thumb != null) {
+                // 发送端生成的静态地图缩略图（server 已把 thumbnail_file_id 解析成 url）。
+                Image(
+                    painter = rememberAsyncImagePainter(model = thumb),
+                    contentDescription = title,
+                    modifier = Modifier.fillMaxWidth().height(110.dp),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Text(text = "📍", style = Typography.TitleLarge)
+            }
         }
         VerticalSpacer(6.dp)
         Text(
-            text = parsed.address?.takeIf { it.isNotBlank() } ?: "位置",
+            text = title,
             style = Typography.BodyMedium,
             color = textColor,
             maxLines = 2,
         )
-        if (lat != null && lng != null) {
+        // 副行：有 POI 名时显示地址；否则显示坐标兜底。
+        val subtitle = parsed.locationName?.takeIf { it.isNotBlank() }
+            ?.let { parsed.address?.takeIf { a -> a.isNotBlank() } }
+            ?: lat?.let { la -> lng?.let { lo -> "${fmtCoord(la)}, ${fmtCoord(lo)}" } }
+        if (subtitle != null) {
             VerticalSpacer(2.dp)
             Text(
-                text = "${fmtCoord(lat)}, ${fmtCoord(lng)}",
+                text = subtitle,
                 style = Typography.Label,
                 color = secondaryTextColor,
-                maxLines = 1,
+                maxLines = 2,
             )
         }
     }
@@ -865,9 +885,12 @@ private fun LinkContent(
 }
 
 /**
- * 名片消息（协议 ContactCardMetadata：只有 user_id）。
+ * 名片消息（协议 ContactCardMetadata：只有 user_id，user_id 是权威引用）。
  *
- * Phase 1：user_id → 本地 friends 缓存解析 头像/昵称；查不到降级「用户 #id」。
+ * user_id 是主路径。当前用本地 friends 缓存解析头像/昵称，但这只覆盖「分享的是我的好友」；
+ * 群成员 / 陌生人 / 已注销用户查不到 → 降级「用户 #id」。
+ * TODO: friends 缓存只是 best-effort，后续应收敛到统一 UserResolver.resolve(userId)
+ * （覆盖 user cache / friends / channel members）。
  * 点击 → 复用 onContactClick（= MessagePage.onAvatarClick → 用户资料页）。
  */
 @Composable

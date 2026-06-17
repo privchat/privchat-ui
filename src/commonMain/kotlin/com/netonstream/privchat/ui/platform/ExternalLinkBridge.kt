@@ -14,7 +14,11 @@ expect object ExternalLinkBridge {
 
     /**
      * 在系统地图打开经纬度坐标（Android `geo:`→默认地图 App / iOS Apple Maps）。
+     *
+     * [coordinateSystem]（wgs84/gcj02/bd09）必传：系统地图（Apple/Google）按 WGS-84，
+     * 实现会先把 gcj02/bd09 转成 WGS-84 再打开，否则中国坐标会偏移几百米。
+     * 缺省（null/wgs84/unknown）按 WGS-84 best-effort 原样打开。
      * [label] 是可选标注名。打不开返回 false（UI 静默忽略）。
      */
-    fun openMap(latitude: Double, longitude: Double, label: String?): Boolean
+    fun openMap(latitude: Double, longitude: Double, coordinateSystem: String?, label: String?): Boolean
 }

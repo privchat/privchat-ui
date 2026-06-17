@@ -59,17 +59,23 @@ data class ParsedContent(
     val duration: Int? = null,
     val width: Int? = null,
     val height: Int? = null,
-    // LOCATION：协议（content.fbs LocationMetadata）只保证 latitude/longitude。
+    // LOCATION（content.fbs LocationMetadata，Phase 2 已扩展）：
+    // latitude/longitude 必有；coordinate_system/name(POI)/address/poi_* 由发送端 provider 生成。
     val latitude: Double? = null,
     val longitude: Double? = null,
-    // best-effort legacy：协议未保证，仅当历史 JSON 里恰好带了 address/name 才有值。
-    // 微信级 POI 名/地址要等 Phase 2 扩 LocationMetadata，不要把它当协议契约。
+    val coordinateSystem: String? = null, // wgs84 / gcj02 / bd09；缺省按 wgs84 best-effort
+    val locationName: String? = null,     // POI 名称（发送端选的点，接收端无法还原，必须协议带）
     val address: String? = null,
+    val poiId: String? = null,
+    val poiSource: String? = null,        // amap / google / apple / baidu / tencent / custom
     // LINK（content.fbs LinkMetadata）：url 必有；title/description/thumbnail 由发送端 SDK
-    // 预览钩子填（server 不爬）；thumbnailUrl 是 best-effort（协议是 thumbnail_file_id）。
+    // 预览钩子填（server 不爬）。thumbnailFileId 是协议权威字段；thumbnailUrl 是 server 解析后的
+    // 可显示 URL（best-effort，缺省时只凭 fileId 无法直接渲染图）。
     val linkUrl: String? = null,
     val linkTitle: String? = null,
     val linkDescription: String? = null,
+    // 协议权威缩略图引用（LinkMetadata / LocationMetadata 的 thumbnail_file_id，0=无）。
+    val thumbnailFileId: ULong? = null,
     // CONTACT（content.fbs ContactCardMetadata）：协议只保证 user_id。
     // name/avatar 由接收端按 user_id 查用户得到；contactName/contactAvatarUrl 是
     // best-effort legacy 快照（历史 JSON 若带了就用，否则空，渲染层兜底为「用户 #id」）。
@@ -218,8 +224,12 @@ fun parseMessageContent(content: String): ParsedContent {
                 ?: extractJsonDouble(content, "lat"),
             longitude = extractJsonDouble(content, "longitude")
                 ?: extractJsonDouble(content, "lng"),
-            address = extractJsonString(content, "address")
-                ?: extractJsonString(content, "name")
+            coordinateSystem = extractJsonString(content, "coordinate_system"),
+            locationName = extractJsonString(content, "name"),
+            address = extractJsonString(content, "address"),
+            poiId = extractJsonString(content, "poi_id"),
+            poiSource = extractJsonString(content, "poi_source"),
+            thumbnailFileId = extractJsonLong(content, "thumbnail_file_id")?.toULong()?.takeIf { it > 0uL },
         )
 
         MessageType.STICKER -> ParsedContent(
@@ -242,7 +252,8 @@ fun parseMessageContent(content: String): ParsedContent {
             linkTitle = extractJsonString(content, "title"),
             linkDescription = extractJsonString(content, "description"),
             thumbnailUrl = extractJsonString(content, "thumbnail_url")
-                ?: extractJsonString(content, "thumbnail")
+                ?: extractJsonString(content, "thumbnail"),
+            thumbnailFileId = extractJsonLong(content, "thumbnail_file_id")?.toULong()?.takeIf { it > 0uL },
         )
 
         MessageType.CONTACT -> ParsedContent(
@@ -327,10 +338,20 @@ fun parseMessageContent(message: MessageEntry): ParsedContent {
                 ?: extractJsonDouble(content, "lng")
                 ?: extractJsonDouble(extra, "longitude")
                 ?: extractJsonDouble(extra, "lng"),
+            coordinateSystem = extractJsonString(content, "coordinate_system")
+                ?: extractJsonString(extra, "coordinate_system"),
+            // 协议 name = 发送端选的 POI 名；保留对旧字段的 best-effort 读取。
+            locationName = extractJsonString(content, "name")
+                ?: extractJsonString(extra, "name"),
             address = extractJsonString(content, "address")
-                ?: extractJsonString(content, "name")
-                ?: extractJsonString(extra, "address")
-                ?: extractJsonString(extra, "name")
+                ?: extractJsonString(extra, "address"),
+            poiId = extractJsonString(content, "poi_id")
+                ?: extractJsonString(extra, "poi_id"),
+            poiSource = extractJsonString(content, "poi_source")
+                ?: extractJsonString(extra, "poi_source"),
+            thumbnailUrl = extractThumbnailUrl(content, extra),
+            thumbnailFileId = (extractJsonLong(content, "thumbnail_file_id")
+                ?: extractJsonLong(extra, "thumbnail_file_id"))?.toULong()?.takeIf { it > 0uL },
         )
 
         MessageType.STICKER -> ParsedContent(
@@ -350,7 +371,9 @@ fun parseMessageContent(message: MessageEntry): ParsedContent {
                 ?: extractJsonString(extra, "title"),
             linkDescription = extractJsonString(content, "description")
                 ?: extractJsonString(extra, "description"),
-            thumbnailUrl = extractThumbnailUrl(content, extra)
+            thumbnailUrl = extractThumbnailUrl(content, extra),
+            thumbnailFileId = (extractJsonLong(content, "thumbnail_file_id")
+                ?: extractJsonLong(extra, "thumbnail_file_id"))?.toULong()?.takeIf { it > 0uL },
         )
 
         MessageType.CONTACT -> ParsedContent(
@@ -423,7 +446,7 @@ val MessageEntry.textPreview: String
             MessageType.VOICE -> "[语音] ${parsed.duration ?: 0}\""
             MessageType.FILE -> "[文件] ${parsed.fileName ?: ""}"
             MessageType.STICKER -> "[表情]"
-            MessageType.LOCATION -> "[位置] ${parsed.address ?: ""}"
+            MessageType.LOCATION -> "[位置] ${parsed.locationName ?: parsed.address ?: ""}"
             MessageType.LINK -> "[链接] ${parsed.linkTitle ?: parsed.linkUrl ?: ""}"
             MessageType.CONTACT -> "[名片] ${parsed.contactName ?: ""}"
             MessageType.SYSTEM -> "[系统消息]" // 注意：不再 fallback 到 raw content

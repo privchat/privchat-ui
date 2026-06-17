@@ -3,6 +3,7 @@ package com.netonstream.privchat.ui.platform
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import com.netonstream.privchat.ui.utils.CoordinateConverter
 
 actual object ExternalLinkBridge {
 
@@ -25,10 +26,11 @@ actual object ExternalLinkBridge {
         return runCatching { ctx.startActivity(intent) }.isSuccess
     }
 
-    actual fun openMap(latitude: Double, longitude: Double, label: String?): Boolean {
-        // geo:lat,lng?q=lat,lng(label) —— 系统选择默认地图 App（高德/百度/Google 等）。
-        val q = if (label.isNullOrBlank()) "$latitude,$longitude"
-        else "$latitude,$longitude(${Uri.encode(label)})"
-        return openUri("geo:$latitude,$longitude?q=$q")
+    actual fun openMap(latitude: Double, longitude: Double, coordinateSystem: String?, label: String?): Boolean {
+        // 统一转 WGS-84 再喂 geo:（系统地图/Google 按 WGS-84）。
+        val (lat, lng) = CoordinateConverter.toWgs84(latitude, longitude, coordinateSystem)
+        // geo:lat,lng?q=lat,lng(label) —— 系统选择默认地图 App。
+        val q = if (label.isNullOrBlank()) "$lat,$lng" else "$lat,$lng(${Uri.encode(label)})"
+        return openUri("geo:$lat,$lng?q=$q")
     }
 }
