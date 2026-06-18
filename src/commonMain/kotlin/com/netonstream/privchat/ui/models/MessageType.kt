@@ -53,6 +53,10 @@ data class ParsedContent(
     val type: MessageType,
     val text: String? = null,
     val attachmentUrl: String? = null,
+    // 主附件协议权威 file_id（image/video/voice/file 的 `file_id`，0/缺省=无）。
+    // 附件加密 v1 下载走 file_id：SDK 调 file/get_url 取签名 URL + cek 并解密，
+    // 不再依赖可能过期/明文的 attachmentUrl（仅作 legacy 兜底）。
+    val attachmentFileId: ULong? = null,
     val thumbnailUrl: String? = null,
     val fileName: String? = null,
     val fileSize: Long? = null,
@@ -297,6 +301,7 @@ fun parseMessageContent(message: MessageEntry): ParsedContent {
         MessageType.IMAGE -> ParsedContent(
             type = type,
             attachmentUrl = extractMediaUrl(content, extra),
+            attachmentFileId = extractAttachmentFileId(content, extra),
             thumbnailUrl = extractThumbnailUrl(content, extra),
             fileName = extractFileName(content, extra),
             fileSize = extractFileSize(content, extra),
@@ -307,6 +312,7 @@ fun parseMessageContent(message: MessageEntry): ParsedContent {
         MessageType.VIDEO -> ParsedContent(
             type = type,
             attachmentUrl = extractMediaUrl(content, extra),
+            attachmentFileId = extractAttachmentFileId(content, extra),
             thumbnailUrl = extractThumbnailUrl(content, extra),
             fileName = extractFileName(content, extra),
             fileSize = extractFileSize(content, extra),
@@ -318,12 +324,14 @@ fun parseMessageContent(message: MessageEntry): ParsedContent {
         MessageType.VOICE -> ParsedContent(
             type = type,
             attachmentUrl = extractMediaUrl(content, extra),
+            attachmentFileId = extractAttachmentFileId(content, extra),
             duration = extractJsonInt(content, "duration") ?: extractJsonInt(extra, "duration")
         )
 
         MessageType.FILE -> ParsedContent(
             type = type,
             attachmentUrl = extractMediaUrl(content, extra),
+            attachmentFileId = extractAttachmentFileId(content, extra),
             fileName = extractFileName(content, extra),
             fileSize = extractFileSize(content, extra),
         )
@@ -556,6 +564,13 @@ private fun extractFileSize(content: String, extra: String): Long? {
         ?: extractJsonLong(content, "size")
         ?: extractJsonLong(extra, "file_size")
         ?: extractJsonLong(extra, "size")
+}
+
+/** 主附件协议权威 file_id；0/缺省=无（旧明文消息只有 url）。 */
+private fun extractAttachmentFileId(content: String, extra: String): ULong? {
+    return (extractJsonLong(content, "file_id") ?: extractJsonLong(extra, "file_id"))
+        ?.takeIf { it > 0L }
+        ?.toULong()
 }
 
 private fun extractJsonInt(json: String, key: String): Int? {
