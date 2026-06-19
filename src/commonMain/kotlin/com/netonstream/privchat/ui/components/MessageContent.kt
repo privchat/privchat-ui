@@ -377,14 +377,34 @@ private fun percentText(bytes: ULong, total: ULong?): String? {
  * 点击走 [onImagePreview] 进入全屏预览页查看大图，不经过 MediaDownloadBubble。
  * 预览页优先使用本地原图，否则交给远程 URL（由 Coil 异步解码）。
  */
+/**
+ * 图片/视频气泡显示尺寸：按原图宽高比缩放进 maxW×maxH 范围，保持比例不失真。
+ * 旧逻辑对 width/height 各自独立 coerceIn，会把任意图都压成方块/失真；尺寸缺失
+ * （加密前客户端未带 width/height，或老消息无尺寸）时回退竖向默认 150×200。
+ */
+private fun attachmentBubbleSize(width: Int?, height: Int?): Pair<Int, Int> {
+    val iw = width ?: 0
+    val ih = height ?: 0
+    if (iw <= 0 || ih <= 0) return 150 to 200
+    val maxW = 200f
+    val maxH = 250f
+    val minSide = 80f
+    val ratio = iw.toFloat() / ih.toFloat()
+    var w = maxW
+    var h = w / ratio
+    if (h > maxH) { h = maxH; w = h * ratio }
+    if (w < minSide) { w = minSide; h = w / ratio }
+    if (h < minSide) { h = minSide; w = h * ratio }
+    return w.toInt().coerceAtLeast(1) to h.toInt().coerceAtLeast(1)
+}
+
 @Composable
 private fun ImageContent(
     parsed: ParsedContent,
     message: MessageEntry,
     onImagePreview: ((MessageEntry) -> Unit)? = null,
 ) {
-    val width = parsed.width?.coerceIn(80, 200) ?: 150
-    val height = parsed.height?.coerceIn(80, 250) ?: 200
+    val (width, height) = attachmentBubbleSize(parsed.width, parsed.height)
     // thumb_status=3: 协议层无缩略图，直接渲染类型化静态占位
     val thumbModel = if (message.thumbStatus == 3) {
         null
@@ -445,8 +465,7 @@ private fun VideoContent(
     message: MessageEntry,
     onVideoPreview: ((MessageEntry) -> Unit)? = null,
 ) {
-    val width = parsed.width?.coerceIn(80, 200) ?: 150
-    val height = parsed.height?.coerceIn(80, 250) ?: 200
+    val (width, height) = attachmentBubbleSize(parsed.width, parsed.height)
     // thumb_status=3: 协议层无缩略图，跳过所有远程/本地 URL，直接走类型化占位
     val videoThumb = if (message.thumbStatus == 3) {
         null
