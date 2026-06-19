@@ -121,6 +121,13 @@ fun MessageContent(
         // 消息时间和状态（系统消息除外）
         if (parsed.type != MessageType.SYSTEM) {
             VerticalSpacer(4.dp)
+            // 图片/视频：footer 宽度对齐图片外框（与 ImageContent/VideoContent 同一 attachmentBubbleSize），
+            // 时间/状态贴着图片右下角，不再被 fillMaxWidth 推到屏幕边。
+            val mediaWidthDp = when (parsed.type) {
+                MessageType.IMAGE, MessageType.VIDEO ->
+                    attachmentBubbleSize(parsed.width, parsed.height).first
+                else -> null
+            }
             MessageFooter(
                 timestamp = message.timestamp,
                 status = message.status,
@@ -130,6 +137,7 @@ fun MessageContent(
                 peerReadPts = peerReadPts,
                 delivered = message.delivered,
                 onFailedClick = onFailedClick,
+                mediaWidthDp = mediaWidthDp,
             )
         }
     }
@@ -990,9 +998,12 @@ private fun MessageFooter(
     peerReadPts: ULong? = null,
     delivered: Boolean = false,
     onFailedClick: (() -> Unit)? = null,
+    // 媒体（图片/视频）气泡：footer 宽度对齐图片外框宽度（dp），时间/状态右对齐到图片右边缘，
+    // 不再 fillMaxWidth 把整列撑到屏幕边。null = 文本等普通气泡，沿用 fillMaxWidth。
+    mediaWidthDp: Int? = null,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = if (mediaWidthDp != null) Modifier.width(mediaWidthDp.dp) else Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {
