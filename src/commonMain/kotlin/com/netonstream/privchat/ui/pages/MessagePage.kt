@@ -1448,11 +1448,19 @@ private fun MessageRow(
                 bottomStart = 16.dp,
                 bottomEnd = if (isSelf) 4.dp else 16.dp,
             )
+            // 图片/视频是「全幅媒体」气泡：内容本身带圆角铺满，不应再套 self/other 气泡底色，
+            // 否则深色主题下 outgoing 黑底会在图片四周露出黑边。媒体气泡背景透明。
+            val isMediaBubble = parsed.type == MessageType.IMAGE || parsed.type == MessageType.VIDEO
+            val bubbleBackground = when {
+                isMediaBubble -> Color.Transparent
+                isSelf -> colors.messageBubbleSelf
+                else -> colors.messageBubbleOther
+            }
             MessageActionsWrapper(message = message, isSelf = isSelf, onRequestForward = onRequestForward, onReply = onReply) {
                 Box(
                     modifier = Modifier
                         .clip(bubbleShape)
-                        .background(if (isSelf) colors.messageBubbleSelf else colors.messageBubbleOther),
+                        .background(bubbleBackground),
                 ) {
                     Column {
                         message.replyToServerMessageId?.let { replyId ->
