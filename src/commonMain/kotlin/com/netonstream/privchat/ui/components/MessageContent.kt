@@ -132,7 +132,8 @@ fun MessageContent(
             // 图片/视频：footer 宽度对齐图片外框（与 ImageContent/VideoContent 同一 attachmentBubbleSize），
             // 时间/状态贴着图片右下角，不再被 fillMaxWidth 推到屏幕边。
             val mediaWidthDp = when (parsed.type) {
-                MessageType.IMAGE, MessageType.VIDEO ->
+                MessageType.IMAGE -> imageBubbleSize?.first
+                MessageType.VIDEO ->
                     attachmentBubbleSize(parsed.width, parsed.height).first
                 else -> null
             }
