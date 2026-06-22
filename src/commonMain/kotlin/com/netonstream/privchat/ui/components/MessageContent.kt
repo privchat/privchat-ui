@@ -97,11 +97,19 @@ fun MessageContent(
         println("[MsgNoFooter] id=${message.id} svr=${message.serverMessageId} status=${message.status} mtype=${message.messageType} parsedType=${parsed.type} text=[${parsed.text}] content=[${message.content}] extra=[${message.extra}] revoked=${message.isRevoked}")
     }
 
+    // 图片气泡尺寸：父级算一次，ImageContent 渲染与下方 footer 宽度共用，确保发送中
+    // 状态/时间贴着图片右下角对齐（pending 图比例已修正后，footer 不能再用旧的默认宽）。
+    val imageBubbleSize = if (parsed.type == MessageType.IMAGE) {
+        rememberImageBubbleSize(parsed, message)
+    } else {
+        null
+    }
+
     Column(modifier = modifier.padding(10.dp)) {
         // 根据消息类型渲染内容
         when (parsed.type) {
             MessageType.TEXT -> TextContent(parsed, textColor)
-            MessageType.IMAGE -> ImageContent(parsed, message, onImagePreview)
+            MessageType.IMAGE -> ImageContent(parsed, message, imageBubbleSize!!, onImagePreview)
             MessageType.VIDEO -> VideoContent(parsed, message, onVideoPreview)
             MessageType.VOICE -> VoiceContent(parsed, message, isSelf, textColor)
             MessageType.FILE -> FileContent(parsed, message, textColor, secondaryTextColor)
@@ -406,13 +414,41 @@ private fun attachmentBubbleSize(width: Int?, height: Int?): Pair<Int, Int> {
     return w.toInt().coerceAtLeast(1) to h.toInt().coerceAtLeast(1)
 }
 
+/**
+ * 图片气泡显示尺寸（width,height dp）。父级、[ImageContent] 与 footer 共用同一结果，
+ * 保证发送中状态/时间与图片右边对齐。
+ *
+ * 比例优先 metadata width/height；发送中(pending)本地图 metadata 还没回写时，从本地图片
+ * 一次性读「展示方向」尺寸（applyExif）。不走 painter.intrinsicSize（Kuikly 下那是 native
+ * 调用、图未加载会抛 → crash）。
+ *
+ * pending(status=Sending)阶段 localThumbnailPath/localMediaPath 都还是 null（缩略图要等
+ * 队列里 process_outbound_file 跑完才落到 files/{id}/），但此刻 message.content 就是用户
+ * 选的原图本地路径（占位时写入）。按 thumb → media → content 兜底，取第一个能解码的。
+ * content 为 "[图片]"/JSON 时不是路径，跳过。有 metadata 时传 null → 不解码。
+ */
+@Composable
+private fun rememberImageBubbleSize(parsed: ParsedContent, message: MessageEntry): Pair<Int, Int> {
+    val needLocalSize = parsed.width == null || parsed.height == null
+    val contentPath = message.content.takeIf { it.startsWith("/") }
+    val localImageSize = rememberPendingImageSize(
+        if (needLocalSize) message.localThumbnailPath else null,
+        if (needLocalSize) message.localMediaPath else null,
+        if (needLocalSize) contentPath else null,
+    )
+    val effWidth = parsed.width ?: localImageSize?.first
+    val effHeight = parsed.height ?: localImageSize?.second
+    return attachmentBubbleSize(effWidth, effHeight)
+}
+
 @Composable
 private fun ImageContent(
     parsed: ParsedContent,
     message: MessageEntry,
+    bubbleSize: Pair<Int, Int>,
     onImagePreview: ((MessageEntry) -> Unit)? = null,
 ) {
-    val (width, height) = attachmentBubbleSize(parsed.width, parsed.height)
+    val (width, height) = bubbleSize
     // thumb_status=3: 协议层无缩略图，直接渲染类型化静态占位
     val thumbModel = if (message.thumbStatus == 3) {
         null
