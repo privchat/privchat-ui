@@ -217,9 +217,11 @@ fun parseMessageContent(content: String): ParsedContent {
         MessageType.FILE -> ParsedContent(
             type = type,
             attachmentUrl = extractJsonString(content, "url"),
-            fileName = extractJsonString(content, "filename")
+            fileName = extractJsonString(content, "file_name")
+                ?: extractJsonString(content, "filename")
                 ?: extractJsonString(content, "name"),
-            fileSize = extractJsonLong(content, "size")
+            fileSize = extractJsonLong(content, "file_size")
+                ?: extractJsonLong(content, "size")
         )
 
         MessageType.LOCATION -> ParsedContent(
@@ -547,8 +549,12 @@ private fun extractThumbnailUrl(content: String, extra: String): String? {
 }
 
 private fun extractFileName(content: String, extra: String): String? {
-    val fromMeta = extractJsonString(content, "filename")
+    // typed metadata 协议字段是 file_name（服务端 to_inner_json_value 序列化出 "file_name"）；
+    // 发送端本地 attachment_content 历史用 "filename"。两者都认。
+    val fromMeta = extractJsonString(content, "file_name")
+        ?: extractJsonString(content, "filename")
         ?: extractJsonString(content, "name")
+        ?: extractJsonString(extra, "file_name")
         ?: extractJsonString(extra, "filename")
         ?: extractJsonString(extra, "name")
         ?: extractPayloadContent(content)
