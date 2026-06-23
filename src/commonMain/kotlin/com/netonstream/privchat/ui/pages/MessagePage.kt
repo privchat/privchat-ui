@@ -1458,8 +1458,10 @@ private fun MessageRow(
             }
             MessageActionsWrapper(message = message, isSelf = isSelf, onRequestForward = onRequestForward, onReply = onReply) {
                 Box(
+                    // 媒体气泡（透明底 + 0 padding）不能套外层圆角 clip：图片本身在 ImageContent 内
+                    // 已有圆角，外层 clip 会把贴边的 footer（时间/状态）右下角切掉。文字气泡保留圆角。
                     modifier = Modifier
-                        .clip(bubbleShape)
+                        .then(if (isMediaBubble) Modifier else Modifier.clip(bubbleShape))
                         .background(bubbleBackground),
                 ) {
                     Column {

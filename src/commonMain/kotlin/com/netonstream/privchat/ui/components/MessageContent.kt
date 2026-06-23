@@ -105,7 +105,11 @@ fun MessageContent(
         null
     }
 
-    Column(modifier = modifier.padding(10.dp)) {
+    // 媒体（图片/视频）气泡背景透明、内容自带圆角铺满，不能再套 10dp 内边距 —— 否则透明的
+    // 顶部 padding 会把图片往下推，使图片顶部比发送者头像低、不对齐（文字气泡有深色背景，
+    // 10dp 是气泡内边距、气泡顶仍对齐头像）。媒体用 0 padding，图片顶与头像对齐。
+    val isMediaBubble = parsed.type == MessageType.IMAGE || parsed.type == MessageType.VIDEO
+    Column(modifier = modifier.padding(if (isMediaBubble) 0.dp else 10.dp)) {
         // 根据消息类型渲染内容
         when (parsed.type) {
             MessageType.TEXT -> TextContent(parsed, textColor)
@@ -137,11 +141,16 @@ fun MessageContent(
                     attachmentBubbleSize(parsed.width, parsed.height).first
                 else -> null
             }
+            // 「已读」强调色：媒体气泡（透明底，footer 落在白色页面）用 primary（深色，可见）；
+            // 自己的文字/普通气泡是深色底（messageBubbleSelf），primary 与气泡同为 0xFF18181B
+            // 会撞色隐形 —— 改用气泡前景浅色（messageTextSelf），保证「✓✓ 已读」可见。
+            val readColor = if (isSelf && !isMediaBubble) colors.messageTextSelf else colors.primary
             MessageFooter(
                 timestamp = message.timestamp,
                 status = message.status,
                 isSelf = isSelf,
                 secondaryTextColor = secondaryTextColor,
+                readColor = readColor,
                 messagePts = message.pts,
                 peerReadPts = peerReadPts,
                 delivered = message.delivered,
@@ -1031,6 +1040,7 @@ private fun MessageFooter(
     status: MessageStatus,
     isSelf: Boolean,
     secondaryTextColor: Color,
+    readColor: Color,
     messagePts: ULong? = null,
     peerReadPts: ULong? = null,
     delivered: Boolean = false,
@@ -1059,6 +1069,7 @@ private fun MessageFooter(
             MessageStatusIcon(
                 status = status,
                 color = secondaryTextColor,
+                readColor = readColor,
                 isReadByPts = isReadByPts,
                 delivered = delivered,
                 onFailedClick = onFailedClick,
@@ -1077,6 +1088,7 @@ private fun MessageFooter(
 private fun MessageStatusIcon(
     status: MessageStatus,
     color: Color,
+    readColor: Color,
     isReadByPts: Boolean = false,
     delivered: Boolean = false,
     onFailedClick: (() -> Unit)? = null,
@@ -1086,7 +1098,7 @@ private fun MessageStatusIcon(
         status == MessageStatus.Pending || status == MessageStatus.Sending ->
             Triple("⏳", "发送中", color)
         isReadByPts || status == MessageStatus.Read ->
-            Triple("✓✓", "已读", Theme.colors.primary)
+            Triple("✓✓", "已读", readColor)
         delivered -> Triple("✓✓", "已送达", color)
         else -> Triple("✓", "已发送", color)
     }
