@@ -542,16 +542,46 @@ fun MessagePage(
         }.onSuccess { PrivChat.mergeMessageReactions(it) }
     }
 
-    // 重连后重新拉取对端在线状态
+    // 重连恢复（presence 是订阅态，不是轮询态）：server 重启 / 网络抖动后，服务端 subscribe
+    // 注册表清空、对端 presence 可能错过 online 事件。客户端必须在重连后：① 重新 subscribe
+    // 频道（恢复 presence_changed / typing 的 channel-published 通道）② 重新 fetch 一次对端
+    // 当前 presence。不能依赖用户重新进会话。
     val connectionState by PrivChat.connectionState.collectAsState()
     LaunchedEffect(connectionState) {
-        if (connectionState == ConnectionState.Connected && channel.isDm) {
-            val uid = peerUserId ?: run {
-                PrivChat.client.dmPeerUserId(channel.channelId)
-                    .getOrNull()
-                    ?.also { peerUserId = it }
+        if (connectionState == ConnectionState.Connected) {
+            // 频道订阅恢复（typing + presence_changed 都走 channel publish）
+            runCatching {
+                withContext(Dispatchers.Default) {
+                    PrivChat.client.subscribeChannel(channel.channelId, channel.channelType.toUByte())
+                }
             }
-            if (uid != null) {
+            if (channel.isDm) {
+                val uid = peerUserId ?: run {
+                    PrivChat.client.dmPeerUserId(channel.channelId)
+                        .getOrNull()
+                        ?.also { peerUserId = it }
+                }
+                if (uid != null) {
+                    runCatching {
+                        withContext(Dispatchers.Default) {
+                            PrivChat.client.fetchPresence(listOf(uid))
+                                .getOrNull()
+                                ?.firstOrNull()
+                                ?.let { PrivChat.updatePresence(it) }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 低频兜底校准（非主路径）：presence 主要靠 server push presence_changed 实时更新，这里只是
+    // 防御 push 丢失 / subscriber 注册漂移的弱兜底，60s 一次，不要降到 10/15s 当主机制。
+    if (channel.isDm) {
+        LaunchedEffect(channel.channelId) {
+            while (true) {
+                delay(60_000L)
+                val uid = peerUserId ?: continue
                 runCatching {
                     withContext(Dispatchers.Default) {
                         PrivChat.client.fetchPresence(listOf(uid))
