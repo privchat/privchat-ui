@@ -189,6 +189,62 @@ data class PrivChatStrings(
     val chatSettingsLeaveGroupConfirmTitle: String,
     val chatSettingsLeaveGroupConfirmMessage: String,
 
+    // ========== 群管理（群主/管理员） ==========
+    /** 群设置分组标题 */
+    val groupSettingsSectionTitle: String,
+    /** 允许被搜索发现 */
+    val groupSettingsAllowSearch: String,
+    /** 成员可邀请他人入群 */
+    val groupSettingsMemberCanInvite: String,
+    /** 允许成员之间互加好友 */
+    val groupSettingsAllowMemberAddFriend: String,
+    /** 全员禁言 */
+    val groupSettingsAllMuted: String,
+    /** 加群方式（标题） */
+    val groupSettingsJoinPolicy: String,
+    /** 加群方式：禁止任何人加入 */
+    val groupSettingsJoinPolicyNone: String,
+    /** 加群方式：需管理员审核 */
+    val groupSettingsJoinPolicyApproval: String,
+    /** 加群方式：允许直接加入 */
+    val groupSettingsJoinPolicyOpen: String,
+    /** 更新失败提示 */
+    val groupSettingsUpdateFailed: String,
+    /** 禁言成员（操作标题） */
+    val groupMemberMute: String,
+    /** 解除禁言 */
+    val groupMemberUnmute: String,
+    /** 选择禁言时长（标题） */
+    val groupMuteDurationTitle: String,
+    /** 禁言时长：10 分钟 */
+    val groupMuteDuration10m: String,
+    /** 禁言时长：1 小时 */
+    val groupMuteDuration1h: String,
+    /** 禁言时长：1 天 */
+    val groupMuteDuration1d: String,
+    /** 禁言时长：永久 */
+    val groupMuteDurationForever: String,
+    /** 禁言成功提示 */
+    val groupMuteSuccess: String,
+    /** 解除禁言成功提示 */
+    val groupUnmuteSuccess: String,
+    /** 置顶消息 */
+    val messagePin: String,
+    /** 取消置顶 */
+    val messageUnpin: String,
+    /** 置顶条标题（"X 条置顶消息"前缀，单条时省略数量） */
+    val pinnedMessagesTitle: String,
+    /** 置顶成功提示 */
+    val messagePinSuccess: String,
+    /** 取消置顶成功提示 */
+    val messageUnpinSuccess: String,
+    /** 在线状态：离线 N 分钟前（%d 占位） */
+    val presenceOfflineMinutesAgo: String,
+    /** 在线状态：离线 N 小时前（%d 占位） */
+    val presenceOfflineHoursAgo: String,
+    /** 在线状态：离线 N 天前（%d 占位） */
+    val presenceOfflineDaysAgo: String,
+
     // ========== 群组 ==========
     val groupMembers: String,
     val groupOwner: String,
@@ -537,6 +593,33 @@ object PrivChatStringPacks {
         chatSettingsLeaveGroup = "退出群聊",
         chatSettingsLeaveGroupConfirmTitle = "退出群聊",
         chatSettingsLeaveGroupConfirmMessage = "确定要退出该群聊吗？退出后将无法接收该群的消息。",
+        groupSettingsSectionTitle = "群管理",
+        groupSettingsAllowSearch = "允许被搜索找到",
+        groupSettingsMemberCanInvite = "允许成员邀请好友",
+        groupSettingsAllowMemberAddFriend = "允许成员互加好友",
+        groupSettingsAllMuted = "全员禁言",
+        groupSettingsJoinPolicy = "加群方式",
+        groupSettingsJoinPolicyNone = "禁止加入",
+        groupSettingsJoinPolicyApproval = "需管理员审核",
+        groupSettingsJoinPolicyOpen = "允许直接加入",
+        groupSettingsUpdateFailed = "设置更新失败",
+        groupMemberMute = "禁言",
+        groupMemberUnmute = "解除禁言",
+        groupMuteDurationTitle = "选择禁言时长",
+        groupMuteDuration10m = "10 分钟",
+        groupMuteDuration1h = "1 小时",
+        groupMuteDuration1d = "1 天",
+        groupMuteDurationForever = "永久",
+        groupMuteSuccess = "已禁言",
+        groupUnmuteSuccess = "已解除禁言",
+        messagePin = "置顶",
+        messageUnpin = "取消置顶",
+        pinnedMessagesTitle = "置顶消息",
+        messagePinSuccess = "已置顶",
+        messageUnpinSuccess = "已取消置顶",
+        presenceOfflineMinutesAgo = "%d 分钟前在线",
+        presenceOfflineHoursAgo = "%d 小时前在线",
+        presenceOfflineDaysAgo = "%d 天前在线",
 
         // 群组
         groupMembers = "群成员",
@@ -857,6 +940,33 @@ object PrivChatStringPacks {
         chatSettingsLeaveGroup = "Leave Group",
         chatSettingsLeaveGroupConfirmTitle = "Leave Group",
         chatSettingsLeaveGroupConfirmMessage = "Are you sure you want to leave this group? You will no longer receive messages from this group.",
+        groupSettingsSectionTitle = "Group Management",
+        groupSettingsAllowSearch = "Allow being found in search",
+        groupSettingsMemberCanInvite = "Members can invite",
+        groupSettingsAllowMemberAddFriend = "Members can add each other",
+        groupSettingsAllMuted = "Mute all members",
+        groupSettingsJoinPolicy = "Join method",
+        groupSettingsJoinPolicyNone = "No one can join",
+        groupSettingsJoinPolicyApproval = "Admin approval required",
+        groupSettingsJoinPolicyOpen = "Anyone can join",
+        groupSettingsUpdateFailed = "Failed to update settings",
+        groupMemberMute = "Mute",
+        groupMemberUnmute = "Unmute",
+        groupMuteDurationTitle = "Choose mute duration",
+        groupMuteDuration10m = "10 minutes",
+        groupMuteDuration1h = "1 hour",
+        groupMuteDuration1d = "1 day",
+        groupMuteDurationForever = "Permanent",
+        groupMuteSuccess = "Member muted",
+        groupUnmuteSuccess = "Member unmuted",
+        messagePin = "Pin",
+        messageUnpin = "Unpin",
+        pinnedMessagesTitle = "Pinned",
+        messagePinSuccess = "Pinned",
+        messageUnpinSuccess = "Unpinned",
+        presenceOfflineMinutesAgo = "Active %d min ago",
+        presenceOfflineHoursAgo = "Active %d hr ago",
+        presenceOfflineDaysAgo = "Active %d day(s) ago",
 
         // Groups
         groupMembers = "Members",

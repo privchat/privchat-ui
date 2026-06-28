@@ -19,6 +19,8 @@ enum class MessageActionKind {
     SaveImage,
     Recall,
     Forward,
+    Pin,
+    Unpin,
     DeleteLocal,
     Select,
     Report,
@@ -40,7 +42,7 @@ enum class MessageActionKind {
  * - Copy：TEXT / LINK（链接仅复制 URL）
  * - SaveImage：IMAGE
  * - Recall：isSelf，且满足以下其一：
- *     Sent/Read 且发送时间 ≤ 5min（调 revokeMessage RPC）
+ *     Sent/Read（调 revokeMessage RPC；撤回无时效，不做客户端时间窗判断）
  *     Failed（UI 层改为本地删除，不调 RPC）
  * - Forward：除 VOICE 外所有类型（VOICE 强绑说话人身份，禁止原样转发）
  * - DeleteLocal / Select：所有类型
@@ -48,13 +50,17 @@ enum class MessageActionKind {
  * 反应面板可见性：仅对 Sent / Read 状态的非撤回消息显示。
  */
 object MessageActionPolicy {
-    /** 撤回时间窗（毫秒），参考微信 5 分钟。服务端仍可能拒绝，本地仅做 UI 预过滤。 */
-    private const val RecallWindowMs: Long = 5L * 60L * 1000L
-
     data class Context(
         val message: MessageEntry,
         val isSelf: Boolean,
         val nowMs: Long,
+        /**
+         * 当前用户是否可在该群置顶/取消置顶消息（群主/管理员）。
+         * 仅群聊有效；DM 与普通成员恒为 false。服务端仍是权威，本地仅做菜单 gate。
+         */
+        val canPin: Boolean = false,
+        /** 该消息当前是否已被置顶（决定显示「置顶」还是「取消置顶」）。 */
+        val isPinned: Boolean = false,
     )
 
     /**
@@ -108,21 +114,22 @@ object MessageActionPolicy {
             result += MessageActionKind.SaveImage
         }
 
-        // Recall：isSelf 必须。Failed 任意时间都允许（UI 层改为本地删除，不调 RPC）；
-        // Sent/Read 仅 5min 内允许（调 revokeMessage RPC）。
+        // Recall：isSelf 必须。撤回无时效——不再做客户端时间窗判断。
+        // Failed → UI 层改为本地删除（不调 RPC）；Sent/Read → 调 revokeMessage RPC。
+        // 服务端仍是权威，可能因权限等原因拒绝；本地不预过滤时间。
         if (ctx.isSelf) {
-            val canRecall = if (isFailed) {
-                true
-            } else {
-                val ageMs = ctx.nowMs - msg.timestamp.toLong()
-                ageMs in 0L..RecallWindowMs
-            }
-            if (canRecall) result += MessageActionKind.Recall
+            result += MessageActionKind.Recall
         }
 
         // Forward：除语音外都可以；失败消息允许转发（等价于再发一次）
         if (type != ContentMessageType.VOICE) {
             result += MessageActionKind.Forward
+        }
+
+        // Pin / Unpin：仅群主/管理员（canPin），且消息已在服务端（非 failed）。
+        // 普通成员不显示；server 仍做最终鉴权。
+        if (ctx.canPin && !isFailed) {
+            result += if (ctx.isPinned) MessageActionKind.Unpin else MessageActionKind.Pin
         }
 
         // Delete：本端永远允许

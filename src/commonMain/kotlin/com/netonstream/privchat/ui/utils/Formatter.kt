@@ -231,6 +231,38 @@ object Formatter {
         return "${nowLocal.year}年${nowLocal.month}月"
     }
 
+    /**
+     * 在线状态「最近在线」相对时长展示（presence 真源，lastSeen 为 UTC 毫秒）。
+     *
+     * - < 1 分钟：刚刚（[justNow]）
+     * - < 1 小时：N 分钟前在线（[minutesAgo]）
+     * - < 1 天：N 小时前在线（[hoursAgo]）
+     * - < 7 天：N 天前在线（[daysAgo]）
+     * - 更早：回退到 [conversationTime]（日期）
+     *
+     * 文案模板由调用方传入（含 `%d` 占位），保持 4 语言一致。
+     *
+     * @param lastSeen UTC 毫秒时间戳；<=0 时返回 null（调用方退化为「离线」）
+     */
+    fun presenceLastSeen(
+        lastSeen: Long,
+        justNow: String,
+        minutesAgo: String,
+        hoursAgo: String,
+        daysAgo: String,
+    ): String? {
+        if (lastSeen <= 0L) return null
+        val now = currentTimeMillis()
+        val diffSec = (now - lastSeen) / 1000L
+        return when {
+            diffSec < 60 -> justNow
+            diffSec < 3600 -> minutesAgo.replace("%d", (diffSec / 60).toString())
+            diffSec < 86_400 -> hoursAgo.replace("%d", (diffSec / 3600).toString())
+            diffSec < 7 * 86_400 -> daysAgo.replace("%d", (diffSec / 86_400).toString())
+            else -> conversationTime(lastSeen)
+        }
+    }
+
     // ========== 时长格式化 ==========
 
     /**

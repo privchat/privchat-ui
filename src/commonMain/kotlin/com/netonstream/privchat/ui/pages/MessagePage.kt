@@ -420,6 +420,28 @@ fun MessagePage(
     val groupMembersForChannel = remember(allGroupMembers, channel.channelId) {
         if (channel.isDm) emptyList() else allGroupMembers.filter { it.channelId == channel.channelId }
     }
+    // 群消息置顶：仅群主/管理员可操作（canPin），所有成员可见置顶条。
+    // 当前用户在该群的角色（role: 2=群主 1=管理员 0=成员）。
+    val canPinMessages = remember(groupMembersForChannel, currentUserId, channel.isDm) {
+        if (channel.isDm) false
+        else groupMembersForChannel.firstOrNull { it.userId == currentUserId }
+            ?.let { it.isOwner || it.isAdmin } ?: false
+    }
+    // 已置顶消息列表（来自服务端 groupPinnedMessages，群聊 channelId == groupId）。
+    var pinnedMessages by remember(channel.channelId) {
+        mutableStateOf<List<com.netonstream.privchat.sdk.dto.GroupPinnedMessageView>>(emptyList())
+    }
+    val pinnedMessageIds = remember(pinnedMessages) { pinnedMessages.map { it.messageId }.toSet() }
+    // 加载/刷新置顶列表（封装供初始加载与置顶操作后调用）。
+    val refreshPinnedMessages: suspend () -> Unit = refresh@{
+        if (channel.isDm) return@refresh
+        withContext(Dispatchers.Default) {
+            PrivChat.client.groupPinnedMessages(channel.channelId)
+        }.onSuccess { pinnedMessages = it }
+    }
+    LaunchedEffect(channel.channelId) {
+        if (!channel.isDm) refreshPinnedMessages()
+    }
     // Typing 节流：记录上次发送 typing 的时间戳（毫秒）
     var lastTypingSentMs by remember { mutableStateOf(0L) }
     // 当前页面是否已经上报过“正在输入”
@@ -735,22 +757,26 @@ fun MessagePage(
             useDefaultBack = true,
             onBackClick = onBack,
             titleWidget = {
-                Row(
+                // presence 为真源：DM 标题下展示在线 / 「N 分钟前在线」相对时长（离线时用 muted 色）。
+                val presenceText = if (channel.isDm) presenceStatusText(peerPresence, strings) else null
+                Column(
                     modifier = Modifier.clickable(onClick = onTitleClick),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = truncatedTitle,
                         style = Typography.TitleMedium,
                         color = Theme.colors.foreground,
                     )
-                    if (channel.isDm && peerPresence?.isOnline == true) {
-                        HorizontalSpacer(6.dp)
+                    if (presenceText != null) {
                         Text(
-                            text = strings.presenceOnline,
+                            text = presenceText,
                             style = Typography.Label,
-                            color = Theme.colors.onlineStatus,
+                            color = if (peerPresence?.isOnline == true) {
+                                Theme.colors.onlineStatus
+                            } else {
+                                Theme.colors.mutedForeground
+                            },
                         )
                     }
                 }
@@ -760,6 +786,39 @@ fun MessagePage(
             ),
         )
         networkStatusBar?.invoke()
+
+        // 置顶条：群聊有置顶消息时展示最新一条预览；群主/管理员可一键取消置顶。
+        // 不做跳转原消息（产品定稿）。普通成员只读。
+        if (!channel.isDm && pinnedMessages.isNotEmpty()) {
+            val latestPinned = pinnedMessages.first()
+            val pinnedMsg = sortedMessages.firstOrNull {
+                it.serverMessageId == latestPinned.messageId
+            }
+            PinnedMessagesBar(
+                count = pinnedMessages.size,
+                preview = pinnedMsg?.let {
+                    strings.previewOf(it)
+                } ?: strings.pinnedMessagesTitle,
+                canManage = canPinMessages,
+                onUnpin = {
+                    scope.launch {
+                        withContext(Dispatchers.Default) {
+                            PrivChat.client.groupPinMessage(
+                                groupId = channel.channelId,
+                                channelId = channel.channelId,
+                                messageId = latestPinned.messageId,
+                                pinned = false,
+                            )
+                        }.onSuccess {
+                            refreshPinnedMessages()
+                            Toast.success(strings.messageUnpinSuccess)
+                        }.onFailure { error ->
+                            Toast.error(error.message ?: strings.networkError)
+                        }
+                    }
+                },
+            )
+        }
 
         Box(modifier = Modifier.weight(1f)) {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -867,6 +926,34 @@ fun MessagePage(
                                         }
                                     },
                                     isHighlighted = highlightMessageId == message.id,
+                                    canPin = canPinMessages,
+                                    isPinned = pinnedMessageIds.contains(message.serverMessageId),
+                                    onPinMessage = { target, pin ->
+                                        val serverId = target.serverMessageId
+                                        if (serverId == null) {
+                                            Toast.error("原消息尚未发送")
+                                        } else {
+                                            scope.launch {
+                                                withContext(Dispatchers.Default) {
+                                                    // 群聊 channelId == groupId（同值）。
+                                                    PrivChat.client.groupPinMessage(
+                                                        groupId = channel.channelId,
+                                                        channelId = channel.channelId,
+                                                        messageId = serverId,
+                                                        pinned = pin,
+                                                    )
+                                                }.onSuccess {
+                                                    refreshPinnedMessages()
+                                                    Toast.success(
+                                                        if (pin) strings.messagePinSuccess
+                                                        else strings.messageUnpinSuccess
+                                                    )
+                                                }.onFailure { error ->
+                                                    Toast.error(error.message ?: strings.networkError)
+                                                }
+                                            }
+                                        }
+                                    },
                                 )
                             }
                             item {
@@ -1229,6 +1316,50 @@ fun MessagePage(
     }
 }
 
+/**
+ * 群置顶消息条：展示最新一条置顶消息预览（不做跳转）。
+ * 群主/管理员（[canManage]）可点右侧图标一键取消置顶；普通成员只读。
+ */
+@Composable
+private fun PinnedMessagesBar(
+    count: Int,
+    preview: String,
+    canManage: Boolean,
+    onUnpin: () -> Unit,
+) {
+    val colors = Theme.colors
+    val strings = PrivChatI18n.strings
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.surface)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(name = Icons.bookmark, size = IconSizes.Default.small, tint = colors.primary)
+        HorizontalSpacer(8.dp)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = if (count > 1) "${strings.pinnedMessagesTitle} ($count)" else strings.pinnedMessagesTitle,
+                style = Typography.Label,
+                color = colors.primary,
+            )
+            Text(
+                text = preview,
+                style = Typography.BodySmall,
+                color = colors.foreground,
+                maxLines = 1,
+            )
+        }
+        if (canManage) {
+            HorizontalSpacer(8.dp)
+            Box(modifier = Modifier.clickable(onClick = onUnpin)) {
+                Icon(name = Icons.close, size = IconSizes.Default.small, tint = colors.mutedForeground)
+            }
+        }
+    }
+}
+
 @Composable
 private fun DmPresenceStatus(
     presence: PresenceEntry?,
@@ -1262,7 +1393,14 @@ private fun presenceStatusText(
     if (presence.isOnline) return strings.presenceOnline
     val lastSeen = presence.lastSeen ?: return strings.presenceOffline
     if (lastSeen <= 0L) return strings.presenceOffline
-    return "${strings.presenceLastSeenPrefix} ${Formatter.conversationTime(lastSeen)}"
+    // presence 为真源：离线时展示「N 分钟/小时/天前在线」相对时长（< 1 分钟回退到「最近在线」）。
+    return Formatter.presenceLastSeen(
+        lastSeen = lastSeen,
+        justNow = strings.presenceLastSeenPrefix,
+        minutesAgo = strings.presenceOfflineMinutesAgo,
+        hoursAgo = strings.presenceOfflineHoursAgo,
+        daysAgo = strings.presenceOfflineDaysAgo,
+    ) ?: strings.presenceOffline
 }
 
 private fun String.dropLastGraphemeCluster(): String {
@@ -1363,6 +1501,12 @@ private fun MessageRow(
     senderLabelOf: ((ULong) -> String)? = null,
     onReplyClick: ((MessageEntry) -> Unit)? = null,
     isHighlighted: Boolean = false,
+    /** 群主/管理员可在该群置顶消息（DM / 普通成员为 false）。 */
+    canPin: Boolean = false,
+    /** 该消息当前是否已被置顶。 */
+    isPinned: Boolean = false,
+    /** 置顶/取消置顶回调（pinned=true 置顶，false 取消）。 */
+    onPinMessage: ((MessageEntry, Boolean) -> Unit)? = null,
 ) {
     val colors = Theme.colors
     val strings = PrivChatI18n.strings
@@ -1473,7 +1617,16 @@ private fun MessageRow(
                 isSelf -> colors.messageBubbleSelf
                 else -> colors.messageBubbleOther
             }
-            MessageActionsWrapper(message = message, isSelf = isSelf, onRequestForward = onRequestForward, onReply = onReply) {
+            MessageActionsWrapper(
+                message = message,
+                isSelf = isSelf,
+                onRequestForward = onRequestForward,
+                onReply = onReply,
+                onReportMessage = onReportMessage,
+                canPin = canPin,
+                isPinned = isPinned,
+                onPinMessage = onPinMessage,
+            ) {
                 Box(
                     // 媒体气泡（透明底 + 0 padding）不能套外层圆角 clip：图片本身在 ImageContent 内
                     // 已有圆角，外层 clip 会把贴边的 footer（时间/状态）右下角切掉。文字气泡保留圆角。
@@ -2615,6 +2768,9 @@ private fun MessageActionsWrapper(
     onRequestForward: ((MessageEntry) -> Unit)? = null,
     onReply: ((MessageEntry) -> Unit)? = null,
     onReportMessage: ((MessageEntry) -> Unit)? = null,
+    canPin: Boolean = false,
+    isPinned: Boolean = false,
+    onPinMessage: ((MessageEntry, Boolean) -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val strings = PrivChatI18n.strings
@@ -2623,9 +2779,11 @@ private fun MessageActionsWrapper(
         message = message,
         isSelf = isSelf,
         nowMs = currentTimeMillis(),
+        canPin = canPin,
+        isPinned = isPinned,
     )
     val menuActions = MessageActionPolicy.menuActions(ctx).map { kind ->
-        kind.toMessageAction(message) {
+        kind.toMessageAction(message, strings) {
             when (kind) {
                 MessageActionKind.Copy -> {
                     when (message.contentType()) {
@@ -2704,6 +2862,8 @@ private fun MessageActionsWrapper(
                     val handler = onReply
                     if (handler != null) handler(message) else Toast.show("回复功能即将支持")
                 }
+                MessageActionKind.Pin -> onPinMessage?.invoke(message, true)
+                MessageActionKind.Unpin -> onPinMessage?.invoke(message, false)
                 MessageActionKind.Select -> Toast.show("多选功能即将支持")
                 MessageActionKind.Report -> {
                     val handler = onReportMessage
@@ -2754,6 +2914,7 @@ private fun MessageActionsWrapper(
  */
 private fun MessageActionKind.toMessageAction(
     message: MessageEntry,
+    strings: com.netonstream.privchat.ui.i18n.PrivChatStrings,
     onClick: () -> Unit,
 ): MessageAction = when (this) {
     MessageActionKind.Reply ->
@@ -2766,6 +2927,10 @@ private fun MessageActionKind.toMessageAction(
         MessageAction(label = "撤回", icon = Icons.autorenew, onClick = onClick)
     MessageActionKind.Forward ->
         MessageAction(label = "转发", icon = Icons.forward, onClick = onClick)
+    MessageActionKind.Pin ->
+        MessageAction(label = strings.messagePin, icon = Icons.bookmark, onClick = onClick)
+    MessageActionKind.Unpin ->
+        MessageAction(label = strings.messageUnpin, icon = Icons.bookmark_border, onClick = onClick)
     MessageActionKind.DeleteLocal -> {
         val label = when (message.status) {
             MessageStatus.Pending, MessageStatus.Sending -> "取消发送"

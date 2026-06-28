@@ -2,6 +2,8 @@ package com.netonstream.privchat.ui.pages
 
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.dto.ChannelListEntry
+import com.netonstream.privchat.sdk.dto.GroupSettingsUpdateInput
+import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.components.ChatAvatar
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.gearui.theme.Theme
@@ -18,12 +20,17 @@ import com.gearui.components.button.Button
 import com.gearui.components.button.ButtonType
 import com.gearui.components.button.ButtonTheme
 import com.gearui.components.button.ButtonSize
+import com.gearui.components.actionsheet.ActionSheet
+import com.gearui.components.actionsheet.ActionSheetItem
+import com.gearui.components.toast.Toast
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.*
 import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * 聊天设置页面
@@ -74,6 +81,50 @@ fun ChatSettingsPage(
 
     // 是否是群聊
     val isGroup = !channel.isDm
+    // 群主/管理员可见并可改群管理设置（allowSearch / joinPolicy / memberCanInvite /
+    // allowMemberAddFriend / allMuted）。服务端仍是权威鉴权。
+    val isManager = isGroup && (isOwner || isAdmin)
+
+    // 群设置初值（groupGetSettings 读，groupUpdateSettings 改；每次只 patch 改动项）。
+    var allowSearch by remember(channel.channelId) { mutableStateOf<Boolean?>(null) }
+    var memberCanInvite by remember(channel.channelId) { mutableStateOf<Boolean?>(null) }
+    var allowMemberAddFriend by remember(channel.channelId) { mutableStateOf<Boolean?>(null) }
+    var allMuted by remember(channel.channelId) { mutableStateOf<Boolean?>(null) }
+    var joinPolicy by remember(channel.channelId) { mutableStateOf<UByte?>(null) }
+
+    if (isManager) {
+        LaunchedEffect(channel.channelId) {
+            withContext(Dispatchers.Default) {
+                PrivChat.client.groupGetSettings(channel.channelId)
+            }.onSuccess { s ->
+                allowSearch = s.allowSearch
+                memberCanInvite = s.memberCanInvite
+                allowMemberAddFriend = s.allowMemberAddFriend
+                allMuted = s.allMuted
+                joinPolicy = s.joinPolicy
+            }
+        }
+    }
+
+    // 单字段 patch helper：只把改动项放进 GroupSettingsUpdateInput，其余保持 null（不更新）。
+    fun patchSetting(
+        apply: GroupSettingsUpdateInput.() -> Unit,
+        onOk: () -> Unit,
+    ) {
+        scope.launch {
+            val input = GroupSettingsUpdateInput(groupId = channel.channelId).apply(apply)
+            withContext(Dispatchers.Default) {
+                PrivChat.client.groupUpdateSettings(input)
+            }.onSuccess { onOk() }
+                .onFailure { Toast.error(it.message ?: strings.groupSettingsUpdateFailed) }
+        }
+    }
+
+    fun joinPolicyLabel(value: UByte?): String = when (value?.toInt()) {
+        0 -> strings.groupSettingsJoinPolicyNone
+        2 -> strings.groupSettingsJoinPolicyOpen
+        else -> strings.groupSettingsJoinPolicyApproval
+    }
 
     Column(modifier = modifier.fillMaxSize().background(colors.background)) {
         // 顶部导航栏
@@ -136,6 +187,98 @@ fun ChatSettingsPage(
                             title = strings.chatSettingsGroupManage,
                             arrow = true,
                             onClick = onGroupManageClick,
+                        )
+                    }
+                }
+
+                // 群管理设置（仅群主/管理员可见可改；服务端鉴权）。
+                if (isManager) {
+                    item { Spacer(modifier = Modifier.height(12.dp)) }
+                    item {
+                        Text(
+                            text = strings.groupSettingsSectionTitle,
+                            style = Typography.Label,
+                            color = colors.mutedForeground,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
+                    // 加群方式（0/1/2）→ ActionSheet 选择。
+                    item {
+                        Cell(
+                            title = strings.groupSettingsJoinPolicy,
+                            description = joinPolicyLabel(joinPolicy),
+                            arrow = true,
+                            onClick = {
+                                ActionSheet.showList(
+                                    description = strings.groupSettingsJoinPolicy,
+                                    items = listOf(
+                                        ActionSheetItem(label = strings.groupSettingsJoinPolicyNone),
+                                        ActionSheetItem(label = strings.groupSettingsJoinPolicyApproval),
+                                        ActionSheetItem(label = strings.groupSettingsJoinPolicyOpen),
+                                    ),
+                                    onSelected = { _, index ->
+                                        val newValue = index.toUByte()
+                                        if (newValue != joinPolicy) {
+                                            patchSetting(
+                                                apply = { this.joinPolicy = newValue },
+                                                onOk = { joinPolicy = newValue },
+                                            )
+                                        }
+                                    },
+                                )
+                            },
+                        )
+                    }
+                    // allowSearch
+                    item {
+                        SettingSwitchCell(
+                            title = strings.groupSettingsAllowSearch,
+                            checked = allowSearch == true,
+                            onToggle = { newValue ->
+                                patchSetting(
+                                    apply = { this.allowSearch = newValue },
+                                    onOk = { allowSearch = newValue },
+                                )
+                            },
+                        )
+                    }
+                    // memberCanInvite
+                    item {
+                        SettingSwitchCell(
+                            title = strings.groupSettingsMemberCanInvite,
+                            checked = memberCanInvite == true,
+                            onToggle = { newValue ->
+                                patchSetting(
+                                    apply = { this.memberCanInvite = newValue },
+                                    onOk = { memberCanInvite = newValue },
+                                )
+                            },
+                        )
+                    }
+                    // allowMemberAddFriend
+                    item {
+                        SettingSwitchCell(
+                            title = strings.groupSettingsAllowMemberAddFriend,
+                            checked = allowMemberAddFriend == true,
+                            onToggle = { newValue ->
+                                patchSetting(
+                                    apply = { this.allowMemberAddFriend = newValue },
+                                    onOk = { allowMemberAddFriend = newValue },
+                                )
+                            },
+                        )
+                    }
+                    // allMuted（全员禁言）：统一走 groupUpdateSettings（单一路径）。
+                    item {
+                        SettingSwitchCell(
+                            title = strings.groupSettingsAllMuted,
+                            checked = allMuted == true,
+                            onToggle = { newValue ->
+                                patchSetting(
+                                    apply = { this.allMuted = newValue },
+                                    onOk = { allMuted = newValue },
+                                )
+                            },
                         )
                     }
                 }
@@ -278,4 +421,25 @@ fun ChatSettingsPage(
             }
         )
     }
+
+    // 加群方式选择走全局 ActionSheet 单例，需在页面根部挂 Host。
+    ActionSheet.Host()
+}
+
+/** 群设置开关行：左标题 + 右 Switch。 */
+@Composable
+private fun SettingSwitchCell(
+    title: String,
+    checked: Boolean,
+    onToggle: (Boolean) -> Unit,
+) {
+    Cell(
+        title = title,
+        trailing = {
+            Switch(
+                checked = checked,
+                onCheckedChange = { onToggle(it) },
+            )
+        },
+    )
 }
