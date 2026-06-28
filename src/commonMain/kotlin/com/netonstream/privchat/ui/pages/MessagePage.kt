@@ -392,8 +392,9 @@ fun MessagePage(
         }
         map
     }
-    // peer_user_id：优先从 channel 字段取，channel_member 表为空时回退到 dmPeerUserId()
-    var peerUserId by remember(channel.channelId) { mutableStateOf(channel.peerUserId) }
+    // peer_user_id 由 channel 同步直接下发并持久化到 channel row，UI 直接读取，
+    // 不再回退 channel_member / dmPeerUserId() 推断。
+    val peerUserId = channel.peerUserId
     // BOT_INTERACTION_SPEC §3.1：私聊对端 user_type ∈ {1=System, 2=Bot} 时显示菜单入口。
     // peerUserType 异步解析（getUserProfileLocalFirst → 本地优先，未知再拉服务端）。
     var peerUserType by remember(channel.channelId) { mutableStateOf<Short?>(null) }
@@ -498,16 +499,6 @@ fun MessagePage(
             }
         }
         if (channel.isDm) {
-            // channel_member 表为空时 peerUserId 可能是 null，回退到 dmPeerUserId()
-            if (peerUserId == null) {
-                runCatching {
-                    withContext(Dispatchers.Default) {
-                        PrivChat.client.dmPeerUserId(channel.channelId)
-                            .getOrNull()
-                            ?.let { peerUserId = it }
-                    }
-                }
-            }
             val uid = peerUserId
             if (uid != null) {
                 runCatching {
@@ -556,11 +547,7 @@ fun MessagePage(
                 }
             }
             if (channel.isDm) {
-                val uid = peerUserId ?: run {
-                    PrivChat.client.dmPeerUserId(channel.channelId)
-                        .getOrNull()
-                        ?.also { peerUserId = it }
-                }
+                val uid = peerUserId
                 if (uid != null) {
                     runCatching {
                         withContext(Dispatchers.Default) {
