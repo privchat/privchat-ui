@@ -373,8 +373,10 @@ fun MessagePage(
     // 宿主(App) money-first：先 platform /app/red-packet|money-transfer/send，再 SDK 发消息。
     onRedPacket: (() -> Unit)? = null,
     onMoneyTransfer: (() -> Unit)? = null,
-    // 点红包卡片领取（传 redPacketId）；宿主走 platform claim。null=只读降级。
+    // 点红包卡片（传 redPacketId）→ 宿主打开红包详情/领取。null=只读降级。
     onRedPacketClick: ((String) -> Unit)? = null,
+    // 点转账卡片（传 transferId）→ 宿主打开转账详情。
+    onMoneyTransferClick: ((String) -> Unit)? = null,
     onError: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -904,6 +906,7 @@ fun MessagePage(
                                     onVideoPreview = onVideoPreview,
                                     onImagePreview = onImagePreview,
                                     onRedPacketClick = onRedPacketClick,
+                                    onMoneyTransferClick = onMoneyTransferClick,
                                     onReply = { target ->
                                         if (target.serverMessageId == null) {
                                             Toast.error("原消息尚未发送")
@@ -1504,6 +1507,7 @@ private fun MessageRow(
     onVideoPreview: ((MessageEntry) -> Unit)? = null,
     onImagePreview: ((MessageEntry) -> Unit)? = null,
     onRedPacketClick: ((String) -> Unit)? = null,
+    onMoneyTransferClick: ((String) -> Unit)? = null,
     onReply: ((MessageEntry) -> Unit)? = null,
     replyLookup: ((String) -> MessageEntry?)? = null,
     senderLabelOf: ((ULong) -> String)? = null,
@@ -1663,6 +1667,7 @@ private fun MessageRow(
                             onImagePreview = onImagePreview,
                             onContactClick = onAvatarClick,
                             onRedPacketClick = onRedPacketClick,
+                            onMoneyTransferClick = onMoneyTransferClick,
                         )
                     }
                     if (flashAlpha > 0f) {

@@ -82,9 +82,10 @@ fun MessageContent(
     onVideoPreview: ((MessageEntry) -> Unit)? = null,
     onImagePreview: ((MessageEntry) -> Unit)? = null,
     onContactClick: ((ULong) -> Unit)? = null,
-    // 点红包卡片领取（传 redPacketId）；宿主(App)走 platform /app/red-packet/claim。
-    // null = 无领取能力（如 BUILTIN 模式）→ 卡片只读降级展示。
+    // 点红包卡片（传 redPacketId）→ 宿主打开红包详情/领取。null = 只读降级（BUILTIN）。
     onRedPacketClick: ((String) -> Unit)? = null,
+    // 点转账卡片（传 transferId）→ 宿主打开转账详情。null = 只读。
+    onMoneyTransferClick: ((String) -> Unit)? = null,
 ) {
     val colors = Theme.colors
     val textColor = if (isSelf) colors.messageTextSelf else colors.messageTextOther
@@ -125,7 +126,7 @@ fun MessageContent(
             MessageType.LINK -> LinkContent(parsed, textColor, secondaryTextColor)
             MessageType.CONTACT -> ContactContent(parsed, textColor, secondaryTextColor, onContactClick)
             MessageType.RED_PACKET -> RedPacketMessageView(parsed, onRedPacketClick)
-            MessageType.MONEY_TRANSFER -> MoneyTransferMessageView(parsed)
+            MessageType.MONEY_TRANSFER -> MoneyTransferMessageView(parsed, onMoneyTransferClick)
             MessageType.SYSTEM -> {
                 // 系统消息由 MessageRow 在 row 级早返回 SystemMessageRow 渲染，
                 // 不会走到这里；留空分支以保持 when 穷尽。
@@ -1040,22 +1041,22 @@ private fun UnknownContent(
 // 只渲染 payload 展示快照 + 交互回调；资金真相在 platform，UI 不碰余额/领取入账。
 
 /**
- * 红包卡片。onClaim != null 且状态可领 → 可点击领取（宿主走 platform claim）；
- * 否则只读降级（BUILTIN 模式 / 已抢完 / 已过期）。
+ * 红包卡片。onOpen != null → 点击打开红包详情/领取（宿主导航到详情页，由详情页走 platform claim）。
+ * null → 只读降级（BUILTIN）。卡片文案按状态快照展示，实际状态以详情页拉取为准。
  */
 @Composable
 private fun RedPacketMessageView(
     parsed: ParsedContent,
-    onClaim: ((String) -> Unit)?,
+    onOpen: ((String) -> Unit)?,
 ) {
     val refId = parsed.moneyRefId
     val status = parsed.moneyStatus
-    val claimable = refId != null && onClaim != null && (status == null || status == "active")
+    val clickable = refId != null && onOpen != null
     val base = Modifier
         .clip(RoundedCornerShape(8.dp))
         .background(Color(0xFFE5533D))
         .padding(horizontal = 14.dp, vertical = 12.dp)
-    Column(modifier = if (claimable) base.clickable { onClaim!!.invoke(refId!!) } else base) {
+    Column(modifier = if (clickable) base.clickable { onOpen!!.invoke(refId!!) } else base) {
         Text(
             text = "🧧 " + (parsed.moneyTitle?.takeIf { it.isNotBlank() } ?: "红包"),
             style = Typography.BodyMedium,
@@ -1066,7 +1067,8 @@ private fun RedPacketMessageView(
             text = when (status) {
                 "finished" -> "已被抢光"
                 "expired" -> "已过期"
-                else -> if (onClaim != null) "点击领取" else "请在支持红包的版本查看"
+                "refunding" -> "已过期"
+                else -> if (onOpen != null) "点击查看红包" else "请在支持红包的版本查看"
             },
             style = Typography.Label,
             color = Color.White.copy(alpha = 0.85f),
@@ -1074,17 +1076,19 @@ private fun RedPacketMessageView(
     }
 }
 
-/** 转账卡片。无需接收确认，展示金额快照 + 到账态（资金以 platform 订单/ledger 为准）。 */
+/** 转账卡片。无需接收确认；点击打开转账详情（可查可追溯）。null → 只读。 */
 @Composable
 private fun MoneyTransferMessageView(
     parsed: ParsedContent,
+    onOpen: ((String) -> Unit)?,
 ) {
-    Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFFF5A623))
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-    ) {
+    val refId = parsed.moneyRefId
+    val clickable = refId != null && onOpen != null
+    val base = Modifier
+        .clip(RoundedCornerShape(8.dp))
+        .background(Color(0xFFF5A623))
+        .padding(horizontal = 14.dp, vertical = 12.dp)
+    Column(modifier = if (clickable) base.clickable { onOpen!!.invoke(refId!!) } else base) {
         Text(text = "💸 转账", style = Typography.BodyMedium, color = Color.White)
         parsed.moneyAmountText?.takeIf { it.isNotBlank() }?.let {
             VerticalSpacer(4.dp)
