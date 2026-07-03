@@ -369,6 +369,12 @@ fun MessagePage(
     onReportMessage: ((MessageEntry) -> Unit)? = null,
     onVideoPreview: ((MessageEntry) -> Unit)? = null,
     onImagePreview: ((MessageEntry) -> Unit)? = null,
+    // Money Message（PLATFORM-only）：非空才在 + 菜单显示入口；BUILTIN 传 null 隐藏。
+    // 宿主(App) money-first：先 platform /app/red-packet|money-transfer/send，再 SDK 发消息。
+    onRedPacket: (() -> Unit)? = null,
+    onMoneyTransfer: (() -> Unit)? = null,
+    // 点红包卡片领取（传 redPacketId）；宿主走 platform claim。null=只读降级。
+    onRedPacketClick: ((String) -> Unit)? = null,
     onError: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -897,6 +903,7 @@ fun MessagePage(
                                     onReportMessage = onReportMessage,
                                     onVideoPreview = onVideoPreview,
                                     onImagePreview = onImagePreview,
+                                    onRedPacketClick = onRedPacketClick,
                                     onReply = { target ->
                                         if (target.serverMessageId == null) {
                                             Toast.error("原消息尚未发送")
@@ -1205,9 +1212,9 @@ fun MessagePage(
             onLocation = {
                 onError?.invoke("位置功能即将支持")
             },
-            onRedPacket = {
-                onError?.invoke("红包功能即将支持")
-            },
+            onRedPacket = { onRedPacket?.invoke() },
+            onMoneyTransfer = { onMoneyTransfer?.invoke() },
+            moneyEnabled = onRedPacket != null,
             onContact = {
                 onError?.invoke("联系人功能即将支持")
             },
@@ -1496,6 +1503,7 @@ private fun MessageRow(
     onReportMessage: ((MessageEntry) -> Unit)? = null,
     onVideoPreview: ((MessageEntry) -> Unit)? = null,
     onImagePreview: ((MessageEntry) -> Unit)? = null,
+    onRedPacketClick: ((String) -> Unit)? = null,
     onReply: ((MessageEntry) -> Unit)? = null,
     replyLookup: ((String) -> MessageEntry?)? = null,
     senderLabelOf: ((ULong) -> String)? = null,
@@ -1654,6 +1662,7 @@ private fun MessageRow(
                             onVideoPreview = onVideoPreview,
                             onImagePreview = onImagePreview,
                             onContactClick = onAvatarClick,
+                            onRedPacketClick = onRedPacketClick,
                         )
                     }
                     if (flashAlpha > 0f) {
@@ -2137,6 +2146,8 @@ private fun MessageInputBar(
     onPickFile: () -> Unit = {},
     onLocation: () -> Unit = {},
     onRedPacket: () -> Unit = {},
+    onMoneyTransfer: () -> Unit = {},
+    moneyEnabled: Boolean = false,
     onContact: () -> Unit = {},
     onSend: () -> Unit,
     replyPending: Boolean = false,
@@ -2163,15 +2174,19 @@ private fun MessageInputBar(
     }
     var collapsedBottomInset by remember { mutableStateOf(safeAreaBottom) }
     var lastKeyboardHeight by remember { mutableStateOf(0f) }
-    val plusActions = remember {
-        listOf(
-            PlusAction(Icons.image, "相册", onPickImage),
-            PlusAction(Icons.camera_alt, "相机", onPickCamera),
-            PlusAction(Icons.flag, "位置", onLocation),
-            PlusAction(Icons.mail, "红包", onRedPacket),
-            PlusAction(Icons.attach_file, "文件", onPickFile),
-            PlusAction(Icons.contacts, "联系人", onContact),
-        )
+    val plusActions = remember(moneyEnabled) {
+        buildList {
+            add(PlusAction(Icons.image, "相册", onPickImage))
+            add(PlusAction(Icons.camera_alt, "相机", onPickCamera))
+            add(PlusAction(Icons.flag, "位置", onLocation))
+            // 红包/转账 PLATFORM-only：moneyEnabled 才显示（BUILTIN 隐藏入口）。
+            if (moneyEnabled) {
+                add(PlusAction(Icons.mail, "红包", onRedPacket))
+                add(PlusAction(Icons.mail, "转账", onMoneyTransfer))
+            }
+            add(PlusAction(Icons.attach_file, "文件", onPickFile))
+            add(PlusAction(Icons.contacts, "联系人", onContact))
+        }
     }
     val plusPages = remember(plusActions) { plusActions.chunked(8) }
     val emojis = remember {
