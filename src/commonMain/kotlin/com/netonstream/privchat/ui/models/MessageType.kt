@@ -18,6 +18,9 @@ enum class MessageType {
     LOCATION,
     LINK,
     CONTACT,
+    // PrivChat Money Message（标准 IM 能力）：payload 只带引用+展示快照，资金真相在 platform。
+    RED_PACKET,
+    MONEY_TRANSFER,
     SYSTEM,
     UNKNOWN
 }
@@ -35,6 +38,8 @@ private const val PROTOCOL_CONTACT_CARD = 7
 private const val PROTOCOL_LOCATION = 8
 private const val PROTOCOL_LINK = 9
 private const val PROTOCOL_FORWARD = 10
+private const val PROTOCOL_RED_PACKET = 11
+private const val PROTOCOL_MONEY_TRANSFER = 12
 
 /**
  * MessageRef 引用片段（见 spec/05-feature/MESSAGE_REF_SPEC）。
@@ -90,6 +95,15 @@ data class ParsedContent(
     // template 是模板字符串或 i18n key（如 `system.member_invited`），refs 按下标替换 `{i}` 占位。
     val systemTemplate: String? = null,
     val systemRefs: List<MessageRef>? = null,
+    // MONEY MESSAGE（RED_PACKET / MONEY_TRANSFER）：payload 引用 + 展示快照。
+    // moneyRefId = redPacketId / transferId（字符串）；其余是展示快照，非资金依据，
+    // 交互（领取/查看）以 platform 订单/ledger 为准。
+    val moneyRefId: String? = null,
+    val moneyTitle: String? = null,
+    val moneySummary: String? = null,
+    val moneyStatus: String? = null,
+    val moneyAmountText: String? = null,
+    val moneyScene: String? = null,
 )
 
 /**
@@ -164,6 +178,8 @@ fun parseMessageType(messageType: Int, content: String, extra: String): MessageT
         PROTOCOL_STICKER -> MessageType.STICKER
         PROTOCOL_LINK -> MessageType.LINK
         PROTOCOL_FORWARD -> MessageType.TEXT
+        PROTOCOL_RED_PACKET -> MessageType.RED_PACKET
+        PROTOCOL_MONEY_TRANSFER -> MessageType.MONEY_TRANSFER
         else -> {
             val fromContent = parseMessageType(content)
             if (fromContent != MessageType.TEXT || content.contains("\"type\"")) {
@@ -273,6 +289,8 @@ fun parseMessageContent(content: String): ParsedContent {
             contactAvatarUrl = extractJsonString(content, "avatar")
                 ?: extractJsonString(content, "avatar_url")
         )
+
+        MessageType.RED_PACKET, MessageType.MONEY_TRANSFER -> ParsedContent(type = type)
 
         MessageType.UNKNOWN -> ParsedContent(
             type = type,
@@ -417,6 +435,17 @@ fun parseMessageContent(message: MessageEntry): ParsedContent {
             )
         }
 
+        MessageType.RED_PACKET, MessageType.MONEY_TRANSFER -> ParsedContent(
+            type = type,
+            moneyRefId = extractJsonString(content, "redPacketId")
+                ?: extractJsonString(content, "transferId"),
+            moneyTitle = extractJsonString(content, "title"),
+            moneySummary = extractJsonString(content, "summary"),
+            moneyStatus = extractJsonString(content, "status"),
+            moneyAmountText = extractJsonString(content, "amountText"),
+            moneyScene = extractJsonString(content, "scene"),
+        )
+
         MessageType.UNKNOWN -> ParsedContent(
             type = type,
             text = extractPayloadContent(content) ?: content
@@ -459,6 +488,8 @@ val MessageEntry.textPreview: String
             MessageType.LOCATION -> "[位置] ${parsed.locationName ?: parsed.address ?: ""}"
             MessageType.LINK -> "[链接] ${parsed.linkTitle ?: parsed.linkUrl ?: ""}"
             MessageType.CONTACT -> "[名片] ${parsed.contactName ?: ""}"
+            MessageType.RED_PACKET -> "[红包] ${parsed.moneyTitle ?: ""}"
+            MessageType.MONEY_TRANSFER -> "[转账] ${parsed.moneyAmountText ?: ""}"
             MessageType.SYSTEM -> "[系统消息]" // 注意：不再 fallback 到 raw content
             MessageType.UNKNOWN -> "[消息]"
         }

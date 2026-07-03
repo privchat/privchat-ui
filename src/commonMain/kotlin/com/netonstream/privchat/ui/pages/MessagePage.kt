@@ -3008,6 +3008,8 @@ private fun summarizeForReply(message: MessageEntry): String {
         ContentMessageType.CONTACT_CARD -> "[联系人]"
         ContentMessageType.LOCATION -> "[位置]"
         ContentMessageType.FORWARD -> "[转发]"
+        ContentMessageType.RED_PACKET -> "[红包]"
+        ContentMessageType.MONEY_TRANSFER -> "[转账]"
         ContentMessageType.SYSTEM, null -> "[消息]"
     }
 }
