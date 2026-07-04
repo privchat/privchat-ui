@@ -17,6 +17,21 @@ val PrivChatStringsViVn = PrivChatStrings(
     noData = "Không có dữ liệu",
     networkError = "Lỗi mạng",
 
+    // Thông báo lỗi
+    sendSmsCodeFailed = "Gửi mã xác minh thất bại, vui lòng thử lại sau",
+    connectServerFailed = "Kết nối máy chủ thất bại, vui lòng kiểm tra mạng",
+    sdkInitFailed = "Khởi tạo thất bại, vui lòng thử lại sau",
+    switchAccountFailed = "Chuyển tài khoản thất bại, vui lòng thử lại sau",
+    logoutFailed = "Đăng xuất thất bại, vui lòng thử lại sau",
+    loginFailed = "Đăng nhập thất bại, vui lòng thử lại sau",
+    friendRequestAcceptFailed = "Chấp nhận lời mời kết bạn thất bại, vui lòng thử lại sau",
+    friendRequestDeclineFailed = "Từ chối lời mời kết bạn thất bại, vui lòng thử lại sau",
+    messageRecallFailed = "Thu hồi tin nhắn thất bại, vui lòng thử lại sau",
+    qrImageDecodeFailed = "Đọc ảnh thất bại, vui lòng thử lại",
+    saveFailed = "Lưu thất bại, vui lòng thử lại",
+    operationFailed = "Thao tác thất bại, vui lòng thử lại sau",
+    smsCodeError = "Mã xác minh không đúng, vui lòng nhập lại",
+
     // Điều hướng
     tabConversation = "Tin nhắn",
     tabContact = "Danh bạ",
@@ -258,33 +273,6 @@ val PrivChatStringsViVn = PrivChatStrings(
     profileEditAvatarHint = "Nhấn để đổi ảnh đại diện",
 
     // Đổi mật khẩu
-    changePasswordTitle = "Đổi mật khẩu",
-    changePasswordNew = "Mật khẩu mới",
-    changePasswordConfirm = "Xác nhận mật khẩu",
-    changePasswordSmsCode = "Mã xác minh",
-    changePasswordSendCode = "Gửi mã",
-    changePasswordSubmit = "Xác nhận",
-    changePasswordSuccess = "Đổi mật khẩu thành công",
-    changePasswordMismatch = "Mật khẩu không khớp",
-
-    // Đặt mật khẩu (lần đầu)
-    setPasswordTitle = "Đặt mật khẩu",
-    setPasswordHint = "Đặt mật khẩu để đăng nhập bằng tài khoản",
-    setPasswordSubmit = "Xác nhận",
-    setPasswordSuccess = "Đặt mật khẩu thành công",
-
-    // Đặt biệt danh (lần đầu)
-    setNicknameTitle = "Đặt biệt danh",
-    setNicknameHint = "Hãy đặt tên cho mình",
-    setNicknameSubmit = "Hoàn thành",
-    setNicknameError = "Biệt danh phải dài 2-32 ký tự",
-
-    // Required Actions — Unsupported
-    requiredActionUnsupportedTitle = "Cần cập nhật ứng dụng",
-    requiredActionUnsupportedMessage = "Tài khoản của bạn có một thao tác cần xử lý mà phiên bản hiện tại chưa hỗ trợ. Vui lòng cập nhật PrivChat để tiếp tục.",
-    requiredActionUnsupportedReload = "Đã cập nhật, tải lại",
-
-    // Quyền bạn bè
     permissionAllowAny = "Cho phép tất cả",
     permissionDenyAny = "Từ chối tất cả",
     permissionRequireRequest = "Yêu cầu xác minh",
@@ -314,38 +302,69 @@ val PrivChatStringsViVn = PrivChatStrings(
     contactUsServiceTime = "Giờ phục vụ: Ngày làm việc 9:00 - 18:00",
     contactUsChatNow = "Chat ngay",
 
-    // Thời gian
-    timeYesterday = "Hôm qua",
-    timeToday = "Hôm nay",
-    timeSunday = "CN",
-    timeMonday = "T2",
-    timeTuesday = "T3",
-    timeWednesday = "T4",
-    timeThursday = "T5",
-    timeFriday = "T6",
-    timeSaturday = "T7",
-    systemTemplates = mapOf(
-        "system.member_invited" to "{0} đã mời {1+} vào nhóm",
-        "system.member_joined"  to "{0} đã tham gia nhóm",
-        "system.member_left"    to "{0} đã rời nhóm",
-        "system.member_kicked"  to "{0} đã xóa {1+} khỏi nhóm",
-        "system.owner_transferred" to "{0} đã chuyển quyền quản trị cho {1}",
-        "system.message_recalled"  to "{0} đã thu hồi một tin nhắn",
+    auxiliary = PrivChatAuxiliaryStrings(
+        changePasswordTitle = "Đổi mật khẩu",
+        changePasswordNew = "Mật khẩu mới",
+        changePasswordConfirm = "Xác nhận mật khẩu",
+        changePasswordSmsCode = "Mã xác minh",
+        changePasswordSendCode = "Gửi mã",
+        changePasswordSubmit = "Xác nhận",
+        changePasswordSuccess = "Đổi mật khẩu thành công",
+        changePasswordMismatch = "Mật khẩu không khớp",
+
+        // Đặt mật khẩu (lần đầu)
+        setPasswordTitle = "Đặt mật khẩu",
+        setPasswordHint = "Đặt mật khẩu để đăng nhập bằng tài khoản",
+        setPasswordSubmit = "Xác nhận",
+        setPasswordSuccess = "Đặt mật khẩu thành công",
+
+        // Đặt biệt danh (lần đầu)
+        setNicknameTitle = "Đặt biệt danh",
+        setNicknameHint = "Hãy đặt tên cho mình",
+        setNicknameSubmit = "Hoàn thành",
+        setNicknameError = "Biệt danh phải dài 2-32 ký tự",
+
+        // Required Actions — Unsupported
+        requiredActionUnsupportedTitle = "Cần cập nhật ứng dụng",
+        requiredActionUnsupportedMessage = "Tài khoản của bạn có một thao tác cần xử lý mà phiên bản hiện tại chưa hỗ trợ. Vui lòng cập nhật PrivChat để tiếp tục.",
+        requiredActionUnsupportedReload = "Đã cập nhật, tải lại",
+
+        // Quyền bạn bè
+
+
+        // Thời gian
+        timeYesterday = "Hôm qua",
+        timeToday = "Hôm nay",
+        timeSunday = "CN",
+        timeMonday = "T2",
+        timeTuesday = "T3",
+        timeWednesday = "T4",
+        timeThursday = "T5",
+        timeFriday = "T6",
+        timeSaturday = "T7",
+        systemTemplates = mapOf(
+            "system.member_invited" to "{0} đã mời {1+} vào nhóm",
+            "system.member_joined"  to "{0} đã tham gia nhóm",
+            "system.member_left"    to "{0} đã rời nhóm",
+            "system.member_kicked"  to "{0} đã xóa {1+} khỏi nhóm",
+            "system.owner_transferred" to "{0} đã chuyển quyền quản trị cho {1}",
+            "system.message_recalled"  to "{0} đã thu hồi một tin nhắn",
+        ),
+        systemListSeparator = ", ",
+        previewImage = "[Hình ảnh]",
+        previewVideo = "[Video]",
+        previewVoice = "[Giọng nói]",
+        previewVoiceWithDuration = "[Giọng nói] {0}\"",
+        previewFile = "[Tệp]",
+        previewFileWithName = "[Tệp] {0}",
+        previewSticker = "[Nhãn dán]",
+        previewLocation = "[Vị trí]",
+        previewLocationWithAddress = "[Vị trí] {0}",
+        previewLink = "[Liên kết] {0}",
+        previewContactCard = "[Danh thiếp]",
+        previewRedPacket = "[Lì xì]",
+        previewSystemFallback = "[Hệ thống]",
+        previewUnknown = "[Tin nhắn]",
+        previewRecalled = "đã thu hồi một tin nhắn",
     ),
-    systemListSeparator = ", ",
-    previewImage = "[Hình ảnh]",
-    previewVideo = "[Video]",
-    previewVoice = "[Giọng nói]",
-    previewVoiceWithDuration = "[Giọng nói] {0}\"",
-    previewFile = "[Tệp]",
-    previewFileWithName = "[Tệp] {0}",
-    previewSticker = "[Nhãn dán]",
-    previewLocation = "[Vị trí]",
-    previewLocationWithAddress = "[Vị trí] {0}",
-    previewLink = "[Liên kết] {0}",
-    previewContactCard = "[Danh thiếp]",
-    previewRedPacket = "[Lì xì]",
-    previewSystemFallback = "[Hệ thống]",
-    previewUnknown = "[Tin nhắn]",
-    previewRecalled = "đã thu hồi một tin nhắn",
 )

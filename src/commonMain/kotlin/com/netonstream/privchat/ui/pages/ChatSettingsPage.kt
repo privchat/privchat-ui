@@ -3,6 +3,7 @@ package com.netonstream.privchat.ui.pages
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.dto.ChannelListEntry
 import com.netonstream.privchat.sdk.dto.GroupSettingsUpdateInput
+import com.netonstream.privchat.ui.error.UserFacingError
 import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.components.ChatAvatar
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
@@ -116,7 +117,7 @@ fun ChatSettingsPage(
             withContext(Dispatchers.Default) {
                 PrivChat.client.groupUpdateSettings(input)
             }.onSuccess { onOk() }
-                .onFailure { Toast.error(it.message ?: strings.groupSettingsUpdateFailed) }
+                .onFailure { Toast.error(UserFacingError.message(it, strings.groupSettingsUpdateFailed)) }
         }
     }
 

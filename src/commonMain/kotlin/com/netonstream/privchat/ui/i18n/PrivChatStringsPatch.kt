@@ -10,6 +10,55 @@ import androidx.compose.runtime.Immutable
  * See gearui-kit `docs/I18N_INTEGRATION.md`.
  */
 @Immutable
+data class PrivChatAuxiliaryStringsPatch(
+    val changePasswordTitle: String? = null,
+    val changePasswordNew: String? = null,
+    val changePasswordConfirm: String? = null,
+    val changePasswordSmsCode: String? = null,
+    val changePasswordSendCode: String? = null,
+    val changePasswordSubmit: String? = null,
+    val changePasswordSuccess: String? = null,
+    val changePasswordMismatch: String? = null,
+    val setPasswordTitle: String? = null,
+    val setPasswordHint: String? = null,
+    val setPasswordSubmit: String? = null,
+    val setPasswordSuccess: String? = null,
+    val setNicknameTitle: String? = null,
+    val setNicknameHint: String? = null,
+    val setNicknameSubmit: String? = null,
+    val setNicknameError: String? = null,
+    val requiredActionUnsupportedTitle: String? = null,
+    val requiredActionUnsupportedMessage: String? = null,
+    val requiredActionUnsupportedReload: String? = null,
+    val timeYesterday: String? = null,
+    val timeToday: String? = null,
+    val timeSunday: String? = null,
+    val timeMonday: String? = null,
+    val timeTuesday: String? = null,
+    val timeWednesday: String? = null,
+    val timeThursday: String? = null,
+    val timeFriday: String? = null,
+    val timeSaturday: String? = null,
+    val systemTemplates: Map<String, String>? = null,
+    val systemListSeparator: String? = null,
+    val previewImage: String? = null,
+    val previewVideo: String? = null,
+    val previewVoice: String? = null,
+    val previewVoiceWithDuration: String? = null,
+    val previewFile: String? = null,
+    val previewFileWithName: String? = null,
+    val previewSticker: String? = null,
+    val previewLocation: String? = null,
+    val previewLocationWithAddress: String? = null,
+    val previewLink: String? = null,
+    val previewContactCard: String? = null,
+    val previewRedPacket: String? = null,
+    val previewSystemFallback: String? = null,
+    val previewUnknown: String? = null,
+    val previewRecalled: String? = null,
+)
+
+@Immutable
 data class PrivChatStringsPatch(
     val appName: String? = null,
     val confirm: String? = null,
@@ -22,6 +71,19 @@ data class PrivChatStringsPatch(
     val retry: String? = null,
     val noData: String? = null,
     val networkError: String? = null,
+    val sendSmsCodeFailed: String? = null,
+    val connectServerFailed: String? = null,
+    val sdkInitFailed: String? = null,
+    val switchAccountFailed: String? = null,
+    val logoutFailed: String? = null,
+    val loginFailed: String? = null,
+    val friendRequestAcceptFailed: String? = null,
+    val friendRequestDeclineFailed: String? = null,
+    val messageRecallFailed: String? = null,
+    val qrImageDecodeFailed: String? = null,
+    val saveFailed: String? = null,
+    val operationFailed: String? = null,
+    val smsCodeError: String? = null,
     val tabConversation: String? = null,
     val tabContact: String? = null,
     val tabMe: String? = null,
@@ -220,55 +282,54 @@ data class PrivChatStringsPatch(
     val contactUsChatNow: String? = null,
     val profileEditSave: String? = null,
     val profileEditAvatarHint: String? = null,
-    val changePasswordTitle: String? = null,
-    val changePasswordNew: String? = null,
-    val changePasswordConfirm: String? = null,
-    val changePasswordSmsCode: String? = null,
-    val changePasswordSendCode: String? = null,
-    val changePasswordSubmit: String? = null,
-    val changePasswordSuccess: String? = null,
-    val changePasswordMismatch: String? = null,
-    val setPasswordTitle: String? = null,
-    val setPasswordHint: String? = null,
-    val setPasswordSubmit: String? = null,
-    val setPasswordSuccess: String? = null,
-    val setNicknameTitle: String? = null,
-    val setNicknameHint: String? = null,
-    val setNicknameSubmit: String? = null,
-    val setNicknameError: String? = null,
-    val requiredActionUnsupportedTitle: String? = null,
-    val requiredActionUnsupportedMessage: String? = null,
-    val requiredActionUnsupportedReload: String? = null,
-    val timeYesterday: String? = null,
-    val timeToday: String? = null,
-    val timeSunday: String? = null,
-    val timeMonday: String? = null,
-    val timeTuesday: String? = null,
-    val timeWednesday: String? = null,
-    val timeThursday: String? = null,
-    val timeFriday: String? = null,
-    val timeSaturday: String? = null,
-    /** 系统消息模板覆盖（patch 优先于内置语言包；只覆盖给定 key，未给的保留原值）。 */
-    val systemTemplates: Map<String, String>? = null,
-    /** 列表展开占位符 `{n+}` 的元素分隔符覆盖。 */
-    val systemListSeparator: String? = null,
-    // 会话列表预览覆盖
-    val previewImage: String? = null,
-    val previewVideo: String? = null,
-    val previewVoice: String? = null,
-    val previewVoiceWithDuration: String? = null,
-    val previewFile: String? = null,
-    val previewFileWithName: String? = null,
-    val previewSticker: String? = null,
-    val previewLocation: String? = null,
-    val previewLocationWithAddress: String? = null,
-    val previewLink: String? = null,
-    val previewContactCard: String? = null,
-    val previewRedPacket: String? = null,
-    val previewSystemFallback: String? = null,
-    val previewUnknown: String? = null,
-    val previewRecalled: String? = null,
-)
+    val auxiliary: PrivChatAuxiliaryStringsPatch? = null,
+) {
+    val changePasswordTitle: String? get() = auxiliary?.changePasswordTitle
+    val changePasswordNew: String? get() = auxiliary?.changePasswordNew
+    val changePasswordConfirm: String? get() = auxiliary?.changePasswordConfirm
+    val changePasswordSmsCode: String? get() = auxiliary?.changePasswordSmsCode
+    val changePasswordSendCode: String? get() = auxiliary?.changePasswordSendCode
+    val changePasswordSubmit: String? get() = auxiliary?.changePasswordSubmit
+    val changePasswordSuccess: String? get() = auxiliary?.changePasswordSuccess
+    val changePasswordMismatch: String? get() = auxiliary?.changePasswordMismatch
+    val setPasswordTitle: String? get() = auxiliary?.setPasswordTitle
+    val setPasswordHint: String? get() = auxiliary?.setPasswordHint
+    val setPasswordSubmit: String? get() = auxiliary?.setPasswordSubmit
+    val setPasswordSuccess: String? get() = auxiliary?.setPasswordSuccess
+    val setNicknameTitle: String? get() = auxiliary?.setNicknameTitle
+    val setNicknameHint: String? get() = auxiliary?.setNicknameHint
+    val setNicknameSubmit: String? get() = auxiliary?.setNicknameSubmit
+    val setNicknameError: String? get() = auxiliary?.setNicknameError
+    val requiredActionUnsupportedTitle: String? get() = auxiliary?.requiredActionUnsupportedTitle
+    val requiredActionUnsupportedMessage: String? get() = auxiliary?.requiredActionUnsupportedMessage
+    val requiredActionUnsupportedReload: String? get() = auxiliary?.requiredActionUnsupportedReload
+    val timeYesterday: String? get() = auxiliary?.timeYesterday
+    val timeToday: String? get() = auxiliary?.timeToday
+    val timeSunday: String? get() = auxiliary?.timeSunday
+    val timeMonday: String? get() = auxiliary?.timeMonday
+    val timeTuesday: String? get() = auxiliary?.timeTuesday
+    val timeWednesday: String? get() = auxiliary?.timeWednesday
+    val timeThursday: String? get() = auxiliary?.timeThursday
+    val timeFriday: String? get() = auxiliary?.timeFriday
+    val timeSaturday: String? get() = auxiliary?.timeSaturday
+    val systemTemplates: Map<String, String>? get() = auxiliary?.systemTemplates
+    val systemListSeparator: String? get() = auxiliary?.systemListSeparator
+    val previewImage: String? get() = auxiliary?.previewImage
+    val previewVideo: String? get() = auxiliary?.previewVideo
+    val previewVoice: String? get() = auxiliary?.previewVoice
+    val previewVoiceWithDuration: String? get() = auxiliary?.previewVoiceWithDuration
+    val previewFile: String? get() = auxiliary?.previewFile
+    val previewFileWithName: String? get() = auxiliary?.previewFileWithName
+    val previewSticker: String? get() = auxiliary?.previewSticker
+    val previewLocation: String? get() = auxiliary?.previewLocation
+    val previewLocationWithAddress: String? get() = auxiliary?.previewLocationWithAddress
+    val previewLink: String? get() = auxiliary?.previewLink
+    val previewContactCard: String? get() = auxiliary?.previewContactCard
+    val previewRedPacket: String? get() = auxiliary?.previewRedPacket
+    val previewSystemFallback: String? get() = auxiliary?.previewSystemFallback
+    val previewUnknown: String? get() = auxiliary?.previewUnknown
+    val previewRecalled: String? get() = auxiliary?.previewRecalled
+}
 
 val PrivChatStringsPatch.isEmpty: Boolean
     get() = appName == null &&
@@ -282,6 +343,19 @@ val PrivChatStringsPatch.isEmpty: Boolean
         retry == null &&
         noData == null &&
         networkError == null &&
+        sendSmsCodeFailed == null &&
+        connectServerFailed == null &&
+        sdkInitFailed == null &&
+        switchAccountFailed == null &&
+        logoutFailed == null &&
+        loginFailed == null &&
+        friendRequestAcceptFailed == null &&
+        friendRequestDeclineFailed == null &&
+        messageRecallFailed == null &&
+        qrImageDecodeFailed == null &&
+        saveFailed == null &&
+        operationFailed == null &&
+        smsCodeError == null &&
         tabConversation == null &&
         tabContact == null &&
         tabMe == null &&
@@ -542,6 +616,19 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         retry = patch.retry ?: retry,
         noData = patch.noData ?: noData,
         networkError = patch.networkError ?: networkError,
+        sendSmsCodeFailed = patch.sendSmsCodeFailed ?: sendSmsCodeFailed,
+        connectServerFailed = patch.connectServerFailed ?: connectServerFailed,
+        sdkInitFailed = patch.sdkInitFailed ?: sdkInitFailed,
+        switchAccountFailed = patch.switchAccountFailed ?: switchAccountFailed,
+        logoutFailed = patch.logoutFailed ?: logoutFailed,
+        loginFailed = patch.loginFailed ?: loginFailed,
+        friendRequestAcceptFailed = patch.friendRequestAcceptFailed ?: friendRequestAcceptFailed,
+        friendRequestDeclineFailed = patch.friendRequestDeclineFailed ?: friendRequestDeclineFailed,
+        messageRecallFailed = patch.messageRecallFailed ?: messageRecallFailed,
+        qrImageDecodeFailed = patch.qrImageDecodeFailed ?: qrImageDecodeFailed,
+        saveFailed = patch.saveFailed ?: saveFailed,
+        operationFailed = patch.operationFailed ?: operationFailed,
+        smsCodeError = patch.smsCodeError ?: smsCodeError,
         tabConversation = patch.tabConversation ?: tabConversation,
         tabContact = patch.tabContact ?: tabContact,
         tabMe = patch.tabMe ?: tabMe,
@@ -742,6 +829,15 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         contactUsChatNow = patch.contactUsChatNow ?: contactUsChatNow,
         profileEditSave = patch.profileEditSave ?: profileEditSave,
         profileEditAvatarHint = patch.profileEditAvatarHint ?: profileEditAvatarHint,
+        auxiliary = auxiliary.merge(patch.auxiliary),
+    )
+}
+
+private fun PrivChatAuxiliaryStrings.merge(
+    patch: PrivChatAuxiliaryStringsPatch?,
+): PrivChatAuxiliaryStrings {
+    if (patch == null) return this
+    return copy(
         changePasswordTitle = patch.changePasswordTitle ?: changePasswordTitle,
         changePasswordNew = patch.changePasswordNew ?: changePasswordNew,
         changePasswordConfirm = patch.changePasswordConfirm ?: changePasswordConfirm,
@@ -770,9 +866,7 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         timeThursday = patch.timeThursday ?: timeThursday,
         timeFriday = patch.timeFriday ?: timeFriday,
         timeSaturday = patch.timeSaturday ?: timeSaturday,
-        systemTemplates = patch.systemTemplates
-            ?.let { override -> systemTemplates + override }
-            ?: systemTemplates,
+        systemTemplates = patch.systemTemplates ?: systemTemplates,
         systemListSeparator = patch.systemListSeparator ?: systemListSeparator,
         previewImage = patch.previewImage ?: previewImage,
         previewVideo = patch.previewVideo ?: previewVideo,

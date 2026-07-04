@@ -17,6 +17,21 @@ val PrivChatStringsZhHant = PrivChatStrings(
     noData = "暫無資料",
     networkError = "網路錯誤",
 
+    // 錯誤提示
+    sendSmsCodeFailed = "傳送驗證碼失敗，請稍後再試",
+    connectServerFailed = "連線伺服器失敗，請檢查網路",
+    sdkInitFailed = "初始化失敗，請稍後再試",
+    switchAccountFailed = "切換帳號失敗，請稍後再試",
+    logoutFailed = "登出失敗，請稍後再試",
+    loginFailed = "登入失敗，請稍後再試",
+    friendRequestAcceptFailed = "接受好友請求失敗，請稍後再試",
+    friendRequestDeclineFailed = "拒絕好友請求失敗，請稍後再試",
+    messageRecallFailed = "撤回訊息失敗，請稍後再試",
+    qrImageDecodeFailed = "圖片解析失敗，請重試",
+    saveFailed = "儲存失敗，請重試",
+    operationFailed = "操作失敗，請稍後再試",
+    smsCodeError = "驗證碼錯誤，請重新輸入",
+
     // 導航
     tabConversation = "訊息",
     tabContact = "聯絡人",
@@ -258,33 +273,6 @@ val PrivChatStringsZhHant = PrivChatStrings(
     profileEditAvatarHint = "點擊修改頭像",
 
     // 修改密碼
-    changePasswordTitle = "修改密碼",
-    changePasswordNew = "新密碼",
-    changePasswordConfirm = "確認密碼",
-    changePasswordSmsCode = "驗證碼",
-    changePasswordSendCode = "發送驗證碼",
-    changePasswordSubmit = "確認修改",
-    changePasswordSuccess = "密碼修改成功",
-    changePasswordMismatch = "兩次密碼不一致",
-
-    // 設置密碼（首次）
-    setPasswordTitle = "設置密碼",
-    setPasswordHint = "設置密碼後可使用密碼登錄",
-    setPasswordSubmit = "確認設定",
-    setPasswordSuccess = "密碼設置成功",
-
-    // 設置暱稱（首次）
-    setNicknameTitle = "設置暱稱",
-    setNicknameHint = "給自己取個名字吧",
-    setNicknameSubmit = "完成",
-    setNicknameError = "暱稱需要 2-32 個字元",
-
-    // Required Actions — Unsupported
-    requiredActionUnsupportedTitle = "需要更新用戶端",
-    requiredActionUnsupportedMessage = "你的帳號有一個本版本暫不支援的待辦操作，請升級 PrivChat 後繼續使用。",
-    requiredActionUnsupportedReload = "已升級，重新載入",
-
-    // 好友權限
     permissionAllowAny = "允許任何人",
     permissionDenyAny = "拒絕任何人",
     permissionRequireRequest = "需要驗證",
@@ -314,38 +302,69 @@ val PrivChatStringsZhHant = PrivChatStrings(
     contactUsServiceTime = "服務時間：工作日 9:00 - 18:00",
     contactUsChatNow = "立即聯絡",
 
-    // 時間
-    timeYesterday = "昨天",
-    timeToday = "今天",
-    timeSunday = "週日",
-    timeMonday = "週一",
-    timeTuesday = "週二",
-    timeWednesday = "週三",
-    timeThursday = "週四",
-    timeFriday = "週五",
-    timeSaturday = "週六",
-    systemTemplates = mapOf(
-        "system.member_invited" to "{0} 邀請 {1+} 加入了群聊",
-        "system.member_joined"  to "{0} 加入了群聊",
-        "system.member_left"    to "{0} 退出了群聊",
-        "system.member_kicked"  to "{0} 將 {1+} 移出群聊",
-        "system.owner_transferred" to "{0} 已將群主轉讓給 {1}",
-        "system.message_recalled"  to "{0} 撤回了一則訊息",
+    auxiliary = PrivChatAuxiliaryStrings(
+        changePasswordTitle = "修改密碼",
+        changePasswordNew = "新密碼",
+        changePasswordConfirm = "確認密碼",
+        changePasswordSmsCode = "驗證碼",
+        changePasswordSendCode = "發送驗證碼",
+        changePasswordSubmit = "確認修改",
+        changePasswordSuccess = "密碼修改成功",
+        changePasswordMismatch = "兩次密碼不一致",
+
+        // 設置密碼（首次）
+        setPasswordTitle = "設置密碼",
+        setPasswordHint = "設置密碼後可使用密碼登錄",
+        setPasswordSubmit = "確認設定",
+        setPasswordSuccess = "密碼設置成功",
+
+        // 設置暱稱（首次）
+        setNicknameTitle = "設置暱稱",
+        setNicknameHint = "給自己取個名字吧",
+        setNicknameSubmit = "完成",
+        setNicknameError = "暱稱需要 2-32 個字元",
+
+        // Required Actions — Unsupported
+        requiredActionUnsupportedTitle = "需要更新用戶端",
+        requiredActionUnsupportedMessage = "你的帳號有一個本版本暫不支援的待辦操作，請升級 PrivChat 後繼續使用。",
+        requiredActionUnsupportedReload = "已升級，重新載入",
+
+        // 好友權限
+
+
+        // 時間
+        timeYesterday = "昨天",
+        timeToday = "今天",
+        timeSunday = "週日",
+        timeMonday = "週一",
+        timeTuesday = "週二",
+        timeWednesday = "週三",
+        timeThursday = "週四",
+        timeFriday = "週五",
+        timeSaturday = "週六",
+        systemTemplates = mapOf(
+            "system.member_invited" to "{0} 邀請 {1+} 加入了群聊",
+            "system.member_joined"  to "{0} 加入了群聊",
+            "system.member_left"    to "{0} 退出了群聊",
+            "system.member_kicked"  to "{0} 將 {1+} 移出群聊",
+            "system.owner_transferred" to "{0} 已將群主轉讓給 {1}",
+            "system.message_recalled"  to "{0} 撤回了一則訊息",
+        ),
+        systemListSeparator = "、",
+        previewImage = "[圖片]",
+        previewVideo = "[影片]",
+        previewVoice = "[語音]",
+        previewVoiceWithDuration = "[語音] {0}\"",
+        previewFile = "[檔案]",
+        previewFileWithName = "[檔案] {0}",
+        previewSticker = "[貼圖]",
+        previewLocation = "[位置]",
+        previewLocationWithAddress = "[位置] {0}",
+        previewLink = "[連結] {0}",
+        previewContactCard = "[名片]",
+        previewRedPacket = "[紅包]",
+        previewSystemFallback = "[系統訊息]",
+        previewUnknown = "[訊息]",
+        previewRecalled = "撤回了一則訊息",
     ),
-    systemListSeparator = "、",
-    previewImage = "[圖片]",
-    previewVideo = "[影片]",
-    previewVoice = "[語音]",
-    previewVoiceWithDuration = "[語音] {0}\"",
-    previewFile = "[檔案]",
-    previewFileWithName = "[檔案] {0}",
-    previewSticker = "[貼圖]",
-    previewLocation = "[位置]",
-    previewLocationWithAddress = "[位置] {0}",
-    previewLink = "[連結] {0}",
-    previewContactCard = "[名片]",
-    previewRedPacket = "[紅包]",
-    previewSystemFallback = "[系統訊息]",
-    previewUnknown = "[訊息]",
-    previewRecalled = "撤回了一則訊息",
 )

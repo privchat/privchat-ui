@@ -3,6 +3,7 @@ package com.netonstream.privchat.ui.pages
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.dto.UserEntry
 import com.netonstream.privchat.sdk.dto.FriendEntry
+import com.netonstream.privchat.ui.error.UserFacingError
 import com.netonstream.privchat.ui.components.ChatAvatar
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.gearui.components.icon.Icons
@@ -203,7 +204,7 @@ fun UserProfilePage(
                                             },
                                             onFailure = { error ->
                                                 isFollowingBot = false
-                                                Toast.error(error.message ?: strings.networkError)
+                                                Toast.error(UserFacingError.message(error, strings.networkError))
                                             }
                                         )
                                     }
@@ -238,7 +239,7 @@ fun UserProfilePage(
                                                 },
                                                 onFailure = { error ->
                                                     isAddingFriend = false
-                                                    Toast.error(error.message ?: strings.networkError)
+                                                    Toast.error(UserFacingError.message(error, strings.networkError))
                                                 }
                                             )
                                         }
@@ -307,7 +308,7 @@ fun UserProfilePage(
                                 },
                                 onFailure = { error ->
                                     isAddingFriend = false
-                                    Toast.error(error.message ?: strings.networkError)
+                                    Toast.error(UserFacingError.message(error, strings.networkError))
                                 }
                             )
                         }

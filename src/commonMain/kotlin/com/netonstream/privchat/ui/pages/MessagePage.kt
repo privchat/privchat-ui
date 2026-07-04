@@ -3,6 +3,7 @@ package com.netonstream.privchat.ui.pages
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.ConnectionState
 import com.netonstream.privchat.sdk.dto.ChannelListEntry
+import com.netonstream.privchat.ui.error.UserFacingError
 import com.netonstream.privchat.sdk.dto.ContentMessageType
 import com.netonstream.privchat.sdk.dto.GroupMemberEntry
 import com.netonstream.privchat.sdk.dto.MessageEntry
@@ -238,7 +239,7 @@ private fun dispatchTransferAction(
                         ?.takeIf { it.length <= 200 }
                     Toast.success(preview ?: "已完成")
                 } else {
-                    onError?.invoke("[${reply.code}] ${reply.message.ifBlank { "操作失败" }}")
+                    onError?.invoke("[${reply.code}] ${reply.message.ifBlank { PrivChatI18n.current.operationFailed }}")
                 }
             },
             onFailure = { e ->
@@ -821,7 +822,7 @@ fun MessagePage(
                             refreshPinnedMessages()
                             Toast.success(strings.messageUnpinSuccess)
                         }.onFailure { error ->
-                            Toast.error(error.message ?: strings.networkError)
+                            Toast.error(UserFacingError.message(error, strings.networkError))
                         }
                     }
                 },
@@ -959,7 +960,7 @@ fun MessagePage(
                                                         else strings.messageUnpinSuccess
                                                     )
                                                 }.onFailure { error ->
-                                                    Toast.error(error.message ?: strings.networkError)
+                                                    Toast.error(UserFacingError.message(error, strings.networkError))
                                                 }
                                             }
                                         }
@@ -1544,7 +1545,7 @@ private fun MessageRow(
                     withContext(Dispatchers.Default) {
                         PrivChat.client.retryMessage(message.id)
                     }.onFailure { error ->
-                        Toast.error(error.message ?: strings.networkError)
+                        Toast.error(UserFacingError.message(error, strings.networkError))
                     }
                 }
             },
@@ -1932,7 +1933,7 @@ private fun MessageReactionsRow(
                             }
                             result.onSuccess { refreshReactions() }
                                 .onFailure { error ->
-                                    Toast.error(error.message ?: strings.networkError)
+                                    Toast.error(UserFacingError.message(error, strings.networkError))
                                 }
                         }
                     }
@@ -2858,7 +2859,7 @@ private fun MessageActionsWrapper(
                         }
                         result.fold(
                             onSuccess = { Toast.success("已保存到相册") },
-                            onFailure = { Toast.error(it.message ?: "保存失败") },
+                            onFailure = { Toast.error(UserFacingError.message(it, PrivChatI18n.current.saveFailed)) },
                         )
                     }
                 }
@@ -2869,13 +2870,13 @@ private fun MessageActionsWrapper(
                                 PrivChat.client.deleteMessageLocal(message.id)
                             }.onSuccess { PrivChat.removeMessage(message.id) }
                                 .onFailure { error ->
-                                    Toast.error(error.message ?: strings.networkError)
+                                    Toast.error(UserFacingError.message(error, strings.networkError))
                                 }
                         } else {
                             withContext(Dispatchers.Default) {
                                 PrivChat.client.revokeMessage(message.id)
                             }.onFailure { error ->
-                                Toast.error(error.message ?: strings.networkError)
+                                Toast.error(UserFacingError.message(error, strings.networkError))
                             }
                         }
                     }
@@ -2886,7 +2887,7 @@ private fun MessageActionsWrapper(
                             PrivChat.client.deleteMessageLocal(message.id)
                         }.onSuccess { PrivChat.removeMessage(message.id) }
                             .onFailure { error ->
-                                Toast.error(error.message ?: strings.networkError)
+                                Toast.error(UserFacingError.message(error, strings.networkError))
                             }
                     }
                 }
@@ -2927,7 +2928,7 @@ private fun MessageActionsWrapper(
                         PrivChat.client.reactions(message.channelId, message.id)
                     }.onSuccess { chips -> PrivChat.setMessageReactions(message.id, chips) }
                 }.onFailure { error ->
-                    Toast.error(error.message ?: strings.networkError)
+                    Toast.error(UserFacingError.message(error, strings.networkError))
                 }
             }
         }

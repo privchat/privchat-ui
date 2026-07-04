@@ -303,7 +303,7 @@ fun parseMessageContent(content: String): ParsedContent {
  * 基于 MessageEntry（包含协议 messageType/extra）解析消息内容。
  *
  * 仅做内容类型解析，不读取 `isRevoked` 状态——撤回的显示与文案由 `RenderType.REVOKED`
- * 与 `textPreview`（看 `isRevoked`）负责。避免状态层污染内容解析。
+ * 与 i18n 的 `PrivChatStrings.previewOf`（看 `isRevoked`）负责。避免状态层污染内容解析。
  */
 fun parseMessageContent(message: MessageEntry): ParsedContent {
     val content = message.content
@@ -461,42 +461,6 @@ fun parseMessageContent(message: MessageEntry): ParsedContent {
  */
 val MessageEntry.parsedContent: ParsedContent
     get() = parseMessageContent(this)
-
-/**
- * MessageEntry 扩展：获取**纯文本**预览（**已弃用**，因为没有 i18n 上下文，
- * 还硬编码了中文 + 系统消息有泄漏 JSON 的风险）。
- *
- * 新代码请用 [com.netonstream.privchat.ui.i18n.PrivChatStrings] 的 `previewOf`
- * 扩展函数（在文件 PreviewRenderer.kt 里），它接受 i18n 字典 + 走系统消息
- * 模板渲染，保证：
- * 1. 永不返回原始 JSON（spec/SYSTEM_MESSAGE_SPEC §3）
- * 2. 所有标签走本地化（"[图片]" / "[Image]" 自动切换）
- * 3. 系统消息按 template + refs 渲染（与气泡同一渲染器）
- */
-@Deprecated(
-    "Use PrivChatStrings.previewOf(message) for i18n-aware preview; this hardcodes Chinese.",
-    ReplaceWith("PrivChatI18n.strings.previewOf(this)"),
-)
-val MessageEntry.textPreview: String
-    get() {
-        if (isRevoked) return "撤回了一条消息"
-        val parsed = parsedContent
-        return when (parsed.type) {
-            MessageType.TEXT -> parsed.text ?: ""
-            MessageType.IMAGE -> "[图片]"
-            MessageType.VIDEO -> "[视频]"
-            MessageType.VOICE -> "[语音] ${parsed.duration ?: 0}\""
-            MessageType.FILE -> "[文件] ${parsed.fileName ?: ""}"
-            MessageType.STICKER -> "[表情]"
-            MessageType.LOCATION -> "[位置] ${parsed.locationName ?: parsed.address ?: ""}"
-            MessageType.LINK -> "[链接] ${parsed.linkTitle ?: parsed.linkUrl ?: ""}"
-            MessageType.CONTACT -> "[名片] ${parsed.contactName ?: ""}"
-            MessageType.RED_PACKET -> "[红包] ${parsed.moneyTitle ?: ""}"
-            MessageType.MONEY_TRANSFER -> "[转账] ${parsed.moneyAmountText ?: ""}"
-            MessageType.SYSTEM -> "[系统消息]" // 注意：不再 fallback 到 raw content
-            MessageType.UNKNOWN -> "[消息]"
-        }
-    }
 
 // ========== 简易 JSON 提取工具 ==========
 

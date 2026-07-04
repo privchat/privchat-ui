@@ -8,6 +8,55 @@ import androidx.compose.runtime.Immutable
  * 参照 gearui-kit 的 I18n 架构实现
  */
 @Immutable
+data class PrivChatAuxiliaryStrings(
+    val changePasswordTitle: String,
+    val changePasswordNew: String,
+    val changePasswordConfirm: String,
+    val changePasswordSmsCode: String,
+    val changePasswordSendCode: String,
+    val changePasswordSubmit: String,
+    val changePasswordSuccess: String,
+    val changePasswordMismatch: String,
+    val setPasswordTitle: String,
+    val setPasswordHint: String,
+    val setPasswordSubmit: String,
+    val setPasswordSuccess: String,
+    val setNicknameTitle: String,
+    val setNicknameHint: String,
+    val setNicknameSubmit: String,
+    val setNicknameError: String,
+    val requiredActionUnsupportedTitle: String,
+    val requiredActionUnsupportedMessage: String,
+    val requiredActionUnsupportedReload: String,
+    val timeYesterday: String,
+    val timeToday: String,
+    val timeSunday: String,
+    val timeMonday: String,
+    val timeTuesday: String,
+    val timeWednesday: String,
+    val timeThursday: String,
+    val timeFriday: String,
+    val timeSaturday: String,
+    val systemTemplates: Map<String, String>,
+    val systemListSeparator: String,
+    val previewImage: String,
+    val previewVideo: String,
+    val previewVoice: String,
+    val previewVoiceWithDuration: String,
+    val previewFile: String,
+    val previewFileWithName: String,
+    val previewSticker: String,
+    val previewLocation: String,
+    val previewLocationWithAddress: String,
+    val previewLink: String,
+    val previewContactCard: String,
+    val previewRedPacket: String,
+    val previewSystemFallback: String,
+    val previewUnknown: String,
+    val previewRecalled: String,
+)
+
+@Immutable
 data class PrivChatStrings(
     // ========== 通用 ==========
     val appName: String,
@@ -21,6 +70,21 @@ data class PrivChatStrings(
     val retry: String,
     val noData: String,
     val networkError: String,
+
+    // ========== 错误提示（用户可见的业务失败文案；技术细节只进日志） ==========
+    val sendSmsCodeFailed: String,
+    val connectServerFailed: String,
+    val sdkInitFailed: String,
+    val switchAccountFailed: String,
+    val logoutFailed: String,
+    val loginFailed: String,
+    val friendRequestAcceptFailed: String,
+    val friendRequestDeclineFailed: String,
+    val messageRecallFailed: String,
+    val qrImageDecodeFailed: String,
+    val saveFailed: String,
+    val operationFailed: String,
+    val smsCodeError: String,
 
     // ========== 导航 ==========
     val tabConversation: String,
@@ -333,92 +397,55 @@ data class PrivChatStrings(
     val profileEditSave: String,
     val profileEditAvatarHint: String,
 
-    // ========== 修改密码 ==========
-    val changePasswordTitle: String,
-    val changePasswordNew: String,
-    val changePasswordConfirm: String,
-    val changePasswordSmsCode: String,
-    val changePasswordSendCode: String,
-    val changePasswordSubmit: String,
-    val changePasswordSuccess: String,
-    val changePasswordMismatch: String,
-
-    // ========== 设置密码（首次） ==========
-    val setPasswordTitle: String,
-    val setPasswordHint: String,
-    val setPasswordSubmit: String,
-    val setPasswordSuccess: String,
-
-    // ========== 设置昵称（首次） ==========
-    val setNicknameTitle: String,
-    val setNicknameHint: String,
-    val setNicknameSubmit: String,
-    /** 昵称校验失败统一文案（trim 后 2-32 字符）。 */
-    val setNicknameError: String,
-
-    // ========== Required Actions — Unsupported (fail-closed) ==========
-    /** Required action 未识别时的阻断页标题。 */
-    val requiredActionUnsupportedTitle: String,
-    /** Required action 未识别时的阻断页正文（不含变量；spec §4.4 fallback）。 */
-    val requiredActionUnsupportedMessage: String,
-    /** 重新加载按钮文案。 */
-    val requiredActionUnsupportedReload: String,
-
-    // ========== 时间 ==========
-    val timeYesterday: String,
-    val timeToday: String,
-    val timeSunday: String,
-    val timeMonday: String,
-    val timeTuesday: String,
-    val timeWednesday: String,
-    val timeThursday: String,
-    val timeFriday: String,
-    val timeSaturday: String,
-
-    /**
-     * 系统消息模板（spec/05-feature/SYSTEM_MESSAGE_SPEC §4）。
-     *
-     * key 形如 `system.member_invited`，value 内含 `{i}` 占位符（i 对应 `refs[i].text`），
-     * 或 `{n+}` 列表展开占位符（消费 refs[n..]，用 [systemListSeparator] 串联）。
-     * 渲染器先 lookup 这个 map 找模板，找不到时把 key 当字面量模板，再做占位符替换。
-     */
-    val systemTemplates: Map<String, String>,
-
-    /** 列表展开占位符 `{n+}` 的元素分隔符（zh="、", en=", "）。 */
-    val systemListSeparator: String,
-
-    // ========== 会话列表 / 预览（架构归正：SDK 不再做 preview 改写，UI 统一渲染）==========
-    /** `[图片]` */
-    val previewImage: String,
-    /** `[视频]` */
-    val previewVideo: String,
-    /** `[语音]` 简短版（无时长） */
-    val previewVoice: String,
-    /** `[语音] N"` 含时长版，`{0}` = 秒数 */
-    val previewVoiceWithDuration: String,
-    /** `[文件]` 简短版 */
-    val previewFile: String,
-    /** `[文件] {0}` 含文件名版（`{0}` = filename） */
-    val previewFileWithName: String,
-    /** `[表情]` */
-    val previewSticker: String,
-    /** `[位置]` 简短版 */
-    val previewLocation: String,
-    /** `[位置] {0}` 含地址版（`{0}` = address） */
-    val previewLocationWithAddress: String,
-    /** `[链接] {0}` 含标题 */
-    val previewLink: String,
-    /** `[名片]` */
-    val previewContactCard: String,
-    /** `[红包]` */
-    val previewRedPacket: String,
-    /** `[系统消息]` — 系统消息模板未命中时的兜底 */
-    val previewSystemFallback: String,
-    /** `[消息]` — 未知类型 */
-    val previewUnknown: String,
-    /** `撤回了一条消息` — 撤回兜底（不带具体用户名版本，用于 channel preview） */
-    val previewRecalled: String,
-)
+    // Grouped to keep JVM/DEX constructor parameters below the 255-register limit.
+    val auxiliary: PrivChatAuxiliaryStrings,
+) {
+    val changePasswordTitle: String get() = auxiliary.changePasswordTitle
+    val changePasswordNew: String get() = auxiliary.changePasswordNew
+    val changePasswordConfirm: String get() = auxiliary.changePasswordConfirm
+    val changePasswordSmsCode: String get() = auxiliary.changePasswordSmsCode
+    val changePasswordSendCode: String get() = auxiliary.changePasswordSendCode
+    val changePasswordSubmit: String get() = auxiliary.changePasswordSubmit
+    val changePasswordSuccess: String get() = auxiliary.changePasswordSuccess
+    val changePasswordMismatch: String get() = auxiliary.changePasswordMismatch
+    val setPasswordTitle: String get() = auxiliary.setPasswordTitle
+    val setPasswordHint: String get() = auxiliary.setPasswordHint
+    val setPasswordSubmit: String get() = auxiliary.setPasswordSubmit
+    val setPasswordSuccess: String get() = auxiliary.setPasswordSuccess
+    val setNicknameTitle: String get() = auxiliary.setNicknameTitle
+    val setNicknameHint: String get() = auxiliary.setNicknameHint
+    val setNicknameSubmit: String get() = auxiliary.setNicknameSubmit
+    val setNicknameError: String get() = auxiliary.setNicknameError
+    val requiredActionUnsupportedTitle: String get() = auxiliary.requiredActionUnsupportedTitle
+    val requiredActionUnsupportedMessage: String get() = auxiliary.requiredActionUnsupportedMessage
+    val requiredActionUnsupportedReload: String get() = auxiliary.requiredActionUnsupportedReload
+    val timeYesterday: String get() = auxiliary.timeYesterday
+    val timeToday: String get() = auxiliary.timeToday
+    val timeSunday: String get() = auxiliary.timeSunday
+    val timeMonday: String get() = auxiliary.timeMonday
+    val timeTuesday: String get() = auxiliary.timeTuesday
+    val timeWednesday: String get() = auxiliary.timeWednesday
+    val timeThursday: String get() = auxiliary.timeThursday
+    val timeFriday: String get() = auxiliary.timeFriday
+    val timeSaturday: String get() = auxiliary.timeSaturday
+    val systemTemplates: Map<String, String> get() = auxiliary.systemTemplates
+    val systemListSeparator: String get() = auxiliary.systemListSeparator
+    val previewImage: String get() = auxiliary.previewImage
+    val previewVideo: String get() = auxiliary.previewVideo
+    val previewVoice: String get() = auxiliary.previewVoice
+    val previewVoiceWithDuration: String get() = auxiliary.previewVoiceWithDuration
+    val previewFile: String get() = auxiliary.previewFile
+    val previewFileWithName: String get() = auxiliary.previewFileWithName
+    val previewSticker: String get() = auxiliary.previewSticker
+    val previewLocation: String get() = auxiliary.previewLocation
+    val previewLocationWithAddress: String get() = auxiliary.previewLocationWithAddress
+    val previewLink: String get() = auxiliary.previewLink
+    val previewContactCard: String get() = auxiliary.previewContactCard
+    val previewRedPacket: String get() = auxiliary.previewRedPacket
+    val previewSystemFallback: String get() = auxiliary.previewSystemFallback
+    val previewUnknown: String get() = auxiliary.previewUnknown
+    val previewRecalled: String get() = auxiliary.previewRecalled
+}
 
 /**
  * 内置语言包
@@ -438,6 +465,21 @@ object PrivChatStringPacks {
         retry = "重试",
         noData = "暂无数据",
         networkError = "网络错误",
+
+        // 错误提示
+        sendSmsCodeFailed = "发送验证码失败，请稍后重试",
+        connectServerFailed = "连接服务器失败，请检查网络",
+        sdkInitFailed = "初始化失败，请稍后重试",
+        switchAccountFailed = "切换账号失败，请稍后重试",
+        logoutFailed = "退出登录失败，请稍后重试",
+        loginFailed = "登录失败，请稍后重试",
+        friendRequestAcceptFailed = "接受好友请求失败，请稍后重试",
+        friendRequestDeclineFailed = "拒绝好友请求失败，请稍后重试",
+        messageRecallFailed = "撤回消息失败，请稍后重试",
+        qrImageDecodeFailed = "图片解析失败，请重试",
+        saveFailed = "保存失败，请重试",
+        operationFailed = "操作失败，请稍后重试",
+        smsCodeError = "验证码错误，请重新输入",
 
         // 导航
         tabConversation = "消息",
@@ -710,66 +752,68 @@ object PrivChatStringPacks {
         profileEditAvatarHint = "点击修改头像",
 
         // 修改密码
-        changePasswordTitle = "修改密码",
-        changePasswordNew = "新密码",
-        changePasswordConfirm = "确认密码",
-        changePasswordSmsCode = "验证码",
-        changePasswordSendCode = "发送验证码",
-        changePasswordSubmit = "确认修改",
-        changePasswordSuccess = "密码修改成功",
-        changePasswordMismatch = "两次密码不一致",
+        auxiliary = PrivChatAuxiliaryStrings(
+            changePasswordTitle = "修改密码",
+            changePasswordNew = "新密码",
+            changePasswordConfirm = "确认密码",
+            changePasswordSmsCode = "验证码",
+            changePasswordSendCode = "发送验证码",
+            changePasswordSubmit = "确认修改",
+            changePasswordSuccess = "密码修改成功",
+            changePasswordMismatch = "两次密码不一致",
 
-        // 设置密码（首次）
-        setPasswordTitle = "设置密码",
-        setPasswordHint = "设置密码后可使用密码登录",
-        setPasswordSubmit = "确认设置",
-        setPasswordSuccess = "密码设置成功",
+            // 设置密码（首次）
+            setPasswordTitle = "设置密码",
+            setPasswordHint = "设置密码后可使用密码登录",
+            setPasswordSubmit = "确认设置",
+            setPasswordSuccess = "密码设置成功",
 
-        // 设置昵称（首次）
-        setNicknameTitle = "设置昵称",
-        setNicknameHint = "给自己取个名字吧",
-        setNicknameSubmit = "完成",
-        setNicknameError = "昵称需要 2-32 个字符",
-        requiredActionUnsupportedTitle = "需要更新客户端",
-        requiredActionUnsupportedMessage = "你的账号有一个本版本暂不支持的待办操作，请升级 PrivChat 后继续使用。",
-        requiredActionUnsupportedReload = "已升级，重新加载",
+            // 设置昵称（首次）
+            setNicknameTitle = "设置昵称",
+            setNicknameHint = "给自己取个名字吧",
+            setNicknameSubmit = "完成",
+            setNicknameError = "昵称需要 2-32 个字符",
+            requiredActionUnsupportedTitle = "需要更新客户端",
+            requiredActionUnsupportedMessage = "你的账号有一个本版本暂不支持的待办操作，请升级 PrivChat 后继续使用。",
+            requiredActionUnsupportedReload = "已升级，重新加载",
 
-        // 时间
-        timeYesterday = "昨天",
-        timeToday = "今天",
-        timeSunday = "周日",
-        timeMonday = "周一",
-        timeTuesday = "周二",
-        timeWednesday = "周三",
-        timeThursday = "周四",
-        timeFriday = "周五",
-        timeSaturday = "周六",
-        systemTemplates = mapOf(
-            // {1+} 是列表展开占位符：消费 refs[1..] 用 listSeparator 串联，
-            // 用于人数不定的批量邀请（spec §4.1 的本地扩展）。
-            "system.member_invited" to "{0} 邀请 {1+} 加入了群聊",
-            "system.member_joined"  to "{0} 加入了群聊",
-            "system.member_left"    to "{0} 退出了群聊",
-            "system.member_kicked"  to "{0} 将 {1+} 移出群聊",
-            "system.owner_transferred" to "{0} 已将群主转让给 {1}",
-            "system.message_recalled"  to "{0} 撤回了一条消息",
+            // 时间
+            timeYesterday = "昨天",
+            timeToday = "今天",
+            timeSunday = "周日",
+            timeMonday = "周一",
+            timeTuesday = "周二",
+            timeWednesday = "周三",
+            timeThursday = "周四",
+            timeFriday = "周五",
+            timeSaturday = "周六",
+            systemTemplates = mapOf(
+                // {1+} 是列表展开占位符：消费 refs[1..] 用 listSeparator 串联，
+                // 用于人数不定的批量邀请（spec §4.1 的本地扩展）。
+                "system.member_invited" to "{0} 邀请 {1+} 加入了群聊",
+                "system.member_joined"  to "{0} 加入了群聊",
+                "system.member_left"    to "{0} 退出了群聊",
+                "system.member_kicked"  to "{0} 将 {1+} 移出群聊",
+                "system.owner_transferred" to "{0} 已将群主转让给 {1}",
+                "system.message_recalled"  to "{0} 撤回了一条消息",
+            ),
+            systemListSeparator = "、",
+            previewImage = "[图片]",
+            previewVideo = "[视频]",
+            previewVoice = "[语音]",
+            previewVoiceWithDuration = "[语音] {0}\"",
+            previewFile = "[文件]",
+            previewFileWithName = "[文件] {0}",
+            previewSticker = "[表情]",
+            previewLocation = "[位置]",
+            previewLocationWithAddress = "[位置] {0}",
+            previewLink = "[链接] {0}",
+            previewContactCard = "[名片]",
+            previewRedPacket = "[红包]",
+            previewSystemFallback = "[系统消息]",
+            previewUnknown = "[消息]",
+            previewRecalled = "撤回了一条消息",
         ),
-        systemListSeparator = "、",
-        previewImage = "[图片]",
-        previewVideo = "[视频]",
-        previewVoice = "[语音]",
-        previewVoiceWithDuration = "[语音] {0}\"",
-        previewFile = "[文件]",
-        previewFileWithName = "[文件] {0}",
-        previewSticker = "[表情]",
-        previewLocation = "[位置]",
-        previewLocationWithAddress = "[位置] {0}",
-        previewLink = "[链接] {0}",
-        previewContactCard = "[名片]",
-        previewRedPacket = "[红包]",
-        previewSystemFallback = "[系统消息]",
-        previewUnknown = "[消息]",
-        previewRecalled = "撤回了一条消息",
     )
 
     val English = PrivChatStrings(
@@ -785,6 +829,21 @@ object PrivChatStringPacks {
         retry = "Retry",
         noData = "No data",
         networkError = "Network error",
+
+        // Error messages
+        sendSmsCodeFailed = "Failed to send the verification code. Please try again later.",
+        connectServerFailed = "Failed to connect to the server. Please check your network.",
+        sdkInitFailed = "Initialization failed. Please try again later.",
+        switchAccountFailed = "Failed to switch account. Please try again later.",
+        logoutFailed = "Logout failed. Please try again later.",
+        loginFailed = "Login failed. Please try again later.",
+        friendRequestAcceptFailed = "Failed to accept the friend request. Please try again later.",
+        friendRequestDeclineFailed = "Failed to decline the friend request. Please try again later.",
+        messageRecallFailed = "Failed to recall the message. Please try again later.",
+        qrImageDecodeFailed = "Failed to read the image. Please try again.",
+        saveFailed = "Save failed. Please try again.",
+        operationFailed = "Operation failed. Please try again later.",
+        smsCodeError = "Incorrect verification code. Please try again.",
 
         // Navigation
         tabConversation = "Messages",
@@ -1057,64 +1116,66 @@ object PrivChatStringPacks {
         profileEditAvatarHint = "Tap to change avatar",
 
         // Change Password
-        changePasswordTitle = "Change Password",
-        changePasswordNew = "New Password",
-        changePasswordConfirm = "Confirm Password",
-        changePasswordSmsCode = "Verification Code",
-        changePasswordSendCode = "Send Code",
-        changePasswordSubmit = "Submit",
-        changePasswordSuccess = "Password changed successfully",
-        changePasswordMismatch = "Passwords don't match",
+        auxiliary = PrivChatAuxiliaryStrings(
+            changePasswordTitle = "Change Password",
+            changePasswordNew = "New Password",
+            changePasswordConfirm = "Confirm Password",
+            changePasswordSmsCode = "Verification Code",
+            changePasswordSendCode = "Send Code",
+            changePasswordSubmit = "Submit",
+            changePasswordSuccess = "Password changed successfully",
+            changePasswordMismatch = "Passwords don't match",
 
-        // Set Password (first time)
-        setPasswordTitle = "Set Password",
-        setPasswordHint = "Set a password to log in with your account",
-        setPasswordSubmit = "Confirm",
-        setPasswordSuccess = "Password set successfully",
+            // Set Password (first time)
+            setPasswordTitle = "Set Password",
+            setPasswordHint = "Set a password to log in with your account",
+            setPasswordSubmit = "Confirm",
+            setPasswordSuccess = "Password set successfully",
 
-        // Set Nickname (first time)
-        setNicknameTitle = "Set Nickname",
-        setNicknameHint = "Give yourself a name",
-        setNicknameSubmit = "Done",
-        setNicknameError = "Nickname must be 2-32 characters",
-        requiredActionUnsupportedTitle = "Client update required",
-        requiredActionUnsupportedMessage = "Your account has a pending action this version cannot complete. Please upgrade PrivChat to continue.",
-        requiredActionUnsupportedReload = "Upgraded, reload",
+            // Set Nickname (first time)
+            setNicknameTitle = "Set Nickname",
+            setNicknameHint = "Give yourself a name",
+            setNicknameSubmit = "Done",
+            setNicknameError = "Nickname must be 2-32 characters",
+            requiredActionUnsupportedTitle = "Client update required",
+            requiredActionUnsupportedMessage = "Your account has a pending action this version cannot complete. Please upgrade PrivChat to continue.",
+            requiredActionUnsupportedReload = "Upgraded, reload",
 
-        // Time
-        timeYesterday = "Yesterday",
-        timeToday = "Today",
-        timeSunday = "Sun",
-        timeMonday = "Mon",
-        timeTuesday = "Tue",
-        timeWednesday = "Wed",
-        timeThursday = "Thu",
-        timeFriday = "Fri",
-        timeSaturday = "Sat",
-        systemTemplates = mapOf(
-            "system.member_invited" to "{0} invited {1+} to the group",
-            "system.member_joined"  to "{0} joined the group",
-            "system.member_left"    to "{0} left the group",
-            "system.member_kicked"  to "{0} removed {1+} from the group",
-            "system.owner_transferred" to "{0} transferred ownership to {1}",
-            "system.message_recalled"  to "{0} recalled a message",
+            // Time
+            timeYesterday = "Yesterday",
+            timeToday = "Today",
+            timeSunday = "Sun",
+            timeMonday = "Mon",
+            timeTuesday = "Tue",
+            timeWednesday = "Wed",
+            timeThursday = "Thu",
+            timeFriday = "Fri",
+            timeSaturday = "Sat",
+            systemTemplates = mapOf(
+                "system.member_invited" to "{0} invited {1+} to the group",
+                "system.member_joined"  to "{0} joined the group",
+                "system.member_left"    to "{0} left the group",
+                "system.member_kicked"  to "{0} removed {1+} from the group",
+                "system.owner_transferred" to "{0} transferred ownership to {1}",
+                "system.message_recalled"  to "{0} recalled a message",
+            ),
+            systemListSeparator = ", ",
+            previewImage = "[Image]",
+            previewVideo = "[Video]",
+            previewVoice = "[Voice]",
+            previewVoiceWithDuration = "[Voice] {0}\"",
+            previewFile = "[File]",
+            previewFileWithName = "[File] {0}",
+            previewSticker = "[Sticker]",
+            previewLocation = "[Location]",
+            previewLocationWithAddress = "[Location] {0}",
+            previewLink = "[Link] {0}",
+            previewContactCard = "[Contact]",
+            previewRedPacket = "[Red Packet]",
+            previewSystemFallback = "[System]",
+            previewUnknown = "[Message]",
+            previewRecalled = "recalled a message",
         ),
-        systemListSeparator = ", ",
-        previewImage = "[Image]",
-        previewVideo = "[Video]",
-        previewVoice = "[Voice]",
-        previewVoiceWithDuration = "[Voice] {0}\"",
-        previewFile = "[File]",
-        previewFileWithName = "[File] {0}",
-        previewSticker = "[Sticker]",
-        previewLocation = "[Location]",
-        previewLocationWithAddress = "[Location] {0}",
-        previewLink = "[Link] {0}",
-        previewContactCard = "[Contact]",
-        previewRedPacket = "[Red Packet]",
-        previewSystemFallback = "[System]",
-        previewUnknown = "[Message]",
-        previewRecalled = "recalled a message",
     )
 
     val ChineseTraditional: PrivChatStrings = PrivChatStringsZhHant

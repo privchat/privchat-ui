@@ -1,7 +1,9 @@
 package com.netonstream.privchat.ui.i18n
 
+import kotlin.concurrent.Volatile
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.gearui.i18n.LocalFallbackLanguageTag
@@ -35,12 +37,24 @@ fun PrivChatI18nProvider(
         )
         base.merge(resolvePrivChatPatch(tag, fallback, overrides))
     }
+    // Keep a non-composable snapshot so background / error paths (coroutine folds,
+    // SDK callbacks) can resolve localized strings without a Composable scope.
+    SideEffect { PrivChatI18n.current = strings }
     CompositionLocalProvider(LocalPrivChatStrings provides strings, content = content)
 }
 
 object PrivChatI18n {
     val strings: PrivChatStrings
         @Composable get() = LocalPrivChatStrings.current
+
+    /**
+     * Non-composable snapshot of the active strings pack, updated by
+     * [PrivChatI18nProvider]. Use only where a Composable scope is unavailable
+     * (e.g. [com.netonstream.privchat.ui.error.UserFacingError]); prefer [strings] in UI.
+     */
+    @Volatile
+    var current: PrivChatStrings = PrivChatStringPacks.Chinese
+        internal set
 
     val languageTag: String
         @Composable get() = LocalLanguageTag.current
