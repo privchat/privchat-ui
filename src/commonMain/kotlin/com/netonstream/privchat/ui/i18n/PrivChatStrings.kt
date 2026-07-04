@@ -54,6 +54,19 @@ data class PrivChatAuxiliaryStrings(
     val previewSystemFallback: String,
     val previewUnknown: String,
     val previewRecalled: String,
+    val sendSmsCodeFailed: String,
+    val connectServerFailed: String,
+    val sdkInitFailed: String,
+    val switchAccountFailed: String,
+    val logoutFailed: String,
+    val loginFailed: String,
+    val friendRequestAcceptFailed: String,
+    val friendRequestDeclineFailed: String,
+    val messageRecallFailed: String,
+    val qrImageDecodeFailed: String,
+    val saveFailed: String,
+    val operationFailed: String,
+    val smsCodeError: String,
 )
 
 @Immutable
@@ -71,20 +84,6 @@ data class PrivChatStrings(
     val noData: String,
     val networkError: String,
 
-    // ========== 错误提示（用户可见的业务失败文案；技术细节只进日志） ==========
-    val sendSmsCodeFailed: String,
-    val connectServerFailed: String,
-    val sdkInitFailed: String,
-    val switchAccountFailed: String,
-    val logoutFailed: String,
-    val loginFailed: String,
-    val friendRequestAcceptFailed: String,
-    val friendRequestDeclineFailed: String,
-    val messageRecallFailed: String,
-    val qrImageDecodeFailed: String,
-    val saveFailed: String,
-    val operationFailed: String,
-    val smsCodeError: String,
 
     // ========== 导航 ==========
     val tabConversation: String,
@@ -445,6 +444,19 @@ data class PrivChatStrings(
     val previewSystemFallback: String get() = auxiliary.previewSystemFallback
     val previewUnknown: String get() = auxiliary.previewUnknown
     val previewRecalled: String get() = auxiliary.previewRecalled
+    val sendSmsCodeFailed: String get() = auxiliary.sendSmsCodeFailed
+    val connectServerFailed: String get() = auxiliary.connectServerFailed
+    val sdkInitFailed: String get() = auxiliary.sdkInitFailed
+    val switchAccountFailed: String get() = auxiliary.switchAccountFailed
+    val logoutFailed: String get() = auxiliary.logoutFailed
+    val loginFailed: String get() = auxiliary.loginFailed
+    val friendRequestAcceptFailed: String get() = auxiliary.friendRequestAcceptFailed
+    val friendRequestDeclineFailed: String get() = auxiliary.friendRequestDeclineFailed
+    val messageRecallFailed: String get() = auxiliary.messageRecallFailed
+    val qrImageDecodeFailed: String get() = auxiliary.qrImageDecodeFailed
+    val saveFailed: String get() = auxiliary.saveFailed
+    val operationFailed: String get() = auxiliary.operationFailed
+    val smsCodeError: String get() = auxiliary.smsCodeError
 }
 
 /**
@@ -466,20 +478,6 @@ object PrivChatStringPacks {
         noData = "暂无数据",
         networkError = "网络错误",
 
-        // 错误提示
-        sendSmsCodeFailed = "发送验证码失败，请稍后重试",
-        connectServerFailed = "连接服务器失败，请检查网络",
-        sdkInitFailed = "初始化失败，请稍后重试",
-        switchAccountFailed = "切换账号失败，请稍后重试",
-        logoutFailed = "退出登录失败，请稍后重试",
-        loginFailed = "登录失败，请稍后重试",
-        friendRequestAcceptFailed = "接受好友请求失败，请稍后重试",
-        friendRequestDeclineFailed = "拒绝好友请求失败，请稍后重试",
-        messageRecallFailed = "撤回消息失败，请稍后重试",
-        qrImageDecodeFailed = "图片解析失败，请重试",
-        saveFailed = "保存失败，请重试",
-        operationFailed = "操作失败，请稍后重试",
-        smsCodeError = "验证码错误，请重新输入",
 
         // 导航
         tabConversation = "消息",
@@ -813,6 +811,19 @@ object PrivChatStringPacks {
             previewSystemFallback = "[系统消息]",
             previewUnknown = "[消息]",
             previewRecalled = "撤回了一条消息",
+            sendSmsCodeFailed = "发送验证码失败，请稍后重试",
+            connectServerFailed = "连接服务器失败，请检查网络",
+            sdkInitFailed = "初始化失败，请稍后重试",
+            switchAccountFailed = "切换账号失败，请稍后重试",
+            logoutFailed = "退出登录失败，请稍后重试",
+            loginFailed = "登录失败，请稍后重试",
+            friendRequestAcceptFailed = "接受好友请求失败，请稍后重试",
+            friendRequestDeclineFailed = "拒绝好友请求失败，请稍后重试",
+            messageRecallFailed = "撤回消息失败，请稍后重试",
+            qrImageDecodeFailed = "图片解析失败，请重试",
+            saveFailed = "保存失败，请重试",
+            operationFailed = "操作失败，请稍后重试",
+            smsCodeError = "验证码错误，请重新输入",
         ),
     )
 
@@ -830,20 +841,6 @@ object PrivChatStringPacks {
         noData = "No data",
         networkError = "Network error",
 
-        // Error messages
-        sendSmsCodeFailed = "Failed to send the verification code. Please try again later.",
-        connectServerFailed = "Failed to connect to the server. Please check your network.",
-        sdkInitFailed = "Initialization failed. Please try again later.",
-        switchAccountFailed = "Failed to switch account. Please try again later.",
-        logoutFailed = "Logout failed. Please try again later.",
-        loginFailed = "Login failed. Please try again later.",
-        friendRequestAcceptFailed = "Failed to accept the friend request. Please try again later.",
-        friendRequestDeclineFailed = "Failed to decline the friend request. Please try again later.",
-        messageRecallFailed = "Failed to recall the message. Please try again later.",
-        qrImageDecodeFailed = "Failed to read the image. Please try again.",
-        saveFailed = "Save failed. Please try again.",
-        operationFailed = "Operation failed. Please try again later.",
-        smsCodeError = "Incorrect verification code. Please try again.",
 
         // Navigation
         tabConversation = "Messages",
@@ -1175,6 +1172,19 @@ object PrivChatStringPacks {
             previewSystemFallback = "[System]",
             previewUnknown = "[Message]",
             previewRecalled = "recalled a message",
+            sendSmsCodeFailed = "Failed to send the verification code. Please try again later.",
+            connectServerFailed = "Failed to connect to the server. Please check your network.",
+            sdkInitFailed = "Initialization failed. Please try again later.",
+            switchAccountFailed = "Failed to switch account. Please try again later.",
+            logoutFailed = "Logout failed. Please try again later.",
+            loginFailed = "Login failed. Please try again later.",
+            friendRequestAcceptFailed = "Failed to accept the friend request. Please try again later.",
+            friendRequestDeclineFailed = "Failed to decline the friend request. Please try again later.",
+            messageRecallFailed = "Failed to recall the message. Please try again later.",
+            qrImageDecodeFailed = "Failed to read the image. Please try again.",
+            saveFailed = "Save failed. Please try again.",
+            operationFailed = "Operation failed. Please try again later.",
+            smsCodeError = "Incorrect verification code. Please try again.",
         ),
     )
 

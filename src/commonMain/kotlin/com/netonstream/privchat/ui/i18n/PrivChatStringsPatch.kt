@@ -56,6 +56,19 @@ data class PrivChatAuxiliaryStringsPatch(
     val previewSystemFallback: String? = null,
     val previewUnknown: String? = null,
     val previewRecalled: String? = null,
+    val sendSmsCodeFailed: String? = null,
+    val connectServerFailed: String? = null,
+    val sdkInitFailed: String? = null,
+    val switchAccountFailed: String? = null,
+    val logoutFailed: String? = null,
+    val loginFailed: String? = null,
+    val friendRequestAcceptFailed: String? = null,
+    val friendRequestDeclineFailed: String? = null,
+    val messageRecallFailed: String? = null,
+    val qrImageDecodeFailed: String? = null,
+    val saveFailed: String? = null,
+    val operationFailed: String? = null,
+    val smsCodeError: String? = null,
 )
 
 @Immutable
@@ -71,19 +84,6 @@ data class PrivChatStringsPatch(
     val retry: String? = null,
     val noData: String? = null,
     val networkError: String? = null,
-    val sendSmsCodeFailed: String? = null,
-    val connectServerFailed: String? = null,
-    val sdkInitFailed: String? = null,
-    val switchAccountFailed: String? = null,
-    val logoutFailed: String? = null,
-    val loginFailed: String? = null,
-    val friendRequestAcceptFailed: String? = null,
-    val friendRequestDeclineFailed: String? = null,
-    val messageRecallFailed: String? = null,
-    val qrImageDecodeFailed: String? = null,
-    val saveFailed: String? = null,
-    val operationFailed: String? = null,
-    val smsCodeError: String? = null,
     val tabConversation: String? = null,
     val tabContact: String? = null,
     val tabMe: String? = null,
@@ -329,6 +329,19 @@ data class PrivChatStringsPatch(
     val previewSystemFallback: String? get() = auxiliary?.previewSystemFallback
     val previewUnknown: String? get() = auxiliary?.previewUnknown
     val previewRecalled: String? get() = auxiliary?.previewRecalled
+    val sendSmsCodeFailed: String? get() = auxiliary?.sendSmsCodeFailed
+    val connectServerFailed: String? get() = auxiliary?.connectServerFailed
+    val sdkInitFailed: String? get() = auxiliary?.sdkInitFailed
+    val switchAccountFailed: String? get() = auxiliary?.switchAccountFailed
+    val logoutFailed: String? get() = auxiliary?.logoutFailed
+    val loginFailed: String? get() = auxiliary?.loginFailed
+    val friendRequestAcceptFailed: String? get() = auxiliary?.friendRequestAcceptFailed
+    val friendRequestDeclineFailed: String? get() = auxiliary?.friendRequestDeclineFailed
+    val messageRecallFailed: String? get() = auxiliary?.messageRecallFailed
+    val qrImageDecodeFailed: String? get() = auxiliary?.qrImageDecodeFailed
+    val saveFailed: String? get() = auxiliary?.saveFailed
+    val operationFailed: String? get() = auxiliary?.operationFailed
+    val smsCodeError: String? get() = auxiliary?.smsCodeError
 }
 
 val PrivChatStringsPatch.isEmpty: Boolean
@@ -616,19 +629,6 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         retry = patch.retry ?: retry,
         noData = patch.noData ?: noData,
         networkError = patch.networkError ?: networkError,
-        sendSmsCodeFailed = patch.sendSmsCodeFailed ?: sendSmsCodeFailed,
-        connectServerFailed = patch.connectServerFailed ?: connectServerFailed,
-        sdkInitFailed = patch.sdkInitFailed ?: sdkInitFailed,
-        switchAccountFailed = patch.switchAccountFailed ?: switchAccountFailed,
-        logoutFailed = patch.logoutFailed ?: logoutFailed,
-        loginFailed = patch.loginFailed ?: loginFailed,
-        friendRequestAcceptFailed = patch.friendRequestAcceptFailed ?: friendRequestAcceptFailed,
-        friendRequestDeclineFailed = patch.friendRequestDeclineFailed ?: friendRequestDeclineFailed,
-        messageRecallFailed = patch.messageRecallFailed ?: messageRecallFailed,
-        qrImageDecodeFailed = patch.qrImageDecodeFailed ?: qrImageDecodeFailed,
-        saveFailed = patch.saveFailed ?: saveFailed,
-        operationFailed = patch.operationFailed ?: operationFailed,
-        smsCodeError = patch.smsCodeError ?: smsCodeError,
         tabConversation = patch.tabConversation ?: tabConversation,
         tabContact = patch.tabContact ?: tabContact,
         tabMe = patch.tabMe ?: tabMe,
@@ -883,5 +883,18 @@ private fun PrivChatAuxiliaryStrings.merge(
         previewSystemFallback = patch.previewSystemFallback ?: previewSystemFallback,
         previewUnknown = patch.previewUnknown ?: previewUnknown,
         previewRecalled = patch.previewRecalled ?: previewRecalled,
+        sendSmsCodeFailed = patch.sendSmsCodeFailed ?: sendSmsCodeFailed,
+        connectServerFailed = patch.connectServerFailed ?: connectServerFailed,
+        sdkInitFailed = patch.sdkInitFailed ?: sdkInitFailed,
+        switchAccountFailed = patch.switchAccountFailed ?: switchAccountFailed,
+        logoutFailed = patch.logoutFailed ?: logoutFailed,
+        loginFailed = patch.loginFailed ?: loginFailed,
+        friendRequestAcceptFailed = patch.friendRequestAcceptFailed ?: friendRequestAcceptFailed,
+        friendRequestDeclineFailed = patch.friendRequestDeclineFailed ?: friendRequestDeclineFailed,
+        messageRecallFailed = patch.messageRecallFailed ?: messageRecallFailed,
+        qrImageDecodeFailed = patch.qrImageDecodeFailed ?: qrImageDecodeFailed,
+        saveFailed = patch.saveFailed ?: saveFailed,
+        operationFailed = patch.operationFailed ?: operationFailed,
+        smsCodeError = patch.smsCodeError ?: smsCodeError,
     )
 }
