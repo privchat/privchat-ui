@@ -432,6 +432,9 @@ fun parseMessageContent(message: MessageEntry): ParsedContent {
                     ?: content,
                 systemTemplate = template,
                 systemRefs = refs,
+                // RP-7-B2：钱包类系统通知（红包领取/抢完/过期）带 red_packet ref，
+                // 其 target_id = redPacketId，供点击跳详情 + 详情页收到匹配通知重拉。
+                moneyRefId = refs?.firstOrNull { it.type == "red_packet" }?.targetId,
             )
         }
 

@@ -1567,11 +1567,11 @@ private fun MessageRow(
                 contentAlignment = Alignment.Center,
             ) {
                 MessageActionsWrapper(message = message, isSelf = isSelf, onRequestForward = onRequestForward, onReply = onReply, onReportMessage = onReportMessage) {
-                    SystemMessageRow(message = message, onUserClick = onAvatarClick)
+                    SystemMessageRow(message = message, onUserClick = onAvatarClick, onRedPacketClick = onRedPacketClick)
                 }
             }
         } else {
-            SystemMessageRow(message = message, onUserClick = onAvatarClick)
+            SystemMessageRow(message = message, onUserClick = onAvatarClick, onRedPacketClick = onRedPacketClick)
         }
         return
     }
@@ -1715,6 +1715,7 @@ private fun MessageRow(
 private fun SystemMessageRow(
     message: MessageEntry,
     onUserClick: ((ULong) -> Unit)? = null,
+    onRedPacketClick: ((String) -> Unit)? = null,
 ) {
     val strings = PrivChatI18n.strings
     val colors = Theme.colors
@@ -1746,6 +1747,7 @@ private fun SystemMessageRow(
                     textColor = colors.mutedForeground,
                     linkColor = colors.primary,
                     onUserClick = onUserClick,
+                    onRedPacketClick = onRedPacketClick,
                 )
                 else -> Text(
                     text = parsed.text ?: "",
@@ -1779,6 +1781,7 @@ private fun SystemTemplateText(
     textColor: Color,
     linkColor: Color,
     onUserClick: ((ULong) -> Unit)?,
+    onRedPacketClick: ((String) -> Unit)? = null,
 ) {
     val isI18nKey = template.contains('.') &&
         template.all { it.isLowerCase() || it.isDigit() || it == '.' || it == '_' }
@@ -1805,7 +1808,7 @@ private fun SystemTemplateText(
                 val tail = if (startIdx < refs.size) refs.subList(startIdx, refs.size) else emptyList()
                 tail.forEachIndexed { i, ref ->
                     if (i > 0) append(listSeparator)
-                    appendRefSpan(ref, linkStyle, onUserClick)
+                    appendRefSpan(ref, linkStyle, onUserClick, onRedPacketClick)
                 }
             } else {
                 // {i}: single ref
@@ -1813,7 +1816,7 @@ private fun SystemTemplateText(
                 if (ref == null) {
                     append(match.value) // 越界：保留占位符字面，不抛错
                 } else {
-                    appendRefSpan(ref, linkStyle, onUserClick)
+                    appendRefSpan(ref, linkStyle, onUserClick, onRedPacketClick)
                 }
             }
             cursor = match.range.last + 1
@@ -1835,13 +1838,15 @@ private fun SystemTemplateText(
 /**
  * 把一个 [com.netonstream.privchat.ui.models.MessageRef] 渲染为 AnnotatedString 片段。
  *
- * `user` 类型加 [LinkAnnotation.Clickable] 包裹（点击触发 [onUserClick]），其他类型纯文本。
+ * `user` 类型加 [LinkAnnotation.Clickable] 包裹（点击触发 [onUserClick]）；
+ * `red_packet` 类型点击触发 [onRedPacketClick]（target_id = redPacketId，跳红包详情，RP-7-B2）；其他类型纯文本。
  * Spec §4 + MESSAGE_REF_SPEC §3：未知类型降级为纯文本。
  */
 private fun com.tencent.kuikly.compose.ui.text.AnnotatedString.Builder.appendRefSpan(
     ref: com.netonstream.privchat.ui.models.MessageRef,
     linkStyle: TextLinkStyles,
     onUserClick: ((ULong) -> Unit)?,
+    onRedPacketClick: ((String) -> Unit)? = null,
 ) {
     when (ref.type) {
         "user" -> {
@@ -1852,6 +1857,21 @@ private fun com.tencent.kuikly.compose.ui.text.AnnotatedString.Builder.appendRef
                         tag = "user-${ref.targetId}",
                         styles = linkStyle,
                         linkInteractionListener = LinkInteractionListener { onUserClick(targetUid) },
+                    ),
+                ) {
+                    append(ref.text)
+                }
+            } else {
+                append(ref.text)
+            }
+        }
+        "red_packet" -> {
+            if (ref.targetId.isNotBlank() && onRedPacketClick != null) {
+                withLink(
+                    LinkAnnotation.Clickable(
+                        tag = "red_packet-${ref.targetId}",
+                        styles = linkStyle,
+                        linkInteractionListener = LinkInteractionListener { onRedPacketClick(ref.targetId) },
                     ),
                 ) {
                     append(ref.text)
