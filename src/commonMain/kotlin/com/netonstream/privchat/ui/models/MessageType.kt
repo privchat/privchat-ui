@@ -156,6 +156,11 @@ fun parseMessageType(content: String): MessageType {
                     content.contains("\"type\":\"tip\"") ||
                     content.contains("\"type\": \"tip\"") -> MessageType.SYSTEM
 
+            // RP-12 资金卡片：payload 以 redPacketId/transferId 为标识（无 "type":"red_packet"），
+            // 用于同步路径丢失 message_type 时按 content 兜底识别。
+            content.contains("\"redPacketId\"") -> MessageType.RED_PACKET
+            content.contains("\"transferId\"") -> MessageType.MONEY_TRANSFER
+
             // 默认当作纯文本处理
             else -> MessageType.TEXT
         }
@@ -169,7 +174,13 @@ fun parseMessageType(content: String): MessageType {
  */
 fun parseMessageType(messageType: Int, content: String, extra: String): MessageType {
     return when (messageType) {
-        PROTOCOL_TEXT -> MessageType.TEXT
+        // 正常 text；但 RP-12 资金卡片经 SDK 同步路径会被落成 message_type=0（历史 bug），
+        // content 仍带 redPacketId/transferId → 按 content 兜底纠正为资金卡片，避免渲染原始 JSON。
+        PROTOCOL_TEXT -> when {
+            content.contains("\"redPacketId\"") -> MessageType.RED_PACKET
+            content.contains("\"transferId\"") -> MessageType.MONEY_TRANSFER
+            else -> MessageType.TEXT
+        }
         PROTOCOL_IMAGE -> MessageType.IMAGE
         PROTOCOL_FILE -> inferFileOrVideo(content, extra)
         PROTOCOL_VOICE -> MessageType.VOICE
