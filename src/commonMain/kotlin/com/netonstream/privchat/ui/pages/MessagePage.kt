@@ -401,6 +401,26 @@ fun MessagePage(
         }
         map
     }
+    // 红包卡片实时状态：扫描会话内的领取/抢完/过期系统消息，推导每个红包的展示态。
+    // 2=已抢完/过期、1=当前用户已领取；无匹配=0（可领取，回退卡片快照）。卡片据此显示「已领取/已被抢完」。
+    val redPacketStatusMap = remember(sortedMessages, currentUserId) {
+        val map = HashMap<String, Int>()
+        val myId = currentUserId?.toString()
+        for (m in sortedMessages) {
+            val p = m.parsedContent
+            if (p.type != MessageType.SYSTEM) continue
+            val tpl = p.systemTemplate ?: continue
+            val rpId = p.systemRefs?.firstOrNull { it.type == "red_packet" }?.targetId ?: continue
+            when {
+                tpl.contains("抢完") || tpl.contains("过期") -> map[rpId] = 2
+                tpl.contains("领取") -> {
+                    val claimer = p.systemRefs?.firstOrNull { it.type == "user" }?.targetId
+                    if (myId != null && claimer == myId && (map[rpId] ?: 0) < 1) map[rpId] = 1
+                }
+            }
+        }
+        map
+    }
     // peer_user_id 由 channel 同步直接下发并持久化到 channel row，UI 直接读取，
     // 不再回退 channel_member / dmPeerUserId() 推断。
     val peerUserId = channel.peerUserId
@@ -892,6 +912,7 @@ fun MessagePage(
                                     isSelf = isSelf,
                                     showAvatar = !channel.isDm || !isSelf,
                                     channelDisplayName = channel.displayName,
+                                    redPacketStatusOf = { redPacketStatusMap[it] ?: 0 },
                                     onAvatarClick = if (!isSelf) onAvatarClick else null,
                                     onAvatarLongPress = if (!channel.isDm && !isSelf) { userId, name ->
                                         val ins = appendMention(inputText, name, userId)
@@ -1509,6 +1530,7 @@ private fun MessageRow(
     onImagePreview: ((MessageEntry) -> Unit)? = null,
     onRedPacketClick: ((String) -> Unit)? = null,
     onMoneyTransferClick: ((String) -> Unit)? = null,
+    redPacketStatusOf: ((String) -> Int)? = null,
     onReply: ((MessageEntry) -> Unit)? = null,
     replyLookup: ((String) -> MessageEntry?)? = null,
     senderLabelOf: ((ULong) -> String)? = null,
@@ -1672,6 +1694,7 @@ private fun MessageRow(
                             onRedPacketClick = onRedPacketClick,
                             onMoneyTransferClick = onMoneyTransferClick,
                             channelDisplayName = channelDisplayName,
+                            redPacketStatusOf = redPacketStatusOf,
                         )
                     }
                     if (flashAlpha > 0f) {

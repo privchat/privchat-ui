@@ -88,6 +88,8 @@ fun MessageContent(
     onMoneyTransferClick: ((String) -> Unit)? = null,
     // 会话展示名（DM 场景即对端昵称）：资金卡片用它显示「转账给 X」/「X 向你转账」，避免裸 uid。
     channelDisplayName: String = "",
+    // 红包卡片实时状态解析（由会话页据领取/抢完系统消息推导）：0/未知=可领取，1=我已领取，2=已抢完/过期。
+    redPacketStatusOf: ((String) -> Int)? = null,
 ) {
     val colors = Theme.colors
     val textColor = if (isSelf) colors.messageTextSelf else colors.messageTextOther
@@ -129,7 +131,7 @@ fun MessageContent(
             MessageType.LOCATION -> LocationContent(parsed, textColor, secondaryTextColor)
             MessageType.LINK -> LinkContent(parsed, textColor, secondaryTextColor)
             MessageType.CONTACT -> ContactContent(parsed, textColor, secondaryTextColor, onContactClick)
-            MessageType.RED_PACKET -> RedPacketMessageView(parsed, onRedPacketClick)
+            MessageType.RED_PACKET -> RedPacketMessageView(parsed, redPacketStatusOf, onRedPacketClick)
             MessageType.MONEY_TRANSFER -> MoneyTransferMessageView(parsed, isSelf, channelDisplayName, onMoneyTransferClick)
             MessageType.SYSTEM -> {
                 // 系统消息由 MessageRow 在 row 级早返回 SystemMessageRow 渲染，
@@ -1058,6 +1060,7 @@ private val TransferColor = Color(0xFFF5A623)
 @Composable
 private fun RedPacketMessageView(
     parsed: ParsedContent,
+    redPacketStatusOf: ((String) -> Int)?,
     onOpen: ((String) -> Unit)?,
 ) {
     val refId = parsed.moneyRefId
@@ -1068,10 +1071,15 @@ private fun RedPacketMessageView(
         0 -> "普通红包"
         else -> null
     }
-    val statusText = when (parsed.moneyStatus) {
-        "finished" -> "红包已被抢完"
-        "expired", "refunding" -> "红包已过期"
-        else -> if (onOpen != null) "领取红包" else "请在支持红包的版本查看"
+    // 实时状态优先（会话页据领取/抢完系统消息推导）：2=已抢完/过期、1=我已领取；否则回退 content 快照。
+    val liveStatus = refId?.let { redPacketStatusOf?.invoke(it) } ?: 0
+    val statusText = when {
+        liveStatus == 2 -> "红包已被抢完"
+        liveStatus == 1 -> "已领取，已存入余额"
+        parsed.moneyStatus == "finished" -> "红包已被抢完"
+        parsed.moneyStatus == "expired" || parsed.moneyStatus == "refunding" -> "红包已过期"
+        onOpen != null -> "领取红包"
+        else -> "请在支持红包的版本查看"
     }
     MoneyCardScaffold(icon = "🧧", bg = RedPacketColor, refId = refId, clickable = clickable, onOpen = onOpen) {
         Text(text = title, style = Typography.BodyMedium, color = Color.White)
