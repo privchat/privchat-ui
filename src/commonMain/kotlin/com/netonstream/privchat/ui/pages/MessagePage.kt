@@ -1625,8 +1625,10 @@ private fun MessageRow(
             // 图片/视频是「全幅媒体」气泡：内容本身带圆角铺满，不应再套 self/other 气泡底色，
             // 否则深色主题下 outgoing 黑底会在图片四周露出黑边。媒体气泡背景透明。
             val isMediaBubble = parsed.type == MessageType.IMAGE || parsed.type == MessageType.VIDEO
+            // 资金卡片（红包/转账）是独立卡片，自带底色/圆角，不套黑色文本气泡。
+            val isMoneyCard = parsed.type == MessageType.RED_PACKET || parsed.type == MessageType.MONEY_TRANSFER
             val bubbleBackground = when {
-                isMediaBubble -> Color.Transparent
+                isMediaBubble || isMoneyCard -> Color.Transparent
                 isSelf -> colors.messageBubbleSelf
                 else -> colors.messageBubbleOther
             }
@@ -1644,7 +1646,7 @@ private fun MessageRow(
                     // 媒体气泡（透明底 + 0 padding）不能套外层圆角 clip：图片本身在 ImageContent 内
                     // 已有圆角，外层 clip 会把贴边的 footer（时间/状态）右下角切掉。文字气泡保留圆角。
                     modifier = Modifier
-                        .then(if (isMediaBubble) Modifier else Modifier.clip(bubbleShape))
+                        .then(if (isMediaBubble || isMoneyCard) Modifier else Modifier.clip(bubbleShape))
                         .background(bubbleBackground),
                 ) {
                     Column {
@@ -1669,6 +1671,7 @@ private fun MessageRow(
                             onContactClick = onAvatarClick,
                             onRedPacketClick = onRedPacketClick,
                             onMoneyTransferClick = onMoneyTransferClick,
+                            channelDisplayName = channelDisplayName,
                         )
                     }
                     if (flashAlpha > 0f) {

@@ -86,6 +86,8 @@ fun MessageContent(
     onRedPacketClick: ((String) -> Unit)? = null,
     // 点转账卡片（传 transferId）→ 宿主打开转账详情。null = 只读。
     onMoneyTransferClick: ((String) -> Unit)? = null,
+    // 会话展示名（DM 场景即对端昵称）：资金卡片用它显示「转账给 X」/「X 向你转账」，避免裸 uid。
+    channelDisplayName: String = "",
 ) {
     val colors = Theme.colors
     val textColor = if (isSelf) colors.messageTextSelf else colors.messageTextOther
@@ -113,7 +115,9 @@ fun MessageContent(
     // 顶部 padding 会把图片往下推，使图片顶部比发送者头像低、不对齐（文字气泡有深色背景，
     // 10dp 是气泡内边距、气泡顶仍对齐头像）。媒体用 0 padding，图片顶与头像对齐。
     val isMediaBubble = parsed.type == MessageType.IMAGE || parsed.type == MessageType.VIDEO
-    Column(modifier = modifier.padding(if (isMediaBubble) 0.dp else 10.dp)) {
+    // 资金卡片（红包/转账）是独立卡片，自带底色/圆角/内边距，外层不再套气泡内边距。
+    val isMoneyCard = parsed.type == MessageType.RED_PACKET || parsed.type == MessageType.MONEY_TRANSFER
+    Column(modifier = modifier.padding(if (isMediaBubble || isMoneyCard) 0.dp else 10.dp)) {
         // 根据消息类型渲染内容
         when (parsed.type) {
             MessageType.TEXT -> TextContent(parsed, textColor)
@@ -126,7 +130,7 @@ fun MessageContent(
             MessageType.LINK -> LinkContent(parsed, textColor, secondaryTextColor)
             MessageType.CONTACT -> ContactContent(parsed, textColor, secondaryTextColor, onContactClick)
             MessageType.RED_PACKET -> RedPacketMessageView(parsed, onRedPacketClick)
-            MessageType.MONEY_TRANSFER -> MoneyTransferMessageView(parsed, onMoneyTransferClick)
+            MessageType.MONEY_TRANSFER -> MoneyTransferMessageView(parsed, isSelf, channelDisplayName, onMoneyTransferClick)
             MessageType.SYSTEM -> {
                 // 系统消息由 MessageRow 在 row 级早返回 SystemMessageRow 渲染，
                 // 不会走到这里；留空分支以保持 when 穷尽。
@@ -136,8 +140,9 @@ fun MessageContent(
             MessageType.UNKNOWN -> UnknownContent(textColor)
         }
 
-        // 消息时间和状态（系统消息除外）
-        if (parsed.type != MessageType.SYSTEM) {
+        // 消息时间和状态（系统消息 + 资金卡片除外）。资金卡片由服务端注入天然是 Sent 态，
+        // 不显示「发送中/发送失败」，也不在卡片下压时间/状态行——保持独立卡片的干净视觉。
+        if (parsed.type != MessageType.SYSTEM && !isMoneyCard) {
             VerticalSpacer(4.dp)
             // 图片/视频：footer 宽度对齐图片外框（与 ImageContent/VideoContent 同一 attachmentBubbleSize），
             // 时间/状态贴着图片右下角，不再被 fillMaxWidth 推到屏幕边。
@@ -1040,9 +1045,15 @@ private fun UnknownContent(
 // ─────────────── Money Message 标准卡片（RP-ferry） ───────────────
 // 只渲染 payload 展示快照 + 交互回调；资金真相在 platform，UI 不碰余额/领取入账。
 
+// 资金卡片统一为独立卡片（不再被普通文本气泡包裹）：固定宽度 + 圆角 + 品牌底色 + 左图标 + 右文案栈。
+private val MoneyCardWidth = 232.dp
+private val RedPacketColor = Color(0xFFE5533D)
+private val TransferColor = Color(0xFFF5A623)
+
 /**
- * 红包卡片。onOpen != null → 点击打开红包详情/领取（宿主导航到详情页，由详情页走 platform claim）。
- * null → 只读降级（BUILTIN）。卡片文案按状态快照展示，实际状态以详情页拉取为准。
+ * 红包卡片（独立卡片）。标题=祝福语，副标题=普通/拼手气，状态=快照（未领取/已抢完/已过期）。
+ * 「已领取」等 per-viewer 结果以详情页 platform API 为准，这里只展示订单级快照，不本地猜最终资金态。
+ * onOpen != null → 点击进入红包详情/领取；null → 只读降级（BUILTIN）。
  */
 @Composable
 private fun RedPacketMessageView(
@@ -1050,56 +1061,88 @@ private fun RedPacketMessageView(
     onOpen: ((String) -> Unit)?,
 ) {
     val refId = parsed.moneyRefId
-    val status = parsed.moneyStatus
     val clickable = refId != null && onOpen != null
-    val base = Modifier
-        .clip(RoundedCornerShape(8.dp))
-        .background(Color(0xFFE5533D))
-        .padding(horizontal = 14.dp, vertical = 12.dp)
-    Column(modifier = if (clickable) base.clickable { onOpen!!.invoke(refId!!) } else base) {
-        Text(
-            text = "🧧 " + (parsed.moneyTitle?.takeIf { it.isNotBlank() } ?: "红包"),
-            style = Typography.BodyMedium,
-            color = Color.White,
-        )
-        VerticalSpacer(4.dp)
-        Text(
-            text = when (status) {
-                "finished" -> "已被抢光"
-                "expired" -> "已过期"
-                "refunding" -> "已过期"
-                else -> if (onOpen != null) "点击查看红包" else "请在支持红包的版本查看"
-            },
-            style = Typography.Label,
-            color = Color.White.copy(alpha = 0.85f),
-        )
+    val title = parsed.moneyTitle?.takeIf { it.isNotBlank() } ?: "恭喜发财，大吉大利"
+    val subtitle = when (parsed.moneyType) {
+        1 -> "拼手气红包"
+        0 -> "普通红包"
+        else -> null
+    }
+    val statusText = when (parsed.moneyStatus) {
+        "finished" -> "红包已被抢完"
+        "expired", "refunding" -> "红包已过期"
+        else -> if (onOpen != null) "领取红包" else "请在支持红包的版本查看"
+    }
+    MoneyCardScaffold(icon = "🧧", bg = RedPacketColor, refId = refId, clickable = clickable, onOpen = onOpen) {
+        Text(text = title, style = Typography.BodyMedium, color = Color.White)
+        subtitle?.let {
+            VerticalSpacer(3.dp)
+            Text(text = it, style = Typography.Label, color = Color.White.copy(alpha = 0.85f))
+        }
+        VerticalSpacer(5.dp)
+        Text(text = statusText, style = Typography.Label, color = Color.White.copy(alpha = 0.95f))
     }
 }
 
-/** 转账卡片。无需接收确认；点击打开转账详情（可查可追溯）。null → 只读。 */
+/**
+ * 转账卡片（独立卡片）。转账即时到账、无需接收确认。视角相关：发送方「转账给 X / 已到账」、
+ * 接收方「X 向你转账 / 已存入余额」；退款态「转账 / 已退回」。counterpartyName（DM 即对端昵称）
+ * 为空时退化为「转账」，绝不显示裸 uid。点击进入转账详情。null → 只读。
+ */
 @Composable
 private fun MoneyTransferMessageView(
     parsed: ParsedContent,
+    isSelf: Boolean,
+    counterpartyName: String,
     onOpen: ((String) -> Unit)?,
 ) {
     val refId = parsed.moneyRefId
     val clickable = refId != null && onOpen != null
-    val base = Modifier
-        .clip(RoundedCornerShape(8.dp))
-        .background(Color(0xFFF5A623))
-        .padding(horizontal = 14.dp, vertical = 12.dp)
-    Column(modifier = if (clickable) base.clickable { onOpen!!.invoke(refId!!) } else base) {
-        Text(text = "💸 转账", style = Typography.BodyMedium, color = Color.White)
+    val refunded = parsed.moneyStatus == "refunded"
+    val peer = counterpartyName.takeIf { it.isNotBlank() }
+    val title = when {
+        refunded || peer == null -> "转账"
+        isSelf -> "转账给 $peer"
+        else -> "$peer 向你转账"
+    }
+    val statusText = when {
+        refunded -> "已退回"
+        isSelf -> "已到账"
+        else -> "已存入余额"
+    }
+    MoneyCardScaffold(icon = "💸", bg = TransferColor, refId = refId, clickable = clickable, onOpen = onOpen) {
+        Text(text = title, style = Typography.BodyMedium, color = Color.White)
         parsed.moneyAmountText?.takeIf { it.isNotBlank() }?.let {
             VerticalSpacer(4.dp)
-            Text(text = it, style = Typography.BodyMedium, color = Color.White)
+            Text(text = it, style = Typography.TitleLarge, color = Color.White)
         }
-        VerticalSpacer(2.dp)
-        Text(
-            text = if (parsed.moneyStatus == "refunded") "已退回" else "已存入余额",
-            style = Typography.Label,
-            color = Color.White.copy(alpha = 0.85f),
-        )
+        VerticalSpacer(5.dp)
+        Text(text = statusText, style = Typography.Label, color = Color.White.copy(alpha = 0.95f))
+    }
+}
+
+/** 资金卡片外壳：固定宽度独立卡片 + 左图标 + 右文案列（内容由 [content] 提供）。 */
+@Composable
+private fun MoneyCardScaffold(
+    icon: String,
+    bg: Color,
+    refId: String?,
+    clickable: Boolean,
+    onOpen: ((String) -> Unit)?,
+    content: @Composable () -> Unit,
+) {
+    val base = Modifier
+        .width(MoneyCardWidth)
+        .clip(RoundedCornerShape(12.dp))
+        .background(bg)
+    Row(
+        modifier = (if (clickable) base.clickable { onOpen!!.invoke(refId!!) } else base)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = icon, style = Typography.TitleLarge, color = Color.White)
+        HorizontalSpacer(12.dp)
+        Column(modifier = Modifier.weight(1f)) { content() }
     }
 }
 

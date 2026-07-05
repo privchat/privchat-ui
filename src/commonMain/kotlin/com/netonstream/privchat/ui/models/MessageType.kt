@@ -104,6 +104,8 @@ data class ParsedContent(
     val moneyStatus: String? = null,
     val moneyAmountText: String? = null,
     val moneyScene: String? = null,
+    // 红包类型：0=普通红包、1=拼手气红包（转账无此字段）。
+    val moneyType: Int? = null,
 )
 
 /**
@@ -447,6 +449,7 @@ fun parseMessageContent(message: MessageEntry): ParsedContent {
             moneyStatus = extractJsonString(content, "status"),
             moneyAmountText = extractJsonString(content, "amountText"),
             moneyScene = extractJsonString(content, "scene"),
+            moneyType = extractJsonInt(content, "type"),
         )
 
         MessageType.UNKNOWN -> ParsedContent(
