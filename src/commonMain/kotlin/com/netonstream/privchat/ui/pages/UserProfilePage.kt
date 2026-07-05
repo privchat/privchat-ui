@@ -121,18 +121,24 @@ fun UserProfilePage(
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        // 账号
-                        Text(
-                            text = if (isSystemUser) {
-                                strings.userProfileSystemAccount
-                            } else {
-                                "${strings.userProfileUserId}: ${user.username}"
-                            },
-                            style = Typography.BodySmall,
-                            color = Theme.colors.mutedForeground
-                        )
+                        // 账号：对外只展示昵称 + 用户名（自设 handle，空则整行隐藏）。
+                        // 内部用户 ID 不对外展示（对用户无意义，也不泄露内部编号）。
+                        val handle = user.username.takeIf { it.isNotBlank() }
+                        if (isSystemUser) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = strings.userProfileSystemAccount,
+                                style = Typography.BodySmall,
+                                color = Theme.colors.mutedForeground
+                            )
+                        } else if (handle != null) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "${strings.settingsUsername}: $handle",
+                                style = Typography.BodySmall,
+                                color = Theme.colors.mutedForeground
+                            )
+                        }
                     }
                 }
             }
@@ -416,14 +422,16 @@ fun FriendProfilePage(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        // 账号
-                        Text(
-                            text = "${strings.userProfileUserId}: ${friend.username}",
-                            style = Typography.BodySmall,
-                            color = Theme.colors.mutedForeground
-                        )
+                        // 账号：用户名有值才展示；内部用户 ID 不对外展示（同陌生人视图）。
+                        val friendHandle = friend.username.takeIf { it.isNotBlank() }
+                        if (friendHandle != null) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "${strings.settingsUsername}: $friendHandle",
+                                style = Typography.BodySmall,
+                                color = Theme.colors.mutedForeground
+                            )
+                        }
                     }
                 }
             }
