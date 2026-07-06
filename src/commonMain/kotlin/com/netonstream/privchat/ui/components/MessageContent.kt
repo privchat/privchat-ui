@@ -170,6 +170,19 @@ fun MessageContent(
                 onFailedClick = onFailedClick,
                 mediaWidthDp = mediaWidthDp,
             )
+        } else if (isMoneyCard) {
+            // 资金卡片：只显示时间，不显示发送中/发送失败/已读状态（服务端注入天然 Sent）。
+            VerticalSpacer(4.dp)
+            Row(
+                modifier = Modifier.width(MoneyCardWidth),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                Text(
+                    text = Formatter.messageTime(message.timestamp),
+                    style = Typography.Label,
+                    color = secondaryTextColor,
+                )
+            }
         }
     }
 }
