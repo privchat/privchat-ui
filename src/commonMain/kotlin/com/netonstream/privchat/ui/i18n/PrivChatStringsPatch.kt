@@ -69,6 +69,16 @@ data class PrivChatAuxiliaryStringsPatch(
     val saveFailed: String? = null,
     val operationFailed: String? = null,
     val smsCodeError: String? = null,
+    val signInTitle: String? = null,
+    val signInButton: String? = null,
+    val signInDoneToday: String? = null,
+    val signInContinuousPrefix: String? = null,
+    val signInTodayReward: String? = null,
+    val signInRewardList: String? = null,
+    val signInPointsUnit: String? = null,
+    val signInDayUnit: String? = null,
+    val signInSuccessTitle: String? = null,
+    val signInCashCredited: String? = null,
 )
 
 @Immutable
@@ -342,6 +352,16 @@ data class PrivChatStringsPatch(
     val saveFailed: String? get() = auxiliary?.saveFailed
     val operationFailed: String? get() = auxiliary?.operationFailed
     val smsCodeError: String? get() = auxiliary?.smsCodeError
+    val signInTitle: String? get() = auxiliary?.signInTitle
+    val signInButton: String? get() = auxiliary?.signInButton
+    val signInDoneToday: String? get() = auxiliary?.signInDoneToday
+    val signInContinuousPrefix: String? get() = auxiliary?.signInContinuousPrefix
+    val signInTodayReward: String? get() = auxiliary?.signInTodayReward
+    val signInRewardList: String? get() = auxiliary?.signInRewardList
+    val signInPointsUnit: String? get() = auxiliary?.signInPointsUnit
+    val signInDayUnit: String? get() = auxiliary?.signInDayUnit
+    val signInSuccessTitle: String? get() = auxiliary?.signInSuccessTitle
+    val signInCashCredited: String? get() = auxiliary?.signInCashCredited
 }
 
 val PrivChatStringsPatch.isEmpty: Boolean
@@ -369,6 +389,16 @@ val PrivChatStringsPatch.isEmpty: Boolean
         saveFailed == null &&
         operationFailed == null &&
         smsCodeError == null &&
+        signInTitle == null &&
+        signInButton == null &&
+        signInDoneToday == null &&
+        signInContinuousPrefix == null &&
+        signInTodayReward == null &&
+        signInRewardList == null &&
+        signInPointsUnit == null &&
+        signInDayUnit == null &&
+        signInSuccessTitle == null &&
+        signInCashCredited == null &&
         tabConversation == null &&
         tabContact == null &&
         tabMe == null &&
@@ -896,5 +926,15 @@ private fun PrivChatAuxiliaryStrings.merge(
         saveFailed = patch.saveFailed ?: saveFailed,
         operationFailed = patch.operationFailed ?: operationFailed,
         smsCodeError = patch.smsCodeError ?: smsCodeError,
+        signInTitle = patch.signInTitle ?: signInTitle,
+        signInButton = patch.signInButton ?: signInButton,
+        signInDoneToday = patch.signInDoneToday ?: signInDoneToday,
+        signInContinuousPrefix = patch.signInContinuousPrefix ?: signInContinuousPrefix,
+        signInTodayReward = patch.signInTodayReward ?: signInTodayReward,
+        signInRewardList = patch.signInRewardList ?: signInRewardList,
+        signInPointsUnit = patch.signInPointsUnit ?: signInPointsUnit,
+        signInDayUnit = patch.signInDayUnit ?: signInDayUnit,
+        signInSuccessTitle = patch.signInSuccessTitle ?: signInSuccessTitle,
+        signInCashCredited = patch.signInCashCredited ?: signInCashCredited,
     )
 }
