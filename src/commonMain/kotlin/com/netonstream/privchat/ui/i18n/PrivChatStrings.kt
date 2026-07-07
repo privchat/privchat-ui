@@ -78,6 +78,28 @@ data class PrivChatAuxiliaryStrings(
     val signInDayUnit: String,
     val signInSuccessTitle: String,
     val signInCashCredited: String,
+    // 邀请码（spec 07-application/MEMBER_INVITE_CODE §5.1/§5.2）
+    val inviteBindTitle: String,
+    val inviteBindPlaceholder: String,
+    val inviteBindButton: String,
+    val inviteBoundCode: String,
+    val inviteBoundInviter: String,
+    val inviteBoundAt: String,
+    val inviteBoundHint: String,
+    val inviteBindHint: String,
+    val inviteBindSuccessFriend: String,
+    val inviteBindSuccess: String,
+    val inviteErrInvalid: String,
+    val loginTabSms: String,
+    val loginTabPassword: String,
+    val loginUsernamePlaceholder: String,
+    val loginPasswordPlaceholder: String,
+    val loginPasswordNewPlaceholder: String,
+    val loginNicknamePlaceholder: String,
+    val loginInviteCodePlaceholder: String,
+    val loginRegisterButton: String,
+    val loginToRegister: String,
+    val loginToLogin: String,
 )
 
 @Immutable
@@ -478,6 +500,27 @@ data class PrivChatStrings(
     val signInDayUnit: String get() = auxiliary.signInDayUnit
     val signInSuccessTitle: String get() = auxiliary.signInSuccessTitle
     val signInCashCredited: String get() = auxiliary.signInCashCredited
+    val inviteBindTitle: String get() = auxiliary.inviteBindTitle
+    val inviteBindPlaceholder: String get() = auxiliary.inviteBindPlaceholder
+    val inviteBindButton: String get() = auxiliary.inviteBindButton
+    val inviteBoundCode: String get() = auxiliary.inviteBoundCode
+    val inviteBoundInviter: String get() = auxiliary.inviteBoundInviter
+    val inviteBoundAt: String get() = auxiliary.inviteBoundAt
+    val inviteBoundHint: String get() = auxiliary.inviteBoundHint
+    val inviteBindHint: String get() = auxiliary.inviteBindHint
+    val inviteBindSuccessFriend: String get() = auxiliary.inviteBindSuccessFriend
+    val inviteBindSuccess: String get() = auxiliary.inviteBindSuccess
+    val inviteErrInvalid: String get() = auxiliary.inviteErrInvalid
+    val loginTabSms: String get() = auxiliary.loginTabSms
+    val loginTabPassword: String get() = auxiliary.loginTabPassword
+    val loginUsernamePlaceholder: String get() = auxiliary.loginUsernamePlaceholder
+    val loginPasswordPlaceholder: String get() = auxiliary.loginPasswordPlaceholder
+    val loginPasswordNewPlaceholder: String get() = auxiliary.loginPasswordNewPlaceholder
+    val loginNicknamePlaceholder: String get() = auxiliary.loginNicknamePlaceholder
+    val loginInviteCodePlaceholder: String get() = auxiliary.loginInviteCodePlaceholder
+    val loginRegisterButton: String get() = auxiliary.loginRegisterButton
+    val loginToRegister: String get() = auxiliary.loginToRegister
+    val loginToLogin: String get() = auxiliary.loginToLogin
 }
 
 /**
@@ -855,6 +898,27 @@ object PrivChatStringPacks {
             signInDayUnit = "天",
             signInSuccessTitle = "签到成功",
             signInCashCredited = "红包奖励已存入钱包",
+            inviteBindTitle = "填写邀请码",
+            inviteBindPlaceholder = "请输入邀请码",
+            inviteBindButton = "绑定邀请码",
+            inviteBoundCode = "邀请码",
+            inviteBoundInviter = "邀请人",
+            inviteBoundAt = "绑定时间",
+            inviteBoundHint = "每个账号只能绑定一次邀请码，绑定后不可修改",
+            inviteBindHint = "绑定邀请人的邀请码后将自动互加好友",
+            inviteBindSuccessFriend = "绑定成功，已与邀请人成为好友",
+            inviteBindSuccess = "绑定成功",
+            inviteErrInvalid = "邀请码无效或已过期",
+            loginTabSms = "手机号",
+            loginTabPassword = "账号密码",
+            loginUsernamePlaceholder = "账号(小写字母开头,3-32位)",
+            loginPasswordPlaceholder = "密码",
+            loginPasswordNewPlaceholder = "密码(至少 8 位)",
+            loginNicknamePlaceholder = "昵称(选填)",
+            loginInviteCodePlaceholder = "邀请码(选填)",
+            loginRegisterButton = "注册并登录",
+            loginToRegister = "没有账号？注册新账号",
+            loginToLogin = "已有账号？去登录",
         ),
     )
 
@@ -1226,6 +1290,27 @@ object PrivChatStringPacks {
             signInDayUnit = "days",
             signInSuccessTitle = "Check-in successful",
             signInCashCredited = "Cash reward added to your wallet",
+            inviteBindTitle = "Invite code",
+            inviteBindPlaceholder = "Enter invite code",
+            inviteBindButton = "Bind invite code",
+            inviteBoundCode = "Invite code",
+            inviteBoundInviter = "Inviter",
+            inviteBoundAt = "Bound at",
+            inviteBoundHint = "Each account can bind one invite code; it cannot be changed",
+            inviteBindHint = "Bind an inviter-owned code to become friends automatically",
+            inviteBindSuccessFriend = "Bound — you are now friends with the inviter",
+            inviteBindSuccess = "Invite code bound",
+            inviteErrInvalid = "Invite code is invalid or expired",
+            loginTabSms = "Phone",
+            loginTabPassword = "Account",
+            loginUsernamePlaceholder = "Username (starts with a letter, 3-32)",
+            loginPasswordPlaceholder = "Password",
+            loginPasswordNewPlaceholder = "Password (min 8 chars)",
+            loginNicknamePlaceholder = "Nickname (optional)",
+            loginInviteCodePlaceholder = "Invite code (optional)",
+            loginRegisterButton = "Create account",
+            loginToRegister = "No account? Create one",
+            loginToLogin = "Have an account? Sign in",
         ),
     )
 
