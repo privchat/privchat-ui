@@ -67,6 +67,8 @@ data class PrivChatAuxiliaryStrings(
     val saveFailed: String,
     val operationFailed: String,
     val smsCodeError: String,
+    val loginErrInvalidCredentials: String,
+    val loginErrAccountDisabled: String,
     // 签到领红包（spec 07-application/MEMBER_SIGN_IN_REWARD §3.6）
     val signInTitle: String,
     val signInButton: String,
@@ -490,6 +492,8 @@ data class PrivChatStrings(
     val saveFailed: String get() = auxiliary.saveFailed
     val operationFailed: String get() = auxiliary.operationFailed
     val smsCodeError: String get() = auxiliary.smsCodeError
+    val loginErrInvalidCredentials: String get() = auxiliary.loginErrInvalidCredentials
+    val loginErrAccountDisabled: String get() = auxiliary.loginErrAccountDisabled
     val signInTitle: String get() = auxiliary.signInTitle
     val signInButton: String get() = auxiliary.signInButton
     val signInDoneToday: String get() = auxiliary.signInDoneToday
@@ -888,6 +892,8 @@ object PrivChatStringPacks {
             saveFailed = "保存失败，请重试",
             operationFailed = "操作失败，请稍后重试",
             smsCodeError = "验证码错误，请重新输入",
+            loginErrInvalidCredentials = "账号或密码错误",
+            loginErrAccountDisabled = "该账号已被禁用",
             signInTitle = "签到领红包",
             signInButton = "立即签到",
             signInDoneToday = "今日已签到",
@@ -1280,6 +1286,8 @@ object PrivChatStringPacks {
             saveFailed = "Save failed. Please try again.",
             operationFailed = "Operation failed. Please try again later.",
             smsCodeError = "Incorrect verification code. Please try again.",
+            loginErrInvalidCredentials = "Incorrect username or password.",
+            loginErrAccountDisabled = "This account has been disabled.",
             signInTitle = "Check-in Rewards",
             signInButton = "Check in",
             signInDoneToday = "Checked in today",
