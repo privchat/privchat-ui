@@ -71,6 +71,7 @@ data class PrivChatAuxiliaryStrings(
     val loginErrAccountDisabled: String,
     val registerErrUsernameTaken: String,
     val registerErrUsernameInvalid: String,
+    val registerErrUsernameFormat: String,
     val registerErrPasswordTooShort: String,
     // 签到领红包（spec 07-application/MEMBER_SIGN_IN_REWARD §3.6）
     val signInTitle: String,
@@ -499,6 +500,7 @@ data class PrivChatStrings(
     val loginErrAccountDisabled: String get() = auxiliary.loginErrAccountDisabled
     val registerErrUsernameTaken: String get() = auxiliary.registerErrUsernameTaken
     val registerErrUsernameInvalid: String get() = auxiliary.registerErrUsernameInvalid
+    val registerErrUsernameFormat: String get() = auxiliary.registerErrUsernameFormat
     val registerErrPasswordTooShort: String get() = auxiliary.registerErrPasswordTooShort
     val signInTitle: String get() = auxiliary.signInTitle
     val signInButton: String get() = auxiliary.signInButton
@@ -901,7 +903,8 @@ object PrivChatStringPacks {
             loginErrInvalidCredentials = "账号或密码错误",
             loginErrAccountDisabled = "该账号已被禁用",
             registerErrUsernameTaken = "该账号已被注册",
-            registerErrUsernameInvalid = "账号不可用(小写字母开头,3-32位,部分名称保留)",
+            registerErrUsernameInvalid = "该账号名称不可用，请换一个",
+            registerErrUsernameFormat = "账号格式不正确(小写字母开头,3-32位字母/数字/下划线)",
             registerErrPasswordTooShort = "密码至少 8 位",
             signInTitle = "签到领红包",
             signInButton = "立即签到",
@@ -1298,7 +1301,8 @@ object PrivChatStringPacks {
             loginErrInvalidCredentials = "Incorrect username or password.",
             loginErrAccountDisabled = "This account has been disabled.",
             registerErrUsernameTaken = "This username is already taken.",
-            registerErrUsernameInvalid = "Username unavailable (starts with a letter, 3-32 chars).",
+            registerErrUsernameInvalid = "This username is unavailable. Please choose another.",
+            registerErrUsernameFormat = "Invalid username format (lowercase letter first, 3-32 chars).",
             registerErrPasswordTooShort = "Password must be at least 8 characters.",
             signInTitle = "Check-in Rewards",
             signInButton = "Check in",
