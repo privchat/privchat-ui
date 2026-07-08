@@ -252,6 +252,9 @@ object Formatter {
         daysAgo: String,
     ): String? {
         if (lastSeen <= 0L) return null
+        // 防御:老 server 下发 Unix 秒(契约是 UTC 毫秒),秒值会被格式化成 1970-01-21。
+        @Suppress("NAME_SHADOWING")
+        val lastSeen = if (lastSeen < 1_000_000_000_000L) lastSeen * 1000 else lastSeen
         val now = currentTimeMillis()
         val diffSec = (now - lastSeen) / 1000L
         return when {
