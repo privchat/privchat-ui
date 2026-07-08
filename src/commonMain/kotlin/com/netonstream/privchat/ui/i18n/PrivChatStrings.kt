@@ -69,6 +69,9 @@ data class PrivChatAuxiliaryStrings(
     val smsCodeError: String,
     val loginErrInvalidCredentials: String,
     val loginErrAccountDisabled: String,
+    val registerErrUsernameTaken: String,
+    val registerErrUsernameInvalid: String,
+    val registerErrPasswordTooShort: String,
     // 签到领红包（spec 07-application/MEMBER_SIGN_IN_REWARD §3.6）
     val signInTitle: String,
     val signInButton: String,
@@ -494,6 +497,9 @@ data class PrivChatStrings(
     val smsCodeError: String get() = auxiliary.smsCodeError
     val loginErrInvalidCredentials: String get() = auxiliary.loginErrInvalidCredentials
     val loginErrAccountDisabled: String get() = auxiliary.loginErrAccountDisabled
+    val registerErrUsernameTaken: String get() = auxiliary.registerErrUsernameTaken
+    val registerErrUsernameInvalid: String get() = auxiliary.registerErrUsernameInvalid
+    val registerErrPasswordTooShort: String get() = auxiliary.registerErrPasswordTooShort
     val signInTitle: String get() = auxiliary.signInTitle
     val signInButton: String get() = auxiliary.signInButton
     val signInDoneToday: String get() = auxiliary.signInDoneToday
@@ -894,6 +900,9 @@ object PrivChatStringPacks {
             smsCodeError = "验证码错误，请重新输入",
             loginErrInvalidCredentials = "账号或密码错误",
             loginErrAccountDisabled = "该账号已被禁用",
+            registerErrUsernameTaken = "该账号已被注册",
+            registerErrUsernameInvalid = "账号不可用(小写字母开头,3-32位,部分名称保留)",
+            registerErrPasswordTooShort = "密码至少 8 位",
             signInTitle = "签到领红包",
             signInButton = "立即签到",
             signInDoneToday = "今日已签到",
@@ -1288,6 +1297,9 @@ object PrivChatStringPacks {
             smsCodeError = "Incorrect verification code. Please try again.",
             loginErrInvalidCredentials = "Incorrect username or password.",
             loginErrAccountDisabled = "This account has been disabled.",
+            registerErrUsernameTaken = "This username is already taken.",
+            registerErrUsernameInvalid = "Username unavailable (starts with a letter, 3-32 chars).",
+            registerErrPasswordTooShort = "Password must be at least 8 characters.",
             signInTitle = "Check-in Rewards",
             signInButton = "Check in",
             signInDoneToday = "Checked in today",
