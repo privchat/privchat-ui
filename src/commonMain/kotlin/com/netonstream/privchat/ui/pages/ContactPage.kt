@@ -315,6 +315,7 @@ private fun FriendItem(
                 name = friend.displayName,
                 size = AvatarSizeTokens.Small.size,
                 isOnline = isOnline,
+                userId = friend.userId.toLong(),
             )
         },
         title = friend.displayName,

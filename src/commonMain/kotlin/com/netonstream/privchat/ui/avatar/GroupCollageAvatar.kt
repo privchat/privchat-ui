@@ -118,8 +118,9 @@ fun GroupCollageAvatar(
 
     // 布局参数（全用 Float 算好再转 Dp，避免 Dp 运算符跨平台差异）。
     // 固定 3x3 九格：无论成员多少格子恒 9 个，从左上按行填,空位画浅色空格块。
-    val padValue = size.value * 0.04f
-    val gapValue = size.value * 0.04f
+    // 微信风:外边距偏大、格间距很小、格子直角(无圆角,省渲染)。
+    val padValue = size.value * 0.09f
+    val gapValue = size.value * 0.02f
     val cellValue = (size.value - padValue * 2 - gapValue * 2) / 3
     val cell = cellValue.dp
     val gap = gapValue.dp
@@ -157,30 +158,33 @@ private fun EmptyCell(cell: Dp) {
     Box(
         modifier = Modifier
             .size(cell)
-            .clip(RoundedCornerShape((cell.value * 0.12f).dp))
             .background(Color(0xFFEDEFF2)),
     )
 }
 
-/** 单个成员格：hash 色块 + 白色首字（字号约 cell*0.5，双字母 initials 略缩）。 */
+/**
+ * 单个成员格：initials/配色一律走 [rememberAvatarResolved]——与 [PrivChatAvatar]
+ * 完全同源(seed=u:<uid>),九宫格只负责组装。方形无圆角(微信风,省渲染)。
+ */
 @Composable
 private fun CollageCell(member: GroupMemberEntry, cell: Dp) {
-    val initials = AvatarText.initialsOf(
+    val resolved = rememberAvatarResolved(
         name = member.displayName,
-        fallbackId = member.userId.toLong(),
+        userId = member.userId.toLong(),
     )
-    val fontScale = if (initials.length > 1) 0.36f else 0.5f
+    val fontScale = if (resolved.initials.length > 1) 0.36f else 0.5f
+    val fontSize = (cell.value * fontScale).sp
     Box(
         modifier = Modifier
             .size(cell)
-            .clip(RoundedCornerShape((cell.value * 0.12f).dp))
-            .background(Color(AvatarPalette.hashBackgroundArgb("u:${member.userId}"))),
+            .background(resolved.backgroundColor),
         contentAlignment = Alignment.Center,
     ) {
+        // lineHeight = fontSize:小格子里默认行高会把字挤偏,压平后才真正居中
         Text(
-            text = initials,
-            style = Typography.BodyMedium.copy(fontSize = (cell.value * fontScale).sp),
-            color = Color(AvatarPalette.HASH_FOREGROUND_ARGB),
+            text = resolved.initials,
+            style = Typography.BodyMedium.copy(fontSize = fontSize, lineHeight = fontSize),
+            color = resolved.foregroundColor,
         )
     }
 }

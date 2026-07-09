@@ -298,6 +298,7 @@ private fun ForwardTargetRow(
                 url = target.avatarUrl,
                 name = target.displayName,
                 size = AvatarSizeTokens.Small.size,
+                userId = (target as? ForwardTarget.DirectMessage)?.peerUserId?.toLong(),
             )
         },
         title = target.displayName,

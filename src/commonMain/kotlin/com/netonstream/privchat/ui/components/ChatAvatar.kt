@@ -19,11 +19,13 @@ fun ChatAvatar(
     isMuted: Boolean = false,
     isOnline: Boolean = false,
     seed: String? = null,
+    userId: Long? = null,
     modifier: Modifier = Modifier,
 ) {
     PrivChatAvatar(
         name = name,
         avatarUrl = url,
+        userId = userId,
         size = size,
         unreadCount = unreadCount,
         isMuted = isMuted,

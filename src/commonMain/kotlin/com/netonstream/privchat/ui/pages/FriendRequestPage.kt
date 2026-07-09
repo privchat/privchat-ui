@@ -201,6 +201,7 @@ private fun ReceivedRow(
                 url = request.avatarUrl,
                 name = displayName,
                 size = AvatarSizeTokens.Medium.size,
+                userId = request.userId.toLong(),
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -316,6 +317,7 @@ private fun SentRow(
             url = request.avatarUrl,
             name = displayName,
             size = AvatarSizeTokens.Medium.size,
+            userId = request.userId.toLong(),
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {

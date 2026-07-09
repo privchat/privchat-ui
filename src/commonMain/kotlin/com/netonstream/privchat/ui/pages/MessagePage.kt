@@ -1633,6 +1633,7 @@ private fun MessageRow(
                     url = null, // TODO: 从用户信息获取
                     name = peerAvatarName,
                     size = AvatarSizeTokens.Small.size,
+                    userId = message.fromUid.toLong(),
                 )
             }
             HorizontalSpacer(8.dp)
@@ -1734,6 +1735,7 @@ private fun MessageRow(
                 url = null,
                 name = "我",
                 size = AvatarSizeTokens.Small.size,
+                userId = selfUserId?.toLong(),
             )
         }
     }
@@ -2037,6 +2039,7 @@ private fun TypingBubble(channelId: ULong, peerName: String) {
             url = null,
             name = peerName.ifBlank { "?" },
             size = AvatarSizeTokens.Small.size,
+            userId = activeUsers.firstOrNull()?.toLong(),
         )
         HorizontalSpacer(8.dp)
         Box(
@@ -3312,6 +3315,7 @@ private fun MentionPicker(
                             url = member.avatar.takeIf { it.isNotBlank() },
                             name = displayName,
                             size = AvatarSizeTokens.Small.size,
+                            userId = member.userId.toLong(),
                         )
                         HorizontalSpacer(10.dp)
                         Text(

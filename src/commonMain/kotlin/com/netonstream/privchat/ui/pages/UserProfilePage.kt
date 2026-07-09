@@ -102,6 +102,7 @@ fun UserProfilePage(
                         url = user.avatarUrl,
                         name = user.nickname ?: user.username,
                         size = AvatarSizeTokens.Large.size,
+                        userId = user.userId.toLong(),
                     )
 
                     Spacer(modifier = Modifier.width(16.dp))
@@ -371,6 +372,7 @@ fun FriendProfilePage(
                         url = friend.avatarUrl,
                         name = friend.remark ?: friend.nickname ?: friend.username,
                         size = AvatarSizeTokens.Large.size,
+                        userId = friend.userId.toLong(),
                     )
 
                     Spacer(modifier = Modifier.width(16.dp))

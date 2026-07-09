@@ -159,6 +159,7 @@ fun GroupCreatePage(
                                 url = friend.avatarUrl,
                                 name = friend.displayName,
                                 size = AvatarSizeTokens.Small.size,
+                                userId = friend.userId.toLong(),
                             )
                         },
                         trailing = {
