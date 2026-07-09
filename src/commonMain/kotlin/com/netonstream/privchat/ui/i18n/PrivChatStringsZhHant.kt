@@ -371,6 +371,7 @@ val PrivChatStringsZhHant = PrivChatStrings(
         registerErrUsernameInvalid = "用戶名不可用或已被其他用戶使用，請更換",
         registerErrUsernameFormat = "帳號格式不正確(小寫字母開頭,3-32位字母/數字/底線)",
         registerErrPasswordTooShort = "密碼至少 8 位",
+        systemMessagesName = "系統消息",
         signInTitle = "簽到領紅包",
         signInButton = "立即簽到",
         signInDoneToday = "今日已簽到",

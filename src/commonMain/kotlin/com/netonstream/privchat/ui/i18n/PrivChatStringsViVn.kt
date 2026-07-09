@@ -371,6 +371,7 @@ val PrivChatStringsViVn = PrivChatStrings(
         registerErrUsernameInvalid = "Tên người dùng không khả dụng hoặc đã được sử dụng, vui lòng chọn tên khác",
         registerErrUsernameFormat = "Định dạng tài khoản không hợp lệ (chữ thường đầu, 3-32 ký tự)",
         registerErrPasswordTooShort = "Mật khẩu tối thiểu 8 ký tự",
+        systemMessagesName = "Tin nhắn hệ thống",
         signInTitle = "Điểm danh nhận thưởng",
         signInButton = "Điểm danh ngay",
         signInDoneToday = "Hôm nay đã điểm danh",

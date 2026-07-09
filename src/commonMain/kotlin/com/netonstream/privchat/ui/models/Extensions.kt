@@ -97,11 +97,14 @@ val MessageEntry.time: Long
 
 // ========== FriendEntry 扩展 ==========
 
-/** 显示名称（备注优先，其次昵称，最后用户名） */
+/** 显示名称（备注优先，其次昵称，最后用户名；系统用户按语言本地化） */
 val FriendEntry.displayName: String
-    get() = remark?.takeIf { it.isNotBlank() }
-        ?: nickname?.takeIf { it.isNotBlank() }
-        ?: username
+    get() = SystemUser.displayNameOr(
+        username,
+        remark?.takeIf { it.isNotBlank() }
+            ?: nickname?.takeIf { it.isNotBlank() }
+            ?: username,
+    )
 
 /**
  * 头像首字母（用于无头像时显示）。
@@ -117,9 +120,12 @@ val FriendEntry.avatarLetter: String
 
 // ========== UserEntry 扩展 ==========
 
-/** 显示名称 */
+/** 显示名称（系统用户按语言本地化） */
 val UserEntry.displayName: String
-    get() = nickname?.takeIf { it.isNotBlank() } ?: username
+    get() = SystemUser.displayNameOr(
+        username,
+        nickname?.takeIf { it.isNotBlank() } ?: username,
+    )
 
 /** 头像首字母（同 [FriendEntry.avatarLetter] 说明）。 */
 val UserEntry.avatarLetter: String
