@@ -24,8 +24,11 @@ data class AvatarResolved(
  * - [username] / [userId] 是兜底来源，避免出现「?」头像
  * - [avatarUrl] 透传给上层组件；**Phase 1 不接远程图加载**，调用方拿到也只是占位
  * - [isGroup] 暂时只用于元信息标记；视觉差异留给后续阶段
+ * - [seed] hash 色种子（三端统一：成员/DM 用 `"u:<uid>"`，群兜底 `"g:<channelId>"`）；
+ *   不传时按 userId → 显示名依次兜底
  *
- * 配色固定走 [AvatarPalette]，**不**跟 [com.gearui.theme.Theme] 联动。理由见 [AvatarPalette]。
+ * 配色走 [AvatarPalette] 的 per-identity hash 色，**不**跟 [com.gearui.theme.Theme] 联动。
+ * 理由见 [AvatarPalette]。
  */
 @Composable
 fun rememberAvatarResolved(
@@ -34,17 +37,22 @@ fun rememberAvatarResolved(
     avatarUrl: String? = null,
     userId: Long? = null,
     isGroup: Boolean = false,
+    seed: String? = null,
 ): AvatarResolved {
     val initials = AvatarText.initialsOf(name = name, username = username, fallbackId = userId)
     val displayName = name?.trim()?.takeIf { it.isNotEmpty() }
         ?: username?.trim()?.takeIf { it.isNotEmpty() }
         ?: userId?.toString()
         ?: ""
+    // seed 优先级：调用方显式 seed > "u:<uid>" > 显示名（与 Web/H5 端规则一致）
+    val hashSeed = seed?.takeIf { it.isNotEmpty() }
+        ?: userId?.let { "u:$it" }
+        ?: displayName
     return AvatarResolved(
         displayName = displayName,
         initials = initials,
-        backgroundColor = Color(AvatarPalette.DEFAULT_BACKGROUND_ARGB),
-        foregroundColor = Color(AvatarPalette.DEFAULT_FOREGROUND_ARGB),
+        backgroundColor = Color(AvatarPalette.hashBackgroundArgb(hashSeed)),
+        foregroundColor = Color(AvatarPalette.HASH_FOREGROUND_ARGB),
         avatarUrl = avatarUrl,
         isGroup = isGroup,
     )

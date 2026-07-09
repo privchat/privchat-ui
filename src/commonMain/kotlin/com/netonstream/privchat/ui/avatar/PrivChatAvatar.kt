@@ -33,6 +33,7 @@ import com.gearui.theme.Theme
  * @param unreadCount 未读 badge 数量（旧 [ChatAvatar] 用法保留）
  * @param isMuted 免打扰时不显示数字、只显示小红点（旧 [ChatAvatar] 用法保留）
  * @param isOnline 在线小绿点（旧 [ChatAvatar] 用法保留）
+ * @param seed hash 色种子（`"u:<uid>"` / `"g:<channelId>"`）；不传时由 resolver 按 userId/名字兜底
  */
 @Composable
 fun PrivChatAvatar(
@@ -46,6 +47,7 @@ fun PrivChatAvatar(
     unreadCount: Int = 0,
     isMuted: Boolean = false,
     isOnline: Boolean = false,
+    seed: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val resolved = rememberAvatarResolved(
@@ -54,6 +56,7 @@ fun PrivChatAvatar(
         avatarUrl = avatarUrl,
         userId = userId,
         isGroup = isGroup,
+        seed = seed,
     )
     val colors = Theme.colors
     // 强制把 fallback 配色固定到 [AvatarPalette]，不让 gearui Avatar 回退到 Theme.colors.muted——

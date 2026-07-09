@@ -755,7 +755,13 @@ fun MessagePage(
         }
     }
 
-    val truncatedTitle = channel.displayName.let { if (it.length > 15) it.take(15) + "..." else it }
+    // 标题：名称部分 15 字截断；群聊在名称后追加成员数「名称 (N)」（人数不参与截断）
+    val truncatedName = channel.displayName.let { if (it.length > 15) it.take(15) + "..." else it }
+    val truncatedTitle = if (!channel.isDm && channel.memberCount > 0u) {
+        "$truncatedName (${channel.memberCount})"
+    } else {
+        truncatedName
+    }
     val peerPresence = peerUserId?.let { presences[it] }
 
     Box(modifier = modifier.fillMaxSize()) {

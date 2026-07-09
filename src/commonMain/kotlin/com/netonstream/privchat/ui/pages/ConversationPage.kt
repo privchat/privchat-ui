@@ -5,6 +5,7 @@ import com.netonstream.privchat.sdk.dto.ChannelListEntry
 import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.models.*
 import com.netonstream.privchat.ui.components.ChatAvatar
+import com.netonstream.privchat.ui.avatar.GroupCollageAvatar
 import com.netonstream.privchat.ui.utils.Formatter
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.gearui.theme.Theme
@@ -326,13 +327,22 @@ private fun ChannelItem(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左侧头像
-            ChatAvatar(
-                url = channel.avatarUrl,
-                name = channel.displayName,
-                size = AvatarSizeTokens.Medium.size,
-                isOnline = isOnline,
-            )
+            // 左侧头像：群 → 成员九宫格拼贴（Phase 1 图片不渲染，群一律走拼贴）；DM → 单头像（uid hash 色）
+            if (channel.isGroup) {
+                GroupCollageAvatar(
+                    channelId = channel.channelId,
+                    name = channel.displayName,
+                    size = AvatarSizeTokens.Medium.size,
+                )
+            } else {
+                ChatAvatar(
+                    url = channel.avatarUrl,
+                    name = channel.displayName,
+                    size = AvatarSizeTokens.Medium.size,
+                    isOnline = isOnline,
+                    seed = channel.peerUserId?.let { "u:$it" },
+                )
+            }
 
             HorizontalSpacer(12.dp)
 

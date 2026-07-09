@@ -150,6 +150,7 @@ fun GroupMembersPage(
                                     url = member.avatar,
                                     name = member.displayName,
                                     size = AvatarSizeTokens.Small.size,
+                                    seed = "u:${member.userId}",
                                 )
                             },
                         )

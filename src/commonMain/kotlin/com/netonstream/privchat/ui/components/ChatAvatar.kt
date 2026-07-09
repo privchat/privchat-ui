@@ -18,6 +18,7 @@ fun ChatAvatar(
     unreadCount: Int = 0,
     isMuted: Boolean = false,
     isOnline: Boolean = false,
+    seed: String? = null,
     modifier: Modifier = Modifier,
 ) {
     PrivChatAvatar(
@@ -27,6 +28,7 @@ fun ChatAvatar(
         unreadCount = unreadCount,
         isMuted = isMuted,
         isOnline = isOnline,
+        seed = seed,
         modifier = modifier,
     )
 }
@@ -43,6 +45,7 @@ fun GroupAvatar(
     unreadCount: Int = 0,
     isMuted: Boolean = false,
     isOnline: Boolean = false,
+    seed: String? = null,
     modifier: Modifier = Modifier,
 ) {
     PrivChatAvatar(
@@ -53,6 +56,7 @@ fun GroupAvatar(
         unreadCount = unreadCount,
         isMuted = isMuted,
         isOnline = isOnline,
+        seed = seed,
         modifier = modifier,
     )
 }
