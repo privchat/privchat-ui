@@ -330,6 +330,8 @@ val PrivChatStringsViVn = PrivChatStrings(
         timeSaturday = "T7",
         systemTemplates = mapOf(
             "system.member_invited" to "{0} đã mời {1+} vào nhóm",
+            "system.group_mute_all_on" to "{0} đã bật cấm chat toàn nhóm",
+            "system.group_mute_all_off" to "{0} đã tắt cấm chat toàn nhóm",
             "system.member_joined"  to "{0} đã tham gia nhóm",
             "system.member_left"    to "{0} đã rời nhóm",
             "system.member_kicked"  to "{0} đã xóa {1+} khỏi nhóm",

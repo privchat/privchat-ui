@@ -869,6 +869,8 @@ object PrivChatStringPacks {
                 // {1+} 是列表展开占位符：消费 refs[1..] 用 listSeparator 串联，
                 // 用于人数不定的批量邀请（spec §4.1 的本地扩展）。
                 "system.member_invited" to "{0} 邀请 {1+} 加入了群聊",
+                "system.group_mute_all_on" to "{0} 开启了全员禁言",
+                "system.group_mute_all_off" to "{0} 解除了全员禁言",
                 "system.member_joined"  to "{0} 加入了群聊",
                 "system.member_left"    to "{0} 退出了群聊",
                 "system.member_kicked"  to "{0} 将 {1+} 移出群聊",
@@ -1269,6 +1271,8 @@ object PrivChatStringPacks {
             timeSaturday = "Sat",
             systemTemplates = mapOf(
                 "system.member_invited" to "{0} invited {1+} to the group",
+                "system.group_mute_all_on" to "{0} muted all members",
+                "system.group_mute_all_off" to "{0} unmuted all members",
                 "system.member_joined"  to "{0} joined the group",
                 "system.member_left"    to "{0} left the group",
                 "system.member_kicked"  to "{0} removed {1+} from the group",

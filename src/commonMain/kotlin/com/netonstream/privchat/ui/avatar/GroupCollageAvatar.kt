@@ -46,8 +46,9 @@ private object GroupMemberPreviewCache {
         try {
             var members = PrivChat.client.getGroupMembers(channelId, null, null)
                 .getOrNull().orEmpty()
-            if (members.isEmpty()) {
-                // 本地成员表还没同步到该群（如新登录账号）→ 拉一次远端再读
+            // 本地为空（新登录还没同步）或 entity sync 只写了 uid 没带昵称
+            // （displayName 退化成纯数字 uid）→ 拉一次远端补全再读
+            if (members.isEmpty() || members.any { it.displayName.toULongOrNull() == it.userId }) {
                 PrivChat.client.syncGroupMembers(channelId)
                 members = PrivChat.client.getGroupMembers(channelId, null, null)
                     .getOrNull().orEmpty()
@@ -115,14 +116,11 @@ fun GroupCollageAvatar(
         return
     }
 
-    // 布局参数（全用 Float 算好再转 Dp，避免 Dp 运算符跨平台差异）
-    val n = members.size
-    val cols = if (n <= 1) 1 else if (n <= 4) 2 else 3
-    val rows = (n + cols - 1) / cols
-    val firstRowCount = n - (rows - 1) * cols
+    // 布局参数（全用 Float 算好再转 Dp，避免 Dp 运算符跨平台差异）。
+    // 固定 3x3 九格：无论成员多少格子恒 9 个，从左上按行填,空位画浅色空格块。
     val padValue = size.value * 0.04f
     val gapValue = size.value * 0.04f
-    val cellValue = (size.value - padValue * 2 - gapValue * (cols - 1)) / cols
+    val cellValue = (size.value - padValue * 2 - gapValue * 2) / 3
     val cell = cellValue.dp
     val gap = gapValue.dp
 
@@ -133,22 +131,35 @@ fun GroupCollageAvatar(
             .background(Color(0xFFD9DCE0)),
         contentAlignment = Alignment.Center,
     ) {
-        // 行块垂直居中（Box Center）+ 首行水平居中（Column CenterHorizontally）
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            var index = 0
-            for (row in 0 until rows) {
+            for (row in 0 until 3) {
                 if (row > 0) Spacer(modifier = Modifier.height(gap))
-                val count = if (row == 0) firstRowCount else cols
                 Row {
-                    for (col in 0 until count) {
+                    for (col in 0 until 3) {
                         if (col > 0) Spacer(modifier = Modifier.width(gap))
-                        CollageCell(member = members[index], cell = cell)
-                        index++
+                        val index = row * 3 + col
+                        val member = members.getOrNull(index)
+                        if (member != null) {
+                            CollageCell(member = member, cell = cell)
+                        } else {
+                            EmptyCell(cell = cell)
+                        }
                     }
                 }
             }
         }
     }
+}
+
+/** 空格子：比容器底色略浅的占位块，保证九宫格视觉恒为 9 格。 */
+@Composable
+private fun EmptyCell(cell: Dp) {
+    Box(
+        modifier = Modifier
+            .size(cell)
+            .clip(RoundedCornerShape((cell.value * 0.12f).dp))
+            .background(Color(0xFFEDEFF2)),
+    )
 }
 
 /** 单个成员格：hash 色块 + 白色首字（字号约 cell*0.5，双字母 initials 略缩）。 */
