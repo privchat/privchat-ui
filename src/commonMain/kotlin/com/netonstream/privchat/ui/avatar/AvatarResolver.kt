@@ -22,7 +22,8 @@ data class AvatarResolved(
  *
  * - [name] 业务侧最常见的「显示名」（用户 nickname / 群名称），优先级最高
  * - [username] / [userId] 是兜底来源，避免出现「?」头像
- * - [avatarUrl] 透传给上层组件；**Phase 1 不接远程图加载**，调用方拿到也只是占位
+ * - [avatarUrl] 透传给上层组件；[PrivChatAvatar] 非空时异步加载远程图覆盖 initials 色块，
+ *   加载中 / 失败回退 initials
  * - [isGroup] 暂时只用于元信息标记；视觉差异留给后续阶段
  * - [seed] hash 色种子（三端统一：成员/DM 用 `"u:<uid>"`，群兜底 `"g:<channelId>"`）；
  *   不传时按 userId → 显示名依次兜底

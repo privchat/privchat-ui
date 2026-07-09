@@ -114,10 +114,11 @@ object MessageActionPolicy {
             result += MessageActionKind.SaveImage
         }
 
-        // Recall：isSelf 必须。撤回无时效——不再做客户端时间窗判断。
+        // Recall：自己的消息；或群主/管理员撤回他人消息（canPin 即
+        // 「群主/管理员」权限位，DM/普通成员为 false）。server 端同样鉴权
+        // （管理员撤回不受时限），本地不预过滤时间。
         // Failed → UI 层改为本地删除（不调 RPC）；Sent/Read → 调 revokeMessage RPC。
-        // 服务端仍是权威，可能因权限等原因拒绝；本地不预过滤时间。
-        if (ctx.isSelf) {
+        if (ctx.isSelf || ctx.canPin) {
             result += MessageActionKind.Recall
         }
 
