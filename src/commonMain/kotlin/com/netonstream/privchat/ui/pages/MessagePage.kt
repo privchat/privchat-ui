@@ -757,8 +757,11 @@ fun MessagePage(
 
     // 标题：名称部分 15 字截断；群聊在名称后追加成员数「名称 (N)」（人数不参与截断）
     val truncatedName = channel.displayName.let { if (it.length > 15) it.take(15) + "..." else it }
-    val truncatedTitle = if (!channel.isDm && channel.memberCount > 0u) {
-        "$truncatedName (${channel.memberCount})"
+    // SDK ChannelListEntry.memberCount 目前无数据源(恒 0),用九宫格成员预览缓存兜底
+    val groupCount = if (channel.isDm) 0
+    else maxOf(channel.memberCount.toInt(), com.netonstream.privchat.ui.avatar.groupMemberPreviewCount(channel.channelId))
+    val truncatedTitle = if (!channel.isDm && groupCount > 0) {
+        "$truncatedName ($groupCount)"
     } else {
         truncatedName
     }

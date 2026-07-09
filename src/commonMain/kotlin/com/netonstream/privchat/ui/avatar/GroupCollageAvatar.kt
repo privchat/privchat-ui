@@ -35,6 +35,7 @@ import com.tencent.kuikly.compose.ui.unit.sp
 private object GroupMemberPreviewCache {
     // mutableStateMapOf：写入后引用它的 Composable 自动重组
     private val cache = mutableStateMapOf<ULong, List<GroupMemberEntry>>()
+    private val totals = mutableStateMapOf<ULong, Int>()
     private val inFlight = mutableSetOf<ULong>()
 
     fun peek(channelId: ULong): List<GroupMemberEntry>? = cache[channelId]
@@ -43,14 +44,27 @@ private object GroupMemberPreviewCache {
     suspend fun load(channelId: ULong) {
         if (cache.containsKey(channelId) || !inFlight.add(channelId)) return
         try {
-            PrivChat.client.getGroupMembers(channelId, null, null)
-                .onSuccess { members -> cache[channelId] = topNine(members) }
+            var members = PrivChat.client.getGroupMembers(channelId, null, null)
+                .getOrNull().orEmpty()
+            if (members.isEmpty()) {
+                // 本地成员表还没同步到该群（如新登录账号）→ 拉一次远端再读
+                PrivChat.client.syncGroupMembers(channelId)
+                members = PrivChat.client.getGroupMembers(channelId, null, null)
+                    .getOrNull().orEmpty()
+            }
+            if (members.isNotEmpty()) {
+                cache[channelId] = topNine(members)
+                totals[channelId] = members.size
+            }
         } catch (_: Throwable) {
             // 失败静默：留给下次进入会话列表时重试（inFlight 已释放）
         } finally {
             inFlight.remove(channelId)
         }
     }
+
+    /** 已缓存成员总数（0 = 未知）；供群标题人数兜底（ChannelListEntry.memberCount 尚无数据源）。 */
+    fun memberCount(channelId: ULong): Int = totals[channelId] ?: 0
 
     private fun topNine(members: List<GroupMemberEntry>): List<GroupMemberEntry> =
         members
@@ -64,6 +78,9 @@ private object GroupMemberPreviewCache {
         else -> 2
     }
 }
+
+/** 群成员总数(来自九宫格成员预览缓存;0=尚未拉到)。群标题「名称 (人数)」的数据源。 */
+fun groupMemberPreviewCount(channelId: ULong): Int = GroupMemberPreviewCache.memberCount(channelId)
 
 /**
  * 群头像九宫格拼贴（三端统一规格）。
