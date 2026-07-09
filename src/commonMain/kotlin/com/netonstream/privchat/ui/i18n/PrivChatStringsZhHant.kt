@@ -279,7 +279,7 @@ val PrivChatStringsZhHant = PrivChatStrings(
     aboutContactUs = "聯絡我們",
     aboutOfficialWebsite = "官方網站",
     aboutSourceCode = "原始碼",
-    aboutCopyright = "Copyright \u00a9 2024 PrivChat. All Rights Reserved.",
+    aboutCopyright = "Copyright \u00a9 2026 All Rights Reserved.",
 
     // 聯絡我們
     contactUsTitle = "聯絡我們",
@@ -312,7 +312,7 @@ val PrivChatStringsZhHant = PrivChatStrings(
 
         // Required Actions — Unsupported
         requiredActionUnsupportedTitle = "需要更新用戶端",
-        requiredActionUnsupportedMessage = "你的帳號有一個本版本暫不支援的待辦操作，請升級 PrivChat 後繼續使用。",
+        requiredActionUnsupportedMessage = "你的帳號有一個本版本暫不支援的待辦操作，請升級 App 後繼續使用。",
         requiredActionUnsupportedReload = "已升級，重新載入",
 
         // 好友權限
@@ -372,6 +372,7 @@ val PrivChatStringsZhHant = PrivChatStrings(
         registerErrUsernameFormat = "帳號格式不正確(小寫字母開頭,3-32位字母/數字/底線)",
         registerErrPasswordTooShort = "密碼至少 8 位",
         systemMessagesName = "系統消息",
+        groupChatFallback = "群聊",
         signInTitle = "簽到領紅包",
         signInButton = "立即簽到",
         signInDoneToday = "今日已簽到",

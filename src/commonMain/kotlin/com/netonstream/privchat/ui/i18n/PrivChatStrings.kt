@@ -74,6 +74,7 @@ data class PrivChatAuxiliaryStrings(
     val registerErrUsernameFormat: String,
     val registerErrPasswordTooShort: String,
     val systemMessagesName: String,
+    val groupChatFallback: String,
     // 签到领红包（spec 07-application/MEMBER_SIGN_IN_REWARD §3.6）
     val signInTitle: String,
     val signInButton: String,
@@ -504,6 +505,7 @@ data class PrivChatStrings(
     val registerErrUsernameFormat: String get() = auxiliary.registerErrUsernameFormat
     val registerErrPasswordTooShort: String get() = auxiliary.registerErrPasswordTooShort
     val systemMessagesName: String get() = auxiliary.systemMessagesName
+    val groupChatFallback: String get() = auxiliary.groupChatFallback
     val signInTitle: String get() = auxiliary.signInTitle
     val signInButton: String get() = auxiliary.signInButton
     val signInDoneToday: String get() = auxiliary.signInDoneToday
@@ -814,7 +816,7 @@ object PrivChatStringPacks {
         aboutContactUs = "联系我们",
         aboutOfficialWebsite = "官方网站",
         aboutSourceCode = "源代码",
-        aboutCopyright = "Copyright © 2024 PrivChat. All Rights Reserved.",
+        aboutCopyright = "Copyright © 2026 All Rights Reserved.",
 
         // 联系我们
         contactUsTitle = "联系我们",
@@ -850,7 +852,7 @@ object PrivChatStringPacks {
             setNicknameSubmit = "完成",
             setNicknameError = "昵称需要 2-32 个字符",
             requiredActionUnsupportedTitle = "需要更新客户端",
-            requiredActionUnsupportedMessage = "你的账号有一个本版本暂不支持的待办操作，请升级 PrivChat 后继续使用。",
+            requiredActionUnsupportedMessage = "你的账号有一个本版本暂不支持的待办操作，请升级 App 后继续使用。",
             requiredActionUnsupportedReload = "已升级，重新加载",
 
             // 时间
@@ -909,6 +911,7 @@ object PrivChatStringPacks {
             registerErrUsernameFormat = "账号格式不正确(小写字母开头,3-32位字母/数字/下划线)",
             registerErrPasswordTooShort = "密码至少 8 位",
             systemMessagesName = "系统消息",
+            groupChatFallback = "群聊",
             signInTitle = "签到领红包",
             signInButton = "立即签到",
             signInDoneToday = "今日已签到",
@@ -1215,7 +1218,7 @@ object PrivChatStringPacks {
         aboutContactUs = "Contact Us",
         aboutOfficialWebsite = "Official Website",
         aboutSourceCode = "Source Code",
-        aboutCopyright = "Copyright © 2024 PrivChat. All Rights Reserved.",
+        aboutCopyright = "Copyright © 2026 All Rights Reserved.",
 
         // Contact Us
         contactUsTitle = "Contact Us",
@@ -1251,7 +1254,7 @@ object PrivChatStringPacks {
             setNicknameSubmit = "Done",
             setNicknameError = "Nickname must be 2-32 characters",
             requiredActionUnsupportedTitle = "Client update required",
-            requiredActionUnsupportedMessage = "Your account has a pending action this version cannot complete. Please upgrade PrivChat to continue.",
+            requiredActionUnsupportedMessage = "Your account has a pending action this version cannot complete. Please upgrade the app to continue.",
             requiredActionUnsupportedReload = "Upgraded, reload",
 
             // Time
@@ -1308,6 +1311,7 @@ object PrivChatStringPacks {
             registerErrUsernameFormat = "Invalid username format (lowercase letter first, 3-32 chars).",
             registerErrPasswordTooShort = "Password must be at least 8 characters.",
             systemMessagesName = "System Messages",
+            groupChatFallback = "Group Chat",
             signInTitle = "Check-in Rewards",
             signInButton = "Check in",
             signInDoneToday = "Checked in today",

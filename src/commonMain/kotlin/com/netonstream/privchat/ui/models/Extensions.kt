@@ -12,9 +12,9 @@ import com.netonstream.privchat.ui.i18n.PrivChatStrings
 
 // ========== ChannelListEntry 扩展 ==========
 
-/** 显示名称 */
+/** 显示名称(DM 对端为系统用户时按语言本地化,判定见 [SystemUser]) */
 val ChannelListEntry.displayName: String
-    get() = name
+    get() = SystemUser.channelTitle(this)
 
 /** 是否有未读消息 */
 val ChannelListEntry.hasUnread: Boolean

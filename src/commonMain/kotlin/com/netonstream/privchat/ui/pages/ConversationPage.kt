@@ -75,6 +75,12 @@ fun ConversationPage(
 ) {
     val strings = PrivChatI18n.strings
     val channels by PrivChat.channels.collectAsState()
+    // 解析 DM 对端 username(系统用户识别,SystemUser 内部有 uid 去重缓存)
+    androidx.compose.runtime.LaunchedEffect(channels) {
+        channels.forEach { c ->
+            if (c.isDm) c.peerUserId?.let { com.netonstream.privchat.ui.models.SystemUser.resolveUid(it) }
+        }
+    }
     val localStates by PrivChat.channelLocalStates.collectAsState()
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()

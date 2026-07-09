@@ -279,7 +279,7 @@ val PrivChatStringsViVn = PrivChatStrings(
     aboutContactUs = "Liên hệ chúng tôi",
     aboutOfficialWebsite = "Website chính thức",
     aboutSourceCode = "Mã nguồn",
-    aboutCopyright = "Copyright \u00a9 2024 PrivChat. All Rights Reserved.",
+    aboutCopyright = "Copyright \u00a9 2026 All Rights Reserved.",
 
     // Liên hệ
     contactUsTitle = "Liên hệ chúng tôi",
@@ -312,7 +312,7 @@ val PrivChatStringsViVn = PrivChatStrings(
 
         // Required Actions — Unsupported
         requiredActionUnsupportedTitle = "Cần cập nhật ứng dụng",
-        requiredActionUnsupportedMessage = "Tài khoản của bạn có một thao tác cần xử lý mà phiên bản hiện tại chưa hỗ trợ. Vui lòng cập nhật PrivChat để tiếp tục.",
+        requiredActionUnsupportedMessage = "Tài khoản của bạn có một thao tác cần xử lý mà phiên bản hiện tại chưa hỗ trợ. Vui lòng cập nhật ứng dụng để tiếp tục.",
         requiredActionUnsupportedReload = "Đã cập nhật, tải lại",
 
         // Quyền bạn bè
@@ -372,6 +372,7 @@ val PrivChatStringsViVn = PrivChatStrings(
         registerErrUsernameFormat = "Định dạng tài khoản không hợp lệ (chữ thường đầu, 3-32 ký tự)",
         registerErrPasswordTooShort = "Mật khẩu tối thiểu 8 ký tự",
         systemMessagesName = "Tin nhắn hệ thống",
+        groupChatFallback = "Nhóm chat",
         signInTitle = "Điểm danh nhận thưởng",
         signInButton = "Điểm danh ngay",
         signInDoneToday = "Hôm nay đã điểm danh",

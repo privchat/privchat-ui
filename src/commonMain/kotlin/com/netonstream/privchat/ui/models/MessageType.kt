@@ -154,7 +154,13 @@ fun parseMessageType(content: String): MessageType {
             content.contains("\"type\":\"system\"") ||
                     content.contains("\"type\": \"system\"") ||
                     content.contains("\"type\":\"tip\"") ||
-                    content.contains("\"type\": \"tip\"") -> MessageType.SYSTEM
+                    content.contains("\"type\": \"tip\"") ||
+                    // 系统灰条(SYSTEM_MESSAGE_SPEC):键是 message_type 而非 type;
+                    // 会话列表 latestEvent 缺 messageType 时嗅探必须识别,否则落 TEXT
+                    // 分支被全文 text 正则命中 refs[0].text(曾把「Demo 邀请…」显示成「Demo」)。
+                    content.contains("\"message_type\":\"system\"") ||
+                    content.contains("\"message_type\": \"system\"") ||
+                    (content.contains("\"template\":") && content.contains("\"refs\":")) -> MessageType.SYSTEM
 
             // RP-12 资金卡片：payload 以 redPacketId/transferId 为标识（无 "type":"red_packet"），
             // 用于同步路径丢失 message_type 时按 content 兜底识别。
@@ -274,12 +280,21 @@ fun parseMessageContent(content: String): ParsedContent {
                 ?: extractJsonString(content, "emoji")
         )
 
-        MessageType.SYSTEM -> ParsedContent(
-            type = type,
-            text = extractJsonString(content, "text")
-                ?: extractJsonString(content, "tip")
-                ?: content
-        )
+        MessageType.SYSTEM -> {
+            // 与 MessageEntry 版共用同一 template+refs 解析(评审红线:
+            // 聊天页灰条与会话列表 preview 必须同一套 interpolation)。
+            val template = extractJsonString(content, "template")
+            val refs = if (template != null) extractMessageRefs(content) else null
+            ParsedContent(
+                type = type,
+                text = extractJsonString(content, "text")
+                    ?: extractJsonString(content, "tip")
+                    ?: content,
+                systemTemplate = template,
+                systemRefs = refs,
+                moneyRefId = refs?.firstOrNull { it.type == "red_packet" }?.targetId,
+            )
+        }
 
         MessageType.LINK -> ParsedContent(
             type = type,
