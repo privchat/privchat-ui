@@ -1,6 +1,7 @@
 package com.netonstream.privchat.ui.avatar
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -96,6 +97,26 @@ fun PrivChatAvatar(
                         model = remoteUrl,
                         onError = { loadFailed = true },
                     ),
+                    contentDescription = "",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(size)
+                        .clip(RoundedCornerShape(radius)),
+                )
+            }
+        } else if (userId != null && !isGroup) {
+            // P2(AVATAR_CACHE_SPEC §5.2)：无远程头像的用户，生成 initials 色块 PNG 落盘，
+            // 用 file:// 覆盖在运行时色块之上（视觉一致；生成中/失败自然露底层色块，不阻塞）。
+            var genUrl by remember(userId) { mutableStateOf<String?>(null) }
+            LaunchedEffect(userId, name, username) {
+                genUrl = GeneratedAvatarCache
+                    .ensureInitials(userId.toString(), name, username)
+                    ?.let { "file://$it" }
+            }
+            val g = genUrl
+            if (g != null) {
+                Image(
+                    painter = rememberAsyncImagePainter(model = g),
                     contentDescription = "",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier

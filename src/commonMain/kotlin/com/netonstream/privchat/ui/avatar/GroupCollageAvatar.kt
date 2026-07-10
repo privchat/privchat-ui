@@ -2,6 +2,13 @@ package com.netonstream.privchat.ui.avatar
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.tencent.kuikly.compose.coil3.rememberAsyncImagePainter
+import com.tencent.kuikly.compose.foundation.Image
+import com.tencent.kuikly.compose.ui.layout.ContentScale
 import androidx.compose.runtime.mutableStateMapOf
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.foundation.primitives.Text
@@ -112,6 +119,34 @@ fun GroupCollageAvatar(
             isGroup = true,
             seed = "g:$channelId",
             modifier = modifier,
+        )
+        return
+    }
+
+    // P2(AVATAR_CACHE_SPEC §5.3)：九宫格合成一次 PNG 落盘，命中即 file:// 加载
+    // （与 PrivChatAvatar 同一图片管道）；合成中/失败回退下方运行时逐格绘制。
+    var collageUrl by remember(channelId) { mutableStateOf<String?>(null) }
+    LaunchedEffect(channelId, members) {
+        val cm = members.take(9).map {
+            GeneratedAvatarCache.CollageMember(
+                uid = it.userId.toString(),
+                name = it.displayName,
+                username = null,
+            )
+        }
+        collageUrl = GeneratedAvatarCache
+            .ensureCollage(channelId.toString(), cm)
+            ?.let { "file://$it" }
+    }
+    val cu = collageUrl
+    if (cu != null) {
+        Image(
+            painter = rememberAsyncImagePainter(model = cu),
+            contentDescription = "",
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+                .size(size)
+                .clip(RoundedCornerShape(radius)),
         )
         return
     }
