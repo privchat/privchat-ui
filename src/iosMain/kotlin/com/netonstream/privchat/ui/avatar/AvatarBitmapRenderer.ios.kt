@@ -66,26 +66,29 @@ actual object AvatarBitmapRenderer {
     actual fun fileExists(path: String): Boolean =
         NSFileManager.defaultManager.fileExistsAtPath(path)
 
-    /** 建 image context → 绘制 → 取 PNG → 落盘（.part + move 原子换入）。 */
+    /** 建 image context → 绘制 → 取 PNG → 落盘。writeToFile(atomically) 内部即临时文件
+     *  + rename 原子换入；但**不建父目录**，需先 createDirectory，且 **必须以 writeToFile
+     *  的返回值为准**（否则父目录缺失时静默失败却被当成成功，UI 会加载到不存在的文件而空白）。 */
     private inline fun render(sizePx: Int, outPath: String, draw: (Double) -> Unit): Boolean {
         if (sizePx <= 0) return false
         val s = sizePx.toDouble()
         return runCatching {
             UIGraphicsBeginImageContextWithOptions(CGSizeMake(s, s), true, 1.0)
-            try {
+            val ok = try {
                 draw(s)
                 val image = UIGraphicsGetImageFromCurrentImageContext()
-                    ?: error("nil image context")
-                val png = UIImagePNGRepresentation(image) ?: error("nil png")
-                val tmp = "$outPath.part"
-                png.writeToFile(tmp, atomically = true)
-                val fm = NSFileManager.defaultManager
-                fm.removeItemAtPath(outPath, null)
-                fm.moveItemAtPath(tmp, outPath, null)
-                true
+                val png = image?.let { UIImagePNGRepresentation(it) }
+                if (png == null) {
+                    false
+                } else {
+                    val parent = outPath.substringBeforeLast('/')
+                    NSFileManager.defaultManager.createDirectoryAtPath(parent, true, null, null)
+                    png.writeToFile(outPath, atomically = true)
+                }
             } finally {
                 UIGraphicsEndImageContext()
             }
+            ok
         }.getOrDefault(false)
     }
 
