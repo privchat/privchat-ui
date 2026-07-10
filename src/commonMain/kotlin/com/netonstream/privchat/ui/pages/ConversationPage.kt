@@ -60,6 +60,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun ConversationPage(
     onChannelClick: (ChannelListEntry) -> Unit,
+    onGlobalSearch: () -> Unit = {},
     onCreateChat: () -> Unit = {},
     onCreateGroup: () -> Unit = {},
     onAddFriend: () -> Unit = {},
@@ -133,6 +134,19 @@ fun ConversationPage(
                 NavBar(
                     title = strings.conversationTitle,
                     rightWidget = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        // 全局搜索(聊天记录)入口
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 4.dp, vertical = 8.dp)
+                                .clickable(onClick = onGlobalSearch),
+                        ) {
+                            Icon(
+                                name = Icons.search,
+                                size = 24.dp,
+                                tint = Theme.colors.foreground,
+                            )
+                        }
                         // gearui ContextMenu：定位、阴影、点击外部消失、按下高亮都内置好了
                         ContextMenu(
                             placement = PopoverPlacement.BOTTOM_RIGHT,
@@ -170,6 +184,7 @@ fun ConversationPage(
                                     tint = Theme.colors.foreground,
                                 )
                             }
+                        }
                         }
                     },
                 )

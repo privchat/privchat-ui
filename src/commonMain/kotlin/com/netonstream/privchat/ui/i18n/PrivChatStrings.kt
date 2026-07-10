@@ -242,6 +242,15 @@ data class PrivChatStrings(
     val searchUserMyQrCode: String,
     val searchUserMyAccount: String,
 
+    // ========== 全局搜索(聊天记录) ==========
+    val globalSearchTitle: String,
+    val globalSearchPlaceholder: String,
+    val globalSearchSectionChannels: String,
+    val globalSearchSectionMessages: String,
+    val globalSearchNoResult: String,
+    val globalSearchLoadMore: String,
+    val globalSearchAnchorMissing: String,
+
     // ========== 用户详情 ==========
     val userProfileTitle: String,
     val userProfileUserId: String,
@@ -664,6 +673,14 @@ object PrivChatStringPacks {
         searchUserMyQrCode = "我的二维码",
         searchUserMyAccount = "我的账号",
 
+        globalSearchTitle = "搜索",
+        globalSearchPlaceholder = "搜索聊天记录",
+        globalSearchSectionChannels = "会话",
+        globalSearchSectionMessages = "聊天记录",
+        globalSearchNoResult = "未找到相关结果",
+        globalSearchLoadMore = "加载更多",
+        globalSearchAnchorMissing = "该消息已失效",
+
         // 用户详情
         userProfileTitle = "用户资料",
         userProfileUserId = "用户 ID",
@@ -1067,6 +1084,14 @@ object PrivChatStringPacks {
         searchUserPhoneContacts = "Phone Contacts",
         searchUserMyQrCode = "My QR Code",
         searchUserMyAccount = "My Account",
+
+        globalSearchTitle = "Search",
+        globalSearchPlaceholder = "Search messages",
+        globalSearchSectionChannels = "Chats",
+        globalSearchSectionMessages = "Messages",
+        globalSearchNoResult = "No results found",
+        globalSearchLoadMore = "Load more",
+        globalSearchAnchorMissing = "Message unavailable",
 
         // User Profile
         userProfileTitle = "User Profile",

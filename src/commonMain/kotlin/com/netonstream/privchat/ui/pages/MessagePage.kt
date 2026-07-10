@@ -379,6 +379,8 @@ fun MessagePage(
     // 点转账卡片（传 transferId）→ 宿主打开转账详情。
     onMoneyTransferClick: ((String) -> Unit)? = null,
     onError: ((String) -> Unit)? = null,
+    /** 搜索命中跳转：以该 server_message_id 为锚打开会话（spec §5 jump-to-message） */
+    initialFocusMessageId: ULong? = null,
     modifier: Modifier = Modifier,
 ) {
     val strings = PrivChatI18n.strings
@@ -443,6 +445,18 @@ fun MessagePage(
         if (highlightMessageId != null) {
             delay(800)
             highlightMessageId = null
+        }
+    }
+    // spec §5：跳转锚（本地行 id）。窗口装载后由下方 effect 消费：滚动 + 高亮。
+    var pendingFocusLocalId by remember(channel.channelId) { mutableStateOf<ULong?>(null) }
+    // spec §5：跳转窗口就绪后定位 anchor（复用 reply 的滚动+高亮原语），一次性消费。
+    LaunchedEffect(messages, pendingFocusLocalId) {
+        val focusId = pendingFocusLocalId ?: return@LaunchedEffect
+        val idx = messages.indexOfFirst { it.id == focusId }
+        if (idx >= 0) {
+            listState.animateScrollToItem(idx)
+            highlightMessageId = focusId
+            pendingFocusLocalId = null
         }
     }
     val allGroupMembers by PrivChat.groupMembers.collectAsState()
@@ -520,12 +534,42 @@ fun MessagePage(
             PrivChat.updateMessages(channel.channelId, cachedBeforeLoad)
         }
         PrivChat.clearChannelUnread(channel.channelId)
-        val result = onLoadMessages?.invoke(channel.channelId, channel.channelType)
-            ?: withContext(Dispatchers.Default) {
-                PrivChat.client.getMessagesByType(channel.channelId, channel.channelType, 50u, null)
+        if (initialFocusMessageId != null) {
+            // spec §5：搜索命中跳转——先 around 回填服务端上下文，再从本地按显示排序
+            // 读窗口渲染（本地重查是渲染真源）；anchor 不可见（撤回/删除/越权）时降级
+            // 为常规最近窗口并提示。
+            val focusWindow = withContext(Dispatchers.Default) {
+                PrivChat.client.getMessagesAround(
+                    channel.channelId, channel.channelType, initialFocusMessageId, 25u, 25u,
+                ).fold(
+                    onSuccess = {
+                        PrivChat.client.getLocalMessagesAround(
+                            channel.channelId, channel.channelType, initialFocusMessageId,
+                        ).getOrNull()
+                    },
+                    onFailure = { null },
+                )
             }
-        result.onSuccess { list ->
-            PrivChat.updateMessages(channel.channelId, list)
+            if (!focusWindow.isNullOrEmpty()) {
+                PrivChat.updateMessages(channel.channelId, focusWindow)
+                focusWindow.firstOrNull { it.serverMessageId == initialFocusMessageId }
+                    ?.let { anchor -> pendingFocusLocalId = anchor.id }
+            } else {
+                onError?.invoke(strings.globalSearchAnchorMissing)
+                val result = onLoadMessages?.invoke(channel.channelId, channel.channelType)
+                    ?: withContext(Dispatchers.Default) {
+                        PrivChat.client.getMessagesByType(channel.channelId, channel.channelType, 50u, null)
+                    }
+                result.onSuccess { list -> PrivChat.updateMessages(channel.channelId, list) }
+            }
+        } else {
+            val result = onLoadMessages?.invoke(channel.channelId, channel.channelType)
+                ?: withContext(Dispatchers.Default) {
+                    PrivChat.client.getMessagesByType(channel.channelId, channel.channelType, 50u, null)
+                }
+            result.onSuccess { list ->
+                PrivChat.updateMessages(channel.channelId, list)
+            }
         }
         // 加载对端已读水位（cold start）
         runCatching {

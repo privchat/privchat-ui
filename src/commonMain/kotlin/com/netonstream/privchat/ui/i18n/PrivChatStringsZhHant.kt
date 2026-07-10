@@ -123,6 +123,14 @@ val PrivChatStringsZhHant = PrivChatStrings(
     searchUserMyQrCode = "我的 QR Code",
     searchUserMyAccount = "我的帳號",
 
+    globalSearchTitle = "搜尋",
+    globalSearchPlaceholder = "搜尋聊天記錄",
+    globalSearchSectionChannels = "會話",
+    globalSearchSectionMessages = "聊天記錄",
+    globalSearchNoResult = "未找到相關結果",
+    globalSearchLoadMore = "載入更多",
+    globalSearchAnchorMissing = "該訊息已失效",
+
     // 用戶詳情
     userProfileTitle = "用戶資料",
     userProfileUserId = "用戶 ID",

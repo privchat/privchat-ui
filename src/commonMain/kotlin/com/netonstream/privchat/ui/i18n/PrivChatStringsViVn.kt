@@ -123,6 +123,14 @@ val PrivChatStringsViVn = PrivChatStrings(
     searchUserMyQrCode = "Mã QR của tôi",
     searchUserMyAccount = "Tài khoản của tôi",
 
+    globalSearchTitle = "Tìm kiếm",
+    globalSearchPlaceholder = "Tìm kiếm tin nhắn",
+    globalSearchSectionChannels = "Cuộc trò chuyện",
+    globalSearchSectionMessages = "Tin nhắn",
+    globalSearchNoResult = "Không tìm thấy kết quả",
+    globalSearchLoadMore = "Tải thêm",
+    globalSearchAnchorMissing = "Tin nhắn không khả dụng",
+
     // Hồ sơ người dùng
     userProfileTitle = "Hồ sơ người dùng",
     userProfileUserId = "ID người dùng",
