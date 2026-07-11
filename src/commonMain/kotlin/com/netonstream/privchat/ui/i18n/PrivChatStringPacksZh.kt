@@ -321,8 +321,8 @@ internal val zhAuxiliary = PrivChatAuxiliaryStrings(
     timeFriday = "周五",
     timeSaturday = "周六",
     systemTemplates = mapOf(
-                
-                
+
+
                 "system.member_invited" to "{0} 邀请 {1+} 加入了群聊",
                 "system.group_mute_all_on" to "{0} 开启了全员禁言",
                 "system.group_mute_all_off" to "{0} 解除了全员禁言",
@@ -401,4 +401,3 @@ internal val zhAuxiliary = PrivChatAuxiliaryStrings(
     loginToRegister = "没有账号？注册新账号",
     loginToLogin = "已有账号？去登录",
 )
-

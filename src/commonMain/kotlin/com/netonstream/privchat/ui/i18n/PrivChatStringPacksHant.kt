@@ -399,4 +399,3 @@ internal val hantAuxiliary = PrivChatAuxiliaryStrings(
     loginToRegister = "沒有帳號？註冊新帳號",
     loginToLogin = "已有帳號？去登入",
 )
-

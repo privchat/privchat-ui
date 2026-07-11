@@ -399,4 +399,3 @@ internal val viAuxiliary = PrivChatAuxiliaryStrings(
     loginToRegister = "Chưa có tài khoản? Đăng ký",
     loginToLogin = "Đã có tài khoản? Đăng nhập",
 )
-

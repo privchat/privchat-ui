@@ -399,4 +399,3 @@ internal val enAuxiliary = PrivChatAuxiliaryStrings(
     loginToRegister = "No account? Create one",
     loginToLogin = "Have an account? Sign in",
 )
-
