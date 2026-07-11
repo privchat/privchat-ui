@@ -400,4 +400,12 @@ internal val zhAuxiliary = PrivChatAuxiliaryStrings(
     loginRegisterButton = "注册并登录",
     loginToRegister = "没有账号？注册新账号",
     loginToLogin = "已有账号？去登录",
+    bannerConnecting = "服务器连接中…",
+    bannerDisconnected = "网络已断开",
+    bannerConnected = "服务器已连接",
+    bannerReconnecting = "服务器重连中…",
+    bannerConnectFailed = "服务器连接失败",
+    bannerSyncing = "同步中…",
+    loginExpired = "登录已失效，请重新登录",
+    syncFailedRetry = "同步失败，稍后会自动重试",
 )

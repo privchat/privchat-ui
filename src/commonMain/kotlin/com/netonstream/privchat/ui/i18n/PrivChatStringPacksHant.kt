@@ -398,4 +398,12 @@ internal val hantAuxiliary = PrivChatAuxiliaryStrings(
     loginRegisterButton = "註冊並登入",
     loginToRegister = "沒有帳號？註冊新帳號",
     loginToLogin = "已有帳號？去登入",
+    bannerConnecting = "伺服器連線中…",
+    bannerDisconnected = "網路已斷開",
+    bannerConnected = "伺服器已連線",
+    bannerReconnecting = "伺服器重連中…",
+    bannerConnectFailed = "伺服器連線失敗",
+    bannerSyncing = "同步中…",
+    loginExpired = "登入已失效，請重新登入",
+    syncFailedRetry = "同步失敗，稍後會自動重試",
 )

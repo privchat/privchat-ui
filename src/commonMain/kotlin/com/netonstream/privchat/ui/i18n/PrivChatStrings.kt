@@ -363,6 +363,15 @@ data class PrivChatStrings(
     val loginRegisterButton: String get() = dAuxiliary.loginRegisterButton
     val loginToRegister: String get() = dAuxiliary.loginToRegister
     val loginToLogin: String get() = dAuxiliary.loginToLogin
+    // P4 运行时状态条（CLIENT_GLOBAL_STATE §17）
+    val bannerConnecting: String get() = dAuxiliary.bannerConnecting
+    val bannerDisconnected: String get() = dAuxiliary.bannerDisconnected
+    val bannerConnected: String get() = dAuxiliary.bannerConnected
+    val bannerReconnecting: String get() = dAuxiliary.bannerReconnecting
+    val bannerConnectFailed: String get() = dAuxiliary.bannerConnectFailed
+    val bannerSyncing: String get() = dAuxiliary.bannerSyncing
+    val loginExpired: String get() = dAuxiliary.loginExpired
+    val syncFailedRetry: String get() = dAuxiliary.syncFailedRetry
 }
 
 data class PrivChatStringsPatch(

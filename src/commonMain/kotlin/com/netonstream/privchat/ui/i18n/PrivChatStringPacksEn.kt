@@ -398,4 +398,12 @@ internal val enAuxiliary = PrivChatAuxiliaryStrings(
     loginRegisterButton = "Create account",
     loginToRegister = "No account? Create one",
     loginToLogin = "Have an account? Sign in",
+    bannerConnecting = "Connecting to server…",
+    bannerDisconnected = "Network disconnected",
+    bannerConnected = "Connected",
+    bannerReconnecting = "Reconnecting…",
+    bannerConnectFailed = "Connection failed",
+    bannerSyncing = "Syncing…",
+    loginExpired = "Session expired, please sign in again",
+    syncFailedRetry = "Sync failed, will retry automatically",
 )

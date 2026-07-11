@@ -398,4 +398,12 @@ internal val viAuxiliary = PrivChatAuxiliaryStrings(
     loginRegisterButton = "Đăng ký và đăng nhập",
     loginToRegister = "Chưa có tài khoản? Đăng ký",
     loginToLogin = "Đã có tài khoản? Đăng nhập",
+    bannerConnecting = "Đang kết nối máy chủ…",
+    bannerDisconnected = "Mất kết nối mạng",
+    bannerConnected = "Đã kết nối",
+    bannerReconnecting = "Đang kết nối lại…",
+    bannerConnectFailed = "Kết nối thất bại",
+    bannerSyncing = "Đang đồng bộ…",
+    loginExpired = "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại",
+    syncFailedRetry = "Đồng bộ thất bại, sẽ tự động thử lại",
 )

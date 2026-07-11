@@ -1234,6 +1234,15 @@ data class PrivChatAuxiliaryStrings(
     val loginRegisterButton: String,
     val loginToRegister: String,
     val loginToLogin: String,
+    // P4 运行时状态条（CLIENT_GLOBAL_STATE §17）
+    val bannerConnecting: String,
+    val bannerDisconnected: String,
+    val bannerConnected: String,
+    val bannerReconnecting: String,
+    val bannerConnectFailed: String,
+    val bannerSyncing: String,
+    val loginExpired: String,
+    val syncFailedRetry: String,
 )
 
 data class PrivChatAuxiliaryStringsPatch(
@@ -1334,6 +1343,14 @@ data class PrivChatAuxiliaryStringsPatch(
     val loginRegisterButton: String? = null,
     val loginToRegister: String? = null,
     val loginToLogin: String? = null,
+    val bannerConnecting: String? = null,
+    val bannerDisconnected: String? = null,
+    val bannerConnected: String? = null,
+    val bannerReconnecting: String? = null,
+    val bannerConnectFailed: String? = null,
+    val bannerSyncing: String? = null,
+    val loginExpired: String? = null,
+    val syncFailedRetry: String? = null,
 )
 
 val PrivChatAuxiliaryStringsPatch.isEmpty: Boolean
@@ -1433,7 +1450,15 @@ val PrivChatAuxiliaryStringsPatch.isEmpty: Boolean
         loginInviteCodePlaceholder == null &&
         loginRegisterButton == null &&
         loginToRegister == null &&
-        loginToLogin == null
+        loginToLogin == null &&
+        bannerConnecting == null &&
+        bannerDisconnected == null &&
+        bannerConnected == null &&
+        bannerReconnecting == null &&
+        bannerConnectFailed == null &&
+        bannerSyncing == null &&
+        loginExpired == null &&
+        syncFailedRetry == null
 
 fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivChatAuxiliaryStrings {
     if (patch == null || patch.isEmpty) return this
@@ -1535,5 +1560,13 @@ fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivC
         loginRegisterButton = patch.loginRegisterButton ?: loginRegisterButton,
         loginToRegister = patch.loginToRegister ?: loginToRegister,
         loginToLogin = patch.loginToLogin ?: loginToLogin,
+        bannerConnecting = patch.bannerConnecting ?: bannerConnecting,
+        bannerDisconnected = patch.bannerDisconnected ?: bannerDisconnected,
+        bannerConnected = patch.bannerConnected ?: bannerConnected,
+        bannerReconnecting = patch.bannerReconnecting ?: bannerReconnecting,
+        bannerConnectFailed = patch.bannerConnectFailed ?: bannerConnectFailed,
+        bannerSyncing = patch.bannerSyncing ?: bannerSyncing,
+        loginExpired = patch.loginExpired ?: loginExpired,
+        syncFailedRetry = patch.syncFailedRetry ?: syncFailedRetry,
     )
 }
