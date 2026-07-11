@@ -321,6 +321,7 @@ object PrivChat {
         _sentFriendRequests.value = emptyList()
         _groups.value = emptyList()
         _groupMembers.value = emptyList()
+        com.netonstream.privchat.ui.state.GroupStore.clear() // P6-1：切号/登出清群成员，防串号
         _presences.value = emptyMap()
         _peerReadPtsByChannel.value = emptyMap()
         _channelLocalStates.value = emptyMap()

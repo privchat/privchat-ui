@@ -6,15 +6,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.netonstream.privchat.ui.state.GroupStore
 import com.tencent.kuikly.compose.coil3.rememberAsyncImagePainter
+// removed: mutableStateMapOf / PrivChat imports — private member cache collapsed into GroupStore (P6-1)
 import com.tencent.kuikly.compose.foundation.Image
 import com.tencent.kuikly.compose.ui.layout.ContentScale
-import androidx.compose.runtime.mutableStateMapOf
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.typography.Typography
 import com.netonstream.privchat.sdk.dto.GroupMemberEntry
-import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.models.displayName
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.layout.Box
@@ -34,61 +34,10 @@ import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
 
 /**
- * 群成员预览缓存：channelId → 排序后前 9 名成员（进程内一次，无 TTL）。
- *
- * 排序规则（三端统一，App 无 joined_at 以 userId 近似）：
- * role 权重 owner < admin < member 升序 → userId 升序。
+ * 群成员总数（P6-1：来自 [GroupStore]，channel-keyed + 系统用户已过滤；0=尚未拉到）。
+ * 群标题「名称 (人数)」的数据源——不再含系统账号。
  */
-private object GroupMemberPreviewCache {
-    // mutableStateMapOf：写入后引用它的 Composable 自动重组
-    private val cache = mutableStateMapOf<ULong, List<GroupMemberEntry>>()
-    private val totals = mutableStateMapOf<ULong, Int>()
-    private val inFlight = mutableSetOf<ULong>()
-
-    fun peek(channelId: ULong): List<GroupMemberEntry>? = cache[channelId]
-
-    /** 拉取并缓存前 9 名成员；重复调用 / 并发进入直接跳过（in-flight 去重）。 */
-    suspend fun load(channelId: ULong) {
-        if (cache.containsKey(channelId) || !inFlight.add(channelId)) return
-        try {
-            var members = PrivChat.client.getGroupMembers(channelId, null, null)
-                .getOrNull().orEmpty()
-            // 本地为空（新登录还没同步）或 entity sync 只写了 uid 没带昵称
-            // （displayName 退化成纯数字 uid）→ 拉一次远端补全再读
-            if (members.isEmpty() || members.any { it.displayName.toULongOrNull() == it.userId }) {
-                PrivChat.client.syncGroupMembers(channelId)
-                members = PrivChat.client.getGroupMembers(channelId, null, null)
-                    .getOrNull().orEmpty()
-            }
-            if (members.isNotEmpty()) {
-                cache[channelId] = topNine(members)
-                totals[channelId] = members.size
-            }
-        } catch (_: Throwable) {
-            // 失败静默：留给下次进入会话列表时重试（inFlight 已释放）
-        } finally {
-            inFlight.remove(channelId)
-        }
-    }
-
-    /** 已缓存成员总数（0 = 未知）；供群标题人数兜底（ChannelListEntry.memberCount 尚无数据源）。 */
-    fun memberCount(channelId: ULong): Int = totals[channelId] ?: 0
-
-    private fun topNine(members: List<GroupMemberEntry>): List<GroupMemberEntry> =
-        members
-            .sortedWith(compareBy({ roleWeight(it.role) }, { it.userId }))
-            .take(9)
-
-    // owner(role=2) → 0 / admin(role=1) → 1 / member(role=0) → 2
-    private fun roleWeight(role: Int): Int = when (role) {
-        2 -> 0
-        1 -> 1
-        else -> 2
-    }
-}
-
-/** 群成员总数(来自九宫格成员预览缓存;0=尚未拉到)。群标题「名称 (人数)」的数据源。 */
-fun groupMemberPreviewCount(channelId: ULong): Int = GroupMemberPreviewCache.memberCount(channelId)
+fun groupMemberPreviewCount(channelId: ULong): Int = GroupStore.memberCount(channelId)
 
 /**
  * 群头像九宫格拼贴（三端统一规格）。
@@ -108,8 +57,9 @@ fun GroupCollageAvatar(
     radius: Dp = 6.dp,
     modifier: Modifier = Modifier,
 ) {
-    LaunchedEffect(channelId) { GroupMemberPreviewCache.load(channelId) }
-    val members = GroupMemberPreviewCache.peek(channelId).orEmpty()
+    LaunchedEffect(channelId) { GroupStore.ensureMembers(channelId) }
+    // P6-1：九宫格改读 GroupStore（channel-keyed + 系统用户已过滤），不再用私有未过滤缓存。
+    val members = GroupStore.preview(channelId)
 
     if (members.isEmpty()) {
         PrivChatAvatar(

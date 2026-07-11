@@ -139,9 +139,9 @@ val UserEntry.avatarLetter: String
 
 // ========== GroupEntry 扩展 ==========
 
-/** 显示名称 */
+/** 显示名称（P6-1：收口到 [GroupDisplay.titleOf]，与会话列表/群资料页同一 fallback 规则）。 */
 val GroupEntry.displayName: String
-    get() = name ?: "群聊"
+    get() = GroupDisplay.titleOf(name)
 
 /** 头像首字母（同 [FriendEntry.avatarLetter] 说明）。 */
 val GroupEntry.avatarLetter: String

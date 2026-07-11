@@ -147,7 +147,8 @@ fun ChatSettingsPage(
                 item {
                     Cell(
                         title = strings.chatSettingsGroupName,
-                        description = channel.name,
+                        // P6-1：收口到 GroupDisplay.titleOf（此前裸 channel.name 无 fallback，空群名显示空白）。
+                        description = com.netonstream.privchat.ui.models.GroupDisplay.titleOf(channel.name),
                         arrow = true,
                         onClick = onGroupNameClick,
                     )
