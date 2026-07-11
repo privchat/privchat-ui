@@ -46,6 +46,8 @@ import com.gearui.theme.Theme
  * @param isMuted 免打扰时不显示数字、只显示小红点（旧 [ChatAvatar] 用法保留）
  * @param isOnline 在线小绿点（旧 [ChatAvatar] 用法保留）
  * @param seed hash 色种子（`"u:<uid>"` / `"g:<channelId>"`）；不传时由 resolver 按 userId/名字兜底
+ * @param preferLocalCache 已缓存头像（如自己头像，SDK 已下载到 `avatars/users/{uid}.img`）优先
+ *   直接读本地文件、跳过远程网络加载，消除 initials→网络图的闪烁；本地无缓存时自动回落远程/initials
  */
 @Composable
 fun PrivChatAvatar(
@@ -60,6 +62,7 @@ fun PrivChatAvatar(
     isMuted: Boolean = false,
     isOnline: Boolean = false,
     seed: String? = null,
+    preferLocalCache: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val resolved = rememberAvatarResolved(
@@ -88,8 +91,30 @@ fun PrivChatAvatar(
         // 远程头像图：叠加在 initials 之上（gearui Avatar 的 image 分支无失败回退，
         // 且 Icon 渲染是 ContentScale.Fit；这里自己 Image + Crop + clip 保证「加载中 /
         // 失败露色块、成功盖满方圆角」）。
+        // local-first：已缓存头像（如自己头像，SDK 已下载到 `avatars/users/{uid}.img`）优先
+        // 读本地文件，near-instant，跳过远程网络加载 → 不再先 initials 后网络图闪一下。
+        var localCacheUrl by remember(userId, preferLocalCache) { mutableStateOf<String?>(null) }
+        if (preferLocalCache && userId != null && !isGroup) {
+            LaunchedEffect(userId) {
+                val root = AvatarLocalCache.userRoot
+                localCacheUrl = if (root != null) {
+                    val p = "$root/avatars/users/$userId.img"
+                    if (AvatarBitmapRenderer.fileExists(p)) "file://$p" else null
+                } else null
+            }
+        }
         val remoteUrl = resolved.avatarUrl?.trim()?.takeIf { it.isNotEmpty() }
-        if (remoteUrl != null) {
+        val localUrl = localCacheUrl
+        if (localUrl != null) {
+            Image(
+                painter = rememberAsyncImagePainter(model = localUrl),
+                contentDescription = "",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(size)
+                    .clip(RoundedCornerShape(radius)),
+            )
+        } else if (remoteUrl != null) {
             var loadFailed by remember(remoteUrl) { mutableStateOf(false) }
             if (!loadFailed) {
                 Image(
