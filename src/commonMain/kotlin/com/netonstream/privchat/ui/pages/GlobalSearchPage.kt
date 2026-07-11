@@ -41,6 +41,11 @@ fun GlobalSearchPage(
     onOpenMessageHit: (channel: ChannelListEntry, anchorMessageId: ULong) -> Unit,
     /** 点击会话命中：正常打开聊天页 */
     onOpenChannel: (ChannelListEntry) -> Unit,
+    /**
+     * 会话内搜索（CHANNEL scope）：非空时只搜该会话云端历史，不显示会话命中区，
+     * 从聊天页「…」菜单进入；null = 全局搜索（会话列表入口，本地会话 + 云端全局）。
+     */
+    scopeChannel: ChannelListEntry? = null,
     modifier: Modifier = Modifier,
 ) {
     val strings = PrivChatI18n.strings
@@ -48,6 +53,7 @@ fun GlobalSearchPage(
     val scope = rememberCoroutineScope()
     val channels by PrivChat.channels.collectAsState()
     val channelsById = remember(channels) { channels.associateBy { it.channelId } }
+    val scopeId = scopeChannel?.channelId
 
     var query by remember { mutableStateOf("") }
     var hits by remember { mutableStateOf<List<SearchHistoryHit>>(emptyList()) }
@@ -56,10 +62,10 @@ fun GlobalSearchPage(
     var isLoadingMore by remember { mutableStateOf(false) }
     var searched by remember { mutableStateOf(false) }
 
-    // 本地会话即时过滤（不 debounce，纯内存）
-    val localChannelHits = remember(query, channels) {
+    // 本地会话即时过滤（不 debounce，纯内存）。会话内搜索时不展示会话命中。
+    val localChannelHits = remember(query, channels, scopeId) {
         val q = query.trim()
-        if (q.isEmpty()) emptyList()
+        if (q.isEmpty() || scopeId != null) emptyList()
         else channels.filter { it.displayName.contains(q, ignoreCase = true) }.take(20)
     }
 
@@ -75,7 +81,7 @@ fun GlobalSearchPage(
         }
         isSearching = true
         delay(400L)
-        val result = PrivChat.client.searchMessageHistory(q)
+        val result = PrivChat.client.searchMessageHistory(q, channelId = scopeId)
         isSearching = false
         searched = true
         result.onSuccess { page ->
@@ -90,7 +96,7 @@ fun GlobalSearchPage(
         if (q.length < 2 || isLoadingMore) return
         isLoadingMore = true
         scope.launch {
-            PrivChat.client.searchMessageHistory(q, cursor = cursor)
+            PrivChat.client.searchMessageHistory(q, channelId = scopeId, cursor = cursor)
                 .onSuccess { page ->
                     hits = hits + page.hits
                     nextCursor = page.nextCursor
@@ -101,7 +107,7 @@ fun GlobalSearchPage(
 
     Column(modifier = modifier.fillMaxSize().background(colors.background)) {
         NavBar(
-            title = strings.globalSearchTitle,
+            title = if (scopeChannel != null) strings.globalSearchPlaceholder else strings.globalSearchTitle,
             useDefaultBack = true,
             onBackClick = onBack,
         )
@@ -146,10 +152,12 @@ fun GlobalSearchPage(
                         val hit = hits[i]
                         MessageHitRow(
                             hit = hit,
-                            channelName = channelsById[hit.channelId]?.displayName
+                            channelName = scopeChannel?.displayName
+                                ?: channelsById[hit.channelId]?.displayName
                                 ?: hit.channelId.toString(),
                             onClick = {
-                                channelsById[hit.channelId]?.let { ch ->
+                                // 会话内搜索：命中一定属于 scopeChannel，直接用它兜底。
+                                (scopeChannel ?: channelsById[hit.channelId])?.let { ch ->
                                     onOpenMessageHit(ch, hit.messageId)
                                 }
                             },

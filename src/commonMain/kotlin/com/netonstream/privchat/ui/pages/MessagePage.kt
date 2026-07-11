@@ -44,7 +44,10 @@ import com.tencent.kuikly.compose.ui.unit.Dp
 import com.gearui.primitives.composite.Card
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.navbar.NavBarItem
+import com.gearui.components.contextmenu.ContextMenu
+import com.gearui.components.contextmenu.ContextMenuItem
 import com.gearui.components.icon.Icons
+import com.gearui.components.popover.PopoverPlacement
 import com.gearui.foundation.primitives.Icon
 import com.gearui.components.input.Input
 import com.gearui.components.input.InputSize
@@ -354,6 +357,8 @@ fun MessagePage(
     channel: ChannelListEntry,
     onBack: () -> Unit,
     onProfileClick: () -> Unit = {},
+    /** 会话内搜索：从「…」菜单进入，上层 push GlobalSearch(scopeChannel=当前会话)。 */
+    onSearchMessages: (() -> Unit)? = null,
     onAvatarClick: ((ULong) -> Unit)? = null,
     networkStatusBar: (@Composable () -> Unit)? = null,
     onLoadMessages: (suspend (ULong, Int) -> Result<List<MessageEntry>>)? = null,
@@ -875,9 +880,38 @@ fun MessagePage(
                     }
                 }
             },
-            rightItems = listOf(
-                NavBarItem(icon = Icons.more_horiz, onClick = onProfileClick)
-            ),
+            rightWidget = {
+                // 「…」菜单：搜索聊天记录（会话内）+ 聊天/群详情（原 onProfileClick 入口）。
+                ContextMenu(
+                    placement = PopoverPlacement.BOTTOM_RIGHT,
+                    items = buildList {
+                        if (onSearchMessages != null) {
+                            add(
+                                ContextMenuItem(
+                                    label = strings.globalSearchPlaceholder,
+                                    icon = Icons.search,
+                                    onClick = { onSearchMessages() },
+                                )
+                            )
+                        }
+                        add(
+                            ContextMenuItem(
+                                label = strings.chatSettingsTitle,
+                                icon = Icons.info,
+                                onClick = onProfileClick,
+                            )
+                        )
+                    },
+                ) { onOpen ->
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                            .clickable(onClick = onOpen),
+                    ) {
+                        Icon(name = Icons.more_horiz, size = 24.dp, tint = Theme.colors.foreground)
+                    }
+                }
+            },
         )
         networkStatusBar?.invoke()
 
