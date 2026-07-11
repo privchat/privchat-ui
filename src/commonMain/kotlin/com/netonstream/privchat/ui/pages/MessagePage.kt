@@ -430,6 +430,9 @@ fun MessagePage(
     // peerUserType 异步解析（getUserProfileLocalFirst → 本地优先，未知再拉服务端）。
     var peerUserType by remember(channel.channelId) { mutableStateOf<Short?>(null) }
     var initialPositioned by remember(channel.channelId) { mutableStateOf(false) }
+    // spec §5：跳转模式下抑制"初始滚到底部"，直到 focus 定位完成或降级——否则
+    // around 回灌 messages 触发的初始滚底会把 anchor 定位冲掉（消息多的会话尤其明显）。
+    var jumpPending by remember(channel.channelId) { mutableStateOf(initialFocusMessageId != null) }
     var hasInitialLoadCompleted by remember(channel.channelId) { mutableStateOf(false) }
     // 输入文本
     var inputText by remember { mutableStateOf(PrivChat.getDraft(channel.channelId) ?: "") }
@@ -457,6 +460,9 @@ fun MessagePage(
             listState.animateScrollToItem(idx)
             highlightMessageId = focusId
             pendingFocusLocalId = null
+            // 已定位到 anchor：声明初始定位完成 + 解除滚底抑制，后续新消息走常规近底逻辑。
+            initialPositioned = true
+            jumpPending = false
         }
     }
     val allGroupMembers by PrivChat.groupMembers.collectAsState()
@@ -552,9 +558,14 @@ fun MessagePage(
             }
             if (!focusWindow.isNullOrEmpty()) {
                 PrivChat.updateMessages(channel.channelId, focusWindow)
-                focusWindow.firstOrNull { it.serverMessageId == initialFocusMessageId }
-                    ?.let { anchor -> pendingFocusLocalId = anchor.id }
+                val anchorRow = focusWindow.firstOrNull { it.serverMessageId == initialFocusMessageId }
+                if (anchorRow != null) {
+                    pendingFocusLocalId = anchorRow.id
+                } else {
+                    jumpPending = false // 兜底：窗口里找不到锚，别卡住初始滚底
+                }
             } else {
+                jumpPending = false // anchor 不可见，降级常规窗口 → 恢复初始滚底
                 onError?.invoke(strings.globalSearchAnchorMissing)
                 val result = onLoadMessages?.invoke(channel.channelId, channel.channelType)
                     ?: withContext(Dispatchers.Default) {
@@ -732,6 +743,7 @@ fun MessagePage(
         if (sortedMessages.isEmpty()) return@LaunchedEffect
         val lastIndex = sortedMessages.size - 1
         if (!initialPositioned) {
+            if (jumpPending) return@LaunchedEffect // 跳转模式：让 focus 定位接管，别滚到底部
             delay(16)
             listState.scrollToItem(lastIndex)
             initialPositioned = true
