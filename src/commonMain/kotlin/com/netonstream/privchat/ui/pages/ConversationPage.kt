@@ -356,6 +356,7 @@ private fun ChannelItem(
                     size = AvatarSizeTokens.Medium.size,
                     isOnline = isOnline,
                     seed = channel.peerUserId?.let { "u:$it" },
+                    userId = channel.peerUserId?.toLong(),
                 )
             }
 

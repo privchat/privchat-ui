@@ -124,10 +124,12 @@ fun PrivChatAvatar(
         // 远程头像图：叠加在 initials 之上（gearui Avatar 的 image 分支无失败回退，
         // 且 Icon 渲染是 ContentScale.Fit；这里自己 Image + Crop + clip 保证「加载中 /
         // 失败露色块、成功盖满方圆角」）。
-        // local-first：已缓存头像（如自己头像，SDK 已下载到 `avatars/users/{uid}.img`）优先
-        // 读本地文件，near-instant，跳过远程网络加载 → 不再先 initials 后网络图闪一下。
-        var localCacheUrl by remember(userId, preferLocalCache) { mutableStateOf<String?>(null) }
-        if (preferLocalCache && userId != null && !isGroup) {
+        // local-first（CLIENT_GLOBAL_STATE §4 全局统一）：**任意用户头像**（自己/好友/群成员/会话 peer/
+        // 搜索结果）都优先读本地缓存文件 `avatars/users/{uid}.img`（SDK 已下载/落盘，同一 active userRoot、
+        // 按 targetUid），near-instant、跳过远程网络加载 → 不再先 initials 后网络图闪一下。本地无则回落远程。
+        // `preferLocalCache` 参数保留为兼容项，现已对所有用户头像默认生效。
+        var localCacheUrl by remember(userId) { mutableStateOf<String?>(null) }
+        if (userId != null && !isGroup) {
             LaunchedEffect(userId) {
                 val root = AvatarLocalCache.userRoot
                 localCacheUrl = if (root != null) {

@@ -153,6 +153,7 @@ fun GroupMembersPage(
                                     name = member.displayName,
                                     size = AvatarSizeTokens.Small.size,
                                     seed = "u:${member.userId}",
+                                    userId = member.userId.toLong(),
                                 )
                             },
                         )
