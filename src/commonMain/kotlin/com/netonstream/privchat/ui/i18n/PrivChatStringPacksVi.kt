@@ -1,10 +1,10 @@
 package com.netonstream.privchat.ui.i18n
 
-/**
- * Vietnamese language pack
- */
-val PrivChatStringsViVn = PrivChatStrings(
-    // Chung
+// 生成/维护说明：i18n 文案按语义域拆分（gearui 标准：分域小 data class，避免
+// 单类字段爆炸触发 DEX 方法字节码 / 255 参数上限）。门面 PrivChatStrings 用委托
+// getter 暴露扁平 `strings.xxx` API 保持调用点稳定。新增文案加到对应域即可。
+
+internal val viCommon = PrivChatCommonStrings(
     appName = "PrivChat",
     confirm = "Xác nhận",
     cancel = "Hủy",
@@ -16,14 +16,12 @@ val PrivChatStringsViVn = PrivChatStrings(
     retry = "Thử lại",
     noData = "Không có dữ liệu",
     networkError = "Lỗi mạng",
+)
 
-
-    // Điều hướng
+internal val viConversation = PrivChatConversationStrings(
     tabConversation = "Tin nhắn",
     tabContact = "Danh bạ",
     tabMe = "Tôi",
-
-    // Danh sách hội thoại
     conversationTitle = "Tin nhắn",
     conversationEmpty = "Chưa có hội thoại",
     conversationMuted = "Đã tắt thông báo",
@@ -36,8 +34,9 @@ val PrivChatStringsViVn = PrivChatStrings(
     conversationAtMe = "[@Tôi]",
     conversationAtAll = "[@Tất cả]",
     conversationUnread = "[Chưa đọc]",
+)
 
-    // Tin nhắn
+internal val viMessage = PrivChatMessageStrings(
     messageImage = "[Hình ảnh]",
     messageVideo = "[Video]",
     messageVoice = "[Giọng nói]",
@@ -54,8 +53,9 @@ val PrivChatStringsViVn = PrivChatStrings(
     presenceOnline = "Trực tuyến",
     presenceOffline = "Ngoại tuyến",
     presenceLastSeenPrefix = "Lần cuối trực tuyến",
+)
 
-    // Danh bạ
+internal val viContact = PrivChatContactStrings(
     contactTitle = "Danh bạ",
     contactFriends = "Bạn bè",
     contactGroups = "Nhóm",
@@ -68,14 +68,10 @@ val PrivChatStringsViVn = PrivChatStrings(
     contactGroupsEmpty = "Chưa có nhóm",
     contactSearchUser = "Tìm người dùng",
     myQrCodeTitle = "Mã QR của tôi",
-
-    // Menu
     menuCreateGroup = "Tạo nhóm chat",
     menuAddFriend = "Thêm bạn",
     menuScan = "Quét mã",
     menuMyQrCode = "Mã QR của tôi",
-
-    // Lời mời kết bạn
     friendRequestTitle = "Lời mời kết bạn",
     friendRequestEmpty = "Chưa có lời mời kết bạn",
     friendRequestAccept = "Đồng ý",
@@ -109,8 +105,9 @@ val PrivChatStringsViVn = PrivChatStrings(
         4 to "Đã thu hồi",
         5 to "Đã hết hạn",
     ),
+)
 
-    // Tìm người dùng
+internal val viSearch = PrivChatSearchStrings(
     searchUserTitle = "Thêm bạn",
     searchUserPlaceholder = "Tài khoản/Số điện thoại",
     searchUserSearching = "Đang tìm...",
@@ -122,7 +119,6 @@ val PrivChatStringsViVn = PrivChatStrings(
     searchUserPhoneContacts = "Danh bạ điện thoại",
     searchUserMyQrCode = "Mã QR của tôi",
     searchUserMyAccount = "Tài khoản của tôi",
-
     globalSearchTitle = "Tìm kiếm",
     globalSearchPlaceholder = "Tìm kiếm tin nhắn",
     globalSearchSectionChannels = "Cuộc trò chuyện",
@@ -130,8 +126,9 @@ val PrivChatStringsViVn = PrivChatStrings(
     globalSearchNoResult = "Không tìm thấy kết quả",
     globalSearchLoadMore = "Tải thêm",
     globalSearchAnchorMissing = "Tin nhắn không khả dụng",
+)
 
-    // Hồ sơ người dùng
+internal val viUser = PrivChatUserStrings(
     userProfileTitle = "Hồ sơ người dùng",
     userProfileUserId = "ID người dùng",
     userProfileSystemAccount = "Tài khoản hệ thống",
@@ -161,14 +158,25 @@ val PrivChatStringsViVn = PrivChatStrings(
     friendRequestInputTitle = "Thêm bạn",
     friendRequestInputPlaceholder = "Nhập tin nhắn xác minh (tùy chọn)",
     friendRequestSentTitle = "Gửi thành công",
+    genderUnknown = "Không xác định",
+    genderMale = "Nam",
+    genderFemale = "Nữ",
+    profileEditSave = "Lưu",
+    profileEditAvatarHint = "Nhấn để đổi ảnh đại diện",
+)
 
-    // Cài đặt bạn bè
+internal val viFriend = PrivChatFriendStrings(
     friendSettingsTitle = "Cài đặt bạn bè",
     friendSettingsShare = "Giới thiệu cho bạn bè",
     friendSettingsSpecialFollow = "Theo dõi đặc biệt",
     friendSettingsDelete = "Xóa liên hệ",
+    permissionAllowAny = "Cho phép tất cả",
+    permissionDenyAny = "Từ chối tất cả",
+    permissionRequireRequest = "Yêu cầu xác minh",
+    permissionNone = "Không",
+)
 
-    // Cài đặt chat
+internal val viChatSettings = PrivChatChatSettingsStrings(
     chatSettingsTitle = "Cài đặt chat",
     chatSettingsGroupName = "Tên nhóm",
     groupNameEditTitle = "Sửa tên nhóm",
@@ -180,6 +188,9 @@ val PrivChatStringsViVn = PrivChatStrings(
     chatSettingsLeaveGroup = "Rời nhóm",
     chatSettingsLeaveGroupConfirmTitle = "Rời nhóm",
     chatSettingsLeaveGroupConfirmMessage = "Bạn có chắc muốn rời nhóm? Sau khi rời sẽ không nhận được tin nhắn từ nhóm này.",
+)
+
+internal val viGroup = PrivChatGroupStrings(
     groupSettingsSectionTitle = "Quản lý nhóm",
     groupSettingsAllowSearch = "Cho phép tìm thấy qua tìm kiếm",
     groupSettingsMemberCanInvite = "Thành viên có thể mời",
@@ -207,8 +218,6 @@ val PrivChatStringsViVn = PrivChatStrings(
     presenceOfflineMinutesAgo = "Hoạt động %d phút trước",
     presenceOfflineHoursAgo = "Hoạt động %d giờ trước",
     presenceOfflineDaysAgo = "Hoạt động %d ngày trước",
-
-    // Nhóm
     groupMembers = "Thành viên",
     groupOwner = "Chủ nhóm",
     groupAdmin = "Quản trị viên",
@@ -216,8 +225,9 @@ val PrivChatStringsViVn = PrivChatStrings(
     groupCreate = "Tạo nhóm",
     groupLeave = "Rời nhóm",
     groupDissolve = "Giải tán nhóm",
+)
 
-    // Cài đặt
+internal val viSettings = PrivChatSettingsStrings(
     settingsTitle = "Cài đặt",
     settingsProfile = "Hồ sơ cá nhân",
     settingsUserId = "ID người dùng",
@@ -261,23 +271,9 @@ val PrivChatStringsViVn = PrivChatStrings(
     settingsHelp = "Trung tâm trợ giúp",
     settingsFeedback = "Phản hồi",
     settingsSwitchAccount = "Chuyển tài khoản",
+)
 
-    // Chỉnh sửa hồ sơ
-    profileEditSave = "Lưu",
-    profileEditAvatarHint = "Nhấn để đổi ảnh đại diện",
-
-    // Đổi mật khẩu
-    permissionAllowAny = "Cho phép tất cả",
-    permissionDenyAny = "Từ chối tất cả",
-    permissionRequireRequest = "Yêu cầu xác minh",
-    permissionNone = "Không",
-
-    // Giới tính
-    genderUnknown = "Không xác định",
-    genderMale = "Nam",
-    genderFemale = "Nữ",
-
-    // Giới thiệu
+internal val viAbout = PrivChatAboutStrings(
     aboutTitle = "Giới thiệu",
     aboutSdkVersion = "Phiên bản SDK",
     aboutVersion = "Phiên bản",
@@ -288,55 +284,43 @@ val PrivChatStringsViVn = PrivChatStrings(
     aboutOfficialWebsite = "Website chính thức",
     aboutSourceCode = "Mã nguồn",
     aboutCopyright = "Copyright \u00a9 2026 All Rights Reserved.",
-
-    // Liên hệ
     contactUsTitle = "Liên hệ chúng tôi",
     contactUsSwitch = "Chuyển kênh",
     contactUsQuestion = "Nếu có thắc mắc, vui lòng liên hệ chúng tôi",
     contactUsServiceTime = "Giờ phục vụ: Ngày làm việc 9:00 - 18:00",
     contactUsChatNow = "Chat ngay",
+)
 
-    auxiliary = PrivChatAuxiliaryStrings(
-        changePasswordTitle = "Đổi mật khẩu",
-        changePasswordNew = "Mật khẩu mới",
-        changePasswordConfirm = "Xác nhận mật khẩu",
-        changePasswordSmsCode = "Mã xác minh",
-        changePasswordSendCode = "Gửi mã",
-        changePasswordSubmit = "Xác nhận",
-        changePasswordSuccess = "Đổi mật khẩu thành công",
-        changePasswordMismatch = "Mật khẩu không khớp",
-
-        // Đặt mật khẩu (lần đầu)
-        setPasswordTitle = "Đặt mật khẩu",
-        setPasswordHint = "Đặt mật khẩu để đăng nhập bằng tài khoản",
-        setPasswordSubmit = "Xác nhận",
-        setPasswordSuccess = "Đặt mật khẩu thành công",
-
-        // Đặt biệt danh (lần đầu)
-        setNicknameTitle = "Đặt biệt danh",
-        setNicknameHint = "Hãy đặt tên cho mình",
-        setNicknameSubmit = "Hoàn thành",
-        setNicknameError = "Biệt danh phải dài 2-32 ký tự",
-
-        // Required Actions — Unsupported
-        requiredActionUnsupportedTitle = "Cần cập nhật ứng dụng",
-        requiredActionUnsupportedMessage = "Tài khoản của bạn có một thao tác cần xử lý mà phiên bản hiện tại chưa hỗ trợ. Vui lòng cập nhật ứng dụng để tiếp tục.",
-        requiredActionUnsupportedReload = "Đã cập nhật, tải lại",
-
-        // Quyền bạn bè
-
-
-        // Thời gian
-        timeYesterday = "Hôm qua",
-        timeToday = "Hôm nay",
-        timeSunday = "CN",
-        timeMonday = "T2",
-        timeTuesday = "T3",
-        timeWednesday = "T4",
-        timeThursday = "T5",
-        timeFriday = "T6",
-        timeSaturday = "T7",
-        systemTemplates = mapOf(
+internal val viAuxiliary = PrivChatAuxiliaryStrings(
+    changePasswordTitle = "Đổi mật khẩu",
+    changePasswordNew = "Mật khẩu mới",
+    changePasswordConfirm = "Xác nhận mật khẩu",
+    changePasswordSmsCode = "Mã xác minh",
+    changePasswordSendCode = "Gửi mã",
+    changePasswordSubmit = "Xác nhận",
+    changePasswordSuccess = "Đổi mật khẩu thành công",
+    changePasswordMismatch = "Mật khẩu không khớp",
+    setPasswordTitle = "Đặt mật khẩu",
+    setPasswordHint = "Đặt mật khẩu để đăng nhập bằng tài khoản",
+    setPasswordSubmit = "Xác nhận",
+    setPasswordSuccess = "Đặt mật khẩu thành công",
+    setNicknameTitle = "Đặt biệt danh",
+    setNicknameHint = "Hãy đặt tên cho mình",
+    setNicknameSubmit = "Hoàn thành",
+    setNicknameError = "Biệt danh phải dài 2-32 ký tự",
+    requiredActionUnsupportedTitle = "Cần cập nhật ứng dụng",
+    requiredActionUnsupportedMessage = "Tài khoản của bạn có một thao tác cần xử lý mà phiên bản hiện tại chưa hỗ trợ. Vui lòng cập nhật ứng dụng để tiếp tục.",
+    requiredActionUnsupportedReload = "Đã cập nhật, tải lại",
+    timeYesterday = "Hôm qua",
+    timeToday = "Hôm nay",
+    timeSunday = "CN",
+    timeMonday = "T2",
+    timeTuesday = "T3",
+    timeWednesday = "T4",
+    timeThursday = "T5",
+    timeFriday = "T6",
+    timeSaturday = "T7",
+    systemTemplates = mapOf(
             "system.member_invited" to "{0} đã mời {1+} vào nhóm",
             "system.group_mute_all_on" to "{0} đã bật cấm chat toàn nhóm",
             "system.group_mute_all_off" to "{0} đã tắt cấm chat toàn nhóm",
@@ -346,73 +330,73 @@ val PrivChatStringsViVn = PrivChatStrings(
             "system.owner_transferred" to "{0} đã chuyển quyền quản trị cho {1}",
             "system.message_recalled"  to "{0} đã thu hồi một tin nhắn",
         ),
-        systemListSeparator = ", ",
-        previewImage = "[Hình ảnh]",
-        previewVideo = "[Video]",
-        previewVoice = "[Giọng nói]",
-        previewVoiceWithDuration = "[Giọng nói] {0}\"",
-        previewFile = "[Tệp]",
-        previewFileWithName = "[Tệp] {0}",
-        previewSticker = "[Nhãn dán]",
-        previewLocation = "[Vị trí]",
-        previewLocationWithAddress = "[Vị trí] {0}",
-        previewLink = "[Liên kết] {0}",
-        previewContactCard = "[Danh thiếp]",
-        previewRedPacket = "[Lì xì]",
-        previewSystemFallback = "[Hệ thống]",
-        previewUnknown = "[Tin nhắn]",
-        previewRecalled = "đã thu hồi một tin nhắn",
-        sendSmsCodeFailed = "Gửi mã xác minh thất bại, vui lòng thử lại sau",
-        connectServerFailed = "Kết nối máy chủ thất bại, vui lòng kiểm tra mạng",
-        sdkInitFailed = "Khởi tạo thất bại, vui lòng thử lại sau",
-        switchAccountFailed = "Chuyển tài khoản thất bại, vui lòng thử lại sau",
-        logoutFailed = "Đăng xuất thất bại, vui lòng thử lại sau",
-        loginFailed = "Đăng nhập thất bại, vui lòng thử lại sau",
-        friendRequestAcceptFailed = "Chấp nhận lời mời kết bạn thất bại, vui lòng thử lại sau",
-        friendRequestDeclineFailed = "Từ chối lời mời kết bạn thất bại, vui lòng thử lại sau",
-        messageRecallFailed = "Thu hồi tin nhắn thất bại, vui lòng thử lại sau",
-        qrImageDecodeFailed = "Đọc ảnh thất bại, vui lòng thử lại",
-        saveFailed = "Lưu thất bại, vui lòng thử lại",
-        operationFailed = "Thao tác thất bại, vui lòng thử lại sau",
-        smsCodeError = "Mã xác minh không đúng, vui lòng nhập lại",
-        loginErrInvalidCredentials = "Tên đăng nhập hoặc mật khẩu không đúng",
-        loginErrAccountDisabled = "Tài khoản này đã bị vô hiệu hóa",
-        registerErrUsernameTaken = "Tên người dùng không khả dụng hoặc đã được sử dụng, vui lòng chọn tên khác",
-        registerErrUsernameInvalid = "Tên người dùng không khả dụng hoặc đã được sử dụng, vui lòng chọn tên khác",
-        registerErrUsernameFormat = "Định dạng tài khoản không hợp lệ (chữ thường đầu, 3-32 ký tự)",
-        registerErrPasswordTooShort = "Mật khẩu tối thiểu 8 ký tự",
-        systemMessagesName = "Tin nhắn hệ thống",
-        groupChatFallback = "Nhóm chat",
-        signInTitle = "Điểm danh nhận thưởng",
-        signInButton = "Điểm danh ngay",
-        signInDoneToday = "Hôm nay đã điểm danh",
-        signInContinuousPrefix = "Chuỗi điểm danh:",
-        signInTodayReward = "Thưởng hôm nay",
-        signInRewardList = "Thưởng theo chuỗi ngày",
-        signInPointsUnit = "điểm",
-        signInDayUnit = "ngày",
-        signInSuccessTitle = "Điểm danh thành công",
-        signInCashCredited = "Tiền thưởng đã vào ví của bạn",
-        inviteBindTitle = "Mã mời",
-        inviteBindPlaceholder = "Nhập mã mời",
-        inviteBindButton = "Liên kết mã mời",
-        inviteBoundCode = "Mã mời",
-        inviteBoundInviter = "Người mời",
-        inviteBoundAt = "Thời gian liên kết",
-        inviteBoundHint = "Mỗi tài khoản chỉ liên kết một mã mời và không thể thay đổi",
-        inviteBindHint = "Liên kết mã của người mời để tự động kết bạn",
-        inviteBindSuccessFriend = "Đã liên kết — bạn và người mời đã là bạn bè",
-        inviteBindSuccess = "Đã liên kết mã mời",
-        inviteErrInvalid = "Mã mời không hợp lệ hoặc đã hết hạn",
-        loginTabSms = "Điện thoại",
-        loginTabPassword = "Tài khoản",
-        loginUsernamePlaceholder = "Tài khoản (bắt đầu bằng chữ, 3-32)",
-        loginPasswordPlaceholder = "Mật khẩu",
-        loginPasswordNewPlaceholder = "Mật khẩu (tối thiểu 8 ký tự)",
-        loginNicknamePlaceholder = "Biệt danh (tuỳ chọn)",
-        loginInviteCodePlaceholder = "Mã mời (tuỳ chọn)",
-        loginRegisterButton = "Đăng ký và đăng nhập",
-        loginToRegister = "Chưa có tài khoản? Đăng ký",
-        loginToLogin = "Đã có tài khoản? Đăng nhập",
-    ),
+    systemListSeparator = ", ",
+    previewImage = "[Hình ảnh]",
+    previewVideo = "[Video]",
+    previewVoice = "[Giọng nói]",
+    previewVoiceWithDuration = "[Giọng nói] {0}\"",
+    previewFile = "[Tệp]",
+    previewFileWithName = "[Tệp] {0}",
+    previewSticker = "[Nhãn dán]",
+    previewLocation = "[Vị trí]",
+    previewLocationWithAddress = "[Vị trí] {0}",
+    previewLink = "[Liên kết] {0}",
+    previewContactCard = "[Danh thiếp]",
+    previewRedPacket = "[Lì xì]",
+    previewSystemFallback = "[Hệ thống]",
+    previewUnknown = "[Tin nhắn]",
+    previewRecalled = "đã thu hồi một tin nhắn",
+    sendSmsCodeFailed = "Gửi mã xác minh thất bại, vui lòng thử lại sau",
+    connectServerFailed = "Kết nối máy chủ thất bại, vui lòng kiểm tra mạng",
+    sdkInitFailed = "Khởi tạo thất bại, vui lòng thử lại sau",
+    switchAccountFailed = "Chuyển tài khoản thất bại, vui lòng thử lại sau",
+    logoutFailed = "Đăng xuất thất bại, vui lòng thử lại sau",
+    loginFailed = "Đăng nhập thất bại, vui lòng thử lại sau",
+    friendRequestAcceptFailed = "Chấp nhận lời mời kết bạn thất bại, vui lòng thử lại sau",
+    friendRequestDeclineFailed = "Từ chối lời mời kết bạn thất bại, vui lòng thử lại sau",
+    messageRecallFailed = "Thu hồi tin nhắn thất bại, vui lòng thử lại sau",
+    qrImageDecodeFailed = "Đọc ảnh thất bại, vui lòng thử lại",
+    saveFailed = "Lưu thất bại, vui lòng thử lại",
+    operationFailed = "Thao tác thất bại, vui lòng thử lại sau",
+    smsCodeError = "Mã xác minh không đúng, vui lòng nhập lại",
+    loginErrInvalidCredentials = "Tên đăng nhập hoặc mật khẩu không đúng",
+    loginErrAccountDisabled = "Tài khoản này đã bị vô hiệu hóa",
+    registerErrUsernameTaken = "Tên người dùng không khả dụng hoặc đã được sử dụng, vui lòng chọn tên khác",
+    registerErrUsernameInvalid = "Tên người dùng không khả dụng hoặc đã được sử dụng, vui lòng chọn tên khác",
+    registerErrUsernameFormat = "Định dạng tài khoản không hợp lệ (chữ thường đầu, 3-32 ký tự)",
+    registerErrPasswordTooShort = "Mật khẩu tối thiểu 8 ký tự",
+    systemMessagesName = "Tin nhắn hệ thống",
+    groupChatFallback = "Nhóm chat",
+    signInTitle = "Điểm danh nhận thưởng",
+    signInButton = "Điểm danh ngay",
+    signInDoneToday = "Hôm nay đã điểm danh",
+    signInContinuousPrefix = "Chuỗi điểm danh:",
+    signInTodayReward = "Thưởng hôm nay",
+    signInRewardList = "Thưởng theo chuỗi ngày",
+    signInPointsUnit = "điểm",
+    signInDayUnit = "ngày",
+    signInSuccessTitle = "Điểm danh thành công",
+    signInCashCredited = "Tiền thưởng đã vào ví của bạn",
+    inviteBindTitle = "Mã mời",
+    inviteBindPlaceholder = "Nhập mã mời",
+    inviteBindButton = "Liên kết mã mời",
+    inviteBoundCode = "Mã mời",
+    inviteBoundInviter = "Người mời",
+    inviteBoundAt = "Thời gian liên kết",
+    inviteBoundHint = "Mỗi tài khoản chỉ liên kết một mã mời và không thể thay đổi",
+    inviteBindHint = "Liên kết mã của người mời để tự động kết bạn",
+    inviteBindSuccessFriend = "Đã liên kết — bạn và người mời đã là bạn bè",
+    inviteBindSuccess = "Đã liên kết mã mời",
+    inviteErrInvalid = "Mã mời không hợp lệ hoặc đã hết hạn",
+    loginTabSms = "Điện thoại",
+    loginTabPassword = "Tài khoản",
+    loginUsernamePlaceholder = "Tài khoản (bắt đầu bằng chữ, 3-32)",
+    loginPasswordPlaceholder = "Mật khẩu",
+    loginPasswordNewPlaceholder = "Mật khẩu (tối thiểu 8 ký tự)",
+    loginNicknamePlaceholder = "Biệt danh (tuỳ chọn)",
+    loginInviteCodePlaceholder = "Mã mời (tuỳ chọn)",
+    loginRegisterButton = "Đăng ký và đăng nhập",
+    loginToRegister = "Chưa có tài khoản? Đăng ký",
+    loginToLogin = "Đã có tài khoản? Đăng nhập",
 )
+

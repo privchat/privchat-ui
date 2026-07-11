@@ -1,10 +1,10 @@
 package com.netonstream.privchat.ui.i18n
 
-/**
- * 繁體中文語言包
- */
-val PrivChatStringsZhHant = PrivChatStrings(
-    // 通用
+// 生成/维护说明：i18n 文案按语义域拆分（gearui 标准：分域小 data class，避免
+// 单类字段爆炸触发 DEX 方法字节码 / 255 参数上限）。门面 PrivChatStrings 用委托
+// getter 暴露扁平 `strings.xxx` API 保持调用点稳定。新增文案加到对应域即可。
+
+internal val hantCommon = PrivChatCommonStrings(
     appName = "PrivChat",
     confirm = "確認",
     cancel = "取消",
@@ -16,14 +16,12 @@ val PrivChatStringsZhHant = PrivChatStrings(
     retry = "重試",
     noData = "暫無資料",
     networkError = "網路錯誤",
+)
 
-
-    // 導航
+internal val hantConversation = PrivChatConversationStrings(
     tabConversation = "訊息",
     tabContact = "聯絡人",
     tabMe = "我",
-
-    // 會話列表
     conversationTitle = "訊息",
     conversationEmpty = "暫無會話",
     conversationMuted = "已免打擾",
@@ -36,8 +34,9 @@ val PrivChatStringsZhHant = PrivChatStrings(
     conversationAtMe = "[有人@我]",
     conversationAtAll = "[@所有人]",
     conversationUnread = "[未讀]",
+)
 
-    // 訊息
+internal val hantMessage = PrivChatMessageStrings(
     messageImage = "[圖片]",
     messageVideo = "[影片]",
     messageVoice = "[語音]",
@@ -54,8 +53,9 @@ val PrivChatStringsZhHant = PrivChatStrings(
     presenceOnline = "在線",
     presenceOffline = "離線",
     presenceLastSeenPrefix = "最近在線",
+)
 
-    // 聯絡人
+internal val hantContact = PrivChatContactStrings(
     contactTitle = "聯絡人",
     contactFriends = "好友",
     contactGroups = "群組",
@@ -68,14 +68,10 @@ val PrivChatStringsZhHant = PrivChatStrings(
     contactGroupsEmpty = "暫無群組",
     contactSearchUser = "搜尋用戶",
     myQrCodeTitle = "我的 QR Code",
-
-    // 首頁下拉選單
     menuCreateGroup = "發起群聊",
     menuAddFriend = "新增好友",
     menuScan = "掃一掃",
     menuMyQrCode = "我的 QR Code",
-
-    // 好友申請頁面
     friendRequestTitle = "好友申請",
     friendRequestEmpty = "暫無好友申請",
     friendRequestAccept = "同意",
@@ -109,8 +105,9 @@ val PrivChatStringsZhHant = PrivChatStrings(
         4 to "已撤回",
         5 to "已過期",
     ),
+)
 
-    // 搜尋用戶
+internal val hantSearch = PrivChatSearchStrings(
     searchUserTitle = "新增朋友",
     searchUserPlaceholder = "帳號/手機號",
     searchUserSearching = "搜尋中...",
@@ -122,7 +119,6 @@ val PrivChatStringsZhHant = PrivChatStrings(
     searchUserPhoneContacts = "手機聯絡人",
     searchUserMyQrCode = "我的 QR Code",
     searchUserMyAccount = "我的帳號",
-
     globalSearchTitle = "搜尋",
     globalSearchPlaceholder = "搜尋聊天記錄",
     globalSearchSectionChannels = "會話",
@@ -130,8 +126,9 @@ val PrivChatStringsZhHant = PrivChatStrings(
     globalSearchNoResult = "未找到相關結果",
     globalSearchLoadMore = "載入更多",
     globalSearchAnchorMissing = "該訊息已失效",
+)
 
-    // 用戶詳情
+internal val hantUser = PrivChatUserStrings(
     userProfileTitle = "用戶資料",
     userProfileUserId = "用戶 ID",
     userProfileSystemAccount = "系統帳號",
@@ -161,14 +158,25 @@ val PrivChatStringsZhHant = PrivChatStrings(
     friendRequestInputTitle = "新增好友",
     friendRequestInputPlaceholder = "請輸入驗證資訊（選填）",
     friendRequestSentTitle = "傳送成功",
+    genderUnknown = "未知",
+    genderMale = "男",
+    genderFemale = "女",
+    profileEditSave = "儲存",
+    profileEditAvatarHint = "點擊修改頭像",
+)
 
-    // 好友設定
+internal val hantFriend = PrivChatFriendStrings(
     friendSettingsTitle = "好友設定",
     friendSettingsShare = "推薦給朋友",
     friendSettingsSpecialFollow = "特別關注",
     friendSettingsDelete = "刪除聯絡人",
+    permissionAllowAny = "允許任何人",
+    permissionDenyAny = "拒絕任何人",
+    permissionRequireRequest = "需要驗證",
+    permissionNone = "無",
+)
 
-    // 聊天設定
+internal val hantChatSettings = PrivChatChatSettingsStrings(
     chatSettingsTitle = "聊天設定",
     chatSettingsGroupName = "群名稱",
     groupNameEditTitle = "修改群名稱",
@@ -180,6 +188,9 @@ val PrivChatStringsZhHant = PrivChatStrings(
     chatSettingsLeaveGroup = "退出群聊",
     chatSettingsLeaveGroupConfirmTitle = "退出群聊",
     chatSettingsLeaveGroupConfirmMessage = "確定要退出該群聊嗎？退出後將無法接收該群的訊息。",
+)
+
+internal val hantGroup = PrivChatGroupStrings(
     groupSettingsSectionTitle = "群管理",
     groupSettingsAllowSearch = "允許被搜尋找到",
     groupSettingsMemberCanInvite = "允許成員邀請好友",
@@ -207,8 +218,6 @@ val PrivChatStringsZhHant = PrivChatStrings(
     presenceOfflineMinutesAgo = "%d 分鐘前在線",
     presenceOfflineHoursAgo = "%d 小時前在線",
     presenceOfflineDaysAgo = "%d 天前在線",
-
-    // 群組
     groupMembers = "群成員",
     groupOwner = "群主",
     groupAdmin = "管理員",
@@ -216,8 +225,9 @@ val PrivChatStringsZhHant = PrivChatStrings(
     groupCreate = "建立群組",
     groupLeave = "退出群組",
     groupDissolve = "解散群組",
+)
 
-    // 設定
+internal val hantSettings = PrivChatSettingsStrings(
     settingsTitle = "設定",
     settingsProfile = "個人資料",
     settingsUserId = "用戶 ID",
@@ -261,23 +271,9 @@ val PrivChatStringsZhHant = PrivChatStrings(
     settingsHelp = "幫助中心",
     settingsFeedback = "意見回饋",
     settingsSwitchAccount = "切換帳號",
+)
 
-    // 個人資料編輯
-    profileEditSave = "儲存",
-    profileEditAvatarHint = "點擊修改頭像",
-
-    // 修改密碼
-    permissionAllowAny = "允許任何人",
-    permissionDenyAny = "拒絕任何人",
-    permissionRequireRequest = "需要驗證",
-    permissionNone = "無",
-
-    // 性別
-    genderUnknown = "未知",
-    genderMale = "男",
-    genderFemale = "女",
-
-    // 關於
+internal val hantAbout = PrivChatAboutStrings(
     aboutTitle = "關於",
     aboutSdkVersion = "SDK 版本",
     aboutVersion = "版本",
@@ -288,55 +284,43 @@ val PrivChatStringsZhHant = PrivChatStrings(
     aboutOfficialWebsite = "官方網站",
     aboutSourceCode = "原始碼",
     aboutCopyright = "Copyright \u00a9 2026 All Rights Reserved.",
-
-    // 聯絡我們
     contactUsTitle = "聯絡我們",
     contactUsSwitch = "切換渠道",
     contactUsQuestion = "如有問題，請透過以下方式聯絡我們",
     contactUsServiceTime = "服務時間：工作日 9:00 - 18:00",
     contactUsChatNow = "立即聯絡",
+)
 
-    auxiliary = PrivChatAuxiliaryStrings(
-        changePasswordTitle = "修改密碼",
-        changePasswordNew = "新密碼",
-        changePasswordConfirm = "確認密碼",
-        changePasswordSmsCode = "驗證碼",
-        changePasswordSendCode = "發送驗證碼",
-        changePasswordSubmit = "確認修改",
-        changePasswordSuccess = "密碼修改成功",
-        changePasswordMismatch = "兩次密碼不一致",
-
-        // 設置密碼（首次）
-        setPasswordTitle = "設置密碼",
-        setPasswordHint = "設置密碼後可使用密碼登錄",
-        setPasswordSubmit = "確認設定",
-        setPasswordSuccess = "密碼設置成功",
-
-        // 設置暱稱（首次）
-        setNicknameTitle = "設置暱稱",
-        setNicknameHint = "給自己取個名字吧",
-        setNicknameSubmit = "完成",
-        setNicknameError = "暱稱需要 2-32 個字元",
-
-        // Required Actions — Unsupported
-        requiredActionUnsupportedTitle = "需要更新用戶端",
-        requiredActionUnsupportedMessage = "你的帳號有一個本版本暫不支援的待辦操作，請升級 App 後繼續使用。",
-        requiredActionUnsupportedReload = "已升級，重新載入",
-
-        // 好友權限
-
-
-        // 時間
-        timeYesterday = "昨天",
-        timeToday = "今天",
-        timeSunday = "週日",
-        timeMonday = "週一",
-        timeTuesday = "週二",
-        timeWednesday = "週三",
-        timeThursday = "週四",
-        timeFriday = "週五",
-        timeSaturday = "週六",
-        systemTemplates = mapOf(
+internal val hantAuxiliary = PrivChatAuxiliaryStrings(
+    changePasswordTitle = "修改密碼",
+    changePasswordNew = "新密碼",
+    changePasswordConfirm = "確認密碼",
+    changePasswordSmsCode = "驗證碼",
+    changePasswordSendCode = "發送驗證碼",
+    changePasswordSubmit = "確認修改",
+    changePasswordSuccess = "密碼修改成功",
+    changePasswordMismatch = "兩次密碼不一致",
+    setPasswordTitle = "設置密碼",
+    setPasswordHint = "設置密碼後可使用密碼登錄",
+    setPasswordSubmit = "確認設定",
+    setPasswordSuccess = "密碼設置成功",
+    setNicknameTitle = "設置暱稱",
+    setNicknameHint = "給自己取個名字吧",
+    setNicknameSubmit = "完成",
+    setNicknameError = "暱稱需要 2-32 個字元",
+    requiredActionUnsupportedTitle = "需要更新用戶端",
+    requiredActionUnsupportedMessage = "你的帳號有一個本版本暫不支援的待辦操作，請升級 App 後繼續使用。",
+    requiredActionUnsupportedReload = "已升級，重新載入",
+    timeYesterday = "昨天",
+    timeToday = "今天",
+    timeSunday = "週日",
+    timeMonday = "週一",
+    timeTuesday = "週二",
+    timeWednesday = "週三",
+    timeThursday = "週四",
+    timeFriday = "週五",
+    timeSaturday = "週六",
+    systemTemplates = mapOf(
             "system.member_invited" to "{0} 邀請 {1+} 加入了群聊",
             "system.group_mute_all_on" to "{0} 開啟了全員禁言",
             "system.group_mute_all_off" to "{0} 解除了全員禁言",
@@ -346,73 +330,73 @@ val PrivChatStringsZhHant = PrivChatStrings(
             "system.owner_transferred" to "{0} 已將群主轉讓給 {1}",
             "system.message_recalled"  to "{0} 撤回了一則訊息",
         ),
-        systemListSeparator = "、",
-        previewImage = "[圖片]",
-        previewVideo = "[影片]",
-        previewVoice = "[語音]",
-        previewVoiceWithDuration = "[語音] {0}\"",
-        previewFile = "[檔案]",
-        previewFileWithName = "[檔案] {0}",
-        previewSticker = "[貼圖]",
-        previewLocation = "[位置]",
-        previewLocationWithAddress = "[位置] {0}",
-        previewLink = "[連結] {0}",
-        previewContactCard = "[名片]",
-        previewRedPacket = "[紅包]",
-        previewSystemFallback = "[系統訊息]",
-        previewUnknown = "[訊息]",
-        previewRecalled = "撤回了一則訊息",
-        sendSmsCodeFailed = "傳送驗證碼失敗，請稍後再試",
-        connectServerFailed = "連線伺服器失敗，請檢查網路",
-        sdkInitFailed = "初始化失敗，請稍後再試",
-        switchAccountFailed = "切換帳號失敗，請稍後再試",
-        logoutFailed = "登出失敗，請稍後再試",
-        loginFailed = "登入失敗，請稍後再試",
-        friendRequestAcceptFailed = "接受好友請求失敗，請稍後再試",
-        friendRequestDeclineFailed = "拒絕好友請求失敗，請稍後再試",
-        messageRecallFailed = "撤回訊息失敗，請稍後再試",
-        qrImageDecodeFailed = "圖片解析失敗，請重試",
-        saveFailed = "儲存失敗，請重試",
-        operationFailed = "操作失敗，請稍後再試",
-        smsCodeError = "驗證碼錯誤，請重新輸入",
-        loginErrInvalidCredentials = "帳號或密碼錯誤",
-        loginErrAccountDisabled = "該帳號已被停用",
-        registerErrUsernameTaken = "用戶名不可用或已被其他用戶使用，請更換",
-        registerErrUsernameInvalid = "用戶名不可用或已被其他用戶使用，請更換",
-        registerErrUsernameFormat = "帳號格式不正確(小寫字母開頭,3-32位字母/數字/底線)",
-        registerErrPasswordTooShort = "密碼至少 8 位",
-        systemMessagesName = "系統消息",
-        groupChatFallback = "群聊",
-        signInTitle = "簽到領紅包",
-        signInButton = "立即簽到",
-        signInDoneToday = "今日已簽到",
-        signInContinuousPrefix = "已連續簽到",
-        signInTodayReward = "今日獎勵",
-        signInRewardList = "連續簽到獎勵",
-        signInPointsUnit = "積分",
-        signInDayUnit = "天",
-        signInSuccessTitle = "簽到成功",
-        signInCashCredited = "紅包獎勵已存入錢包",
-        inviteBindTitle = "填寫邀請碼",
-        inviteBindPlaceholder = "請輸入邀請碼",
-        inviteBindButton = "綁定邀請碼",
-        inviteBoundCode = "邀請碼",
-        inviteBoundInviter = "邀請人",
-        inviteBoundAt = "綁定時間",
-        inviteBoundHint = "每個帳號只能綁定一次邀請碼，綁定後不可修改",
-        inviteBindHint = "綁定邀請人的邀請碼後將自動互加好友",
-        inviteBindSuccessFriend = "綁定成功，已與邀請人成為好友",
-        inviteBindSuccess = "綁定成功",
-        inviteErrInvalid = "邀請碼無效或已過期",
-        loginTabSms = "手機號",
-        loginTabPassword = "帳號密碼",
-        loginUsernamePlaceholder = "帳號(小寫字母開頭,3-32位)",
-        loginPasswordPlaceholder = "密碼",
-        loginPasswordNewPlaceholder = "密碼(至少 8 位)",
-        loginNicknamePlaceholder = "暱稱(選填)",
-        loginInviteCodePlaceholder = "邀請碼(選填)",
-        loginRegisterButton = "註冊並登入",
-        loginToRegister = "沒有帳號？註冊新帳號",
-        loginToLogin = "已有帳號？去登入",
-    ),
+    systemListSeparator = "、",
+    previewImage = "[圖片]",
+    previewVideo = "[影片]",
+    previewVoice = "[語音]",
+    previewVoiceWithDuration = "[語音] {0}\"",
+    previewFile = "[檔案]",
+    previewFileWithName = "[檔案] {0}",
+    previewSticker = "[貼圖]",
+    previewLocation = "[位置]",
+    previewLocationWithAddress = "[位置] {0}",
+    previewLink = "[連結] {0}",
+    previewContactCard = "[名片]",
+    previewRedPacket = "[紅包]",
+    previewSystemFallback = "[系統訊息]",
+    previewUnknown = "[訊息]",
+    previewRecalled = "撤回了一則訊息",
+    sendSmsCodeFailed = "傳送驗證碼失敗，請稍後再試",
+    connectServerFailed = "連線伺服器失敗，請檢查網路",
+    sdkInitFailed = "初始化失敗，請稍後再試",
+    switchAccountFailed = "切換帳號失敗，請稍後再試",
+    logoutFailed = "登出失敗，請稍後再試",
+    loginFailed = "登入失敗，請稍後再試",
+    friendRequestAcceptFailed = "接受好友請求失敗，請稍後再試",
+    friendRequestDeclineFailed = "拒絕好友請求失敗，請稍後再試",
+    messageRecallFailed = "撤回訊息失敗，請稍後再試",
+    qrImageDecodeFailed = "圖片解析失敗，請重試",
+    saveFailed = "儲存失敗，請重試",
+    operationFailed = "操作失敗，請稍後再試",
+    smsCodeError = "驗證碼錯誤，請重新輸入",
+    loginErrInvalidCredentials = "帳號或密碼錯誤",
+    loginErrAccountDisabled = "該帳號已被停用",
+    registerErrUsernameTaken = "用戶名不可用或已被其他用戶使用，請更換",
+    registerErrUsernameInvalid = "用戶名不可用或已被其他用戶使用，請更換",
+    registerErrUsernameFormat = "帳號格式不正確(小寫字母開頭,3-32位字母/數字/底線)",
+    registerErrPasswordTooShort = "密碼至少 8 位",
+    systemMessagesName = "系統消息",
+    groupChatFallback = "群聊",
+    signInTitle = "簽到領紅包",
+    signInButton = "立即簽到",
+    signInDoneToday = "今日已簽到",
+    signInContinuousPrefix = "已連續簽到",
+    signInTodayReward = "今日獎勵",
+    signInRewardList = "連續簽到獎勵",
+    signInPointsUnit = "積分",
+    signInDayUnit = "天",
+    signInSuccessTitle = "簽到成功",
+    signInCashCredited = "紅包獎勵已存入錢包",
+    inviteBindTitle = "填寫邀請碼",
+    inviteBindPlaceholder = "請輸入邀請碼",
+    inviteBindButton = "綁定邀請碼",
+    inviteBoundCode = "邀請碼",
+    inviteBoundInviter = "邀請人",
+    inviteBoundAt = "綁定時間",
+    inviteBoundHint = "每個帳號只能綁定一次邀請碼，綁定後不可修改",
+    inviteBindHint = "綁定邀請人的邀請碼後將自動互加好友",
+    inviteBindSuccessFriend = "綁定成功，已與邀請人成為好友",
+    inviteBindSuccess = "綁定成功",
+    inviteErrInvalid = "邀請碼無效或已過期",
+    loginTabSms = "手機號",
+    loginTabPassword = "帳號密碼",
+    loginUsernamePlaceholder = "帳號(小寫字母開頭,3-32位)",
+    loginPasswordPlaceholder = "密碼",
+    loginPasswordNewPlaceholder = "密碼(至少 8 位)",
+    loginNicknamePlaceholder = "暱稱(選填)",
+    loginInviteCodePlaceholder = "邀請碼(選填)",
+    loginRegisterButton = "註冊並登入",
+    loginToRegister = "沒有帳號？註冊新帳號",
+    loginToLogin = "已有帳號？去登入",
 )
+
