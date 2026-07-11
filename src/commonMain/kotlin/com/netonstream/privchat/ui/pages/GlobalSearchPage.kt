@@ -61,6 +61,10 @@ fun GlobalSearchPage(
     var isSearching by remember { mutableStateOf(false) }
     var isLoadingMore by remember { mutableStateOf(false) }
     var searched by remember { mutableStateOf(false) }
+    // 终态失败可见（P5：不再 onSuccess 静默——失败与「无结果」必须区分，
+    // 否则网络/限频挂掉时用户看到假的「无搜索结果」）。retryNonce 变化 = 重发。
+    var error by remember { mutableStateOf(false) }
+    var retryNonce by remember { mutableStateOf(0) }
 
     // 本地会话即时过滤（不 debounce，纯内存）。会话内搜索时不展示会话命中。
     val localChannelHits = remember(query, channels, scopeId) {
@@ -70,11 +74,12 @@ fun GlobalSearchPage(
     }
 
     // 远程搜索：debounce 400ms；query 变化自动取消 in-flight（过期结果天然丢弃）
-    LaunchedEffect(query) {
+    LaunchedEffect(query, retryNonce) {
         val q = query.trim()
         hits = emptyList()
         nextCursor = null
         searched = false
+        error = false
         if (q.length < 2) {
             isSearching = false
             return@LaunchedEffect
@@ -84,10 +89,12 @@ fun GlobalSearchPage(
         val result = PrivChat.client.searchMessageHistory(q, channelId = scopeId)
         isSearching = false
         searched = true
-        result.onSuccess { page ->
-            hits = page.hits
-            nextCursor = page.nextCursor
-        }
+        result
+            .onSuccess { page ->
+                hits = page.hits
+                nextCursor = page.nextCursor
+            }
+            .onFailure { error = true }
     }
 
     fun loadMore() {
@@ -126,7 +133,24 @@ fun GlobalSearchPage(
         )
 
         val nothing = localChannelHits.isEmpty() && hits.isEmpty()
-        if (query.trim().length >= 2 && searched && nothing && !isSearching) {
+        if (error && localChannelHits.isEmpty() && !isSearching) {
+            // 失败终态：可见错误 + 可点重试（复用 networkError/retry，避免新增 i18n key）。
+            Column(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(text = strings.networkError, color = colors.mutedForeground)
+                Box(
+                    modifier = Modifier
+                        .padding(top = 12.dp)
+                        .clickable(onClick = { retryNonce += 1 }),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(text = strings.retry, color = colors.primary)
+                }
+            }
+        } else if (query.trim().length >= 2 && searched && nothing && !isSearching) {
             Box(
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 contentAlignment = Alignment.Center,
