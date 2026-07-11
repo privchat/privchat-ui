@@ -6,6 +6,7 @@ import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.models.*
 import com.netonstream.privchat.ui.components.ChatAvatar
 import com.netonstream.privchat.ui.avatar.GroupCollageAvatar
+import com.netonstream.privchat.ui.avatar.PrivChatAvatar
 import com.netonstream.privchat.ui.utils.Formatter
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.gearui.theme.Theme
@@ -292,15 +293,19 @@ private fun ChannelItem(
     val strings = PrivChatI18n.strings
     val colors = Theme.colors
     val swipeCellState = rememberSwipeCellState()
+    // presence 只读全局真源；collect 触发在线态变化重组。
     val presences by PrivChat.presences.collectAsState()
     val scope = rememberCoroutineScope()
 
-    // DM 会话在线状态
-    val isOnline = channel.peerUserId?.let { presences[it]?.isOnline } == true
+    // P3.5：会话行只消费统一聚合 ViewState（标题/头像/presence/未读…），不再各自拼。
+    // 不缓存进 remember——标题的系统用户本地化依赖 SystemUser 的 Compose State（resolveUid 异步就绪后
+    // 需重组刷新），每次重组重算（很轻），presences 传入保证在线态响应。
+    val item = ConversationListItemState.from(channel, presences)
+    val isOnline = item.isOnline
 
     // 背景色
     val backgroundColor = when {
-        channel.isPinned -> colors.muted
+        item.isPinned -> colors.muted
         else -> colors.surface
     }
 
@@ -342,21 +347,18 @@ private fun ChannelItem(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左侧头像：群 → 成员九宫格拼贴（Phase 1 图片不渲染，群一律走拼贴）；DM → 单头像（uid hash 色）
-            if (channel.isGroup) {
+            // 左侧头像：群 → 成员九宫格拼贴；DM → 统一 AvatarModel（local-first，presence 小绿点）。
+            if (item.isGroup) {
                 GroupCollageAvatar(
-                    channelId = channel.channelId,
-                    name = channel.displayName,
+                    channelId = item.channelId,
+                    name = item.title,
                     size = AvatarSizeTokens.Medium.size,
                 )
-            } else {
-                ChatAvatar(
-                    url = channel.avatarUrl,
-                    name = channel.displayName,
+            } else if (item.avatar != null) {
+                PrivChatAvatar(
+                    model = item.avatar,
                     size = AvatarSizeTokens.Medium.size,
-                    isOnline = isOnline,
-                    seed = channel.peerUserId?.let { "u:$it" },
-                    userId = channel.peerUserId?.toLong(),
+                    isOnline = item.isOnline,
                 )
             }
 
@@ -371,7 +373,7 @@ private fun ChannelItem(
                 ) {
                     // 标题
                     Text(
-                        text = channel.displayName,
+                        text = item.title,
                         style = Typography.BodyLarge,
                         color = colors.foreground,
                         maxLines = 1,
@@ -381,16 +383,16 @@ private fun ChannelItem(
                     HorizontalSpacer(8.dp)
 
                     // 未读消息气泡或勿扰标识
-                    if (channel.isMuted) {
+                    if (item.isMuted) {
                         Icon(
                             name = Icons.notifications_off,
                             size = 14.dp,
                             tint = colors.mutedForeground
                         )
-                    } else if (channel.unreadCount.toInt() > 0) {
+                    } else if (item.unreadCount > 0) {
                         // 未读消息气泡：走 gearui-kit Badge 规范（红底白字由 BadgeTheme.Error token 决定）
                         Badge(
-                            count = channel.unreadCount.toInt(),
+                            count = item.unreadCount,
                             theme = BadgeTheme.Error,
                         )
                     }

@@ -97,13 +97,14 @@ val MessageEntry.time: Long
 
 // ========== FriendEntry 扩展 ==========
 
-/** 显示名称（备注优先，其次昵称，最后用户名；系统用户按语言本地化） */
+/** 显示名称（统一走 [UserDisplay.of]：备注 > 昵称 > username > uid；系统用户本地化）。 */
 val FriendEntry.displayName: String
-    get() = SystemUser.displayNameOr(
-        username,
-        remark?.takeIf { it.isNotBlank() }
-            ?: nickname?.takeIf { it.isNotBlank() }
-            ?: username,
+    get() = UserDisplay.of(
+        username = username,
+        nickname = nickname,
+        remark = remark,
+        userId = userId.toLong(),
+        userType = userType.toInt(),
     )
 
 /**
@@ -120,11 +121,13 @@ val FriendEntry.avatarLetter: String
 
 // ========== UserEntry 扩展 ==========
 
-/** 显示名称（系统用户按语言本地化） */
+/** 显示名称（统一走 [UserDisplay.of]；系统用户本地化）。 */
 val UserEntry.displayName: String
-    get() = SystemUser.displayNameOr(
-        username,
-        nickname?.takeIf { it.isNotBlank() } ?: username,
+    get() = UserDisplay.of(
+        username = username,
+        nickname = nickname,
+        userId = userId.toLong(),
+        userType = userType.toInt(),
     )
 
 /** 头像首字母（同 [FriendEntry.avatarLetter] 说明）。 */
@@ -158,9 +161,14 @@ val GroupMemberEntry.isAdmin: Boolean
 val GroupMemberEntry.isMember: Boolean
     get() = role == 0
 
-/** 显示名称（备注优先） */
+/** 显示名称（统一走 [UserDisplay.of]：备注 > name(昵称) > uid）。 */
 val GroupMemberEntry.displayName: String
-    get() = remark.takeIf { it.isNotBlank() } ?: name
+    get() = UserDisplay.of(
+        username = null,
+        nickname = name,
+        remark = remark,
+        userId = userId.toLong(),
+    )
 
 /** 角色名称 */
 val GroupMemberEntry.roleName: String
