@@ -13,6 +13,8 @@ import com.netonstream.privchat.sdk.dto.SearchHistoryHit
 import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.netonstream.privchat.ui.models.displayName
+import com.netonstream.privchat.ui.runtime.ClientRuntime
+import com.netonstream.privchat.ui.runtime.ClientRuntimeError
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.*
@@ -94,7 +96,13 @@ fun GlobalSearchPage(
                 hits = page.hits
                 nextCursor = page.nextCursor
             }
-            .onFailure { error = true }
+            .onFailure {
+                error = true
+                // P5：搜索 RPC 的 busy/限流失败也喂统一运行时横幅（与发送失败同款判据）。
+                if (ClientRuntimeError.isServerBusySignal(null, it.message)) {
+                    ClientRuntime.onServerBusySignal()
+                }
+            }
     }
 
     fun loadMore() {
