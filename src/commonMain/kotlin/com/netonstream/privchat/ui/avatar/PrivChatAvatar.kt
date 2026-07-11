@@ -49,6 +49,39 @@ import com.gearui.theme.Theme
  * @param preferLocalCache 已缓存头像（如自己头像，SDK 已下载到 `avatars/users/{uid}.img`）优先
  *   直接读本地文件、跳过远程网络加载，消除 initials→网络图的闪烁；本地无缓存时自动回落远程/initials
  */
+/**
+ * 头像入口的 [AvatarModel] 重载（CLIENT_GLOBAL_STATE §8）：所有页面应逐步迁移到此形态，
+ * 由 AvatarStore 产出 model，UI 不再自己拼 `avatarUrl` / `preferLocalCache`。
+ * `localPath` 非空（AvatarStore 已判本地缓存可用）→ 直接 `file://` 渲染，near-instant 无闪烁；
+ * 否则远程；都无则 initials 兜底（由基础组件按 name/username/userId 解析）。
+ */
+@Composable
+fun PrivChatAvatar(
+    model: AvatarModel,
+    size: Dp = AvatarSizeTokens.Medium.size,
+    radius: Dp = 6.dp,
+    unreadCount: Int = 0,
+    isMuted: Boolean = false,
+    isOnline: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
+    val url = model.localPath?.let { "file://$it" } ?: model.remoteUrl
+    PrivChatAvatar(
+        name = model.displayName,
+        username = model.username,
+        avatarUrl = url,
+        userId = model.userId,
+        size = size,
+        radius = radius,
+        isGroup = model.isGroup,
+        unreadCount = unreadCount,
+        isMuted = isMuted,
+        isOnline = isOnline,
+        seed = model.seed,
+        modifier = modifier,
+    )
+}
+
 @Composable
 fun PrivChatAvatar(
     name: String?,
