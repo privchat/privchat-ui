@@ -54,8 +54,13 @@ fun GroupInvitePage(
 
     val filtered = remember(friends, searchQuery) {
         val q = searchQuery.trim()
-        if (q.isEmpty()) friends
-        else friends.filter {
+        // 系统类型账号(user_type==1)绝不允许被拉进群——按 user_type(非 uid)过滤;
+        // 服务端 add/create 也已硬拒,这里是客户端侧的等价限制。
+        val invitable = friends.filterNot {
+            com.netonstream.privchat.ui.models.SystemUser.isSystemType(it.userType.toInt())
+        }
+        if (q.isEmpty()) invitable
+        else invitable.filter {
             (it.remark?.contains(q, ignoreCase = true) == true) ||
                 (it.nickname?.contains(q, ignoreCase = true) == true) ||
                 it.username.contains(q, ignoreCase = true)

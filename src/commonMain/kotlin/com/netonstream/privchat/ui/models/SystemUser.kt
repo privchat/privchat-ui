@@ -12,6 +12,13 @@ object SystemUser {
     fun isSystem(username: String?): Boolean =
         username == "system" || username == "__system_1__"
 
+    /**
+     * 按「用户类型」判定系统账号(user_type==1,与服务端 USER_TYPE_SYSTEM 一致)。
+     * 这是判定系统账号的权威依据——uid 只是部署事实,username 是兼容通道;
+     * 有 user_type 时优先按类型判(GPT 红线:禁用 uid 作逻辑依据)。null=未知→非系统。
+     */
+    fun isSystemType(userType: Int?): Boolean = userType == 1
+
     /** 系统用户 → 本地化「系统消息」;否则原样返回 [fallback]。 */
     fun displayNameOr(username: String?, fallback: String): String =
         if (isSystem(username)) PrivChatI18n.current.systemMessagesName else fallback

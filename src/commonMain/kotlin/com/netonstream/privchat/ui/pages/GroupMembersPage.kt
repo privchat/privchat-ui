@@ -46,7 +46,9 @@ fun GroupMembersPage(
     modifier: Modifier = Modifier,
 ) {
     val strings = PrivChatI18n.strings
-    val sorted = members.sortedWith(compareByDescending<GroupMemberEntry> { it.role }.thenBy { it.displayName })
+    // 系统类型账号(user_type==1)已在上游 loadGroupMembers 按 user_type 滤除,这里只排序。
+    val sorted = members
+        .sortedWith(compareByDescending<GroupMemberEntry> { it.role }.thenBy { it.displayName })
     val scope = rememberCoroutineScope()
 
     // 禁言：选时长 → groupMuteMember(groupId, userId, seconds)。群聊 channelId == groupId。
