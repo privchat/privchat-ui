@@ -406,4 +406,5 @@ internal val enAuxiliary = PrivChatAuxiliaryStrings(
     bannerSyncing = "Syncing…",
     loginExpired = "Session expired, please sign in again",
     syncFailedRetry = "Sync failed, will retry automatically",
+    bannerServerBusy = "Server busy, please wait",
 )

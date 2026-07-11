@@ -408,4 +408,5 @@ internal val zhAuxiliary = PrivChatAuxiliaryStrings(
     bannerSyncing = "同步中…",
     loginExpired = "登录已失效，请重新登录",
     syncFailedRetry = "同步失败，稍后会自动重试",
+    bannerServerBusy = "服务繁忙，请稍后",
 )

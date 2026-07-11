@@ -406,4 +406,5 @@ internal val hantAuxiliary = PrivChatAuxiliaryStrings(
     bannerSyncing = "同步中…",
     loginExpired = "登入已失效，請重新登入",
     syncFailedRetry = "同步失敗，稍後會自動重試",
+    bannerServerBusy = "伺服器繁忙，請稍後",
 )

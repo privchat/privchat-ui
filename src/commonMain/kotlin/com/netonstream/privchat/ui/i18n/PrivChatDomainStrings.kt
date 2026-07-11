@@ -1243,6 +1243,7 @@ data class PrivChatAuxiliaryStrings(
     val bannerSyncing: String,
     val loginExpired: String,
     val syncFailedRetry: String,
+    val bannerServerBusy: String,
 )
 
 data class PrivChatAuxiliaryStringsPatch(
@@ -1351,6 +1352,7 @@ data class PrivChatAuxiliaryStringsPatch(
     val bannerSyncing: String? = null,
     val loginExpired: String? = null,
     val syncFailedRetry: String? = null,
+    val bannerServerBusy: String? = null,
 )
 
 val PrivChatAuxiliaryStringsPatch.isEmpty: Boolean
@@ -1458,7 +1460,8 @@ val PrivChatAuxiliaryStringsPatch.isEmpty: Boolean
         bannerConnectFailed == null &&
         bannerSyncing == null &&
         loginExpired == null &&
-        syncFailedRetry == null
+        syncFailedRetry == null &&
+        bannerServerBusy == null
 
 fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivChatAuxiliaryStrings {
     if (patch == null || patch.isEmpty) return this
@@ -1568,5 +1571,6 @@ fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivC
         bannerSyncing = patch.bannerSyncing ?: bannerSyncing,
         loginExpired = patch.loginExpired ?: loginExpired,
         syncFailedRetry = patch.syncFailedRetry ?: syncFailedRetry,
+        bannerServerBusy = patch.bannerServerBusy ?: bannerServerBusy,
     )
 }

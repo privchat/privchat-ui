@@ -406,4 +406,5 @@ internal val viAuxiliary = PrivChatAuxiliaryStrings(
     bannerSyncing = "Đang đồng bộ…",
     loginExpired = "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại",
     syncFailedRetry = "Đồng bộ thất bại, sẽ tự động thử lại",
+    bannerServerBusy = "Máy chủ đang bận, vui lòng đợi",
 )

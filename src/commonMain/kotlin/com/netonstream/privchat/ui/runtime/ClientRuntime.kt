@@ -28,6 +28,8 @@ sealed class ClientRuntimeError {
     data object NetworkUnavailable : ClientRuntimeError()
     data object GatewayDisconnected : ClientRuntimeError()
     data object AuthExpired : ClientRuntimeError()
+    /** 服务端繁忙/限流（ErrorCode SystemBusy=2 / RateLimitExceeded=10300，或 reason 文本匹配）。 */
+    data object ServerBusy : ClientRuntimeError()
     /** 同步失败（终态，transient 已在 app 层过滤不进这里）。rawReason 仅日志用，不给 UI。 */
     data class SyncFailed(val rawReason: String) : ClientRuntimeError()
     data class Unknown(val rawReason: String) : ClientRuntimeError()
@@ -37,8 +39,22 @@ sealed class ClientRuntimeError {
         NetworkUnavailable -> strings.bannerDisconnected
         GatewayDisconnected -> strings.bannerReconnecting
         AuthExpired -> strings.loginExpired
+        ServerBusy -> strings.bannerServerBusy
         is SyncFailed -> strings.syncFailedRetry
         is Unknown -> strings.networkError
+    }
+
+    companion object {
+        /**
+         * 服务端繁忙判定（唯一入口）：protocol `ErrorCode.SystemBusy=2` / `RateLimitExceeded=10300`，
+         * 或 reason 文本含 busy / rate limit / too many requests。
+         */
+        fun isServerBusySignal(errorCode: UInt?, reason: String?): Boolean {
+            if (errorCode == 2u || errorCode == 10300u) return true
+            val m = reason?.lowercase() ?: return false
+            return m.contains("system busy") || m.contains("server busy") ||
+                m.contains("rate limit") || m.contains("too many requests")
+        }
     }
 }
 
@@ -55,7 +71,10 @@ data class ConnectivityState(
     val reconnecting: Boolean = false,
     /** 本轮重连尝试次数（认证成功清零）。 */
     val reconnectAttempt: Int = 0,
-    /** 服务端繁忙（预留：SDK 暂无显式 busy 事件源，接入 RPC 错误码后置位，不造假）。 */
+    /**
+     * 服务端繁忙/限流（[ClientRuntimeError.isServerBusySignal]：SystemBusy=2 / RateLimitExceeded=10300
+     * / reason 文本）。置位后由下一个成功信号自动清除（认证成功 / resume sync 完成 / 消息发送成功）。
+     */
     val serverBusy: Boolean = false,
     val lastConnectedAt: Long? = null,
     val lastDisconnectedAt: Long? = null,
@@ -86,6 +105,12 @@ data class SyncState(
 
 // ========== Send queue（§17.3） ==========
 
+/**
+ * 发送队列**运行时摘要**（summary facade）——**不替代**既有持久化发送链
+ * （SQLite Pending/Failed 状态、ack 回填 serverMessageId/messageSeq、气泡失败重试 `retryMessage`、
+ * 重启恢复），那条链是发送状态真源；这里只聚合全局可见的队列深度与最近失败线索。
+ * 完整 MessageSendStore（per-message 聚合 facade）留后续，只做聚合不重写发送链。
+ */
 data class SendQueueState(
     /** SDK outbound 队列深度（`outbound_queue_updated.queued`，断网排队的真实来源）。 */
     val outboundQueued: Long = 0,
@@ -123,6 +148,7 @@ object ClientRuntime {
                     authenticated = true,
                     reconnecting = false,
                     reconnectAttempt = 0,
+                    serverBusy = false, // 成功信号清 busy
                     lastConnectedAt = now,
                     lastError = null,
                 )
@@ -162,6 +188,17 @@ object ClientRuntime {
         )
     }
 
+    /**
+     * 服务端繁忙/限流信号（来源：resume_sync_failed / message send failed 的
+     * [ClientRuntimeError.isServerBusySignal] 命中）。由下一个成功信号自动清除。
+     */
+    fun onServerBusySignal() {
+        _connectivity.value = _connectivity.value.copy(
+            serverBusy = true,
+            lastError = ClientRuntimeError.ServerBusy,
+        )
+    }
+
     // ---- Sync 喂入口 ----
 
     fun onResumeSyncStarted() {
@@ -175,6 +212,7 @@ object ClientRuntime {
             lastSyncAt = currentTimeMillis(),
             globalError = null,
         )
+        clearServerBusy() // 成功信号清 busy
     }
 
     /** 终态失败才进（transient 由 app 层 `isTransientSyncReason` 过滤，与 dialog 分级一致）。 */
@@ -215,6 +253,20 @@ object ClientRuntime {
         )
     }
 
+    /** 消息发送成功（status=Sent）：成功信号清 serverBusy。 */
+    fun onMessageSendSucceeded() {
+        clearServerBusy()
+    }
+
+    private fun clearServerBusy() {
+        val cur = _connectivity.value
+        if (!cur.serverBusy && cur.lastError !is ClientRuntimeError.ServerBusy) return
+        _connectivity.value = cur.copy(
+            serverBusy = false,
+            lastError = if (cur.lastError is ClientRuntimeError.ServerBusy) null else cur.lastError,
+        )
+    }
+
     // ---- 生命周期 ----
 
     /** 登出/切号：清空（spec §14 防串号）。 */
@@ -233,4 +285,41 @@ object ClientRuntime {
         "presence" -> SyncEntityKind.PRESENCE
         else -> SyncEntityKind.OTHER
     }
+}
+
+// ========== 运行时状态条（优先级固定，勿改序） ==========
+
+enum class RuntimeBannerKind { AUTH_EXPIRED, OFFLINE, RECONNECTING, CONNECTING, SERVER_BUSY, SYNCING, CONNECTED, HIDDEN }
+
+/**
+ * 状态条唯一决策函数（纯函数，可单测）。**优先级固定（P4.1 拍板，改序须过评审）**：
+ *
+ *   AuthExpired/ForcedLogout > NetworkUnavailable(设备断网) > Reconnecting(曾有会话掉线/握手)
+ *   > Connecting(首次连接) > ServerBusy > ResumeSyncRunning > Connected(短暂) > Hidden
+ *
+ * 说明：
+ * - AuthExpired 最高：被踢下线绝不能显示「连接中/同步中」。
+ * - 设备断网压过一切连接语义：断网时绝不显示「同步中」。
+ * - ServerBusy 在已认证会话内提示（未认证时连接语义优先）。
+ * - [hasStartedConnectionFlow] 抑制登录前噪声；[showConnectedBanner] 控制绿条短暂显示窗口。
+ */
+fun resolveRuntimeBanner(
+    connectivity: ConnectivityState,
+    sync: SyncState,
+    hasStartedConnectionFlow: Boolean,
+    showConnectedBanner: Boolean,
+): RuntimeBannerKind = when {
+    connectivity.lastError is ClientRuntimeError.AuthExpired && hasStartedConnectionFlow ->
+        RuntimeBannerKind.AUTH_EXPIRED
+    !connectivity.networkReachable && hasStartedConnectionFlow -> RuntimeBannerKind.OFFLINE
+    connectivity.authenticated -> when {
+        connectivity.serverBusy -> RuntimeBannerKind.SERVER_BUSY
+        sync.resumeSyncRunning -> RuntimeBannerKind.SYNCING
+        showConnectedBanner -> RuntimeBannerKind.CONNECTED
+        else -> RuntimeBannerKind.HIDDEN
+    }
+    connectivity.reconnecting && hasStartedConnectionFlow -> RuntimeBannerKind.RECONNECTING
+    connectivity.gatewayConnected -> RuntimeBannerKind.CONNECTING
+    hasStartedConnectionFlow -> RuntimeBannerKind.OFFLINE
+    else -> RuntimeBannerKind.HIDDEN
 }
