@@ -386,6 +386,7 @@ internal val hantAuxiliary = PrivChatAuxiliaryStrings(
     inviteBoundInviter = "邀請人",
     inviteBoundAt = "綁定時間",
     inviteBoundHint = "每個帳號只能綁定一次邀請碼，綁定後不可修改",
+    inviteBoundAutoFriend = "已自動新增邀請人為好友",
     inviteBindHint = "綁定邀請人的邀請碼後將自動互加好友",
     inviteBindSuccessFriend = "綁定成功，已與邀請人成為好友",
     inviteBindSuccess = "綁定成功",

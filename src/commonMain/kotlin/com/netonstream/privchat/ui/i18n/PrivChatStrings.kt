@@ -351,6 +351,7 @@ data class PrivChatStrings(
     val inviteBoundInviter: String get() = dAuxiliary.inviteBoundInviter
     val inviteBoundAt: String get() = dAuxiliary.inviteBoundAt
     val inviteBoundHint: String get() = dAuxiliary.inviteBoundHint
+    val inviteBoundAutoFriend: String get() = dAuxiliary.inviteBoundAutoFriend
     val inviteBindHint: String get() = dAuxiliary.inviteBindHint
     val inviteBindSuccessFriend: String get() = dAuxiliary.inviteBindSuccessFriend
     val inviteBindSuccess: String get() = dAuxiliary.inviteBindSuccess

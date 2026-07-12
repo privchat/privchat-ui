@@ -1228,6 +1228,7 @@ data class PrivChatAuxiliaryStrings(
     val inviteBoundInviter: String,
     val inviteBoundAt: String,
     val inviteBoundHint: String,
+    val inviteBoundAutoFriend: String,
     val inviteBindHint: String,
     val inviteBindSuccessFriend: String,
     val inviteBindSuccess: String,
@@ -1338,6 +1339,7 @@ data class PrivChatAuxiliaryStringsPatch(
     val inviteBoundInviter: String? = null,
     val inviteBoundAt: String? = null,
     val inviteBoundHint: String? = null,
+    val inviteBoundAutoFriend: String? = null,
     val inviteBindHint: String? = null,
     val inviteBindSuccessFriend: String? = null,
     val inviteBindSuccess: String? = null,
@@ -1447,6 +1449,7 @@ val PrivChatAuxiliaryStringsPatch.isEmpty: Boolean
         inviteBoundInviter == null &&
         inviteBoundAt == null &&
         inviteBoundHint == null &&
+        inviteBoundAutoFriend == null &&
         inviteBindHint == null &&
         inviteBindSuccessFriend == null &&
         inviteBindSuccess == null &&
@@ -1557,6 +1560,7 @@ fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivC
         inviteBoundInviter = patch.inviteBoundInviter ?: inviteBoundInviter,
         inviteBoundAt = patch.inviteBoundAt ?: inviteBoundAt,
         inviteBoundHint = patch.inviteBoundHint ?: inviteBoundHint,
+        inviteBoundAutoFriend = patch.inviteBoundAutoFriend ?: inviteBoundAutoFriend,
         inviteBindHint = patch.inviteBindHint ?: inviteBindHint,
         inviteBindSuccessFriend = patch.inviteBindSuccessFriend ?: inviteBindSuccessFriend,
         inviteBindSuccess = patch.inviteBindSuccess ?: inviteBindSuccess,

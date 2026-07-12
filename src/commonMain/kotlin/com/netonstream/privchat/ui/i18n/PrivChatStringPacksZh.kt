@@ -388,6 +388,7 @@ internal val zhAuxiliary = PrivChatAuxiliaryStrings(
     inviteBoundInviter = "邀请人",
     inviteBoundAt = "绑定时间",
     inviteBoundHint = "每个账号只能绑定一次邀请码，绑定后不可修改",
+    inviteBoundAutoFriend = "已自动添加邀请人为好友",
     inviteBindHint = "绑定邀请人的邀请码后将自动互加好友",
     inviteBindSuccessFriend = "绑定成功，已与邀请人成为好友",
     inviteBindSuccess = "绑定成功",

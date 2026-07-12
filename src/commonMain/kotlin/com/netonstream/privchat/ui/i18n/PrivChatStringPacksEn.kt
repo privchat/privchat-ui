@@ -386,6 +386,7 @@ internal val enAuxiliary = PrivChatAuxiliaryStrings(
     inviteBoundInviter = "Inviter",
     inviteBoundAt = "Bound at",
     inviteBoundHint = "Each account can bind one invite code; it cannot be changed",
+    inviteBoundAutoFriend = "Inviter added as a friend automatically",
     inviteBindHint = "Bind an inviter-owned code to become friends automatically",
     inviteBindSuccessFriend = "Bound — you are now friends with the inviter",
     inviteBindSuccess = "Invite code bound",

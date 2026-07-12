@@ -386,6 +386,7 @@ internal val viAuxiliary = PrivChatAuxiliaryStrings(
     inviteBoundInviter = "Người mời",
     inviteBoundAt = "Thời gian liên kết",
     inviteBoundHint = "Mỗi tài khoản chỉ liên kết một mã mời và không thể thay đổi",
+    inviteBoundAutoFriend = "Đã tự động thêm người mời làm bạn",
     inviteBindHint = "Liên kết mã của người mời để tự động kết bạn",
     inviteBindSuccessFriend = "Đã liên kết — bạn và người mời đã là bạn bè",
     inviteBindSuccess = "Đã liên kết mã mời",
