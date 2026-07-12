@@ -58,6 +58,7 @@ fun ChatSettingsPage(
     isOwner: Boolean = false,
     onBack: () -> Unit,
     onGroupNameClick: () -> Unit = {},
+    onGroupApprovalClick: () -> Unit = {},
     onGroupQrCodeClick: () -> Unit = {},
     onGroupMembersClick: () -> Unit = {},
     onGroupInviteClick: () -> Unit = {},
@@ -149,8 +150,9 @@ fun ChatSettingsPage(
                         title = strings.chatSettingsGroupName,
                         // P6-1：收口到 GroupDisplay.titleOf（此前裸 channel.name 无 fallback，空群名显示空白）。
                         description = com.netonstream.privchat.ui.models.GroupDisplay.titleOf(channel.name),
-                        arrow = true,
-                        onClick = onGroupNameClick,
+                        // P6-3 上线要求：群改名尚未持久化（GROUP_SETTINGS_PERSISTENCE 未完成）→ 暂隐藏编辑入口，
+                        // 只读展示群名，避免用户改了 resync 后丢失的假成功。
+                        arrow = false,
                     )
                 }
 
@@ -189,6 +191,17 @@ fun ChatSettingsPage(
                             title = strings.chatSettingsGroupManage,
                             arrow = true,
                             onClick = onGroupManageClick,
+                        )
+                    }
+                }
+
+                // 入群申请审批（P6-3；仅群主/管理员；服务端鉴权）
+                if (isManager) {
+                    item {
+                        Cell(
+                            title = strings.groupApprovalTitle,
+                            arrow = true,
+                            onClick = onGroupApprovalClick,
                         )
                     }
                 }

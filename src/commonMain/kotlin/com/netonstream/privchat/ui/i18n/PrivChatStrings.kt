@@ -173,6 +173,8 @@ data class PrivChatStrings(
     val groupSettingsJoinPolicy: String get() = dGroup.groupSettingsJoinPolicy
     val groupSettingsJoinPolicyNone: String get() = dGroup.groupSettingsJoinPolicyNone
     val groupSettingsJoinPolicyApproval: String get() = dGroup.groupSettingsJoinPolicyApproval
+    val groupApprovalTitle: String get() = dGroup.groupApprovalTitle
+    val groupApprovalEmpty: String get() = dGroup.groupApprovalEmpty
     val groupSettingsJoinPolicyOpen: String get() = dGroup.groupSettingsJoinPolicyOpen
     val groupSettingsUpdateFailed: String get() = dGroup.groupSettingsUpdateFailed
     val groupMemberMute: String get() = dGroup.groupMemberMute

@@ -732,6 +732,8 @@ data class PrivChatGroupStrings(
     val groupSettingsJoinPolicy: String,
     val groupSettingsJoinPolicyNone: String,
     val groupSettingsJoinPolicyApproval: String,
+    val groupApprovalTitle: String,
+    val groupApprovalEmpty: String,
     val groupSettingsJoinPolicyOpen: String,
     val groupSettingsUpdateFailed: String,
     val groupMemberMute: String,
@@ -769,6 +771,8 @@ data class PrivChatGroupStringsPatch(
     val groupSettingsJoinPolicy: String? = null,
     val groupSettingsJoinPolicyNone: String? = null,
     val groupSettingsJoinPolicyApproval: String? = null,
+    val groupApprovalTitle: String? = null,
+    val groupApprovalEmpty: String? = null,
     val groupSettingsJoinPolicyOpen: String? = null,
     val groupSettingsUpdateFailed: String? = null,
     val groupMemberMute: String? = null,
@@ -806,6 +810,8 @@ val PrivChatGroupStringsPatch.isEmpty: Boolean
         groupSettingsJoinPolicy == null &&
         groupSettingsJoinPolicyNone == null &&
         groupSettingsJoinPolicyApproval == null &&
+        groupApprovalTitle == null &&
+        groupApprovalEmpty == null &&
         groupSettingsJoinPolicyOpen == null &&
         groupSettingsUpdateFailed == null &&
         groupMemberMute == null &&
@@ -844,6 +850,8 @@ fun PrivChatGroupStrings.merge(patch: PrivChatGroupStringsPatch?): PrivChatGroup
         groupSettingsJoinPolicy = patch.groupSettingsJoinPolicy ?: groupSettingsJoinPolicy,
         groupSettingsJoinPolicyNone = patch.groupSettingsJoinPolicyNone ?: groupSettingsJoinPolicyNone,
         groupSettingsJoinPolicyApproval = patch.groupSettingsJoinPolicyApproval ?: groupSettingsJoinPolicyApproval,
+        groupApprovalTitle = patch.groupApprovalTitle ?: groupApprovalTitle,
+        groupApprovalEmpty = patch.groupApprovalEmpty ?: groupApprovalEmpty,
         groupSettingsJoinPolicyOpen = patch.groupSettingsJoinPolicyOpen ?: groupSettingsJoinPolicyOpen,
         groupSettingsUpdateFailed = patch.groupSettingsUpdateFailed ?: groupSettingsUpdateFailed,
         groupMemberMute = patch.groupMemberMute ?: groupMemberMute,
