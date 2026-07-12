@@ -5,6 +5,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.netonstream.privchat.sdk.dto.ChannelListEntry
 import com.netonstream.privchat.ui.PrivChat
+import com.netonstream.privchat.ui.state.GroupApprovalStore
 
 /**
  * 全局角标统一真源（P6-2，CLIENT_GLOBAL_STATE §24）。
@@ -30,17 +31,30 @@ data class BadgeState(
 )
 
 /** 纯函数派生（可测、无副作用）。totalUnread 排除静音会话，单会话未读用 maxOf 三计数。 */
-fun badgeStateOf(channels: List<ChannelListEntry>, friendRequests: Int): BadgeState =
+fun badgeStateOf(
+    channels: List<ChannelListEntry>,
+    friendRequests: Int,
+    groupRequests: Int = 0,
+): BadgeState =
     BadgeState(
         totalUnread = channels.filterNot { it.isMuted }.sumOf { it.unreadCount },
         conversationUnread = channels.associate { it.channelId to it.unreadCount },
         friendRequests = friendRequests,
+        groupRequests = groupRequests,
     )
 
-/** Compose 统一入口：读 PrivChat.channels + receivedFriendRequests(status==0) → 单一 BadgeState。 */
+/**
+ * Compose 统一入口：读 PrivChat.channels + receivedFriendRequests(status==0) +
+ * GroupApprovalStore(已加载群的待处理审批总数) → 单一 BadgeState。
+ */
 @Composable
 fun rememberBadgeState(): BadgeState {
     val channels by PrivChat.channels.collectAsState()
     val received by PrivChat.receivedFriendRequests.collectAsState()
-    return badgeStateOf(channels, received.count { it.status.toInt() == 0 })
+    // GroupApprovalStore 用 mutableStateMapOf，读 totalPending() 在组合期即被追踪，处理/刷新后自动重组。
+    return badgeStateOf(
+        channels,
+        received.count { it.status.toInt() == 0 },
+        GroupApprovalStore.totalPending(),
+    )
 }

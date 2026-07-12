@@ -322,6 +322,7 @@ object PrivChat {
         _groups.value = emptyList()
         _groupMembers.value = emptyList()
         com.netonstream.privchat.ui.state.GroupStore.clear() // P6-1：切号/登出清群成员，防串号
+        com.netonstream.privchat.ui.state.GroupApprovalStore.clear() // P6-3：清群审批，防串号
         _presences.value = emptyMap()
         _peerReadPtsByChannel.value = emptyMap()
         _channelLocalStates.value = emptyMap()
