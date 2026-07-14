@@ -725,12 +725,6 @@ fun MessagePage(
         }
     }
 
-    // 用 localMessageId（若存在）作为 LazyColumn item key：出站消息在 placeholder → 服务端确认时
-    // DB id 会变（旧 placeholder 行被删、真实行被新建），但 localMessageId 保持不变，
-    // 用它做 key 可以让 LazyColumn 复用同一个 slot，避免状态更新时重建 row。
-    fun MessageEntry.stableKey(): ULong =
-        localMessageId?.takeIf { it > 0uL } ?: id
-
     // UX-7 未读分隔线：首次获取到消息列表后，按 unreadCount 向前回推定位到首条未读，并记住 id。
     // 只解析一次；之后列表变化（新消息到达、上拉刷新）都不重算。
     LaunchedEffect(channel.channelId, sortedMessages.size) {
@@ -993,7 +987,7 @@ fun MessagePage(
                         ) {
                             items(
                                 count = sortedMessages.size,
-                                key = { sortedMessages[it].stableKey().toLong() },
+                                key = { sortedMessages[it].id.toLong() },
                             ) { index ->
                                 val message = sortedMessages[index]
                                 val isSelf = currentUserId?.let { message.isSelf(it) } ?: false

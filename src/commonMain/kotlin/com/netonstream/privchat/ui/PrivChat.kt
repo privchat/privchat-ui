@@ -215,13 +215,13 @@ object PrivChat {
      * 标记指定消息为已送达。
      * 同时 patch _messagesByChannel 和当前 _messages（如果是当前会话）。
      */
-    fun markMessageDelivered(channelId: ULong, serverMessageId: ULong) {
+    fun markMessageDelivered(channelId: ULong, messageId: ULong) {
         val currentByChannel = _messagesByChannel.value
         val channelMessages = currentByChannel[channelId] ?: return
 
         var patched = false
         val updated = channelMessages.map { msg ->
-            if (msg.serverMessageId == serverMessageId && !msg.delivered) {
+            if (msg.id == messageId && !msg.delivered) {
                 patched = true
                 msg.copy(delivered = true)
             } else {
@@ -609,15 +609,6 @@ object PrivChat {
         val currentByChannel = _messagesByChannel.value.toMutableMap()
         val channelMessages = currentByChannel[channelId].orEmpty().toMutableList()
 
-        // 如果新消息携带 localMessageId，先移除用 localMessageId 作为 id 的占位消息
-        val localMsgId = message.localMessageId
-        if (localMsgId != null && localMsgId > 0uL && message.id != localMsgId) {
-            val placeholderIndex = channelMessages.indexOfFirst { it.id == localMsgId }
-            if (placeholderIndex >= 0) {
-                channelMessages.removeAt(placeholderIndex)
-            }
-        }
-
         val index = channelMessages.indexOfFirst { it.id == message.id }
         if (index >= 0) {
             channelMessages[index] = choosePreferredMessage(channelMessages[index], message)
@@ -646,48 +637,12 @@ object PrivChat {
     private fun normalizeMessages(source: List<MessageEntry>): List<MessageEntry> {
         if (source.isEmpty()) return emptyList()
         val dedup = linkedMapOf<ULong, MessageEntry>()
-        val serverIdToLocalId = mutableMapOf<ULong, ULong>()
-        // localMessageId → dedup key: 用于追踪哪些占位消息（id == localMessageId）还在 dedup 中
-        val localMsgIdToKey = mutableMapOf<ULong, ULong>()
         source.forEach { candidate ->
-            // 1. 如果 candidate 携带 localMessageId 且 id != localMessageId，说明是真实消息，
-            //    需要移除之前用 localMessageId 作为 id 的占位消息
-            val localMsgId = candidate.localMessageId
-            if (localMsgId != null && localMsgId > 0uL && candidate.id != localMsgId) {
-                dedup.remove(localMsgId)
-                localMsgIdToKey.remove(localMsgId)
-            }
-
-            // 2. serverMessageId 去重（原有逻辑）
-            val serverId = candidate.serverMessageId
-            if (serverId != null && serverId > 0uL) {
-                val existedLocalId = serverIdToLocalId[serverId]
-                if (existedLocalId != null && existedLocalId != candidate.id) {
-                    val existed = dedup[existedLocalId]
-                    if (existed != null) {
-                        val preferred = choosePreferredMessage(existed, candidate)
-                        dedup.remove(existedLocalId)
-                        dedup[preferred.id] = preferred
-                        serverIdToLocalId[serverId] = preferred.id
-                        return@forEach
-                    }
-                } else {
-                    serverIdToLocalId[serverId] = candidate.id
-                }
-            }
-
-            // 3. id 去重
             val existing = dedup[candidate.id]
             dedup[candidate.id] = if (existing == null) candidate else choosePreferredMessage(existing, candidate)
-
-            // 4. 记录占位消息（id == localMessageId 的消息）
-            if (localMsgId != null && localMsgId > 0uL && candidate.id == localMsgId) {
-                localMsgIdToKey[localMsgId] = candidate.id
-            }
         }
         return dedup.values.sortedWith(
             compareBy<MessageEntry> { it.timestamp }
-                .thenBy { it.serverMessageId ?: 0uL }
                 .thenBy { it.id },
         )
     }
@@ -697,12 +652,9 @@ object PrivChat {
         // 否则同 status 去重时会丢掉已送达状态。
         val mergedDelivered = a.delivered || b.delivered
         val preferred = when {
-            a.id != b.id -> if (a.timestamp >= b.timestamp) a else b
             a.isRevoked != b.isRevoked -> if (b.isRevoked) b else a
             statusRank(a.status) != statusRank(b.status) ->
                 if (statusRank(a.status) >= statusRank(b.status)) a else b
-            (a.serverMessageId ?: 0uL) != (b.serverMessageId ?: 0uL) ->
-                if ((a.serverMessageId ?: 0uL) >= (b.serverMessageId ?: 0uL)) a else b
             // All criteria equal: prefer the incoming (b) — may carry updated localThumbnailPath / thumbStatus.
             else -> if (a.timestamp > b.timestamp) a else b
         }
