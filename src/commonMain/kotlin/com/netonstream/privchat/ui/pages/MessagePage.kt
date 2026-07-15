@@ -793,11 +793,8 @@ fun MessagePage(
     }
 
     // 键盘弹起时滚到底部，避免消息被遮挡
-    val currentBottomInset = runtimeEnv.safeArea.bottom
-    var baselineBottomInset by remember(channel.channelId) { mutableStateOf(currentBottomInset.value) }
-    LaunchedEffect(currentBottomInset) {
-        if (currentBottomInset.value < baselineBottomInset) baselineBottomInset = currentBottomInset.value
-        val keyboardVisible = currentBottomInset.value > baselineBottomInset + 80f
+    val keyboardVisible = runtimeEnv.keyboard.visible
+    LaunchedEffect(keyboardVisible) {
         if (keyboardVisible && sortedMessages.isNotEmpty()) {
             listState.animateScrollToItem(sortedMessages.size - 1)
         }
@@ -1241,7 +1238,8 @@ fun MessagePage(
                 voiceRecordingState = VoiceRecordingState.IDLE
                 onVoiceCancel?.invoke()
             },
-            safeAreaBottom = runtimeEnv.safeArea.bottom,
+            systemSafeAreaBottom = runtimeEnv.safeArea.bottom,
+            keyboardHeight = runtimeEnv.keyboard.height,
             onPickImage = {
                 panelMode = InputPanelMode.NONE
                 scope.launch {
@@ -2287,7 +2285,8 @@ private fun MessageInputBar(
     onVoiceRecordZoneChange: (inCancelZone: Boolean) -> Unit = {},
     onVoiceRecordEnd: () -> Unit = {},
     onVoiceRecordCancel: () -> Unit = {},
-    safeAreaBottom: Dp = 0.dp,
+    systemSafeAreaBottom: Dp = 0.dp,
+    keyboardHeight: Dp = 0.dp,
     loading: Boolean = false,
     onPickImage: () -> Unit = {},
     onPickCamera: () -> Unit = {},
@@ -2320,7 +2319,6 @@ private fun MessageInputBar(
             pendingAutoFocus = true
         }
     }
-    var collapsedBottomInset by remember { mutableStateOf(safeAreaBottom) }
     var lastKeyboardHeight by remember { mutableStateOf(0f) }
     val plusActions = remember(moneyEnabled) {
         buildList {
@@ -2352,8 +2350,7 @@ private fun MessageInputBar(
     val inputControlHeight = 40.dp
     val panelHostHeight = 228.dp
     val panelTopSpacing = 8.dp
-    val keyboardVisibleThreshold = 80f
-    val rawKeyboardVisible = safeAreaBottom.value > (collapsedBottomInset.value + keyboardVisibleThreshold)
+    val rawKeyboardVisible = keyboardHeight > 0.dp
     // 对键盘消失信号做 150ms 防抖，避免切换 app 时系统短暂重置 inset 导致布局闪烁
     var keyboardVisible by remember { mutableStateOf(rawKeyboardVisible) }
     LaunchedEffect(rawKeyboardVisible) {
@@ -2367,11 +2364,15 @@ private fun MessageInputBar(
     val hostVisible = displayedPanelMode != InputPanelMode.NONE || pendingPanelMode != null || reservePanelHost
     // 过渡期间用键盘高度撑起面板区域，使输入框位置保持不动；panel 显示时 bottom padding 切换为 collapsed inset
     val effectivePanelHeight = ((lastKeyboardHeight - panelTopSpacing.value).coerceAtLeast(panelHostHeight.value)).dp
-    val effectiveBottomPadding = if (hostVisible) collapsedBottomInset else safeAreaBottom
+    val effectiveBottomPadding = if (hostVisible) {
+        systemSafeAreaBottom
+    } else {
+        maxOf(systemSafeAreaBottom, keyboardHeight)
+    }
 
     fun closeAllPanels() {
         logMessageInputBar(
-            "closeAllPanels panelMode=$panelMode displayed=$displayedPanelMode pending=$pendingPanelMode reserve=$reservePanelHost overlayReserve=$overlayReservedPanelHost inset=${safeAreaBottom.value}"
+            "closeAllPanels panelMode=$panelMode displayed=$displayedPanelMode pending=$pendingPanelMode reserve=$reservePanelHost overlayReserve=$overlayReservedPanelHost systemBottom=${systemSafeAreaBottom.value} keyboard=${keyboardHeight.value}"
         )
         pendingPanelMode = null
         reservePanelHost = false
@@ -2382,7 +2383,7 @@ private fun MessageInputBar(
 
     fun requestPanel(targetMode: InputPanelMode) {
         logMessageInputBar(
-            "requestPanel target=$targetMode panelMode=$panelMode displayed=$displayedPanelMode pending=$pendingPanelMode reserve=$reservePanelHost overlayReserve=$overlayReservedPanelHost focused=$inputFocused inset=${safeAreaBottom.value}"
+            "requestPanel target=$targetMode panelMode=$panelMode displayed=$displayedPanelMode pending=$pendingPanelMode reserve=$reservePanelHost overlayReserve=$overlayReservedPanelHost focused=$inputFocused systemBottom=${systemSafeAreaBottom.value} keyboard=${keyboardHeight.value}"
         )
         if (!keyboardVisible) {
             // 无键盘：直接切换面板，不需要 overlay 过渡
@@ -2404,7 +2405,7 @@ private fun MessageInputBar(
 
     fun transitionPanelToKeyboard() {
         logMessageInputBar(
-            "transitionPanelToKeyboard panelMode=$panelMode displayed=$displayedPanelMode pending=$pendingPanelMode reserve=$reservePanelHost overlayReserve=$overlayReservedPanelHost focused=$inputFocused inset=${safeAreaBottom.value}"
+            "transitionPanelToKeyboard panelMode=$panelMode displayed=$displayedPanelMode pending=$pendingPanelMode reserve=$reservePanelHost overlayReserve=$overlayReservedPanelHost focused=$inputFocused systemBottom=${systemSafeAreaBottom.value} keyboard=${keyboardHeight.value}"
         )
         reservePanelHost = true
         overlayReservedPanelHost = true
@@ -2420,16 +2421,12 @@ private fun MessageInputBar(
         }
     }
 
-    LaunchedEffect(safeAreaBottom) {
+    LaunchedEffect(keyboardHeight) {
         logMessageInputBar(
-            "safeAreaBottom=${safeAreaBottom.value} collapsedBaseline=${collapsedBottomInset.value} keyboardVisible=$keyboardVisible panelMode=$panelMode displayed=$displayedPanelMode pending=$pendingPanelMode reserve=$reservePanelHost overlayReserve=$overlayReservedPanelHost focused=$inputFocused"
+            "systemBottom=${systemSafeAreaBottom.value} keyboardHeight=${keyboardHeight.value} keyboardVisible=$keyboardVisible panelMode=$panelMode displayed=$displayedPanelMode pending=$pendingPanelMode reserve=$reservePanelHost overlayReserve=$overlayReservedPanelHost focused=$inputFocused"
         )
-        val kbHeight = (safeAreaBottom.value - collapsedBottomInset.value).coerceAtLeast(0f)
-        if (kbHeight > lastKeyboardHeight) {
-            lastKeyboardHeight = kbHeight
-        }
-        if (safeAreaBottom.value < collapsedBottomInset.value) {
-            collapsedBottomInset = safeAreaBottom
+        if (keyboardHeight.value > lastKeyboardHeight) {
+            lastKeyboardHeight = keyboardHeight.value
         }
     }
 
@@ -2437,7 +2434,7 @@ private fun MessageInputBar(
         val targetMode = pendingPanelMode ?: return@LaunchedEffect
         if (!keyboardVisible) {
             logMessageInputBar(
-                "pendingResolved target=$targetMode keyboardVisible=$keyboardVisible inset=${safeAreaBottom.value}"
+                "pendingResolved target=$targetMode keyboardVisible=$keyboardVisible keyboard=${keyboardHeight.value}"
             )
             displayedPanelMode = targetMode
             reservePanelHost = false
@@ -2453,7 +2450,7 @@ private fun MessageInputBar(
         if (!reservePanelHost) return@LaunchedEffect
         if (inputFocused && keyboardVisible) {
             logMessageInputBar(
-                "releaseReserveForKeyboard focused=$inputFocused keyboardVisible=$keyboardVisible inset=${safeAreaBottom.value}"
+                "releaseReserveForKeyboard focused=$inputFocused keyboardVisible=$keyboardVisible keyboard=${keyboardHeight.value}"
             )
             reservePanelHost = false
             overlayReservedPanelHost = false
@@ -2463,7 +2460,7 @@ private fun MessageInputBar(
 
     LaunchedEffect(panelMode, displayedPanelMode, pendingPanelMode, reservePanelHost, overlayReservedPanelHost, inputFocused, keyboardVisible, hostVisible) {
         logMessageInputBar(
-            "state panelMode=$panelMode displayed=$displayedPanelMode pending=$pendingPanelMode reserve=$reservePanelHost overlayReserve=$overlayReservedPanelHost hostVisible=$hostVisible focused=$inputFocused keyboardVisible=$keyboardVisible inset=${safeAreaBottom.value}"
+            "state panelMode=$panelMode displayed=$displayedPanelMode pending=$pendingPanelMode reserve=$reservePanelHost overlayReserve=$overlayReservedPanelHost hostVisible=$hostVisible focused=$inputFocused keyboardVisible=$keyboardVisible systemBottom=${systemSafeAreaBottom.value} keyboard=${keyboardHeight.value}"
         )
     }
 
@@ -2590,7 +2587,7 @@ private fun MessageInputBar(
                         focusRequester = inputFocusRequester,
                         onFocusChanged = { focused ->
                             logMessageInputBar(
-                                "focusChanged focused=$focused panelMode=$panelMode displayed=$displayedPanelMode pending=$pendingPanelMode reserve=$reservePanelHost overlayReserve=$overlayReservedPanelHost inset=${safeAreaBottom.value}"
+                                "focusChanged focused=$focused panelMode=$panelMode displayed=$displayedPanelMode pending=$pendingPanelMode reserve=$reservePanelHost overlayReserve=$overlayReservedPanelHost keyboard=${keyboardHeight.value}"
                             )
                             inputFocused = focused
                             if (focused) {
