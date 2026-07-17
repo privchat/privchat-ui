@@ -334,160 +334,60 @@ fun parseMessageContent(content: String): ParsedContent {
  * 与 i18n 的 `PrivChatStrings.previewOf`（看 `isRevoked`）负责。避免状态层污染内容解析。
  */
 fun parseMessageContent(message: MessageEntry): ParsedContent {
-    val content = message.content
-    val extra = message.extra
-    val type = parseMessageType(message.messageType, content, extra)
-
-    return when (type) {
-        MessageType.TEXT -> ParsedContent(
-            type = type,
-            text = extractPayloadContent(content)
-                ?: extractJsonString(content, "text")
-                ?: content
-        )
-
-        MessageType.IMAGE -> ParsedContent(
-            type = type,
-            attachmentUrl = extractMediaUrl(content, extra),
-            attachmentFileId = extractAttachmentFileId(content, extra),
-            thumbnailUrl = extractThumbnailUrl(content, extra),
-            fileName = extractFileName(content, extra),
-            fileSize = extractFileSize(content, extra),
-            width = extractJsonInt(content, "width") ?: extractJsonInt(extra, "width"),
-            height = extractJsonInt(content, "height") ?: extractJsonInt(extra, "height"),
-        )
-
-        MessageType.VIDEO -> ParsedContent(
-            type = type,
-            attachmentUrl = extractMediaUrl(content, extra),
-            attachmentFileId = extractAttachmentFileId(content, extra),
-            thumbnailUrl = extractThumbnailUrl(content, extra),
-            fileName = extractFileName(content, extra),
-            fileSize = extractFileSize(content, extra),
-            duration = extractJsonInt(content, "duration") ?: extractJsonInt(extra, "duration"),
-            width = extractJsonInt(content, "width") ?: extractJsonInt(extra, "width"),
-            height = extractJsonInt(content, "height") ?: extractJsonInt(extra, "height"),
-        )
-
-        MessageType.VOICE -> ParsedContent(
-            type = type,
-            attachmentUrl = extractMediaUrl(content, extra),
-            attachmentFileId = extractAttachmentFileId(content, extra),
-            duration = extractJsonInt(content, "duration") ?: extractJsonInt(extra, "duration")
-        )
-
-        MessageType.FILE -> ParsedContent(
-            type = type,
-            attachmentUrl = extractMediaUrl(content, extra),
-            attachmentFileId = extractAttachmentFileId(content, extra),
-            fileName = extractFileName(content, extra),
-            fileSize = extractFileSize(content, extra),
-        )
-
-        MessageType.LOCATION -> ParsedContent(
-            type = type,
-            latitude = extractJsonDouble(content, "latitude")
-                ?: extractJsonDouble(content, "lat")
-                ?: extractJsonDouble(extra, "latitude")
-                ?: extractJsonDouble(extra, "lat"),
-            longitude = extractJsonDouble(content, "longitude")
-                ?: extractJsonDouble(content, "lng")
-                ?: extractJsonDouble(extra, "longitude")
-                ?: extractJsonDouble(extra, "lng"),
-            coordinateSystem = extractJsonString(content, "coordinate_system")
-                ?: extractJsonString(extra, "coordinate_system"),
-            // 协议 name = 发送端选的 POI 名；保留对旧字段的 best-effort 读取。
-            locationName = extractJsonString(content, "name")
-                ?: extractJsonString(extra, "name"),
-            address = extractJsonString(content, "address")
-                ?: extractJsonString(extra, "address"),
-            poiId = extractJsonString(content, "poi_id")
-                ?: extractJsonString(extra, "poi_id"),
-            poiSource = extractJsonString(content, "poi_source")
-                ?: extractJsonString(extra, "poi_source"),
-            thumbnailUrl = extractThumbnailUrl(content, extra),
-            thumbnailFileId = (extractJsonLong(content, "thumbnail_file_id")
-                ?: extractJsonLong(extra, "thumbnail_file_id"))?.toULong()?.takeIf { it > 0uL },
-        )
-
-        MessageType.STICKER -> ParsedContent(
-            type = type,
-            attachmentUrl = extractMediaUrl(content, extra),
-            text = extractJsonString(content, "name")
-                ?: extractJsonString(content, "emoji")
-                ?: extractJsonString(extra, "name")
-                ?: extractJsonString(extra, "emoji")
-        )
-
-        MessageType.LINK -> ParsedContent(
-            type = type,
-            linkUrl = extractJsonString(content, "url")
-                ?: extractJsonString(extra, "url"),
-            linkTitle = extractJsonString(content, "title")
-                ?: extractJsonString(extra, "title"),
-            linkDescription = extractJsonString(content, "description")
-                ?: extractJsonString(extra, "description"),
-            thumbnailUrl = extractThumbnailUrl(content, extra),
-            thumbnailFileId = (extractJsonLong(content, "thumbnail_file_id")
-                ?: extractJsonLong(extra, "thumbnail_file_id"))?.toULong()?.takeIf { it > 0uL },
-        )
-
-        MessageType.CONTACT -> ParsedContent(
-            type = type,
-            contactUserId = (extractJsonLong(content, "user_id")
-                ?: extractJsonLong(content, "userId")
-                ?: extractJsonLong(extra, "user_id")
-                ?: extractJsonLong(extra, "userId"))?.toULong(),
-            contactName = extractJsonString(content, "name")
-                ?: extractJsonString(content, "nickname")
-                ?: extractJsonString(extra, "name")
-                ?: extractJsonString(extra, "nickname"),
-            contactAvatarUrl = extractJsonString(content, "avatar")
-                ?: extractJsonString(content, "avatar_url")
-                ?: extractJsonString(extra, "avatar")
-                ?: extractJsonString(extra, "avatar_url")
-        )
-
-        MessageType.SYSTEM -> {
-            // spec/05-feature/SYSTEM_MESSAGE_SPEC §3：优先按 template + refs 结构解析
-            val template = extractJsonString(content, "template")
-            val refs = if (template != null) extractMessageRefs(content) else null
-            ParsedContent(
-                type = type,
-                text = extractPayloadContent(content)
-                    ?: extractJsonString(content, "text")
-                    ?: extractJsonString(content, "tip")
-                    ?: content,
-                systemTemplate = template,
-                systemRefs = refs,
-                // RP-7-B2：钱包类系统通知（红包领取/抢完/过期）带 red_packet ref，
-                // 其 target_id = redPacketId，供点击跳详情 + 详情页收到匹配通知重拉。
-                moneyRefId = refs?.firstOrNull { it.type == "red_packet" }?.targetId,
-            )
-        }
-
-        MessageType.RED_PACKET, MessageType.MONEY_TRANSFER -> ParsedContent(
-            type = type,
-            moneyRefId = extractJsonString(content, "redPacketId")
-                ?: extractJsonString(content, "transferId"),
-            moneyTitle = extractJsonString(content, "title"),
-            moneySummary = extractJsonString(content, "summary"),
-            moneyStatus = extractJsonString(content, "status"),
-            moneyAmountText = extractJsonString(content, "amountText"),
-            moneyScene = extractJsonString(content, "scene"),
-            moneyType = extractJsonInt(content, "type"),
-        )
-
-        MessageType.UNKNOWN -> ParsedContent(
-            type = type,
-            text = extractPayloadContent(content) ?: content
-        )
+    val body = message.body
+    val type = when (body.kind) {
+        com.netonstream.privchat.sdk.dto.MessageContentKind.Text -> MessageType.TEXT
+        com.netonstream.privchat.sdk.dto.MessageContentKind.Image -> MessageType.IMAGE
+        com.netonstream.privchat.sdk.dto.MessageContentKind.Video -> MessageType.VIDEO
+        com.netonstream.privchat.sdk.dto.MessageContentKind.Voice -> MessageType.VOICE
+        com.netonstream.privchat.sdk.dto.MessageContentKind.File -> MessageType.FILE
+        com.netonstream.privchat.sdk.dto.MessageContentKind.Sticker -> MessageType.STICKER
+        com.netonstream.privchat.sdk.dto.MessageContentKind.Location -> MessageType.LOCATION
+        com.netonstream.privchat.sdk.dto.MessageContentKind.Link -> MessageType.LINK
+        com.netonstream.privchat.sdk.dto.MessageContentKind.Contact -> MessageType.CONTACT
+        com.netonstream.privchat.sdk.dto.MessageContentKind.RedPacket -> MessageType.RED_PACKET
+        com.netonstream.privchat.sdk.dto.MessageContentKind.MoneyTransfer -> MessageType.MONEY_TRANSFER
+        com.netonstream.privchat.sdk.dto.MessageContentKind.System -> MessageType.SYSTEM
+        else -> MessageType.UNKNOWN
     }
+    return ParsedContent(
+        type = type,
+        text = body.text,
+        attachmentUrl = body.attachmentUrl,
+        attachmentFileId = body.attachmentFileId,
+        thumbnailUrl = body.thumbnailUrl,
+        thumbnailFileId = body.thumbnailFileId,
+        fileName = body.fileName,
+        fileSize = body.fileSize,
+        duration = body.duration,
+        width = body.width,
+        height = body.height,
+        latitude = body.latitude,
+        longitude = body.longitude,
+        coordinateSystem = body.coordinateSystem,
+        locationName = body.locationName,
+        address = body.address,
+        poiId = body.poiId,
+        poiSource = body.poiSource,
+        linkUrl = body.linkUrl,
+        linkTitle = body.linkTitle,
+        linkDescription = body.linkDescription,
+        contactUserId = body.contactUserId,
+        contactName = body.contactName,
+        contactAvatarUrl = body.contactAvatarUrl,
+        systemTemplate = body.systemTemplate,
+        systemRefs = body.systemRefs.map { MessageRef(it.type, it.targetId.orEmpty(), it.text.orEmpty()) },
+        moneyRefId = body.moneyRefId,
+        moneyTitle = body.moneyTitle,
+        moneySummary = body.moneySummary,
+        moneyStatus = body.moneyStatus,
+        moneyAmountText = body.moneyAmountText,
+        moneyScene = body.moneyScene,
+        moneyType = body.moneyType,
+    )
 }
 
-/**
- * MessageEntry 扩展：获取解析后的内容
- */
+/** MessageEntry content is projected by Rust SDK; UI performs no payload parsing. */
 val MessageEntry.parsedContent: ParsedContent
     get() = parseMessageContent(this)
 

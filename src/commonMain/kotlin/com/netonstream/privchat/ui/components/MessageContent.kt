@@ -102,7 +102,7 @@ fun MessageContent(
     // 还是把这条消息归到 SYSTEM——典型成因：messageType 落在 [0..10] 之外（fromValue 返 null →
     // BUBBLE 渲染），又走 else 分支扫到 content 里的 "type":"tip" / "system" 标志。
     if (parsed.type == MessageType.SYSTEM) {
-        println("[MsgNoFooter] id=${message.id} svr=${message.serverMessageId} status=${message.status} mtype=${message.messageType} parsedType=${parsed.type} text=[${parsed.text}] content=[${message.content}] extra=[${message.extra}] revoked=${message.isRevoked}")
+        println("[MsgNoFooter] id=${message.id} svr=${message.serverMessageId} status=${message.status} mtype=${message.messageType} parsedType=${parsed.type} text=[${parsed.text}] revoked=${message.isRevoked}")
     }
 
     // 图片气泡尺寸：父级算一次，ImageContent 渲染与下方 footer 宽度共用，确保发送中
@@ -459,14 +459,14 @@ private fun attachmentBubbleSize(width: Int?, height: Int?): Pair<Int, Int> {
  * 调用、图未加载会抛 → crash）。
  *
  * pending(status=Sending)阶段 localThumbnailPath/localMediaPath 都还是 null（缩略图要等
- * 队列里 process_outbound_file 跑完才落到 files/{id}/），但此刻 message.content 就是用户
+ * 队列里 process_outbound_file 跑完才落到 files/{id}/），但此刻 message.body.text 就是用户
  * 选的原图本地路径（占位时写入）。按 thumb → media → content 兜底，取第一个能解码的。
  * content 为 "[图片]"/JSON 时不是路径，跳过。有 metadata 时传 null → 不解码。
  */
 @Composable
 private fun rememberImageBubbleSize(parsed: ParsedContent, message: MessageEntry): Pair<Int, Int> {
     val needLocalSize = parsed.width == null || parsed.height == null
-    val contentPath = message.content.takeIf { it.startsWith("/") }
+    val contentPath = message.body.text.takeIf { it.startsWith("/") }
     val localImageSize = rememberPendingImageSize(
         if (needLocalSize) message.localThumbnailPath else null,
         if (needLocalSize) message.localMediaPath else null,

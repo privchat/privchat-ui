@@ -25,7 +25,7 @@ import com.netonstream.privchat.ui.i18n.PrivChatStrings
 /**
  * 从会话列表 entry 渲染最后一条消息的预览文本。
  *
- * 取 [LatestChannelEvent] 里的 `messageType` + `isRevoked` + `content`，
+ * 取 [LatestChannelEvent] 里的 typed body，
  * 用 [PrivChatStrings] 做本地化渲染。null event 返回空串。
  */
 fun PrivChatStrings.previewOf(channel: ChannelListEntry): String {
@@ -34,7 +34,8 @@ fun PrivChatStrings.previewOf(channel: ChannelListEntry): String {
         strings = this,
         messageType = event.messageType,
         isRevoked = event.isRevoked,
-        rawContent = event.content,
+        rawContent = event.body.text,
+        parsed = event.body.toParsedContent(),
     )
 }
 
@@ -50,9 +51,18 @@ fun PrivChatStrings.previewOf(message: MessageEntry): String {
         strings = this,
         messageType = message.messageType,
         isRevoked = message.isRevoked,
-        rawContent = message.content,
+        rawContent = message.body.text,
         parsed = parsed,
     )
+}
+
+private fun com.netonstream.privchat.sdk.dto.MessageContent.toParsedContent(): ParsedContent {
+    val entry = MessageEntry(
+        id = 0u, serverMessageId = null, localMessageId = null, channelId = 0u,
+        channelType = 0, fromUid = 0u, content = text, body = this,
+        status = com.netonstream.privchat.sdk.dto.MessageStatus.Sent, timestamp = 0u,
+    )
+    return parseMessageContent(entry)
 }
 
 /**

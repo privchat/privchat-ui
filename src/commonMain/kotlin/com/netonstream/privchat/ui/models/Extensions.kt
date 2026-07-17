@@ -35,15 +35,14 @@ val ChannelListEntry.isGroup: Boolean
  * 拿到本地化的预览文案——架构归正后 SDK 不再做"[图片]"等改写，preview 渲染 100%
  * 在 UI 层完成，参见 `SYSTEM_MESSAGE_SPEC` 与 `lastMessagePreviewLocalized`。
  *
- * 老路径返回的是 raw content：TEXT 类型可读，非文本类型会是 JSON 串——
- * 调用方应尽快迁移到本地化版本。
+ * 老路径只返回 SDK 已投影的 display text；调用方仍应优先使用本地化版本。
  */
 @Deprecated(
     "Use ChannelListEntry.lastMessagePreviewLocalized(strings) to get i18n preview.",
     ReplaceWith("lastMessagePreviewLocalized(strings)"),
 )
 val ChannelListEntry.lastMessagePreview: String
-    get() = latestEvent?.content ?: ""
+    get() = latestEvent?.body?.text ?: ""
 
 /**
  * 最后消息**本地化预览**（架构归正后的唯一推荐入口）。

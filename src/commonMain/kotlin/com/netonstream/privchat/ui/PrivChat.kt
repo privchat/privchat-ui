@@ -475,7 +475,7 @@ object PrivChat {
         return ChannelUnreadWatermark(
             latestTs = event?.timestamp ?: channel.lastTs,
             eventType = event?.eventType?.trim()?.lowercase(),
-            content = event?.content?.trim(),
+            content = event?.body?.text?.trim(),
         )
     }
 
@@ -489,7 +489,7 @@ object PrivChat {
             return false
         }
         val eventType = event?.eventType?.trim()?.lowercase()
-        val content = event?.content?.trim()
+        val content = event?.body?.text?.trim()
         return eventType == watermark.eventType && content == watermark.content
     }
 
@@ -507,7 +507,7 @@ object PrivChat {
         if (eventType == "channel_read_cursor_updated" || eventType == "channel_read_cursor") {
             return true
         }
-        val content = channel.latestEvent?.content?.lowercase()?.trim().orEmpty()
+        val content = channel.latestEvent?.body?.text?.lowercase()?.trim().orEmpty()
         if (content.isBlank()) return false
         return content == "[channel read cursor updated]" ||
             content == "channel read cursor updated" ||
