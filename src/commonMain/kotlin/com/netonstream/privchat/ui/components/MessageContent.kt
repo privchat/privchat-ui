@@ -5,6 +5,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import com.netonstream.privchat.sdk.dto.MessageEntry
+import com.netonstream.privchat.sdk.dto.MessageTextEntity
+import com.netonstream.privchat.sdk.dto.MessageTextEntityType
 import com.netonstream.privchat.sdk.dto.MessageStatus
 import com.netonstream.privchat.ui.media.MediaDownloadManager
 import com.netonstream.privchat.ui.media.MediaDownloadState
@@ -15,7 +17,6 @@ import com.netonstream.privchat.ui.avatar.PrivChatAvatar
 import com.netonstream.privchat.ui.platform.ClipboardBridge
 import com.netonstream.privchat.ui.platform.ExternalLinkBridge
 import com.netonstream.privchat.ui.utils.Formatter
-import com.netonstream.privchat.ui.utils.MessageEntityDetector
 import com.netonstream.privchat.ui.voice.VoicePlayback
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageTextOther
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageTextSelf
@@ -122,7 +123,13 @@ fun MessageContent(
     Column(modifier = modifier.padding(if (isMediaBubble || isMoneyCard) 0.dp else 10.dp)) {
         // 根据消息类型渲染内容
         when (parsed.type) {
-            MessageType.TEXT -> TextContent(parsed, textColor)
+            MessageType.TEXT -> TextContent(
+                text = message.body.text,
+                entities = message.body.entities,
+                textColor = textColor,
+                isSelf = isSelf,
+                onMentionClick = onContactClick,
+            )
             MessageType.IMAGE -> ImageContent(parsed, message, imageBubbleSize!!, onImagePreview)
             MessageType.VIDEO -> VideoContent(parsed, message, onVideoPreview)
             MessageType.VOICE -> VoiceContent(parsed, message, isSelf, textColor)
@@ -190,20 +197,21 @@ fun MessageContent(
 /**
  * 文本消息。
  *
- * UX-3 / UX-4：在客户端识别 URL / 电话 / 邮箱，并把命中的区间渲染为带下划线、
+ * UX-3 / UX-4：使用 Rust SDK 识别的 URL / 电话 / 连续数字 / 邮箱 / 提及，并把命中的区间渲染为带下划线、
  * 可点击的 span（Kuikly AnnotatedString + `LinkAnnotation.Clickable`）。
  * 点击任意实体弹出 `ActionSheet`，按类型分派 打开/拨号/发短信/发邮件/复制 等动作。
  * 若文本中未识别到任何实体，仍走 gearui 的 `Text(String)`，避免无谓的 AnnotatedString 开销。
  */
 @Composable
 private fun TextContent(
-    parsed: ParsedContent,
+    text: String,
+    entities: List<MessageTextEntity>,
     textColor: Color,
+    isSelf: Boolean,
+    onMentionClick: ((ULong) -> Unit)?,
 ) {
-    // 渲染前 trim 头尾空白：发送方常误带前后换行 / 空格，气泡内显示时去掉以贴合 IM 习惯。
-    val text = (parsed.text ?: "").trim()
-    val entities = remember(text) { MessageEntityDetector.detect(text) }
-    if (entities.isEmpty()) {
+    val safeEntities = remember(text, entities) { validTextEntities(text, entities) }
+    if (safeEntities.isEmpty()) {
         Text(
             text = text,
             style = Typography.BodyMedium,
@@ -213,7 +221,8 @@ private fun TextContent(
     }
 
     val bodyStyle = Typography.BodyMedium
-    val linkColor = Theme.colors.primary
+    // 自己的气泡背景与 primary 同色，不能再用 primary 画链接，否则实体文本会隐形。
+    val linkColor = if (isSelf) textColor else Theme.colors.primary
     val linkStyle = TextLinkStyles(
         style = SpanStyle(
             color = linkColor,
@@ -223,7 +232,7 @@ private fun TextContent(
 
     val annotated = buildAnnotatedString {
         var cursor = 0
-        entities.forEachIndexed { index, entity ->
+        safeEntities.forEachIndexed { index, entity ->
             if (entity.start > cursor) {
                 append(text.substring(cursor, entity.start))
             }
@@ -231,7 +240,9 @@ private fun TextContent(
                 LinkAnnotation.Clickable(
                     tag = "entity-$index",
                     styles = linkStyle,
-                    linkInteractionListener = LinkInteractionListener { showEntityActionSheet(entity) },
+                    linkInteractionListener = LinkInteractionListener {
+                        showEntityActionSheet(entity, onMentionClick)
+                    },
                 ),
             ) {
                 append(entity.text)
@@ -257,10 +268,13 @@ private fun TextContent(
  * 所有 “打开链接 / 拨号 / 发短信 / 发邮件 / 复制” 都封装在这里。
  * 依赖页面根部已挂载 `ActionSheet.Host()`（见 MessagePage）。
  */
-private fun showEntityActionSheet(entity: MessageEntityDetector.Entity) {
+private fun showEntityActionSheet(
+    entity: MessageTextEntity,
+    onMentionClick: ((ULong) -> Unit)?,
+) {
     when (entity.type) {
-        MessageEntityDetector.Type.URL -> {
-            val url = entity.text
+        MessageTextEntityType.Url -> {
+            val url = entity.value
             ActionSheet.showList(
                 items = listOf(
                     ActionSheetItem(label = "打开链接"),
@@ -279,9 +293,9 @@ private fun showEntityActionSheet(entity: MessageEntityDetector.Entity) {
             )
         }
 
-        MessageEntityDetector.Type.PHONE -> {
+        MessageTextEntityType.Phone -> {
             val phone = entity.text
-            val normalized = phone.filter { it.isDigit() || it == '+' }
+            val normalized = entity.value
             ActionSheet.showList(
                 items = listOf(
                     ActionSheetItem(label = "拨号"),
@@ -302,8 +316,19 @@ private fun showEntityActionSheet(entity: MessageEntityDetector.Entity) {
             )
         }
 
-        MessageEntityDetector.Type.EMAIL -> {
-            val email = entity.text
+        MessageTextEntityType.Number -> {
+            ActionSheet.showList(
+                items = listOf(ActionSheetItem(label = "复制号码")),
+                description = entity.text,
+                onSelected = { _, _ ->
+                    ClipboardBridge.setText(entity.value)
+                    Toast.success("已复制")
+                },
+            )
+        }
+
+        MessageTextEntityType.Email -> {
+            val email = entity.value
             ActionSheet.showList(
                 items = listOf(
                     ActionSheetItem(label = "发送邮件"),
@@ -321,7 +346,39 @@ private fun showEntityActionSheet(entity: MessageEntityDetector.Entity) {
                 },
             )
         }
+
+        MessageTextEntityType.Mention -> {
+            val userId = entity.userId
+            if (userId != null && onMentionClick != null) {
+                onMentionClick(userId)
+            } else {
+                ClipboardBridge.setText(entity.text)
+                Toast.success("已复制")
+            }
+        }
+
+        MessageTextEntityType.Unknown -> Unit
     }
+}
+
+/** Invalid or overlapping SDK spans must never hide message text or crash rendering. */
+internal fun validTextEntities(
+    text: String,
+    entities: List<MessageTextEntity>,
+): List<MessageTextEntity> {
+    var cursor = 0
+    return entities
+        .sortedWith(compareBy<MessageTextEntity> { it.start }.thenBy { it.end })
+        .filter { entity ->
+            val valid = entity.start >= cursor &&
+                entity.type != MessageTextEntityType.Unknown &&
+                entity.start >= 0 &&
+                entity.end > entity.start &&
+                entity.end <= text.length &&
+                text.substring(entity.start, entity.end) == entity.text
+            if (valid) cursor = entity.end
+            valid
+        }
 }
 
 /**

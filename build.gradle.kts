@@ -57,6 +57,10 @@ kotlin {
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
         }
 
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+
         // Android-specific dependencies
         androidMain.dependencies {
             implementation("androidx.annotation:annotation:1.9.1")
