@@ -989,6 +989,14 @@ fun MessagePage(
                                 val message = sortedMessages[index]
                                 val isSelf = currentUserId?.let { message.isSelf(it) } ?: false
                                 val previous = if (index > 0) sortedMessages[index - 1] else null
+                                val senderDisplayName = if (!channel.isDm && !isSelf) {
+                                    resolveGroupMessageSenderName(
+                                        message.fromUid,
+                                        groupMembersForChannel,
+                                    )
+                                } else {
+                                    channel.displayName.ifBlank { message.fromUid.toString() }
+                                }
 
                                 // UX-11 时间合并 + UX-5 跨日分隔线（日期优先于时间）
                                 MessageGroupDivider(previous = previous, current = message)
@@ -1002,6 +1010,8 @@ fun MessagePage(
                                     isSelf = isSelf,
                                     showAvatar = !channel.isDm || !isSelf,
                                     channelDisplayName = channel.displayName,
+                                    senderDisplayName = senderDisplayName,
+                                    showSenderName = !channel.isDm && !isSelf,
                                     redPacketStatusOf = { redPacketStatusMap[it] ?: 0 },
                                     onAvatarClick = if (!isSelf) onAvatarClick else null,
                                     onAvatarLongPress = if (!channel.isDm && !isSelf) { userId, name ->
@@ -1439,6 +1449,15 @@ fun MessagePage(
     }
 }
 
+internal fun resolveGroupMessageSenderName(
+    userId: ULong,
+    members: List<GroupMemberEntry>,
+): String = members
+    .firstOrNull { it.userId == userId }
+    ?.let { it.remark.ifBlank { it.name } }
+    ?.takeIf { it.isNotBlank() }
+    ?: userId.toString()
+
 /**
  * 群置顶消息条：展示最新一条置顶消息预览（不做跳转）。
  * 群主/管理员（[canManage]）可点右侧图标一键取消置顶；普通成员只读。
@@ -1610,6 +1629,8 @@ private fun MessageRow(
     isSelf: Boolean,
     showAvatar: Boolean = true,
     channelDisplayName: String = "",
+    senderDisplayName: String = "",
+    showSenderName: Boolean = false,
     onAvatarClick: ((ULong) -> Unit)? = null,
     onAvatarLongPress: ((ULong, String) -> Unit)? = null,
     peerReadPts: ULong? = null,
@@ -1699,7 +1720,9 @@ private fun MessageRow(
     ) {
         // 对方头像
         if (!isSelf && showAvatar) {
-            val peerAvatarName = channelDisplayName.ifBlank { message.fromUid.toString() }
+            val peerAvatarName = senderDisplayName.ifBlank {
+                channelDisplayName.ifBlank { message.fromUid.toString() }
+            }
             val avatarModifier = if (onAvatarClick != null || onAvatarLongPress != null) {
                 Modifier.pointerInput(message.id) {
                     detectTapGestures(
@@ -1725,6 +1748,14 @@ private fun MessageRow(
         Column(
             horizontalAlignment = if (isSelf) Alignment.End else Alignment.Start,
         ) {
+            if (showSenderName && senderDisplayName.isNotBlank()) {
+                Text(
+                    text = senderDisplayName,
+                    style = Typography.Label,
+                    color = colors.mutedForeground,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 3.dp),
+                )
+            }
             // REPLY_SPEC §4.3：命中高亮时在气泡之上叠加一层主题色蒙版，800ms 后淡出。
             val flashAlpha by animateFloatAsState(
                 targetValue = if (isHighlighted) 0.25f else 0f,
