@@ -1849,6 +1849,7 @@ private fun MessageRow(
                 name = "我",
                 size = AvatarSizeTokens.Small.size,
                 userId = selfUserId?.toLong(),
+                modifier = Modifier.align(Alignment.Bottom),
             )
         }
     }

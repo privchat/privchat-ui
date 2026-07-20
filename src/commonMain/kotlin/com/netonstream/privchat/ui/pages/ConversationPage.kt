@@ -134,6 +134,7 @@ fun ConversationPage(
             if (showNavBar) {
                 NavBar(
                     title = strings.conversationTitle,
+                    rightWidgetWidth = 96.dp,
                     rightWidget = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                         // 全局搜索(聊天记录)入口
@@ -471,4 +472,3 @@ private fun buildDescription(
 
     return builder.toString()
 }
-
