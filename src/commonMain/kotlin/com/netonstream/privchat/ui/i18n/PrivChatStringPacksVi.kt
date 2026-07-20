@@ -147,6 +147,7 @@ internal val viUser = PrivChatUserStrings(
     userProfileAcceptFriendRequest = "Đồng ý lời mời kết bạn",
     userProfileAdding = "Đang thêm...",
     userProfileRequestSent = "Đã gửi lời mời kết bạn, vui lòng chờ xác nhận",
+    userProfileGroupAddFriendDisabled = "Nhóm này không cho phép thành viên kết bạn với nhau",
     userProfileDeleteFriend = "Xóa bạn",
     userProfileDeleting = "Đang xóa...",
     userProfileBlockUser = "Chặn người dùng",

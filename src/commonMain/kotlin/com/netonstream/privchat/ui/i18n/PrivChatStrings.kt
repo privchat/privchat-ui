@@ -139,6 +139,7 @@ data class PrivChatStrings(
     val userProfileAcceptFriendRequest: String get() = dUser.userProfileAcceptFriendRequest
     val userProfileAdding: String get() = dUser.userProfileAdding
     val userProfileRequestSent: String get() = dUser.userProfileRequestSent
+    val userProfileGroupAddFriendDisabled: String get() = dUser.userProfileGroupAddFriendDisabled
     val userProfileDeleteFriend: String get() = dUser.userProfileDeleteFriend
     val userProfileDeleting: String get() = dUser.userProfileDeleting
     val userProfileBlockUser: String get() = dUser.userProfileBlockUser

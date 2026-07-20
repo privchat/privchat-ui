@@ -485,6 +485,7 @@ data class PrivChatUserStrings(
     val userProfileAcceptFriendRequest: String,
     val userProfileAdding: String,
     val userProfileRequestSent: String,
+    val userProfileGroupAddFriendDisabled: String,
     val userProfileDeleteFriend: String,
     val userProfileDeleting: String,
     val userProfileBlockUser: String,
@@ -522,6 +523,7 @@ data class PrivChatUserStringsPatch(
     val userProfileAcceptFriendRequest: String? = null,
     val userProfileAdding: String? = null,
     val userProfileRequestSent: String? = null,
+    val userProfileGroupAddFriendDisabled: String? = null,
     val userProfileDeleteFriend: String? = null,
     val userProfileDeleting: String? = null,
     val userProfileBlockUser: String? = null,
@@ -559,6 +561,7 @@ val PrivChatUserStringsPatch.isEmpty: Boolean
         userProfileAcceptFriendRequest == null &&
         userProfileAdding == null &&
         userProfileRequestSent == null &&
+        userProfileGroupAddFriendDisabled == null &&
         userProfileDeleteFriend == null &&
         userProfileDeleting == null &&
         userProfileBlockUser == null &&
@@ -597,6 +600,7 @@ fun PrivChatUserStrings.merge(patch: PrivChatUserStringsPatch?): PrivChatUserStr
         userProfileAcceptFriendRequest = patch.userProfileAcceptFriendRequest ?: userProfileAcceptFriendRequest,
         userProfileAdding = patch.userProfileAdding ?: userProfileAdding,
         userProfileRequestSent = patch.userProfileRequestSent ?: userProfileRequestSent,
+        userProfileGroupAddFriendDisabled = patch.userProfileGroupAddFriendDisabled ?: userProfileGroupAddFriendDisabled,
         userProfileDeleteFriend = patch.userProfileDeleteFriend ?: userProfileDeleteFriend,
         userProfileDeleting = patch.userProfileDeleting ?: userProfileDeleting,
         userProfileBlockUser = patch.userProfileBlockUser ?: userProfileBlockUser,

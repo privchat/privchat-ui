@@ -147,6 +147,7 @@ internal val enUser = PrivChatUserStrings(
     userProfileAcceptFriendRequest = "Accept Friend Request",
     userProfileAdding = "Adding...",
     userProfileRequestSent = "Friend request sent, please wait for confirmation",
+    userProfileGroupAddFriendDisabled = "This group does not allow members to add each other as friends",
     userProfileDeleteFriend = "Delete Friend",
     userProfileDeleting = "Deleting...",
     userProfileBlockUser = "Block User",

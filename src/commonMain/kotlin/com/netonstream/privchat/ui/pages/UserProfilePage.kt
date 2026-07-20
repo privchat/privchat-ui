@@ -315,7 +315,14 @@ fun UserProfilePage(
                                 },
                                 onFailure = { error ->
                                     isAddingFriend = false
-                                    Toast.error(UserFacingError.message(error, strings.networkError))
+                                    // 20311 GroupAddFriendDisabled：群业务策略禁止成员互加好友，
+                                    // 给明确文案而不是笼统的网络错误（ERROR_CODE_SPEC）。
+                                    val msg = if (UserFacingError.serverReasonCode(error) == 20311) {
+                                        strings.userProfileGroupAddFriendDisabled
+                                    } else {
+                                        UserFacingError.message(error, strings.networkError)
+                                    }
+                                    Toast.error(msg)
                                 }
                             )
                         }

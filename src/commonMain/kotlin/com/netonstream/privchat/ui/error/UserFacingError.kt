@@ -44,6 +44,20 @@ object UserFacingError {
         }
     }
 
+    /**
+     * Server business error code carried in the SDK error message
+     * (`Error::Server` renders as `server error: reason_code=<code> message=<...>`).
+     * Lets screens map specific protocol codes (ERROR_CODE_SPEC) to precise
+     * localized copy instead of a generic fallback. Null when absent.
+     */
+    fun serverReasonCode(throwable: Throwable?): Int? {
+        val m = throwable?.message ?: return null
+        val marker = "reason_code="
+        val idx = m.indexOf(marker)
+        if (idx < 0) return null
+        return m.drop(idx + marker.length).takeWhile { it.isDigit() }.toIntOrNull()
+    }
+
     /** True if the error looks like a connectivity / timeout problem (cross-platform, best-effort). */
     fun isTransportFailure(throwable: Throwable?): Boolean =
         isTransportFailureMessage(throwable?.message)

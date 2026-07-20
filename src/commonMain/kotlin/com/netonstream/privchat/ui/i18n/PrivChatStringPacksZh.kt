@@ -147,6 +147,7 @@ internal val zhUser = PrivChatUserStrings(
     userProfileAcceptFriendRequest = "同意好友申请",
     userProfileAdding = "添加中...",
     userProfileRequestSent = "好友申请已发送，请等待对方确认",
+    userProfileGroupAddFriendDisabled = "该群不允许成员互相添加好友",
     userProfileDeleteFriend = "删除好友",
     userProfileDeleting = "删除中...",
     userProfileBlockUser = "加入黑名单",
