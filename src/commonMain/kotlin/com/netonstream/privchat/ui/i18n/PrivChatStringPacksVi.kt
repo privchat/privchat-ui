@@ -204,6 +204,7 @@ internal val viGroup = PrivChatGroupStrings(
     groupSettingsJoinPolicyOpen = "Ai cũng được vào",
     groupSettingsUpdateFailed = "Cập nhật cài đặt thất bại",
     groupMemberMute = "Cấm chat",
+    groupMemberRemove = "Xóa",
     groupMemberUnmute = "Bỏ cấm chat",
     groupMuteDurationTitle = "Chọn thời gian cấm chat",
     groupMuteDuration10m = "10 phút",

@@ -204,6 +204,7 @@ internal val zhGroup = PrivChatGroupStrings(
     groupSettingsJoinPolicyOpen = "允许直接加入",
     groupSettingsUpdateFailed = "设置更新失败",
     groupMemberMute = "禁言",
+    groupMemberRemove = "移除",
     groupMemberUnmute = "解除禁言",
     groupMuteDurationTitle = "选择禁言时长",
     groupMuteDuration10m = "10 分钟",

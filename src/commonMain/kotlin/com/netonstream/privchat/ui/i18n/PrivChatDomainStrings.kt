@@ -737,6 +737,7 @@ data class PrivChatGroupStrings(
     val groupSettingsJoinPolicyOpen: String,
     val groupSettingsUpdateFailed: String,
     val groupMemberMute: String,
+    val groupMemberRemove: String,
     val groupMemberUnmute: String,
     val groupMuteDurationTitle: String,
     val groupMuteDuration10m: String,
@@ -776,6 +777,7 @@ data class PrivChatGroupStringsPatch(
     val groupSettingsJoinPolicyOpen: String? = null,
     val groupSettingsUpdateFailed: String? = null,
     val groupMemberMute: String? = null,
+    val groupMemberRemove: String? = null,
     val groupMemberUnmute: String? = null,
     val groupMuteDurationTitle: String? = null,
     val groupMuteDuration10m: String? = null,
@@ -815,6 +817,7 @@ val PrivChatGroupStringsPatch.isEmpty: Boolean
         groupSettingsJoinPolicyOpen == null &&
         groupSettingsUpdateFailed == null &&
         groupMemberMute == null &&
+        groupMemberRemove == null &&
         groupMemberUnmute == null &&
         groupMuteDurationTitle == null &&
         groupMuteDuration10m == null &&
@@ -855,6 +858,7 @@ fun PrivChatGroupStrings.merge(patch: PrivChatGroupStringsPatch?): PrivChatGroup
         groupSettingsJoinPolicyOpen = patch.groupSettingsJoinPolicyOpen ?: groupSettingsJoinPolicyOpen,
         groupSettingsUpdateFailed = patch.groupSettingsUpdateFailed ?: groupSettingsUpdateFailed,
         groupMemberMute = patch.groupMemberMute ?: groupMemberMute,
+        groupMemberRemove = patch.groupMemberRemove ?: groupMemberRemove,
         groupMemberUnmute = patch.groupMemberUnmute ?: groupMemberUnmute,
         groupMuteDurationTitle = patch.groupMuteDurationTitle ?: groupMuteDurationTitle,
         groupMuteDuration10m = patch.groupMuteDuration10m ?: groupMuteDuration10m,

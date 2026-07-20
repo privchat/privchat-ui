@@ -108,6 +108,9 @@ fun GroupMembersPage(
                     val swipeState = rememberSwipeCellState()
                     // 管理员/群主可对「普通成员」禁言；不对群主/管理员显示禁言操作。
                     val canMuteThis = canManage && !member.isOwner && !member.isAdmin
+                    // 移除同样只有群主/管理员可见（服务端 kick 已有 RBAC 强制，这里是 UI gate），
+                    // 且群主不可被移除。普通成员滑动不出现任何操作。
+                    val canRemoveThis = canManage && !member.isOwner
                     val rightActions = buildList {
                         if (canMuteThis) {
                             add(
@@ -125,19 +128,21 @@ fun GroupMembersPage(
                                 )
                             )
                         }
-                        add(
-                            SwipeCellAction(
-                                label = "移除",
-                                theme = SwipeCellActionTheme.DANGER,
-                                onClick = {
-                                    scope.launch {
-                                        onRemoveMember(member).onFailure {
-                                            onError?.invoke(it.message ?: strings.networkError)
+                        if (canRemoveThis) {
+                            add(
+                                SwipeCellAction(
+                                    label = strings.groupMemberRemove,
+                                    theme = SwipeCellActionTheme.DANGER,
+                                    onClick = {
+                                        scope.launch {
+                                            onRemoveMember(member).onFailure {
+                                                onError?.invoke(it.message ?: strings.networkError)
+                                            }
                                         }
-                                    }
-                                },
+                                    },
+                                )
                             )
-                        )
+                        }
                     }
                     SwipeCell(
                         state = swipeState,
@@ -145,7 +150,8 @@ fun GroupMembersPage(
                     ) {
                         Cell(
                             title = member.displayName,
-                            description = "${member.roleName} · ${member.userId}",
+                            // 用户 ID 是底层协议标识，不在任何 UI 展示；副标题只显示角色。
+                            description = member.roleName,
                             onClick = { onMemberClick(member) },
                             leading = {
                                 ChatAvatar(

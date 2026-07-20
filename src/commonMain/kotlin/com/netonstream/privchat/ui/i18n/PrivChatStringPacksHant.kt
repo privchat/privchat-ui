@@ -204,6 +204,7 @@ internal val hantGroup = PrivChatGroupStrings(
     groupSettingsJoinPolicyOpen = "允許直接加入",
     groupSettingsUpdateFailed = "設定更新失敗",
     groupMemberMute = "禁言",
+    groupMemberRemove = "移除",
     groupMemberUnmute = "解除禁言",
     groupMuteDurationTitle = "選擇禁言時長",
     groupMuteDuration10m = "10 分鐘",

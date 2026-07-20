@@ -204,6 +204,7 @@ internal val enGroup = PrivChatGroupStrings(
     groupSettingsJoinPolicyOpen = "Anyone can join",
     groupSettingsUpdateFailed = "Failed to update settings",
     groupMemberMute = "Mute",
+    groupMemberRemove = "Remove",
     groupMemberUnmute = "Unmute",
     groupMuteDurationTitle = "Choose mute duration",
     groupMuteDuration10m = "10 minutes",
