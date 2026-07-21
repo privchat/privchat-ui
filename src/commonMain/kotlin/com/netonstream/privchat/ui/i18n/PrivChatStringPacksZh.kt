@@ -168,6 +168,9 @@ internal val zhUser = PrivChatUserStrings(
 
 internal val zhFriend = PrivChatFriendStrings(
     friendSettingsTitle = "好友设置",
+    addFriendGroupPolicyDenied = "该群不允许成员互相添加好友",
+    addFriendPersonalDenied = "对方设置了不允许通过此方式添加好友",
+    addFriendAlreadyFriends = "你们已经是好友",
     friendSettingsShare = "推荐给朋友",
     friendSettingsSpecialFollow = "特别关注",
     friendSettingsDelete = "删除联系人",

@@ -168,6 +168,9 @@ internal val hantUser = PrivChatUserStrings(
 
 internal val hantFriend = PrivChatFriendStrings(
     friendSettingsTitle = "好友設定",
+    addFriendGroupPolicyDenied = "該群不允許成員互相加好友",
+    addFriendPersonalDenied = "對方設定了不允許透過此方式加好友",
+    addFriendAlreadyFriends = "你們已經是好友",
     friendSettingsShare = "推薦給朋友",
     friendSettingsSpecialFollow = "特別關注",
     friendSettingsDelete = "刪除聯絡人",

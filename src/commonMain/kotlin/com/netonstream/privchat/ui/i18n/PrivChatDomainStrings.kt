@@ -623,6 +623,10 @@ fun PrivChatUserStrings.merge(patch: PrivChatUserStringsPatch?): PrivChatUserStr
 @Immutable
 data class PrivChatFriendStrings(
     val friendSettingsTitle: String,
+    val addFriendGroupPolicyDenied: String,
+    val addFriendPersonalDenied: String,
+    val addFriendAlreadyFriends: String,
+
     val friendSettingsShare: String,
     val friendSettingsSpecialFollow: String,
     val friendSettingsDelete: String,
@@ -634,6 +638,10 @@ data class PrivChatFriendStrings(
 
 data class PrivChatFriendStringsPatch(
     val friendSettingsTitle: String? = null,
+    val addFriendGroupPolicyDenied: String? = null,
+    val addFriendPersonalDenied: String? = null,
+    val addFriendAlreadyFriends: String? = null,
+
     val friendSettingsShare: String? = null,
     val friendSettingsSpecialFollow: String? = null,
     val friendSettingsDelete: String? = null,
@@ -645,6 +653,9 @@ data class PrivChatFriendStringsPatch(
 
 val PrivChatFriendStringsPatch.isEmpty: Boolean
     get() = friendSettingsTitle == null &&
+        addFriendGroupPolicyDenied == null &&
+        addFriendPersonalDenied == null &&
+        addFriendAlreadyFriends == null &&
         friendSettingsShare == null &&
         friendSettingsSpecialFollow == null &&
         friendSettingsDelete == null &&
@@ -657,6 +668,9 @@ fun PrivChatFriendStrings.merge(patch: PrivChatFriendStringsPatch?): PrivChatFri
     if (patch == null || patch.isEmpty) return this
     return copy(
         friendSettingsTitle = patch.friendSettingsTitle ?: friendSettingsTitle,
+        addFriendGroupPolicyDenied = patch.addFriendGroupPolicyDenied ?: addFriendGroupPolicyDenied,
+        addFriendPersonalDenied = patch.addFriendPersonalDenied ?: addFriendPersonalDenied,
+        addFriendAlreadyFriends = patch.addFriendAlreadyFriends ?: addFriendAlreadyFriends,
         friendSettingsShare = patch.friendSettingsShare ?: friendSettingsShare,
         friendSettingsSpecialFollow = patch.friendSettingsSpecialFollow ?: friendSettingsSpecialFollow,
         friendSettingsDelete = patch.friendSettingsDelete ?: friendSettingsDelete,

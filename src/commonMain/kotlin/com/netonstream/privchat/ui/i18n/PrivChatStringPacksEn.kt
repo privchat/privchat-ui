@@ -168,6 +168,9 @@ internal val enUser = PrivChatUserStrings(
 
 internal val enFriend = PrivChatFriendStrings(
     friendSettingsTitle = "Friend Settings",
+    addFriendGroupPolicyDenied = "This group forbids members adding each other",
+    addFriendPersonalDenied = "They do not allow being added this way",
+    addFriendAlreadyFriends = "You are already friends",
     friendSettingsShare = "Share to Friends",
     friendSettingsSpecialFollow = "Special Follow",
     friendSettingsDelete = "Delete Contact",

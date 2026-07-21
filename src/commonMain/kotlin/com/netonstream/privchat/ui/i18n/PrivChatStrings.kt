@@ -152,6 +152,9 @@ data class PrivChatStrings(
     val friendRequestInputPlaceholder: String get() = dUser.friendRequestInputPlaceholder
     val friendRequestSentTitle: String get() = dUser.friendRequestSentTitle
     val friendSettingsTitle: String get() = dFriend.friendSettingsTitle
+    val addFriendGroupPolicyDenied: String get() = dFriend.addFriendGroupPolicyDenied
+    val addFriendPersonalDenied: String get() = dFriend.addFriendPersonalDenied
+    val addFriendAlreadyFriends: String get() = dFriend.addFriendAlreadyFriends
     val friendSettingsShare: String get() = dFriend.friendSettingsShare
     val friendSettingsSpecialFollow: String get() = dFriend.friendSettingsSpecialFollow
     val friendSettingsDelete: String get() = dFriend.friendSettingsDelete

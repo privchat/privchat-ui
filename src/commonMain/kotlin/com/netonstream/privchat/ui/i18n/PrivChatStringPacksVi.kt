@@ -168,6 +168,9 @@ internal val viUser = PrivChatUserStrings(
 
 internal val viFriend = PrivChatFriendStrings(
     friendSettingsTitle = "Cài đặt bạn bè",
+    addFriendGroupPolicyDenied = "Nhóm này không cho phép thành viên kết bạn với nhau",
+    addFriendPersonalDenied = "Người này không cho phép kết bạn theo cách này",
+    addFriendAlreadyFriends = "Hai bạn đã là bạn bè",
     friendSettingsShare = "Giới thiệu cho bạn bè",
     friendSettingsSpecialFollow = "Theo dõi đặc biệt",
     friendSettingsDelete = "Xóa liên hệ",
