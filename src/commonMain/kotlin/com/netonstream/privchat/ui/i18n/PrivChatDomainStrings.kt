@@ -929,6 +929,17 @@ data class PrivChatSettingsStrings(
     val settingsSectionAccount: String,
     val settingsAccountSecurity: String,
     val settingsPrivacy: String,
+    val privacySectionAddMe: String,
+    val privacySectionFindMe: String,
+    val privacySectionMisc: String,
+    val privacyAddByGroup: String,
+    val privacyAddByCard: String,
+    val privacySearchByUsername: String,
+    val privacySearchByPhone: String,
+    val privacySearchByQrcode: String,
+    val privacyNonFriendMessage: String,
+    val privacyNonFriendView: String,
+    val privacyHint: String,
     val settingsSectionGeneral: String,
     val settingsNotification: String,
     val settingsSectionHelp: String,
@@ -975,6 +986,17 @@ data class PrivChatSettingsStringsPatch(
     val settingsSectionAccount: String? = null,
     val settingsAccountSecurity: String? = null,
     val settingsPrivacy: String? = null,
+    val privacySectionAddMe: String? = null,
+    val privacySectionFindMe: String? = null,
+    val privacySectionMisc: String? = null,
+    val privacyAddByGroup: String? = null,
+    val privacyAddByCard: String? = null,
+    val privacySearchByUsername: String? = null,
+    val privacySearchByPhone: String? = null,
+    val privacySearchByQrcode: String? = null,
+    val privacyNonFriendMessage: String? = null,
+    val privacyNonFriendView: String? = null,
+    val privacyHint: String? = null,
     val settingsSectionGeneral: String? = null,
     val settingsNotification: String? = null,
     val settingsSectionHelp: String? = null,
@@ -1021,6 +1043,17 @@ val PrivChatSettingsStringsPatch.isEmpty: Boolean
         settingsSectionAccount == null &&
         settingsAccountSecurity == null &&
         settingsPrivacy == null &&
+        privacySectionAddMe == null &&
+        privacySectionFindMe == null &&
+        privacySectionMisc == null &&
+        privacyAddByGroup == null &&
+        privacyAddByCard == null &&
+        privacySearchByUsername == null &&
+        privacySearchByPhone == null &&
+        privacySearchByQrcode == null &&
+        privacyNonFriendMessage == null &&
+        privacyNonFriendView == null &&
+        privacyHint == null &&
         settingsSectionGeneral == null &&
         settingsNotification == null &&
         settingsSectionHelp == null &&
@@ -1068,6 +1101,17 @@ fun PrivChatSettingsStrings.merge(patch: PrivChatSettingsStringsPatch?): PrivCha
         settingsSectionAccount = patch.settingsSectionAccount ?: settingsSectionAccount,
         settingsAccountSecurity = patch.settingsAccountSecurity ?: settingsAccountSecurity,
         settingsPrivacy = patch.settingsPrivacy ?: settingsPrivacy,
+        privacySectionAddMe = patch.privacySectionAddMe ?: privacySectionAddMe,
+        privacySectionFindMe = patch.privacySectionFindMe ?: privacySectionFindMe,
+        privacySectionMisc = patch.privacySectionMisc ?: privacySectionMisc,
+        privacyAddByGroup = patch.privacyAddByGroup ?: privacyAddByGroup,
+        privacyAddByCard = patch.privacyAddByCard ?: privacyAddByCard,
+        privacySearchByUsername = patch.privacySearchByUsername ?: privacySearchByUsername,
+        privacySearchByPhone = patch.privacySearchByPhone ?: privacySearchByPhone,
+        privacySearchByQrcode = patch.privacySearchByQrcode ?: privacySearchByQrcode,
+        privacyNonFriendMessage = patch.privacyNonFriendMessage ?: privacyNonFriendMessage,
+        privacyNonFriendView = patch.privacyNonFriendView ?: privacyNonFriendView,
+        privacyHint = patch.privacyHint ?: privacyHint,
         settingsSectionGeneral = patch.settingsSectionGeneral ?: settingsSectionGeneral,
         settingsNotification = patch.settingsNotification ?: settingsNotification,
         settingsSectionHelp = patch.settingsSectionHelp ?: settingsSectionHelp,

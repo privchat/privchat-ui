@@ -241,6 +241,17 @@ data class PrivChatStrings(
     val settingsSectionAccount: String get() = dSettings.settingsSectionAccount
     val settingsAccountSecurity: String get() = dSettings.settingsAccountSecurity
     val settingsPrivacy: String get() = dSettings.settingsPrivacy
+    val privacySectionAddMe: String get() = dSettings.privacySectionAddMe
+    val privacySectionFindMe: String get() = dSettings.privacySectionFindMe
+    val privacySectionMisc: String get() = dSettings.privacySectionMisc
+    val privacyAddByGroup: String get() = dSettings.privacyAddByGroup
+    val privacyAddByCard: String get() = dSettings.privacyAddByCard
+    val privacySearchByUsername: String get() = dSettings.privacySearchByUsername
+    val privacySearchByPhone: String get() = dSettings.privacySearchByPhone
+    val privacySearchByQrcode: String get() = dSettings.privacySearchByQrcode
+    val privacyNonFriendMessage: String get() = dSettings.privacyNonFriendMessage
+    val privacyNonFriendView: String get() = dSettings.privacyNonFriendView
+    val privacyHint: String get() = dSettings.privacyHint
     val settingsSectionGeneral: String get() = dSettings.settingsSectionGeneral
     val settingsNotification: String get() = dSettings.settingsNotification
     val settingsSectionHelp: String get() = dSettings.settingsSectionHelp
