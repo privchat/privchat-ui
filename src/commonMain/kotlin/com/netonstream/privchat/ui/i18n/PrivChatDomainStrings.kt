@@ -758,6 +758,10 @@ data class PrivChatGroupStrings(
     val groupMemberRemove: String,
     val groupMemberUnmute: String,
     val groupMuteDurationTitle: String,
+    val groupRoleSetAdmin: String,
+    val groupRoleRemoveAdmin: String,
+    val groupTransferOwner: String,
+    val groupTransferOwnerConfirm: String,
     val groupMuteDuration10m: String,
     val groupMuteDuration1h: String,
     val groupMuteDuration1d: String,
@@ -798,6 +802,10 @@ data class PrivChatGroupStringsPatch(
     val groupMemberRemove: String? = null,
     val groupMemberUnmute: String? = null,
     val groupMuteDurationTitle: String? = null,
+    val groupRoleSetAdmin: String? = null,
+    val groupRoleRemoveAdmin: String? = null,
+    val groupTransferOwner: String? = null,
+    val groupTransferOwnerConfirm: String? = null,
     val groupMuteDuration10m: String? = null,
     val groupMuteDuration1h: String? = null,
     val groupMuteDuration1d: String? = null,
@@ -838,6 +846,10 @@ val PrivChatGroupStringsPatch.isEmpty: Boolean
         groupMemberRemove == null &&
         groupMemberUnmute == null &&
         groupMuteDurationTitle == null &&
+        groupRoleSetAdmin == null &&
+        groupRoleRemoveAdmin == null &&
+        groupTransferOwner == null &&
+        groupTransferOwnerConfirm == null &&
         groupMuteDuration10m == null &&
         groupMuteDuration1h == null &&
         groupMuteDuration1d == null &&
@@ -879,6 +891,10 @@ fun PrivChatGroupStrings.merge(patch: PrivChatGroupStringsPatch?): PrivChatGroup
         groupMemberRemove = patch.groupMemberRemove ?: groupMemberRemove,
         groupMemberUnmute = patch.groupMemberUnmute ?: groupMemberUnmute,
         groupMuteDurationTitle = patch.groupMuteDurationTitle ?: groupMuteDurationTitle,
+        groupRoleSetAdmin = patch.groupRoleSetAdmin ?: groupRoleSetAdmin,
+        groupRoleRemoveAdmin = patch.groupRoleRemoveAdmin ?: groupRoleRemoveAdmin,
+        groupTransferOwner = patch.groupTransferOwner ?: groupTransferOwner,
+        groupTransferOwnerConfirm = patch.groupTransferOwnerConfirm ?: groupTransferOwnerConfirm,
         groupMuteDuration10m = patch.groupMuteDuration10m ?: groupMuteDuration10m,
         groupMuteDuration1h = patch.groupMuteDuration1h ?: groupMuteDuration1h,
         groupMuteDuration1d = patch.groupMuteDuration1d ?: groupMuteDuration1d,

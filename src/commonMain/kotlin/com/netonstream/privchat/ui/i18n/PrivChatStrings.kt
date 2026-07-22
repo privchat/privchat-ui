@@ -185,6 +185,10 @@ data class PrivChatStrings(
     val groupMemberRemove: String get() = dGroup.groupMemberRemove
     val groupMemberUnmute: String get() = dGroup.groupMemberUnmute
     val groupMuteDurationTitle: String get() = dGroup.groupMuteDurationTitle
+    val groupRoleSetAdmin: String get() = dGroup.groupRoleSetAdmin
+    val groupRoleRemoveAdmin: String get() = dGroup.groupRoleRemoveAdmin
+    val groupTransferOwner: String get() = dGroup.groupTransferOwner
+    val groupTransferOwnerConfirm: String get() = dGroup.groupTransferOwnerConfirm
     val groupMuteDuration10m: String get() = dGroup.groupMuteDuration10m
     val groupMuteDuration1h: String get() = dGroup.groupMuteDuration1h
     val groupMuteDuration1d: String get() = dGroup.groupMuteDuration1d

@@ -27,6 +27,19 @@ import com.tencent.kuikly.compose.foundation.layout.Box
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
 import com.tencent.kuikly.compose.ui.Alignment
+import com.gearui.components.dialog.Dialog
+import com.gearui.components.dialog.DialogContent
+import com.gearui.components.button.Button
+import com.gearui.components.button.ButtonSize
+import com.gearui.components.button.ButtonTheme
+import com.gearui.components.button.ButtonType
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import com.tencent.kuikly.compose.foundation.layout.Spacer
+import com.tencent.kuikly.compose.foundation.layout.width
+import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.Modifier
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -40,8 +53,14 @@ fun GroupMembersPage(
     onInviteClick: () -> Unit = {},
     onMemberClick: (GroupMemberEntry) -> Unit = {},
     onRemoveMember: suspend (GroupMemberEntry) -> Result<Unit> = { Result.success(Unit) },
+    /** 设置/取消管理员(仅群主可见;role = "admin" | "member")。 */
+    onSetRole: suspend (GroupMemberEntry, String) -> Result<Unit> = { _, _ -> Result.success(Unit) },
+    /** 转让群主(仅群主可见;二次确认后调用)。 */
+    onTransferOwner: suspend (GroupMemberEntry) -> Result<Unit> = { Result.success(Unit) },
     /** 当前用户是否为群主/管理员；为 true 时显示「禁言/解除禁言」操作。 */
     canManage: Boolean = false,
+    /** 当前用户是否为群主;为 true 时额外显示「设/取消管理员」「转让群主」。 */
+    isOwner: Boolean = false,
     onError: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -82,6 +101,31 @@ fun GroupMembersPage(
             }.onSuccess { Toast.success(strings.groupUnmuteSuccess) }
                 .onFailure { onError?.invoke(it.message ?: strings.networkError) }
         }
+    }
+
+    // 群主管理动作(设/取消管理员、转让群主)——收进一个 ActionSheet,避免
+    // 滑动操作条过宽;服务端 group/role/* 仅群主可调,UI gate 只是显隐。
+    var transferTarget by remember { mutableStateOf<GroupMemberEntry?>(null) }
+    fun showOwnerManageSheet(member: GroupMemberEntry) {
+        val roleLabel =
+            if (member.isAdmin) strings.groupRoleRemoveAdmin else strings.groupRoleSetAdmin
+        ActionSheet.showList(
+            items = listOf(
+                ActionSheetItem(label = roleLabel),
+                ActionSheetItem(label = strings.groupTransferOwner),
+            ),
+            onSelected = { _, index ->
+                when (index) {
+                    0 -> scope.launch {
+                        val next = if (member.isAdmin) "member" else "admin"
+                        onSetRole(member, next).onFailure {
+                            onError?.invoke(it.message ?: strings.networkError)
+                        }
+                    }
+                    1 -> transferTarget = member
+                }
+            },
+        )
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -128,6 +172,15 @@ fun GroupMembersPage(
                                 )
                             )
                         }
+                        if (isOwner && !member.isOwner) {
+                            add(
+                                SwipeCellAction(
+                                    label = strings.chatSettingsGroupManage,
+                                    theme = SwipeCellActionTheme.PRIMARY,
+                                    onClick = { showOwnerManageSheet(member) },
+                                )
+                            )
+                        }
                         if (canRemoveThis) {
                             add(
                                 SwipeCellAction(
@@ -171,4 +224,41 @@ fun GroupMembersPage(
 
     // 禁言时长选择走全局 ActionSheet 单例，需在页面根部挂 Host。
     ActionSheet.Host()
+
+    // 转让群主二次确认(不可逆操作)。
+    val pendingTransfer = transferTarget
+    Dialog.Host(
+        visible = pendingTransfer != null,
+        onDismiss = { transferTarget = null },
+    ) {
+        DialogContent(
+            title = strings.groupTransferOwner,
+            message = strings.groupTransferOwnerConfirm,
+            actions = {
+                Button(
+                    text = strings.cancel,
+                    type = ButtonType.TEXT,
+                    theme = ButtonTheme.DEFAULT,
+                    size = ButtonSize.SMALL,
+                    onClick = { transferTarget = null },
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    text = strings.confirm,
+                    type = ButtonType.TEXT,
+                    theme = ButtonTheme.DANGER,
+                    size = ButtonSize.SMALL,
+                    onClick = {
+                        val target = pendingTransfer ?: return@Button
+                        transferTarget = null
+                        scope.launch {
+                            onTransferOwner(target).onFailure {
+                                onError?.invoke(it.message ?: strings.networkError)
+                            }
+                        }
+                    },
+                )
+            },
+        )
+    }
 }
