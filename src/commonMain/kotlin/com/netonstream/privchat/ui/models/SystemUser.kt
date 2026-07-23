@@ -38,6 +38,10 @@ object SystemUser {
      */
     fun channelTitle(entry: com.netonstream.privchat.sdk.dto.ChannelListEntry): String = when {
         entry.isDm && isSystemUid(entry.peerUserId) -> PrivChatI18n.current.systemMessagesName
+        // 名字解析链落到 username(本地 user 表已同步但 userType 异步判定未就绪)时,
+        // 按 username 兼容通道同步本地化——判定依据仍是「账号是否为 system」,不引入
+        // 任何魔法字面量/uid 判断。
+        entry.isDm && isSystem(entry.name) -> PrivChatI18n.current.systemMessagesName
         !entry.isDm && entry.name.isBlank() -> PrivChatI18n.current.groupChatFallback
         else -> entry.name
     }
