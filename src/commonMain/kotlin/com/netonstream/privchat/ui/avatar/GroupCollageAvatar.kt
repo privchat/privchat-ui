@@ -82,6 +82,7 @@ fun GroupCollageAvatar(
                 uid = it.userId.toString(),
                 name = it.displayName,
                 username = null,
+                hasAvatar = it.avatar.isNotBlank(),
             )
         }
         collageUrl = GeneratedAvatarCache

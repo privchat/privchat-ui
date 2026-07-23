@@ -27,14 +27,28 @@ object GeneratedAvatarCache {
     private val readyUsers = mutableSetOf<String>() // 已确认落盘的 user 路径
     private val collageFp = mutableMapOf<String, String>() // gid -> 上次合成的成员指纹
 
-    /** 群九宫格取前 9 成员的最小信息。 */
-    data class CollageMember(val uid: String, val name: String?, val username: String?)
+    /** 群九宫格取前 9 成员的最小信息。[hasAvatar]=false 时不读真实头像槽位文件
+     *  (槽位里可能是历史生成的旧字母 PNG),直接用实时 initials。 */
+    data class CollageMember(
+        val uid: String,
+        val name: String?,
+        val username: String?,
+        val hasAvatar: Boolean = true,
+    )
 
-    /** 确保无头像用户的 initials PNG 已落盘；返回文件绝对路径，不可用返回 null。 */
+    /**
+     * 确保无头像用户的 initials PNG 已落盘；返回文件绝对路径，不可用返回 null。
+     *
+     * 文件名带 initials 内容指纹(`{uid}.gen-{hash}.img`):名字变化(资料 hydrate/改昵称)
+     * 自然生成新文件,旧字母不会因「文件已存在」短路而永久固化;新路径也让图片加载器
+     * 不会命中旧内容的内存缓存。与 SDK 下载的真实头像槽位(`{uid}.img`)物理分离,
+     * 互不覆盖。旧文件是孤儿小文件,随 users/{selfUid} 目录整体回收。
+     */
     suspend fun ensureInitials(uid: String, displayName: String?, username: String?): String? {
         val root = AvatarLocalCache.userRoot ?: return null
         if (uid.isBlank()) return null
-        val path = "$root/avatars/users/$uid.img"
+        val initials = AvatarText.initialsOf(displayName, username, uid.toLongOrNull())
+        val path = "$root/avatars/users/$uid.gen-${initials.hashCode().toUInt().toString(16)}.img"
         if (path in readyUsers) return path
         if (AvatarBitmapRenderer.fileExists(path)) {
             readyUsers += path
@@ -45,7 +59,6 @@ object GeneratedAvatarCache {
                 readyUsers += path
                 return@withLock path
             }
-            val initials = AvatarText.initialsOf(displayName, username, uid.toLongOrNull())
             val ok = AvatarBitmapRenderer.renderInitials(
                 initials = initials,
                 bgArgb = AvatarPalette.hashBackgroundArgb("u:$uid"),
@@ -69,7 +82,7 @@ object GeneratedAvatarCache {
         val path = "$root/avatars/groups/$gid.img"
         val cells: List<CollageCell> = members.take(9).map { m ->
             val memberImg = "$root/avatars/users/${m.uid}.img"
-            if (AvatarBitmapRenderer.fileExists(memberImg)) {
+            if (m.hasAvatar && AvatarBitmapRenderer.fileExists(memberImg)) {
                 CollageCell.Image(memberImg)
             } else {
                 CollageCell.Initials(

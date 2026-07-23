@@ -128,11 +128,15 @@ fun PrivChatAvatar(
         // 搜索结果）都优先读本地缓存文件 `avatars/users/{uid}.img`（SDK 已下载/落盘，同一 active userRoot、
         // 按 targetUid），near-instant、跳过远程网络加载 → 不再先 initials 后网络图闪一下。本地无则回落远程。
         // `preferLocalCache` 参数保留为兼容项，现已对所有用户头像默认生效。
+        // 盲探真实头像槽位({uid}.img)仅当数据上该用户确有头像(avatarUrl 非空)——
+        // 否则槽位里可能是历史版本生成的 initials PNG(旧命名,无内容指纹),名字变了
+        // 也会被当成"已缓存头像"永久展示旧字母;无头像用户统一走下方生成分支
+        // (带指纹文件名,名字变化自动重生成)。
         var localCacheUrl by remember(userId) { mutableStateOf<String?>(null) }
         if (userId != null && !isGroup) {
-            LaunchedEffect(userId) {
+            LaunchedEffect(userId, resolved.avatarUrl) {
                 val root = AvatarLocalCache.userRoot
-                localCacheUrl = if (root != null) {
+                localCacheUrl = if (root != null && resolved.avatarUrl != null) {
                     val p = "$root/avatars/users/$userId.img"
                     if (AvatarBitmapRenderer.fileExists(p)) "file://$p" else null
                 } else null
