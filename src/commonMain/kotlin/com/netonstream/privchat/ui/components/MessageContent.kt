@@ -542,9 +542,12 @@ private fun ImageContent(
     onImagePreview: ((MessageEntry) -> Unit)? = null,
 ) {
     val (width, height) = bubbleSize
-    // thumb_status=3: 协议层无缩略图，直接渲染类型化静态占位
+    // thumb_status=3: 协议层无缩略图（如 web/TS 老版本发图不带 thumbnail）。
+    // 图片消息仍可用本地原图/远程原图兜底渲染——只跳过 thumbnailUrl；
+    // 全部缺席才落静态占位（点击预览仍走原图）。
     val thumbModel = if (message.thumbStatus == 3) {
-        null
+        message.localMediaPath?.let { "file://$it" }
+            ?: parsed.attachmentUrl
     } else {
         message.localThumbnailPath?.let { "file://$it" }
             ?: message.localMediaPath?.let { "file://$it" }
