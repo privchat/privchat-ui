@@ -320,6 +320,10 @@ fun resolveRuntimeBanner(
     }
     connectivity.reconnecting && hasStartedConnectionFlow -> RuntimeBannerKind.RECONNECTING
     connectivity.gatewayConnected -> RuntimeBannerKind.CONNECTING
+    // 首次连接尚未成功（本会话从未认证过 → lastConnectedAt==null）：显示「连接中」而非
+    // 「网络已断开」。用户刚打开 app、连接流程仍在进行，还没连过就提示断网是误导。
+    // 真正的设备离线由上面 networkReachable=false 分支覆盖；曾连上后掉线由 reconnecting 覆盖。
+    hasStartedConnectionFlow && connectivity.lastConnectedAt == null -> RuntimeBannerKind.CONNECTING
     hasStartedConnectionFlow -> RuntimeBannerKind.OFFLINE
     else -> RuntimeBannerKind.HIDDEN
 }
