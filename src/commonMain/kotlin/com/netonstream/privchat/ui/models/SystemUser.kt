@@ -23,6 +23,21 @@ object SystemUser {
     fun displayNameOr(username: String?, fallback: String): String =
         if (isSystem(username)) PrivChatI18n.current.systemMessagesName else fallback
 
+    /**
+     * 显示名**单点规则**(用户拍板,2026-07-24):账号是系统类型(userType==1)时,
+     * 按其 username 查语言包——**有对应词条才替换,没有就显示原名**;非系统账号
+     * 一律原名。所有取显示名的地方收敛到这里,不允许调用点二次处理。
+     *
+     * 语言包映射按 username 扩展(未来更多系统账号在此登记)。
+     */
+    fun localizedNameFor(name: String, username: String?, userType: Int?): String {
+        if (!isSystemType(userType) && !isSystem(username)) return name
+        return when (username) {
+            "system", "__system_1__" -> PrivChatI18n.current.systemMessagesName
+            else -> name
+        }
+    }
+
     // ── 会话列表场景:条目只有 peerUserId,按 profile 查 username 后缓存判定 ──
     // (依据仍是 username/userType,uid 集合只是查询结果缓存,不违反「禁 uid 判定」红线)
 
@@ -37,19 +52,32 @@ object SystemUser {
      * 群且 name 为空(SDK 全回退落空)→ 本地化「群聊」——标题任何情况不出现裸 id。
      */
     fun channelTitle(entry: com.netonstream.privchat.sdk.dto.ChannelListEntry): String = when {
-        entry.isDm && isSystemUid(entry.peerUserId) -> PrivChatI18n.current.systemMessagesName
-        // 名字解析链落到 username(本地 user 表已同步但 userType 异步判定未就绪)时,
-        // 按 username 兼容通道同步本地化——判定依据仍是「账号是否为 system」,不引入
-        // 任何魔法字面量/uid 判断。
-        entry.isDm && isSystem(entry.name) -> PrivChatI18n.current.systemMessagesName
-        !entry.isDm && entry.name.isBlank() -> PrivChatI18n.current.groupChatFallback
+        // 数据层已带出 DM 对端 userType/username(本地 user 实体在场时),
+        // 单点规则同步判定,零网络零二次处理;peerUserType 缺席时退回
+        // resolveUid 异步缓存(isSystemUid)与 username 兼容通道。
+        entry.isDm -> localizedNameFor(
+            name = when {
+                entry.name.isNotBlank() -> entry.name
+                else -> entry.peerUserId?.toString() ?: ""
+            },
+            username = entry.peerUsername ?: entry.name.takeIf { isSystem(it) },
+            userType = entry.peerUserType
+                ?: if (isSystemUid(entry.peerUserId)) 1 else null,
+        )
+        entry.name.isBlank() -> PrivChatI18n.current.groupChatFallback
         else -> entry.name
     }
 
-    /** 后台解析 peer 的 username/userType(local-first,一次一 uid,失败允许重试)。 */
-    suspend fun resolveUid(uid: ULong) {
+    /**
+     * 后台解析 peer 的 username/userType(local-first,一次一 uid,失败允许重试)。
+     * [sourceChannelId]:远程拉取的资料可见性来源(会话场景传共同会话 id,
+     * 服务端按会话成员放行;不传则退化为好友来源,对非好友对端会被闸口拒绝)。
+     */
+    suspend fun resolveUid(uid: ULong, sourceChannelId: ULong? = null) {
         if (!checkedUids.add(uid)) return
-        runCatching { com.netonstream.privchat.ui.PrivChat.client.getUserProfileLocalFirst(uid) }
+        runCatching {
+            com.netonstream.privchat.ui.PrivChat.client.getUserProfileLocalFirst(uid, sourceChannelId)
+        }
             .getOrNull()
             ?.fold(
                 onSuccess = { profile ->
