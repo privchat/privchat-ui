@@ -32,8 +32,13 @@ object SystemUser {
      */
     fun localizedNameFor(name: String, username: String?, userType: Int?): String {
         if (!isSystemType(userType) && !isSystem(username)) return name
-        return when (username) {
-            "system", "__system_1__" -> PrivChatI18n.current.systemMessagesName
+        return when {
+            username == "system" || username == "__system_1__" ->
+                PrivChatI18n.current.systemMessagesName
+            // 服务端投影对非好友洗掉 username(PROFILE_VISIBILITY D1),系统账号也
+            // 拿不到——userType 已确认是系统时用类型级默认词条;有 username 但
+            // 语言包无对应词条才落回原名(未来多系统账号按 username 扩词条)。
+            username.isNullOrBlank() -> PrivChatI18n.current.systemMessagesName
             else -> name
         }
     }
