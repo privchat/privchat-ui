@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.state.GroupStore
 import com.tencent.kuikly.compose.coil3.rememberAsyncImagePainter
 // removed: mutableStateMapOf / PrivChat imports — private member cache collapsed into GroupStore (P6-1)
@@ -82,12 +83,34 @@ fun GroupCollageAvatar(
                 uid = it.userId.toString(),
                 name = it.displayName,
                 username = null,
-                hasAvatar = it.avatar.isNotBlank(),
+                avatarUrl = it.avatar.takeIf { u -> u.isNotBlank() },
             )
         }
+        // 先用当前本地态合成一版(已下载的真实头像 + 缺失的用字母)立即上屏。
         collageUrl = GeneratedAvatarCache
             .ensureCollage(channelId.toString(), cm)
             ?.let { "file://$it" }
+
+        // 缺真实头像文件但 roster 带 URL 的成员 → 补下载(AVATAR_CACHE_SPEC §5.3
+        // 「缺则先走 §5.1 补齐」);await 完成后重合成一次,让新下载的真实头像即时补进
+        // 九宫格(不必等下次进会话列表)。
+        val root = AvatarLocalCache.userRoot ?: return@LaunchedEffect
+        val missing = members.take(9).filter { m ->
+            m.avatar.isNotBlank() &&
+                !AvatarBitmapRenderer.fileExists("$root/avatars/users/${m.userId}.img")
+        }
+        if (missing.isEmpty()) return@LaunchedEffect
+        var anyDownloaded = false
+        missing.forEach { m ->
+            val ok = runCatching { PrivChat.client.recacheUserAvatar(m.userId, m.avatar) }
+                .getOrNull()?.isSuccess == true
+            if (ok) anyDownloaded = true
+        }
+        if (anyDownloaded) {
+            collageUrl = GeneratedAvatarCache
+                .ensureCollage(channelId.toString(), cm)
+                ?.let { "file://$it" }
+        }
     }
     val cu = collageUrl
     if (cu != null) {

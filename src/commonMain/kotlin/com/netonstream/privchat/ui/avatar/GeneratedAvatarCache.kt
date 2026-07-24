@@ -27,13 +27,15 @@ object GeneratedAvatarCache {
     private val readyUsers = mutableSetOf<String>() // 已确认落盘的 user 路径
     private val collageFp = mutableMapOf<String, String>() // gid -> 上次合成的成员指纹
 
-    /** 群九宫格取前 9 成员的最小信息。[hasAvatar]=false 时不读真实头像槽位文件
-     *  (槽位里可能是历史生成的旧字母 PNG),直接用实时 initials。 */
+    /** 群九宫格取前 9 成员的最小信息。真实头像槽位 `{uid}.img` 只由 SDK 下载真实头像
+     *  写入(生成字母走独立 `{uid}.gen-*.img`),故合成时**只要该文件存在就用真实头像**,
+     *  不看 roster 是否带 URL(避免 roster.avatar 恰好为空时误压制已下载的真实头像)。
+     *  [avatarUrl]=roster 头像 URL,仅用于文件缺失时由 UI 触发补下载。 */
     data class CollageMember(
         val uid: String,
         val name: String?,
         val username: String?,
-        val hasAvatar: Boolean = true,
+        val avatarUrl: String? = null,
     )
 
     /**
@@ -81,8 +83,9 @@ object GeneratedAvatarCache {
         if (gid.isBlank() || members.isEmpty()) return null
         val path = "$root/avatars/groups/$gid.img"
         val cells: List<CollageCell> = members.take(9).map { m ->
+            // 真实头像槽位存在就用真实图(该槽位只由 SDK 下载真实头像写入,字母走 .gen-*)。
             val memberImg = "$root/avatars/users/${m.uid}.img"
-            if (m.hasAvatar && AvatarBitmapRenderer.fileExists(memberImg)) {
+            if (AvatarBitmapRenderer.fileExists(memberImg)) {
                 CollageCell.Image(memberImg)
             } else {
                 CollageCell.Initials(

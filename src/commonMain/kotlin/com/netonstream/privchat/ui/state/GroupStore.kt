@@ -70,15 +70,24 @@ object GroupStore {
     }
 
     /**
-     * 批量解析 user_type 并剔除系统账号（user_type==1）。
-     * user_type 未知（未解析出 profile）→ 保留，不误伤普通成员（与 App loadGroupMembers 同策略）。
+     * 批量解析 user_type 剔除系统账号（user_type==1），并顺带从本地 user 表富化头像。
+     * 群成员 roster（StoredGroupMember）不带 avatar 字段，真实头像 URL/本地路径在
+     * user 表——不富化则九宫格永远拿不到成员头像 URL、退化成字母。
+     * user_type 未知（未解析出 profile）→ 保留，不误伤普通成员。
      */
     private suspend fun filterSystemUsers(members: List<GroupMemberEntry>): List<GroupMemberEntry> {
-        val types = runCatching { PrivChat.client.listUsersByIds(members.map { it.userId }) }
+        val profiles = runCatching { PrivChat.client.listUsersByIds(members.map { it.userId }) }
             .getOrNull()?.getOrNull()
-            ?.associate { it.userId to it.userType.toInt() }
+            ?.associateBy { it.userId }
             .orEmpty()
-        return members.filterNot { SystemUser.isSystemType(types[it.userId]) }
+        return members
+            .filterNot { SystemUser.isSystemType(profiles[it.userId]?.userType?.toInt()) }
+            .map { m ->
+                // avatarUrl 已是 local-first（file://<local> 优先，未缓存回落网络 URL）；
+                // 九宫格据此直接命中真实头像文件或触发补下载。roster 自带 avatar 为空才覆盖。
+                val hydrated = profiles[m.userId]?.avatarUrl
+                if (m.avatar.isBlank() && !hydrated.isNullOrBlank()) m.copy(avatar = hydrated) else m
+            }
     }
 
     /** 登出/切号清空，防串号。 */
@@ -87,13 +96,15 @@ object GroupStore {
         inFlight.clear()
     }
 
+    // 群九宫格取「最早入群」的 9 人(微信规则:按 joinedAt 升序,与活跃度无关)。
+    // joinedAt 未知(0)排最后,不让缺时间戳的成员抢占前排;同刻用 userId 定序稳定。
     private fun topNine(members: List<GroupMemberEntry>): List<GroupMemberEntry> =
-        members.sortedWith(compareBy({ roleWeight(it.role) }, { it.userId })).take(9)
-
-    // owner(role=2) → 0 / admin(role=1) → 1 / member(role=0) → 2
-    private fun roleWeight(role: Int): Int = when (role) {
-        2 -> 0
-        1 -> 1
-        else -> 2
-    }
+        members
+            .sortedWith(
+                compareBy(
+                    { if (it.joinedAt <= 0L) Long.MAX_VALUE else it.joinedAt },
+                    { it.userId },
+                )
+            )
+            .take(9)
 }
