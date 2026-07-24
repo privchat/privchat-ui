@@ -779,6 +779,8 @@ data class PrivChatGroupStrings(
     val groupMembers: String,
     val groupOwner: String,
     val groupAdmin: String,
+    // 聊天气泡昵称旁的短标签(「管理」;群主标签直接复用 groupOwner)。
+    val groupAdminTag: String,
     val groupMember: String,
     val groupCreate: String,
     val groupLeave: String,
@@ -823,6 +825,7 @@ data class PrivChatGroupStringsPatch(
     val groupMembers: String? = null,
     val groupOwner: String? = null,
     val groupAdmin: String? = null,
+    val groupAdminTag: String? = null,
     val groupMember: String? = null,
     val groupCreate: String? = null,
     val groupLeave: String? = null,
@@ -867,6 +870,7 @@ val PrivChatGroupStringsPatch.isEmpty: Boolean
         groupMembers == null &&
         groupOwner == null &&
         groupAdmin == null &&
+        groupAdminTag == null &&
         groupMember == null &&
         groupCreate == null &&
         groupLeave == null &&
@@ -912,6 +916,7 @@ fun PrivChatGroupStrings.merge(patch: PrivChatGroupStringsPatch?): PrivChatGroup
         groupMembers = patch.groupMembers ?: groupMembers,
         groupOwner = patch.groupOwner ?: groupOwner,
         groupAdmin = patch.groupAdmin ?: groupAdmin,
+        groupAdminTag = patch.groupAdminTag ?: groupAdminTag,
         groupMember = patch.groupMember ?: groupMember,
         groupCreate = patch.groupCreate ?: groupCreate,
         groupLeave = patch.groupLeave ?: groupLeave,

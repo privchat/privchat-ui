@@ -7,8 +7,10 @@ import com.netonstream.privchat.ui.components.ChatAvatar
 import com.netonstream.privchat.ui.models.displayName
 import com.netonstream.privchat.ui.models.isAdmin
 import com.netonstream.privchat.ui.models.isOwner
-import com.netonstream.privchat.ui.models.roleName
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
+import com.gearui.foundation.primitives.Text
+import com.gearui.foundation.typography.Typography
+import com.tencent.kuikly.compose.ui.graphics.Color
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.components.cell.Cell
@@ -203,8 +205,13 @@ fun GroupMembersPage(
                     ) {
                         Cell(
                             title = member.displayName,
-                            // 用户 ID 是底层协议标识，不在任何 UI 展示；副标题只显示角色。
-                            description = member.roleName,
+                            // 用户 ID 是底层协议标识，不在任何 UI 展示；副标题只显示角色
+                            // (走语言包,不再用硬编码 roleName)。
+                            description = when {
+                                member.isOwner -> strings.groupOwner
+                                member.isAdmin -> strings.groupAdmin
+                                else -> strings.groupMember
+                            },
                             onClick = { onMemberClick(member) },
                             leading = {
                                 ChatAvatar(
@@ -214,6 +221,24 @@ fun GroupMembersPage(
                                     seed = "u:${member.userId}",
                                     userId = member.userId.toLong(),
                                 )
+                            },
+                            // 三端统一角色标签:群主橙字、管理红字(web/h5 同色)。
+                            trailing = when {
+                                member.isOwner -> ({
+                                    Text(
+                                        text = strings.groupOwner,
+                                        style = Typography.Label,
+                                        color = Color(0xFFF97316),
+                                    )
+                                })
+                                member.isAdmin -> ({
+                                    Text(
+                                        text = strings.groupAdmin,
+                                        style = Typography.Label,
+                                        color = Color(0xFFEF4444),
+                                    )
+                                })
+                                else -> null
                             },
                         )
                     }

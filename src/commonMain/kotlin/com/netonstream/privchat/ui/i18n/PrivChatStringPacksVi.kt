@@ -232,6 +232,7 @@ internal val viGroup = PrivChatGroupStrings(
     groupMembers = "Thành viên",
     groupOwner = "Chủ nhóm",
     groupAdmin = "Quản trị viên",
+    groupAdminTag = "QTV",
     groupMember = "Thành viên",
     groupCreate = "Tạo nhóm",
     groupLeave = "Rời nhóm",

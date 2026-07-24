@@ -206,6 +206,7 @@ data class PrivChatStrings(
     val groupMembers: String get() = dGroup.groupMembers
     val groupOwner: String get() = dGroup.groupOwner
     val groupAdmin: String get() = dGroup.groupAdmin
+    val groupAdminTag: String get() = dGroup.groupAdminTag
     val groupMember: String get() = dGroup.groupMember
     val groupCreate: String get() = dGroup.groupCreate
     val groupLeave: String get() = dGroup.groupLeave

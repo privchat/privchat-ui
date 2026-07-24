@@ -232,6 +232,7 @@ internal val hantGroup = PrivChatGroupStrings(
     groupMembers = "群成員",
     groupOwner = "群主",
     groupAdmin = "管理員",
+    groupAdminTag = "管理",
     groupMember = "成員",
     groupCreate = "建立群組",
     groupLeave = "退出群組",

@@ -232,6 +232,7 @@ internal val enGroup = PrivChatGroupStrings(
     groupMembers = "Members",
     groupOwner = "Owner",
     groupAdmin = "Admin",
+    groupAdminTag = "Admin",
     groupMember = "Member",
     groupCreate = "Create Group",
     groupLeave = "Leave Group",

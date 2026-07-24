@@ -1005,6 +1005,9 @@ fun MessagePage(
                                     UnreadDivider(count = initialUnreadSnapshot)
                                 }
 
+                                val senderMember = if (!channel.isDm && !isSelf) {
+                                    groupMembersForChannel.firstOrNull { it.userId == message.fromUid }
+                                } else null
                                 MessageRow(
                                     message = message,
                                     isSelf = isSelf,
@@ -1012,6 +1015,12 @@ fun MessagePage(
                                     channelDisplayName = channel.displayName,
                                     senderDisplayName = senderDisplayName,
                                     showSenderName = !channel.isDm && !isSelf,
+                                    senderRole = senderMember?.role?.takeIf { it == 1 || it == 2 },
+                                    senderAvatarUrl = when {
+                                        channel.isDm && !isSelf ->
+                                            channel.avatarUrl ?: channel.peerAvatarUrl
+                                        else -> senderMember?.avatar?.takeIf { it.isNotBlank() }
+                                    },
                                     redPacketStatusOf = { redPacketStatusMap[it] ?: 0 },
                                     onAvatarClick = if (!isSelf) onAvatarClick else null,
                                     onAvatarLongPress = if (!channel.isDm && !isSelf) { userId, name ->
@@ -1631,6 +1640,10 @@ private fun MessageRow(
     channelDisplayName: String = "",
     senderDisplayName: String = "",
     showSenderName: Boolean = false,
+    /** 群聊发送者角色(2=群主 1=管理员);昵称旁标签「群主」橙/「管理」红。null=不显示。 */
+    senderRole: Int? = null,
+    /** 发送者头像 URL(群聊来自 roster hydrate;DM 来自 channel peer 头像)。 */
+    senderAvatarUrl: String? = null,
     onAvatarClick: ((ULong) -> Unit)? = null,
     onAvatarLongPress: ((ULong, String) -> Unit)? = null,
     peerReadPts: ULong? = null,
@@ -1735,7 +1748,7 @@ private fun MessageRow(
             }
             Box(modifier = avatarModifier) {
                 ChatAvatar(
-                    url = null, // TODO: 从用户信息获取
+                    url = senderAvatarUrl,
                     name = peerAvatarName,
                     size = AvatarSizeTokens.Small.size,
                     userId = message.fromUid.toLong(),
@@ -1749,12 +1762,28 @@ private fun MessageRow(
             horizontalAlignment = if (isSelf) Alignment.End else Alignment.Start,
         ) {
             if (showSenderName && senderDisplayName.isNotBlank()) {
-                Text(
-                    text = senderDisplayName,
-                    style = Typography.Label,
-                    color = colors.mutedForeground,
-                    modifier = Modifier.padding(start = 4.dp, bottom = 3.dp),
-                )
+                Row(modifier = Modifier.padding(start = 4.dp, bottom = 3.dp)) {
+                    Text(
+                        text = senderDisplayName,
+                        style = Typography.Label,
+                        color = colors.mutedForeground,
+                    )
+                    // 三端统一:群主橙字、管理红字(web/h5 同色)。
+                    when (senderRole) {
+                        2 -> Text(
+                            text = "【${strings.groupOwner}】",
+                            style = Typography.Label,
+                            color = Color(0xFFF97316),
+                            modifier = Modifier.padding(start = 2.dp),
+                        )
+                        1 -> Text(
+                            text = "【${strings.groupAdminTag}】",
+                            style = Typography.Label,
+                            color = Color(0xFFEF4444),
+                            modifier = Modifier.padding(start = 2.dp),
+                        )
+                    }
+                }
             }
             // REPLY_SPEC §4.3：命中高亮时在气泡之上叠加一层主题色蒙版，800ms 后淡出。
             val flashAlpha by animateFloatAsState(

@@ -45,7 +45,9 @@ data class ConversationListItemState(
                     userId = peer.toLong(),
                     displayName = entry.displayName,
                     // localPath 交给 PrivChatAvatar 按 userId 内部 local-first 解析；这里只带 remote 作下载源。
-                    remoteUrl = entry.avatarUrl,
+                    // channel.avatar 常为空——DM 真源是本地 user 实体带出的 peerAvatarUrl
+                    // (数据上确认有头像,PrivChatAvatar 才会探真实头像缓存槽位)。
+                    remoteUrl = entry.avatarUrl ?: entry.peerAvatarUrl,
                     seed = "u:$peer",
                 )
             } else {

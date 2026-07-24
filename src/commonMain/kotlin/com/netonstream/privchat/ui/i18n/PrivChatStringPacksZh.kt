@@ -232,6 +232,7 @@ internal val zhGroup = PrivChatGroupStrings(
     groupMembers = "群成员",
     groupOwner = "群主",
     groupAdmin = "管理员",
+    groupAdminTag = "管理",
     groupMember = "成员",
     groupCreate = "创建群组",
     groupLeave = "退出群组",
