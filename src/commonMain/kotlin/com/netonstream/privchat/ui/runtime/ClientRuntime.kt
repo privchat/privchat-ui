@@ -146,6 +146,10 @@ object ClientRuntime {
                 cur.copy(
                     gatewayConnected = true,
                     authenticated = true,
+                    // 认证成功是「网络确实可达」的铁证——iOS reachability 可能漏发恢复回调而
+                    // 卡在 unreachable(模拟器/真机挂起后常见),若不校正,横幅会在收着消息时仍
+                    // 显示「网络已断开」。用真实连接结果复位镜像,断了自会由后续 disconnected 置回。
+                    networkReachable = true,
                     reconnecting = false,
                     reconnectAttempt = 0,
                     serverBusy = false, // 成功信号清 busy
@@ -311,13 +315,17 @@ fun resolveRuntimeBanner(
 ): RuntimeBannerKind = when {
     connectivity.lastError is ClientRuntimeError.AuthExpired && hasStartedConnectionFlow ->
         RuntimeBannerKind.AUTH_EXPIRED
-    !connectivity.networkReachable && hasStartedConnectionFlow -> RuntimeBannerKind.OFFLINE
+    // 已认证 = 存在活的、能收发的连接,这是比宿主 reachability 镜像更强的真值:即便系统
+    // reachability 卡在 unreachable(漏发恢复回调),也绝不显示「网络已断开」——否则会出现
+    // 「一边收着消息一边提示断网」的自相矛盾(用户实测的架构 bug)。故 authenticated 分支
+    // 前置于 networkReachable 分支;真断线由 SDK 的 disconnected 事件把 authenticated 置回 false。
     connectivity.authenticated -> when {
         connectivity.serverBusy -> RuntimeBannerKind.SERVER_BUSY
         sync.resumeSyncRunning -> RuntimeBannerKind.SYNCING
         showConnectedBanner -> RuntimeBannerKind.CONNECTED
         else -> RuntimeBannerKind.HIDDEN
     }
+    !connectivity.networkReachable && hasStartedConnectionFlow -> RuntimeBannerKind.OFFLINE
     connectivity.reconnecting && hasStartedConnectionFlow -> RuntimeBannerKind.RECONNECTING
     connectivity.gatewayConnected -> RuntimeBannerKind.CONNECTING
     // 首次连接尚未成功（本会话从未认证过 → lastConnectedAt==null）：显示「连接中」而非
