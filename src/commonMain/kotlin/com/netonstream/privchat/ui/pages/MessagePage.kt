@@ -362,6 +362,10 @@ fun MessagePage(
     onAvatarClick: ((ULong) -> Unit)? = null,
     networkStatusBar: (@Composable () -> Unit)? = null,
     onLoadMessages: (suspend (ULong, Int) -> Result<List<MessageEntry>>)? = null,
+    /** 上滑到顶加载更早历史（SDK-HISTORY-5）。入参=(channelId, channelType, 当前最早一条
+     *  server_message_id)；返回 (本次加载数, 服务端是否还有更早)。SDK 已持久化 gap 并回填本地、
+     *  prepend 到时间线；此处只驱动触发 + 停止条件。缺省=不启用历史翻页。 */
+    onLoadOlder: (suspend (ULong, Int, ULong) -> Result<Pair<Int, Boolean>>)? = null,
     onMarkRead: (suspend (ULong, Int) -> Result<Unit>)? = null,
     onSendText: (suspend (ULong, Int, String) -> Result<ULong>)? = null,
     // 附件发送回调：在 picker 返回、准备阶段开始时调用 `onPrepStart(label)` 弹出全屏 loading。
@@ -974,6 +978,31 @@ fun MessagePage(
                             sortedMessages.getOrNull(firstVisibleIdx)
                                 ?.let { Formatter.messageDateLabel(it.timestamp) }
                                 .orEmpty()
+                        }
+
+                        // SDK-HISTORY-5：上滑到顶加载更早历史。读本地为渲染真源，触界时由 SDK
+                        // 用 get 补缺口回填本地并 prepend；reachedBeginning 由 **SDK 持久化的
+                        // hasMoreBefore** 驱动（非 UI 猜测），按 channel 重置；稳定 key 让 prepend
+                        // 后视图锚点自动保持。
+                        var loadingOlder by remember(channel.channelId) { mutableStateOf(false) }
+                        var reachedBeginning by remember(channel.channelId) { mutableStateOf(false) }
+                        if (onLoadOlder != null) {
+                            LaunchedEffect(firstVisibleIdx, sortedMessages.size, reachedBeginning) {
+                                if (firstVisibleIdx <= 1 && !loadingOlder && !reachedBeginning &&
+                                    sortedMessages.isNotEmpty() && hasInitialLoadCompleted
+                                ) {
+                                    val oldest = sortedMessages.firstOrNull { it.serverMessageId != null }
+                                        ?.serverMessageId
+                                    if (oldest != null) {
+                                        loadingOlder = true
+                                        onLoadOlder.invoke(channel.channelId, channel.channelType, oldest)
+                                            .onSuccess { (count, hasMore) ->
+                                                if (!hasMore || count == 0) reachedBeginning = true
+                                            }
+                                        loadingOlder = false
+                                    }
+                                }
+                            }
                         }
 
                         GearLazyColumn(
