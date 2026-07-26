@@ -16,6 +16,7 @@ internal val hantCommon = PrivChatCommonStrings(
     retry = "重試",
     noData = "暫無資料",
     networkError = "網路錯誤",
+    connectionNotReady = "連線尚未就緒，請稍後重試",
 )
 
 internal val hantConversation = PrivChatConversationStrings(
@@ -48,6 +49,7 @@ internal val hantMessage = PrivChatMessageStrings(
     messageUnknown = "[未知訊息]",
     messageSending = "傳送中...",
     messageSendFailed = "傳送失敗",
+    messageAttachmentSourceMissing = "原檔案已不存在，請重新選擇後傳送",
     messageInputHint = "輸入訊息...",
     messageVoiceHint = "按住說話",
     presenceOnline = "在線",

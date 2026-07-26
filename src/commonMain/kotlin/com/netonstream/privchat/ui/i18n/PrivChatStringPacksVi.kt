@@ -16,6 +16,7 @@ internal val viCommon = PrivChatCommonStrings(
     retry = "Thử lại",
     noData = "Không có dữ liệu",
     networkError = "Lỗi mạng",
+    connectionNotReady = "Kết nối chưa sẵn sàng, vui lòng thử lại sau",
 )
 
 internal val viConversation = PrivChatConversationStrings(
@@ -48,6 +49,7 @@ internal val viMessage = PrivChatMessageStrings(
     messageUnknown = "[Không xác định]",
     messageSending = "Đang gửi...",
     messageSendFailed = "Gửi thất bại",
+    messageAttachmentSourceMissing = "Tệp gốc không còn tồn tại, vui lòng chọn lại để gửi.",
     messageInputHint = "Nhập tin nhắn...",
     messageVoiceHint = "Giữ để nói",
     presenceOnline = "Trực tuyến",

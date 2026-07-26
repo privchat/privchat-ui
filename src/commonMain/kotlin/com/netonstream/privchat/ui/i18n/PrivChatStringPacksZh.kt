@@ -16,6 +16,7 @@ internal val zhCommon = PrivChatCommonStrings(
     retry = "重试",
     noData = "暂无数据",
     networkError = "网络错误",
+    connectionNotReady = "连接尚未就绪，请稍后重试",
 )
 
 internal val zhConversation = PrivChatConversationStrings(
@@ -48,6 +49,7 @@ internal val zhMessage = PrivChatMessageStrings(
     messageUnknown = "[未知消息]",
     messageSending = "发送中...",
     messageSendFailed = "发送失败",
+    messageAttachmentSourceMissing = "原文件已不存在，请重新选择后发送",
     messageInputHint = "输入消息...",
     messageVoiceHint = "按住说话",
     presenceOnline = "在线",

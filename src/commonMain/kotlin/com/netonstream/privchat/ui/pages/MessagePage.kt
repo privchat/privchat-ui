@@ -2,6 +2,7 @@ package com.netonstream.privchat.ui.pages
 
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.ConnectionState
+import com.netonstream.privchat.sdk.SdkError
 import com.netonstream.privchat.sdk.dto.ChannelListEntry
 import com.netonstream.privchat.ui.error.UserFacingError
 import com.netonstream.privchat.sdk.dto.ContentMessageType
@@ -1721,7 +1722,13 @@ private fun MessageRow(
                     withContext(Dispatchers.Default) {
                         PrivChat.client.retryMessage(message.id)
                     }.onFailure { error ->
-                        Toast.error(UserFacingError.message(error, strings.networkError))
+                        // 源文件已被清理时重试永远不会成功：给出「重新选择」的可执行提示，
+                        // 而不是让用户反复点重发（结构化错误由 Rust Core 给出）。
+                        if (error is SdkError.AttachmentSourceMissing) {
+                            Toast.error(strings.messageAttachmentSourceMissing)
+                        } else {
+                            Toast.error(UserFacingError.message(error, strings.networkError))
+                        }
                     }
                 }
             },

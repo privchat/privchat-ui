@@ -19,6 +19,8 @@ data class PrivChatCommonStrings(
     val retry: String,
     val noData: String,
     val networkError: String,
+    /** 会话尚未就绪（连接中/重连中）时的可重试提示。 */
+    val connectionNotReady: String,
 )
 
 data class PrivChatCommonStringsPatch(
@@ -33,6 +35,7 @@ data class PrivChatCommonStringsPatch(
     val retry: String? = null,
     val noData: String? = null,
     val networkError: String? = null,
+    val connectionNotReady: String? = null,
 )
 
 val PrivChatCommonStringsPatch.isEmpty: Boolean
@@ -46,7 +49,8 @@ val PrivChatCommonStringsPatch.isEmpty: Boolean
         loading == null &&
         retry == null &&
         noData == null &&
-        networkError == null
+        networkError == null &&
+        connectionNotReady == null
 
 fun PrivChatCommonStrings.merge(patch: PrivChatCommonStringsPatch?): PrivChatCommonStrings {
     if (patch == null || patch.isEmpty) return this
@@ -62,6 +66,7 @@ fun PrivChatCommonStrings.merge(patch: PrivChatCommonStringsPatch?): PrivChatCom
         retry = patch.retry ?: retry,
         noData = patch.noData ?: noData,
         networkError = patch.networkError ?: networkError,
+        connectionNotReady = patch.connectionNotReady ?: connectionNotReady,
     )
 }
 
@@ -153,6 +158,7 @@ data class PrivChatMessageStrings(
     val messageUnknown: String,
     val messageSending: String,
     val messageSendFailed: String,
+    val messageAttachmentSourceMissing: String,
     val messageInputHint: String,
     val messageVoiceHint: String,
     val presenceOnline: String,
@@ -172,6 +178,7 @@ data class PrivChatMessageStringsPatch(
     val messageUnknown: String? = null,
     val messageSending: String? = null,
     val messageSendFailed: String? = null,
+    val messageAttachmentSourceMissing: String? = null,
     val messageInputHint: String? = null,
     val messageVoiceHint: String? = null,
     val presenceOnline: String? = null,
@@ -191,6 +198,7 @@ val PrivChatMessageStringsPatch.isEmpty: Boolean
         messageUnknown == null &&
         messageSending == null &&
         messageSendFailed == null &&
+        messageAttachmentSourceMissing == null &&
         messageInputHint == null &&
         messageVoiceHint == null &&
         presenceOnline == null &&
@@ -211,6 +219,7 @@ fun PrivChatMessageStrings.merge(patch: PrivChatMessageStringsPatch?): PrivChatM
         messageUnknown = patch.messageUnknown ?: messageUnknown,
         messageSending = patch.messageSending ?: messageSending,
         messageSendFailed = patch.messageSendFailed ?: messageSendFailed,
+        messageAttachmentSourceMissing = patch.messageAttachmentSourceMissing ?: messageAttachmentSourceMissing,
         messageInputHint = patch.messageInputHint ?: messageInputHint,
         messageVoiceHint = patch.messageVoiceHint ?: messageVoiceHint,
         presenceOnline = patch.presenceOnline ?: presenceOnline,

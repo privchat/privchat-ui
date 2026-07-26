@@ -16,6 +16,7 @@ internal val enCommon = PrivChatCommonStrings(
     retry = "Retry",
     noData = "No data",
     networkError = "Network error",
+    connectionNotReady = "Connection is not ready yet, please retry shortly",
 )
 
 internal val enConversation = PrivChatConversationStrings(
@@ -48,6 +49,7 @@ internal val enMessage = PrivChatMessageStrings(
     messageUnknown = "[Unknown]",
     messageSending = "Sending...",
     messageSendFailed = "Send failed",
+    messageAttachmentSourceMissing = "The original file is no longer available. Please pick it again.",
     messageInputHint = "Type a message...",
     messageVoiceHint = "Hold to talk",
     presenceOnline = "Online",

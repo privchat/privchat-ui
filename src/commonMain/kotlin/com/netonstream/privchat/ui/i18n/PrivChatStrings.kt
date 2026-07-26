@@ -36,6 +36,7 @@ data class PrivChatStrings(
     val retry: String get() = dCommon.retry
     val noData: String get() = dCommon.noData
     val networkError: String get() = dCommon.networkError
+    val connectionNotReady: String get() = dCommon.connectionNotReady
     val tabConversation: String get() = dConversation.tabConversation
     val tabContact: String get() = dConversation.tabContact
     val tabMe: String get() = dConversation.tabMe
@@ -62,6 +63,7 @@ data class PrivChatStrings(
     val messageUnknown: String get() = dMessage.messageUnknown
     val messageSending: String get() = dMessage.messageSending
     val messageSendFailed: String get() = dMessage.messageSendFailed
+    val messageAttachmentSourceMissing: String get() = dMessage.messageAttachmentSourceMissing
     val messageInputHint: String get() = dMessage.messageInputHint
     val messageVoiceHint: String get() = dMessage.messageVoiceHint
     val presenceOnline: String get() = dMessage.presenceOnline

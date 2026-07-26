@@ -298,12 +298,15 @@ enum class RuntimeBannerKind { AUTH_EXPIRED, OFFLINE, RECONNECTING, CONNECTING, 
 /**
  * 状态条唯一决策函数（纯函数，可单测）。**优先级固定（P4.1 拍板，改序须过评审）**：
  *
- *   AuthExpired/ForcedLogout > NetworkUnavailable(设备断网) > Reconnecting(曾有会话掉线/握手)
- *   > Connecting(首次连接) > ServerBusy > ResumeSyncRunning > Connected(短暂) > Hidden
+ *   AuthExpired/ForcedLogout > Authenticated(ServerBusy > ResumeSyncRunning > Connected > Hidden)
+ *   > NetworkUnavailable(设备断网) > Reconnecting(曾有会话掉线/握手) > Connecting(首次连接)
+ *   > Offline(无会话) > Hidden
  *
  * 说明：
  * - AuthExpired 最高：被踢下线绝不能显示「连接中/同步中」。
- * - 设备断网压过一切连接语义：断网时绝不显示「同步中」。
+ * - **已认证优先于宿主 reachability 镜像**：镜像会永久卡 unreachable，认证态才是「连接活着」
+ *   的真值；否则会出现「一边收消息一边提示断网」。真断线由 SDK 事件把 authenticated 置回 false。
+ * - 未认证时才看设备断网：此时绝不显示「同步中」。
  * - ServerBusy 在已认证会话内提示（未认证时连接语义优先）。
  * - [hasStartedConnectionFlow] 抑制登录前噪声；[showConnectedBanner] 控制绿条短暂显示窗口。
  */

@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.error
 
+import com.netonstream.privchat.sdk.SdkError
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 
 /**
@@ -25,7 +26,19 @@ object UserFacingError {
      */
     fun message(throwable: Throwable?, fallback: String): String {
         logRaw(throwable)
+        // 结构化错误优先于字符串嗅探：SDK 已给出类型时不要再猜文案。
+        typedMessage(throwable)?.let { return it }
         return if (isTransportFailure(throwable)) PrivChatI18n.current.networkError else fallback
+    }
+
+    /**
+     * SDK 结构化错误 → 本地化文案。原始英文（含 `current: New` 之类内部状态名）
+     * 只进日志，绝不上屏。
+     */
+    private fun typedMessage(throwable: Throwable?): String? = when (throwable) {
+        is SdkError.SessionNotReady -> PrivChatI18n.current.connectionNotReady
+        is SdkError.AttachmentSourceMissing -> PrivChatI18n.current.messageAttachmentSourceMissing
+        else -> null
     }
 
     /**
