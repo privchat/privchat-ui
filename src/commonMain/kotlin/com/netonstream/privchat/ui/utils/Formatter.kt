@@ -160,6 +160,19 @@ object Formatter {
     fun messageDateLabel(timestamp: ULong): String = messageDateLabel(timestamp.toLong())
 
     /**
+     * 完整日期时间 `YYYY-MM-DD HH:mm`（本地时区）。用于账单/提现/绑卡等**需要精确到分钟且
+     * 不能相对化**的记录场景——"昨天"对一笔提现申请没有意义。0/负值返回 "-"。
+     */
+    fun absoluteDateTime(timestamp: Long): String {
+        if (timestamp <= 0) return "-"
+        val t = epochMillisToLocalDateTime(timestamp, PrivChat.timeZoneId)
+        fun p(v: Int) = if (v < 10) "0$v" else "$v"
+        return "${t.year}-${p(t.month)}-${p(t.day)} ${p(t.hour)}:${p(t.minute)}"
+    }
+
+    fun absoluteDateTime(timestamp: ULong): String = absoluteDateTime(timestamp.toLong())
+
+    /**
      * 两个时间戳是否属于同一本地日。用于 UX-11 时间合并分组的跨日判断。
      */
     fun isSameLocalDay(a: Long, b: Long): Boolean {
