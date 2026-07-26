@@ -415,6 +415,11 @@ data class PrivChatStrings(
     val loginExpired: String get() = dAuxiliary.loginExpired
     val syncFailedRetry: String get() = dAuxiliary.syncFailedRetry
     val bannerServerBusy: String get() = dAuxiliary.bannerServerBusy
+    val startupInitializing: String get() = dAuxiliary.startupInitializing
+    val startupVerifyingAccount: String get() = dAuxiliary.startupVerifyingAccount
+    val startupConnecting: String get() = dAuxiliary.startupConnecting
+    val startupLoadingLocal: String get() = dAuxiliary.startupLoadingLocal
+    val startupSyncing: String get() = dAuxiliary.startupSyncing
 }
 
 data class PrivChatStringsPatch(

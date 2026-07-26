@@ -1358,6 +1358,11 @@ data class PrivChatAuxiliaryStrings(
     val loginExpired: String,
     val syncFailedRetry: String,
     val bannerServerBusy: String,
+    val startupInitializing: String,
+    val startupVerifyingAccount: String,
+    val startupConnecting: String,
+    val startupLoadingLocal: String,
+    val startupSyncing: String,
 )
 
 data class PrivChatAuxiliaryStringsPatch(
@@ -1468,6 +1473,11 @@ data class PrivChatAuxiliaryStringsPatch(
     val loginExpired: String? = null,
     val syncFailedRetry: String? = null,
     val bannerServerBusy: String? = null,
+    val startupInitializing: String? = null,
+    val startupVerifyingAccount: String? = null,
+    val startupConnecting: String? = null,
+    val startupLoadingLocal: String? = null,
+    val startupSyncing: String? = null,
 )
 
 val PrivChatAuxiliaryStringsPatch.isEmpty: Boolean
@@ -1577,7 +1587,12 @@ val PrivChatAuxiliaryStringsPatch.isEmpty: Boolean
         bannerSyncing == null &&
         loginExpired == null &&
         syncFailedRetry == null &&
-        bannerServerBusy == null
+        bannerServerBusy == null &&
+        startupInitializing == null &&
+        startupVerifyingAccount == null &&
+        startupConnecting == null &&
+        startupLoadingLocal == null &&
+        startupSyncing == null
 
 fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivChatAuxiliaryStrings {
     if (patch == null || patch.isEmpty) return this
@@ -1689,5 +1704,10 @@ fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivC
         loginExpired = patch.loginExpired ?: loginExpired,
         syncFailedRetry = patch.syncFailedRetry ?: syncFailedRetry,
         bannerServerBusy = patch.bannerServerBusy ?: bannerServerBusy,
+        startupInitializing = patch.startupInitializing ?: startupInitializing,
+        startupVerifyingAccount = patch.startupVerifyingAccount ?: startupVerifyingAccount,
+        startupConnecting = patch.startupConnecting ?: startupConnecting,
+        startupLoadingLocal = patch.startupLoadingLocal ?: startupLoadingLocal,
+        startupSyncing = patch.startupSyncing ?: startupSyncing,
     )
 }

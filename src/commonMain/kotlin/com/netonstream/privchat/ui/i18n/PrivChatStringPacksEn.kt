@@ -449,4 +449,9 @@ internal val enAuxiliary = PrivChatAuxiliaryStrings(
     loginExpired = "Session expired, please sign in again",
     syncFailedRetry = "Sync failed, will retry automatically",
     bannerServerBusy = "Server busy, please wait",
+    startupInitializing = "Initializing…",
+    startupVerifyingAccount = "Verifying account…",
+    startupConnecting = "Connecting to server…",
+    startupLoadingLocal = "Loading local conversations…",
+    startupSyncing = "Syncing messages…",
 )
