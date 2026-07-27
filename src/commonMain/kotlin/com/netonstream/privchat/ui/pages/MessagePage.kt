@@ -631,7 +631,11 @@ fun MessagePage(
                 // 因为本地查空导致菜单按钮 / 昵称都缺失。
                 runCatching {
                     withContext(Dispatchers.Default) {
-                        PrivChat.client.getUserProfileLocalFirst(uid)
+                        // 会话内查看对端：来源 = 当前会话（服务端按会话成员放行）。
+                        PrivChat.client.getUserProfileLocalFirst(
+                            uid,
+                            com.netonstream.privchat.sdk.ProfileAccessContext.Conversation(channel.channelId),
+                        )
                             .getOrNull()
                             ?.let { peerUserType = it.userType }
                     }

@@ -75,13 +75,17 @@ object SystemUser {
 
     /**
      * 后台解析 peer 的 username/userType(local-first,一次一 uid,失败允许重试)。
-     * [sourceChannelId]:远程拉取的资料可见性来源(会话场景传共同会话 id,
-     * 服务端按会话成员放行;不传则退化为好友来源,对非好友对端会被闸口拒绝)。
+     * [sourceChannelId]:所在会话 id。有会话上下文才发远程详情请求(服务端按会话成员放行);
+     * 不传时 SDK 只读本地投影,**不会**伪造 friend 来源去撞权限闸口。
      */
     suspend fun resolveUid(uid: ULong, sourceChannelId: ULong? = null) {
         if (!checkedUids.add(uid)) return
         runCatching {
-            com.netonstream.privchat.ui.PrivChat.client.getUserProfileLocalFirst(uid, sourceChannelId)
+            com.netonstream.privchat.ui.PrivChat.client.getUserProfileLocalFirst(
+                uid,
+                sourceChannelId?.let { com.netonstream.privchat.sdk.ProfileAccessContext.Conversation(it) }
+                    ?: com.netonstream.privchat.sdk.ProfileAccessContext.Unknown,
+            )
         }
             .getOrNull()
             ?.fold(
