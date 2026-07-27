@@ -74,6 +74,8 @@ fun ConversationPage(
     onDeleteChannel: (suspend (ULong) -> Result<Unit>)? = null,
     onError: ((String) -> Unit)? = null,
     showNavBar: Boolean = true,
+    /** 双击底部「消息」Tab 的回顶信号：外部每次递增即滚回列表顶部（0 = 不动）。 */
+    scrollToTopSignal: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     val strings = PrivChatI18n.strings
@@ -107,6 +109,14 @@ fun ConversationPage(
             compareByDescending<ChannelListEntry> { it.isPinned }
                 .thenByDescending { it.lastMessageTime }
         )
+    }
+
+    // 双击底部「消息」Tab 回到列表顶部：外部每次双击把计数 +1，这里响应变化滚动。
+    // 目标同样是 index=1（首条会话置顶、搜索栏隐藏），与下面新消息置顶的落点一致。
+    LaunchedEffect(scrollToTopSignal) {
+        if (scrollToTopSignal > 0 && filteredChannels.isNotEmpty()) {
+            listState.animateScrollToItem(1)
+        }
     }
 
     // 任意频道收到新消息时自动滚动到列表顶部
