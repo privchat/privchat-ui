@@ -641,11 +641,29 @@ object PrivChat {
             val existing = dedup[candidate.id]
             dedup[candidate.id] = if (existing == null) candidate else choosePreferredMessage(existing, candidate)
         }
-        return dedup.values.sortedWith(
-            compareBy<MessageEntry> { it.timestamp }
-                .thenBy { it.id },
-        )
+        return dedup.values.sortedWith(DISPLAY_ORDER)
     }
+
+    /**
+     * 显示顺序 = SDK_ENTITY_MODEL_SPEC §2.6.2 冻结元组
+     * `(pending_group, pts, server_message_id, id)`。
+     *
+     * 这里过去是 `compareBy { it.timestamp }`，而 spec 明写 **timestamp 只用于
+     * 显示时间，不决定顺序**。它之所以长期看起来是对的，是因为过去每条消息都在
+     * 收到的当下入库，时间恰好单调；上滑翻页把几周前的历史在今天补进来之后，这个
+     * 巧合就没了——那批消息带着今天的时间戳排到了真正更新的消息后面。
+     *
+     * 现在的规则不依赖任何时钟：
+     * - 未确认（无 server_message_id）的本地消息排在最新端；
+     * - 已确认消息按 per-channel 权威顺序 `pts`；
+     * - pts 缺失或相同用 `server_message_id`（服务端雪花，时间有序）；
+     * - 最后用本地主键 `id` 兜底，保证同一批输入的顺序稳定。
+     */
+    private val DISPLAY_ORDER: Comparator<MessageEntry> =
+        compareBy<MessageEntry> { if ((it.serverMessageId ?: 0uL) == 0uL) 1 else 0 }
+            .thenBy { it.pts ?: 0uL }
+            .thenBy { it.serverMessageId ?: 0uL }
+            .thenBy { it.id }
 
     private fun choosePreferredMessage(a: MessageEntry, b: MessageEntry): MessageEntry {
         // delivered 是单调 0→1 标志（Rust SDK CAS 写入），合并时必须保留，
