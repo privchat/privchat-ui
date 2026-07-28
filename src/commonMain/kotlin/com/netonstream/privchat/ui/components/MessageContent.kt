@@ -19,6 +19,7 @@ import com.netonstream.privchat.ui.platform.ClipboardBridge
 import com.netonstream.privchat.ui.platform.ExternalLinkBridge
 import com.netonstream.privchat.ui.utils.Formatter
 import com.netonstream.privchat.ui.voice.VoicePlayback
+import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageLinkOther
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageTextOther
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageTextSelf
 import com.gearui.components.actionsheet.ActionSheet
@@ -222,8 +223,11 @@ private fun TextContent(
     }
 
     val bodyStyle = Typography.BodyMedium
-    // 自己的气泡背景与 primary 同色，不能再用 primary 画链接，否则实体文本会隐形。
-    val linkColor = if (isSelf) textColor else Theme.colors.primary
+    // 链接色必须跟所在气泡背景有对比：
+    // - 自己的气泡是 primary 同色的深底，用白色正文色；
+    // - 对方的气泡用 info（链接蓝）。这里原本用 primary，而 primary 在暗色主题下是近白，
+    //   跟对方气泡文字色撞色，手机号/网址/@提及会整段看不见。
+    val linkColor = if (isSelf) textColor else Theme.colors.messageLinkOther
     val linkStyle = TextLinkStyles(
         style = SpanStyle(
             color = linkColor,
