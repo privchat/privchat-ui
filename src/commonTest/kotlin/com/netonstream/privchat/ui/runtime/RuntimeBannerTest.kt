@@ -60,4 +60,23 @@ class RuntimeBannerTest {
         assertEquals(true, ClientRuntime.connectivity.value.authenticated)
         ClientRuntime.reset()
     }
+
+    @Test
+    fun background_disconnect_then_foreground_shows_reconnecting() {
+        // 后台超时主动断开后回到前台：我们**连过**，所以这是重连，不是首连。
+        // app 主动 disconnect 时若不喂给运行时层，connectivity 会停在 authenticated=true，
+        // 状态条落到「服务器连接中」——语义错了。
+        ClientRuntime.reset()
+        ClientRuntime.onConnectionStateChanged("authenticated")
+        ClientRuntime.onConnectionStateChanged("disconnected")
+
+        val kind = resolveRuntimeBanner(
+            connectivity = ClientRuntime.connectivity.value,
+            sync = SyncState(),
+            hasStartedConnectionFlow = true,
+            showConnectedBanner = false,
+        )
+        assertEquals(RuntimeBannerKind.RECONNECTING, kind)
+        ClientRuntime.reset()
+    }
 }
