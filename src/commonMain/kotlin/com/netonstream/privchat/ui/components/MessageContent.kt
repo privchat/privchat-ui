@@ -8,6 +8,7 @@ import com.netonstream.privchat.sdk.dto.MessageEntry
 import com.netonstream.privchat.sdk.dto.MessageTextEntity
 import com.netonstream.privchat.sdk.dto.MessageTextEntityType
 import com.netonstream.privchat.sdk.dto.MessageStatus
+import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.netonstream.privchat.ui.media.MediaDownloadManager
 import com.netonstream.privchat.ui.media.MediaDownloadState
 import com.netonstream.privchat.ui.media.MediaOpener
@@ -542,18 +543,18 @@ private fun ImageContent(
     onImagePreview: ((MessageEntry) -> Unit)? = null,
 ) {
     val (width, height) = bubbleSize
-    // thumb_status=3: 协议层无缩略图（如 web/TS 老版本发图不带 thumbnail）。
-    // 图片消息仍可用本地原图/远程原图兜底渲染——只跳过 thumbnailUrl；
-    // 全部缺席才落静态占位（点击预览仍走原图）。
-    val thumbModel = if (message.thumbStatus == 3) {
-        message.localMediaPath?.let { "file://$it" }
-            ?: parsed.attachmentUrl
-    } else {
-        message.localThumbnailPath?.let { "file://$it" }
-            ?: message.localMediaPath?.let { "file://$it" }
-            ?: parsed.thumbnailUrl
-            ?: parsed.attachmentUrl
-    }
+    // 只用**本地已下载**的文件渲染。
+    //
+    // 附件在服务端是加密存储的（ATTACHMENT_ENCRYPTION_SPEC）：metadata 里的 url /
+    // thumbnail_url 指向密文 blob，直接喂给图片加载器一定失败——实测拉下来的字节
+    // 既不是 PNG 也不是 JPEG。而一旦把这种地址当成"有图"，就连占位都不会走，气泡
+    // 整个是空的，用户看到的就是一片空白。
+    //
+    // 冻结的分层也是这么写的：UI 由 message_type + media_downloaded + thumb_status
+    // 驱动，不消费 content/extra 里的远程 URL。下载/解密是 SDK 的事，UI 只在拿到
+    // 本地路径后渲染，否则显示类型化占位。
+    val thumbModel = message.localThumbnailPath?.let { "file://$it" }
+        ?: message.localMediaPath?.let { "file://$it" }
 
     // UX-2：图片气泡点击预览 + 长按弹菜单。二合一 detectTapGestures 避免与外层长按冲突。
     val menuTrigger = LocalMessageMenuTrigger.current
@@ -581,9 +582,11 @@ private fun ImageContent(
                 contentScale = ContentScale.Crop,
             )
         } else {
+            // 没有本地资源:类型化占位,文案走 i18n(不硬编码中文)。
+            // 绝不留空气泡——空白让用户以为消息坏了,占位至少说明"这是一张图"。
             GearImage(
                 painter = null,
-                placeholderText = "图片",
+                placeholderText = PrivChatI18n.strings.previewImage,
                 fit = ImageFit.COVER,
                 shape = ImageShape.ROUNDED,
                 cornerRadius = 8.dp,
@@ -606,14 +609,9 @@ private fun VideoContent(
     onVideoPreview: ((MessageEntry) -> Unit)? = null,
 ) {
     val (width, height) = attachmentBubbleSize(parsed.width, parsed.height)
-    // thumb_status=3: 协议层无缩略图，跳过所有远程/本地 URL，直接走类型化占位
-    val videoThumb = if (message.thumbStatus == 3) {
-        null
-    } else {
-        message.localThumbnailPath?.let { "file://$it" }
-            ?: parsed.thumbnailUrl
-            ?: parsed.attachmentUrl
-    }
+    // 同图片:只用本地已下载的文件。远程 url 指向加密 blob,渲染器解不开。
+    val videoThumb = message.localThumbnailPath?.let { "file://$it" }
+        ?: message.localMediaPath?.let { "file://$it" }
 
     // UX-2：视频气泡点击预览 + 长按弹菜单。
     val menuTrigger = LocalMessageMenuTrigger.current
