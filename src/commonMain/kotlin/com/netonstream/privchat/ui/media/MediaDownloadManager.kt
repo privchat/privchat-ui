@@ -66,6 +66,19 @@ object MediaDownloadManager {
         _states.value = _states.value + (messageId to next)
     }
 
+    /**
+     * 气泡进入可视区时调用：没有缩略图就去取。
+     *
+     * 进程内去重——LazyColumn 会因为回收/重组反复触发同一条，每次都发请求等于拿
+     * 用户流量换同一个答案。
+     */
+    private val thumbnailRequested = mutableSetOf<ULong>()
+
+    fun ensureThumbnail(messageId: ULong) {
+        if (!thumbnailRequested.add(messageId)) return
+        controller?.ensureThumbnail(messageId)
+    }
+
     fun start(message: MessageEntry) {
         val c = controller
         if (c == null) {
@@ -104,6 +117,12 @@ object MediaDownloadManager {
      */
     interface Controller {
         fun start(message: MessageEntry)
+
+        /**
+         * 确保缩略图已在本地。与 [start] 的区别：这个只取缩略图，不下原图——
+         * 滚动时自动触发的必须是前者，把每张原图都拉下来是另一回事。
+         */
+        fun ensureThumbnail(messageId: ULong)
         fun pause(messageId: ULong)
         fun resume(messageId: ULong)
         fun cancel(messageId: ULong)

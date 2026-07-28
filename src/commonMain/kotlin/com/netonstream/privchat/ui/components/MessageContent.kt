@@ -560,6 +560,16 @@ private fun ImageContent(
     val thumbModel = message.localThumbnailPath?.let { "file://$it" }
         ?: message.localMediaPath?.let { "file://$it" }
 
+    // 「滚到哪儿就加载哪儿」：LazyColumn 里这个 composable 只有进入可视区（含预取）
+    // 才会组合，所以这里就是「可见」的时机。缩略图的自动下载原本只挂在消息入站
+    // 路径上，历史翻页拉回来的从来不触发——表现就是历史图片要点一下才出来。
+    // ensure 语义：已经有了 / 协议层确无缩略图，SDK 侧直接返回。
+    if (thumbModel.isNullOrBlank()) {
+        LaunchedEffect(message.id) {
+            MediaDownloadManager.ensureThumbnail(message.id)
+        }
+    }
+
     // UX-2：图片气泡点击预览 + 长按弹菜单。二合一 detectTapGestures 避免与外层长按冲突。
     val menuTrigger = LocalMessageMenuTrigger.current
     val gestureMod = if (onImagePreview != null || menuTrigger != null) {

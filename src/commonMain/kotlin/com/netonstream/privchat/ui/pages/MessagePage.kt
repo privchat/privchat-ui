@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.pages
 
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.ConnectionState
 import com.netonstream.privchat.sdk.SdkError
@@ -439,7 +440,11 @@ fun MessagePage(
     // BOT_INTERACTION_SPEC §3.1：私聊对端 user_type ∈ {1=System, 2=Bot} 时显示菜单入口。
     // peerUserType 异步解析（getUserProfileLocalFirst → 本地优先，未知再拉服务端）。
     var peerUserType by remember(channel.channelId) { mutableStateOf<Short?>(null) }
-    var initialPositioned by remember(channel.channelId) { mutableStateOf(false) }
+    // 从预览页返回时页面会重新组合，这里不能一律从「未定位」开始——否则又会滚到底部，
+    // 把用户翻了几十页的位置冲掉。有记忆就直接认为已定位，由下面的恢复效果落位。
+    val restoredPosition = remember(channel.channelId) { ChatScrollMemory.restore(channel.channelId) }
+    var scrollRestored by remember(channel.channelId) { mutableStateOf(false) }
+    var initialPositioned by remember(channel.channelId) { mutableStateOf(restoredPosition != null) }
     // spec §5：跳转模式下抑制"初始滚到底部"，直到 focus 定位完成或降级——否则
     // around 回灌 messages 触发的初始滚底会把 anchor 定位冲掉（消息多的会话尤其明显）。
     var jumpPending by remember(channel.channelId) { mutableStateOf(initialFocusMessageId != null) }
@@ -744,6 +749,27 @@ fun MessagePage(
             unreadDividerAnchorId = sortedMessages[firstUnreadIndex].id
         }
         unreadDividerAnchorResolved = true
+    }
+
+    // 有记忆就回到原处（从图片预览返回、切走再回来）。
+    LaunchedEffect(channel.channelId, sortedMessages.size) {
+        val target = restoredPosition ?: return@LaunchedEffect
+        if (sortedMessages.isEmpty()) return@LaunchedEffect
+        if (scrollRestored) return@LaunchedEffect
+        scrollRestored = true
+        // index 可能因为期间加载了更多历史而越界，夹一下比跳到底部好。
+        listState.scrollToItem(target.index.coerceIn(0, sortedMessages.size - 1), target.offset)
+    }
+
+    // 持续记录当前位置：用户滚到哪儿，记到哪儿。
+    LaunchedEffect(channel.channelId) {
+        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+            .collect { (index, offset) ->
+                // 还没完成首次定位时不要记：那时的 (0,0) 是初始值，不是用户的位置。
+                if (initialPositioned) {
+                    ChatScrollMemory.remember(channel.channelId, index, offset)
+                }
+            }
     }
 
     // 首次进入直接定位到底部，并在定位完成前隐藏列表，避免看到"从上滚到下"。
