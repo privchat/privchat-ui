@@ -1018,21 +1018,43 @@ fun MessagePage(
                         var loadingOlder by remember(channel.channelId) { mutableStateOf(false) }
                         var reachedBeginning by remember(channel.channelId) { mutableStateOf(false) }
                         if (onLoadOlder != null) {
-                            LaunchedEffect(firstVisibleIdx, sortedMessages.size, reachedBeginning) {
-                                if (firstVisibleIdx <= 1 && !loadingOlder && !reachedBeginning &&
-                                    sortedMessages.isNotEmpty() && hasInitialLoadCompleted
-                                ) {
-                                    val oldest = sortedMessages.firstOrNull { it.serverMessageId != null }
-                                        ?.serverMessageId
-                                    if (oldest != null) {
+                            // ⚠️ 这个 effect **只能**按 channel 存活，绝不能把滚动位置或列表长度
+                            // 当 key。
+                            //
+                            // 之前的写法是 `LaunchedEffect(firstVisibleIdx, sortedMessages.size,
+                            // reachedBeginning)`：触界发起加载后，用户手指还在滑，`firstVisibleIdx`
+                            // 立刻从 1 变成 0 —— effect 因 key 变化被取消，正挂起的 onLoadOlder 一起
+                            // 被取消，末尾的 `loadingOlder = false` 再也执行不到。于是标志位永久卡在
+                            // true，该会话的翻页彻底死掉：服务端一直回 hasMore=true，用户却再也拉不到
+                            // 更早的消息。实测日志：`idx=1 loading=false` 紧接 `idx=0 loading=true`，
+                            // 而 SDK 侧一行都没打——调用在挂起点被取消了。
+                            //
+                            // 用 snapshotFlow 观察位置：effect 本身不随滚动重启，加载得以跑完。
+                            val messagesState = rememberUpdatedState(sortedMessages)
+                            val initDoneState = rememberUpdatedState(hasInitialLoadCompleted)
+                            LaunchedEffect(channel.channelId, onLoadOlder) {
+                                snapshotFlow { listState.firstVisibleItemIndex }
+                                    .collect { idx ->
+                                        val rows = messagesState.value
+                                        if (idx > 1 || loadingOlder || reachedBeginning ||
+                                            rows.isEmpty() || !initDoneState.value
+                                        ) return@collect
+                                        val oldest = rows.firstOrNull { it.serverMessageId != null }
+                                            ?.serverMessageId ?: return@collect
                                         loadingOlder = true
-                                        onLoadOlder.invoke(channel.channelId, channel.channelType, oldest)
-                                            .onSuccess { (count, hasMore) ->
+                                        try {
+                                            onLoadOlder.invoke(
+                                                channel.channelId,
+                                                channel.channelType,
+                                                oldest,
+                                            ).onSuccess { (count, hasMore) ->
                                                 if (!hasMore || count == 0) reachedBeginning = true
                                             }
-                                        loadingOlder = false
+                                        } finally {
+                                            // 即使这一轮被取消也必须复位，否则一次取消就让翻页永久失效。
+                                            loadingOlder = false
+                                        }
                                     }
-                                }
                             }
                         }
 
