@@ -1074,7 +1074,7 @@ fun MessagePage(
                                 val senderDisplayName = if (!channel.isDm && !isSelf) {
                                     resolveGroupMessageSenderName(
                                         message.fromUid,
-                                        groupMembersForChannel,
+                                        channel.channelId,
                                     )
                                 } else {
                                     channel.displayName.ifBlank { message.fromUid.toString() }
@@ -1132,11 +1132,12 @@ fun MessagePage(
                                         when {
                                             uid == currentUserId -> "我"
                                             channel.isDm -> channel.displayName.ifBlank { uid.toString() }
-                                            else -> groupMembersForChannel
-                                                .firstOrNull { it.userId == uid }
-                                                ?.let { it.remark.ifBlank { it.name } }
-                                                ?.takeIf { it.isNotBlank() }
-                                                ?: uid.toString()
+                                            // 走全局唯一入口（IDENTITY_STORE_SPEC §5.2：
+                                            // remark > nickname > username > uid）。
+                                            // 这里曾经只查 groupMembersForChannel，发言人不在
+                                            // 已加载的成员列表里就直接显示 uid——而 user 实体
+                                            // 同步维护的那张表里其实有他的名字，只是没人去读。
+                                            else -> PrivChat.displayNameOf(uid, channel.channelId)
                                         }
                                     },
                                     onReplyClick = { target ->
@@ -1540,14 +1541,22 @@ fun MessagePage(
     }
 }
 
+/**
+ * 群消息气泡上方的发送者名字。
+ *
+ * 委托给 [PrivChat.displayNameOf]——显示名的唯一入口
+ * (IDENTITY_STORE_SPEC §5.2: remark > nickname > username > uid)。
+ *
+ * 原实现只在传进来的 [members] 里找,找不到就直接 `userId.toString()`。
+ * 那份列表是「**已加载的**群成员」,不是「群成员」:589 人的群成员列表是分页的、
+ * 且在 2026-07-30 之后由后台任务慢慢拉,于是绝大多数发言人都不在里面,
+ * 屏幕上就是一片 uid。而这些人的昵称其实早就在本地 user 表里——
+ * `user` 实体同步覆盖「好友 ∪ 所有频道成员」——只是这里从来没去查过。
+ */
 internal fun resolveGroupMessageSenderName(
     userId: ULong,
-    members: List<GroupMemberEntry>,
-): String = members
-    .firstOrNull { it.userId == userId }
-    ?.let { it.remark.ifBlank { it.name } }
-    ?.takeIf { it.isNotBlank() }
-    ?: userId.toString()
+    channelId: ULong,
+): String = PrivChat.displayNameOf(userId, channelId)
 
 /**
  * 群置顶消息条：展示最新一条置顶消息预览（不做跳转）。

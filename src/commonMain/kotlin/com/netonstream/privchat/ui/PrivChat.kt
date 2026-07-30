@@ -5,6 +5,7 @@ import com.netonstream.privchat.sdk.ConnectionState
 import com.netonstream.privchat.sdk.dto.*
 import com.netonstream.privchat.ui.models.ChannelLocalState
 import com.netonstream.privchat.ui.models.UIState
+import com.netonstream.privchat.ui.models.UserProfileSnapshot
 import com.netonstream.privchat.ui.platform.DraftStore
 import com.netonstream.privchat.ui.platform.PersistedDraft
 import com.netonstream.privchat.ui.common.base.currentTimeMillis
@@ -188,6 +189,56 @@ object PrivChat {
     /** 当前群的成员列表 */
     val groupMembers: StateFlow<List<GroupMemberEntry>> = _groupMembers.asStateFlow()
 
+    /**
+     * 已知用户档案(uid → 昵称/username/头像),由 SDK 本地 user 表投影而来。
+     *
+     * 这张表由 `user` 实体增量同步维护,覆盖「当前账号所有会话的全部成员」——
+     * 服务端 `entity/sync_entities("user")` 的 related_user_ids 就是
+     * 好友 ∪ 所有频道成员。它是显示名的**权威本地来源**,群成员列表只是它的一个补充
+     * (提供群名片 remark)。
+     */
+    private val _knownUsers = MutableStateFlow<Map<ULong, UserProfileSnapshot>>(emptyMap())
+    val knownUsers: StateFlow<Map<ULong, UserProfileSnapshot>> = _knownUsers.asStateFlow()
+
+    fun updateKnownUsers(users: Map<ULong, UserProfileSnapshot>) {
+        if (users.isEmpty()) return
+        // 合并而非替换:资料是逐步到齐的,一次局部刷新不该把已知的人清掉。
+        _knownUsers.value = _knownUsers.value + users
+    }
+
+    /** 切换账号 / 登出时清空——身份表是 per-account 的,不能跨账号残留。 */
+    fun resetKnownUsers() {
+        _knownUsers.value = emptyMap()
+    }
+
+    /**
+     * **显示名的唯一入口**(CLIENT_GLOBAL_STATE_AND_IDENTITY_STORE_SPEC §5.2):
+     *
+     * ```
+     * 群名片 remark > 昵称 nickname > username > uid
+     * ```
+     *
+     * spec 原文:「群成员昵称链、会话列表标题、联系人名统一走这一条,**禁止各页面自拼**」。
+     * 此前聊天页自己拼了一条 `remark > name > uid`——既跳过 username,也从不读 user 表,
+     * 于是只要发言人不在**已加载的**群成员列表里就直接显示一串数字。589 人的群里,
+     * 那是大多数人。
+     *
+     * uid 只是最后兜底([[feedback_uid_never_shown_as_name]]),不是正常展示形态。
+     */
+    fun displayNameOf(userId: ULong, channelId: ULong? = null): String {
+        val member = if (channelId == null) null else {
+            _groupMembers.value.firstOrNull { it.userId == userId && it.channelId == channelId }
+        }
+        member?.remark?.takeIf { it.isNotBlank() }?.let { return it }
+        member?.name?.takeIf { it.isNotBlank() }?.let { return it }
+
+        val profile = _knownUsers.value[userId]
+        profile?.nickname?.takeIf { it.isNotBlank() }?.let { return it }
+        profile?.username?.takeIf { it.isNotBlank() }?.let { return it }
+
+        return userId.toString()
+    }
+
     // ========== 对端已读水位（per-channel） ==========
 
     private val _peerReadPtsByChannel = MutableStateFlow<Map<ULong, ULong>>(emptyMap())
@@ -321,6 +372,7 @@ object PrivChat {
         _sentFriendRequests.value = emptyList()
         _groups.value = emptyList()
         _groupMembers.value = emptyList()
+        _knownUsers.value = emptyMap() // 身份表 per-account，切号必须清，否则名字串号
         com.netonstream.privchat.ui.state.GroupStore.clear() // P6-1：切号/登出清群成员，防串号
         com.netonstream.privchat.ui.state.GroupApprovalStore.clear() // P6-3：清群审批，防串号
         _presences.value = emptyMap()
