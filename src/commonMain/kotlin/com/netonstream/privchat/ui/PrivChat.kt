@@ -5,6 +5,7 @@ import com.netonstream.privchat.sdk.ConnectionState
 import com.netonstream.privchat.sdk.dto.*
 import com.netonstream.privchat.ui.models.ChannelLocalState
 import com.netonstream.privchat.ui.models.UIState
+import com.netonstream.privchat.ui.models.UserDisplay
 import com.netonstream.privchat.ui.models.UserProfileSnapshot
 import com.netonstream.privchat.ui.platform.DraftStore
 import com.netonstream.privchat.ui.platform.PersistedDraft
@@ -13,6 +14,7 @@ import com.netonstream.privchat.ui.common.base.systemDefaultTimeZoneId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 /**
  * PrivChat UI 入口
@@ -203,7 +205,9 @@ object PrivChat {
     fun updateKnownUsers(users: Map<ULong, UserProfileSnapshot>) {
         if (users.isEmpty()) return
         // 合并而非替换:资料是逐步到齐的,一次局部刷新不该把已知的人清掉。
-        _knownUsers.value = _knownUsers.value + users
+        // `update` 而非读-改-写:两个 hydration 协程可能同时完成,
+        // `value = value + users` 会让后写的那个覆盖掉先写的那批人。
+        _knownUsers.update { it + users }
     }
 
     /** 切换账号 / 登出时清空——身份表是 per-account 的,不能跨账号残留。 */
@@ -212,31 +216,37 @@ object PrivChat {
     }
 
     /**
-     * **显示名的唯一入口**(CLIENT_GLOBAL_STATE_AND_IDENTITY_STORE_SPEC §5.2):
+     * 按 userId **取齐身份数据**,再交给规则入口 [UserDisplay.of] 算展示名。
      *
-     * ```
-     * 群名片 remark > 昵称 nickname > username > uid
-     * ```
+     * 职责分工:这里只负责「从哪儿取 remark / nickname / username / userType」,
+     * **展示名规则本身不在这里** —— 那是 [UserDisplay] 的事(它还处理系统用户本地化,
+     * 那条规则很容易在重写时漏掉,我第一版就漏了)。规则只能有一份实现,
+     * 再写一个"唯一入口"就等于没有唯一入口。
      *
-     * spec 原文:「群成员昵称链、会话列表标题、联系人名统一走这一条,**禁止各页面自拼**」。
-     * 此前聊天页自己拼了一条 `remark > name > uid`——既跳过 username,也从不读 user 表,
-     * 于是只要发言人不在**已加载的**群成员列表里就直接显示一串数字。589 人的群里,
-     * 那是大多数人。
+     * 数据来源两处,缺一不可:
+     * - **群成员**(`_groupMembers`)提供群名片 remark 与群内昵称,per-channel;
+     * - **本地 user 表投影**([knownUsers])提供 nickname / username / userType。
      *
-     * uid 只是最后兜底([[feedback_uid_never_shown_as_name]]),不是正常展示形态。
+     * 聊天页此前只看第一处,发言人不在**已加载的**成员列表里就直接 `uid.toString()`。
+     * 群成员列表是分页拉的,589 人的群里大多数人都不在,而他们的昵称其实一直躺在
+     * 第二处 —— 只是没有任何代码去读。
+     *
+     * ⚠️ **调用方必须先 collect [knownUsers]**(以及需要 remark 时 collect
+     * [groupMembers]),否则资料异步到达后 Compose 不会重组,界面会一直停在 uid。
+     * 这个函数读的是快照,它自己不能让谁重组。
      */
     fun displayNameOf(userId: ULong, channelId: ULong? = null): String {
         val member = if (channelId == null) null else {
             _groupMembers.value.firstOrNull { it.userId == userId && it.channelId == channelId }
         }
-        member?.remark?.takeIf { it.isNotBlank() }?.let { return it }
-        member?.name?.takeIf { it.isNotBlank() }?.let { return it }
-
         val profile = _knownUsers.value[userId]
-        profile?.nickname?.takeIf { it.isNotBlank() }?.let { return it }
-        profile?.username?.takeIf { it.isNotBlank() }?.let { return it }
-
-        return userId.toString()
+        return UserDisplay.of(
+            username = profile?.username,
+            nickname = profile?.nickname?.takeIf { it.isNotBlank() } ?: member?.name,
+            remark = member?.remark,
+            userId = userId.toLong(),
+            userType = profile?.userType,
+        )
     }
 
     // ========== 对端已读水位（per-channel） ==========

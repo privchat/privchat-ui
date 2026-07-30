@@ -484,6 +484,15 @@ fun MessagePage(
     val groupMembersForChannel = remember(allGroupMembers, channel.channelId) {
         if (channel.isDm) emptyList() else allGroupMembers.filter { it.channelId == channel.channelId }
     }
+    // ⚠️ 必须 collect，不能只在 senderLabelOf 里读 `.value`。
+    //
+    // 真实时序是：消息先发布 → 用 uid 渲染出来 → 后台异步从本地 user 表查资料 →
+    // 更新 knownUsers。如果没有订阅者，最后一步不会触发重组，屏幕就**永远停在 uid**，
+    // 而单元测试因为总是先写 knownUsers 再断言，完全抓不到这个顺序。
+    //
+    // 读一下它就够了（Compose 靠读取建立依赖）——displayNameOf 内部拿的是快照，
+    // 它自己没法让谁重组。
+    val knownUsers by PrivChat.knownUsers.collectAsState()
     // 群消息置顶：仅群主/管理员可操作（canPin），所有成员可见置顶条。
     // 当前用户在该群的角色（role: 2=群主 1=管理员 0=成员）。
     val canPinMessages = remember(groupMembersForChannel, currentUserId, channel.isDm) {
@@ -1075,6 +1084,8 @@ fun MessagePage(
                                     resolveGroupMessageSenderName(
                                         message.fromUid,
                                         channel.channelId,
+                                        allGroupMembers,
+                                        knownUsers,
                                     )
                                 } else {
                                     channel.displayName.ifBlank { message.fromUid.toString() }
@@ -1137,7 +1148,12 @@ fun MessagePage(
                                             // 这里曾经只查 groupMembersForChannel，发言人不在
                                             // 已加载的成员列表里就直接显示 uid——而 user 实体
                                             // 同步维护的那张表里其实有他的名字，只是没人去读。
-                                            else -> PrivChat.displayNameOf(uid, channel.channelId)
+                                            else -> resolveGroupMessageSenderName(
+                                                uid,
+                                                channel.channelId,
+                                                allGroupMembers,
+                                                knownUsers,
+                                            )
                                         }
                                     },
                                     onReplyClick = { target ->
@@ -1544,19 +1560,36 @@ fun MessagePage(
 /**
  * 群消息气泡上方的发送者名字。
  *
- * 委托给 [PrivChat.displayNameOf]——显示名的唯一入口
- * (IDENTITY_STORE_SPEC §5.2: remark > nickname > username > uid)。
+ * 展示名**规则**不在这里,统一由 [UserDisplay.of] 实现
+ * (IDENTITY_STORE_SPEC §5.2: 系统用户本地化 / remark > nickname > username > uid)。
+ * 这个函数只负责「从两处快照里把身份数据取齐」。
  *
- * 原实现只在传进来的 [members] 里找,找不到就直接 `userId.toString()`。
- * 那份列表是「**已加载的**群成员」,不是「群成员」:589 人的群成员列表是分页的、
- * 且在 2026-07-30 之后由后台任务慢慢拉,于是绝大多数发言人都不在里面,
- * 屏幕上就是一片 uid。而这些人的昵称其实早就在本地 user 表里——
- * `user` 实体同步覆盖「好友 ∪ 所有频道成员」——只是这里从来没去查过。
+ * 原实现只在 [members] 里找,找不到就直接 `userId.toString()`。那份列表是
+ * 「**已加载的**群成员」,不是「群成员」:群成员是分页拉的,589 人的群里绝大多数
+ * 发言人都不在里面,屏幕上就是一片 uid。而他们的昵称其实一直躺在本地 user 表
+ * ([users])里 —— 只是没有任何代码去读。
+ *
+ * **两个快照都由调用方传入,不在函数里读全局。** 这样 Compose 才能真正建立依赖:
+ * 资料是异步到齐的(消息先渲染成 uid,随后 user 表查询返回),如果这里偷偷读
+ * `PrivChat.knownUsers.value`,更新到来时不会触发重组,界面就永远停在 uid ——
+ * 而单测因为总是先写状态再断言,恰恰抓不到这个时序。
  */
 internal fun resolveGroupMessageSenderName(
     userId: ULong,
     channelId: ULong,
-): String = PrivChat.displayNameOf(userId, channelId)
+    members: List<GroupMemberEntry>,
+    users: Map<ULong, UserProfileSnapshot>,
+): String {
+    val member = members.firstOrNull { it.userId == userId && it.channelId == channelId }
+    val profile = users[userId]
+    return UserDisplay.of(
+        username = profile?.username,
+        nickname = profile?.nickname?.takeIf { it.isNotBlank() } ?: member?.name,
+        remark = member?.remark,
+        userId = userId.toLong(),
+        userType = profile?.userType,
+    )
+}
 
 /**
  * 群置顶消息条：展示最新一条置顶消息预览（不做跳转）。
