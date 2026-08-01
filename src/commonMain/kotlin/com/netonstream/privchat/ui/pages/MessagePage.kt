@@ -591,20 +591,27 @@ fun MessagePage(
             } else {
                 jumpPending = false // anchor 不可见，降级常规窗口 → 恢复初始滚底
                 onError?.invoke(strings.globalSearchAnchorMissing)
-                val result = onLoadMessages?.invoke(channel.channelId, channel.channelType)
+                // 同上：降级回常规窗口时也要走 openConversation，否则锚点不可见的会话
+                // 会退回纯本地读，本地为空就又是「暂无聊天内容」。
+                val list = onLoadMessages?.invoke(channel.channelId, channel.channelType)?.getOrNull()
                     ?: withContext(Dispatchers.Default) {
-                        PrivChat.client.getMessagesByType(channel.channelId, channel.channelType, 50u, null)
+                        PrivChat.client.openConversation(channel.channelId, channel.channelType, 50u)
+                            .getOrNull()?.messages
                     }
-                result.onSuccess { list -> PrivChat.updateMessages(channel.channelId, list) }
+                if (list != null) PrivChat.updateMessages(channel.channelId, list)
             }
         } else {
-            val result = onLoadMessages?.invoke(channel.channelId, channel.channelType)
+            // SDK-HISTORY-7：打开会话走 openConversation，不是纯本地读。
+            //
+            // 纯本地读时，本地没有这个会话的消息就永远显示「暂无聊天内容」——而上滑翻页
+            // 救不了它：翻页要有一个已存在的锚点往前翻，一条都没有时连起点都没有。
+            // openConversation 在本地为空时补一次最新窗口，本地有内容则直接返回不打网络。
+            val list = onLoadMessages?.invoke(channel.channelId, channel.channelType)?.getOrNull()
                 ?: withContext(Dispatchers.Default) {
-                    PrivChat.client.getMessagesByType(channel.channelId, channel.channelType, 50u, null)
+                    PrivChat.client.openConversation(channel.channelId, channel.channelType, 50u)
+                        .getOrNull()?.messages
                 }
-            result.onSuccess { list ->
-                PrivChat.updateMessages(channel.channelId, list)
-            }
+            if (list != null) PrivChat.updateMessages(channel.channelId, list)
         }
         // 加载对端已读水位（cold start）
         runCatching {
