@@ -33,6 +33,14 @@ object MediaDownloadManager {
 
     fun setController(impl: Controller?) {
         controller = impl
+        if (impl == null) {
+            resetSessionState()
+        }
+    }
+
+    /** Clear message-id keyed state when the SDK switches account in place. */
+    fun resetSessionState() {
+        _states.value = emptyMap()
     }
 
     fun stateFor(messageId: ULong): MediaDownloadState =
@@ -66,16 +74,8 @@ object MediaDownloadManager {
         _states.value = _states.value + (messageId to next)
     }
 
-    /**
-     * 气泡进入可视区时调用：没有缩略图就去取。
-     *
-     * 进程内去重——LazyColumn 会因为回收/重组反复触发同一条，每次都发请求等于拿
-     * 用户流量换同一个答案。
-     */
-    private val thumbnailRequested = mutableSetOf<ULong>()
-
+    /** 气泡进入可视区时调用；账号/世代级 singleflight 由 SDK DownloadManager 负责。 */
     fun ensureThumbnail(messageId: ULong) {
-        if (!thumbnailRequested.add(messageId)) return
         controller?.ensureThumbnail(messageId)
     }
 
