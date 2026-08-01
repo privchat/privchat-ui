@@ -18,8 +18,8 @@ import com.netonstream.privchat.ui.models.SystemUser
  * - 系统账号（user_type==1）绝不进入九宫格、成员数、成员列表（GPT 红线）。
  *
  * 写入两条路径：
- * 1. App `loadGroupMembers` 拉取+hydrate+过滤后 `setMembers`（打开成员页/主动刷新）；
- * 2. `ensureMembers` 惰性加载（会话列表里未打开过的群，九宫格需要）——自带 user_type 批量解析+过滤。
+ * 1. App `loadGroupMembers` 拉取 canonical 投影并过滤后 `setMembers`（成员页/主动刷新）；
+ * 2. `ensureMembers` 惰性加载（会话列表里未打开过的群，九宫格需要）。
  *
  * 放在 ui 层（与 PrivChat/ConversationPage/GroupCollageAvatar 同层）：truth 在 ui，
  * app 层只写不另存，避免双真源（对齐 presence 既有模式）。
@@ -54,40 +54,19 @@ object GroupStore {
         if (membersByChannel.containsKey(channelId) || !inFlight.add(channelId)) return
         try {
             var raw = PrivChat.client.getGroupMembers(channelId, null, null).getOrNull().orEmpty()
-            // 本地为空（新登录未同步）或 entity sync 只写了 uid 没带昵称（displayName 退化成纯数字 uid）→ sync 补全
-            if (raw.isEmpty() || raw.any { it.name.toULongOrNull() == it.userId }) {
+            // 本地为空或 canonical displayName 只能退化为 uid 时，同步一次 roster 后重读。
+            if (raw.isEmpty() || raw.any { it.displayName.toULongOrNull() == it.userId }) {
                 PrivChat.client.syncGroupMembers(channelId)
                 raw = PrivChat.client.getGroupMembers(channelId, null, null).getOrNull().orEmpty()
             }
             if (raw.isNotEmpty()) {
-                membersByChannel[channelId] = filterSystemUsers(raw)
+                membersByChannel[channelId] = raw.filterNot { SystemUser.isSystemType(it.userType) }
             }
         } catch (_: Throwable) {
             // 失败静默：inFlight 已释放，下次进入会话列表重试
         } finally {
             inFlight.remove(channelId)
         }
-    }
-
-    /**
-     * 批量解析 user_type 剔除系统账号（user_type==1），并顺带从本地 user 表富化头像。
-     * 群成员 roster（StoredGroupMember）不带 avatar 字段，真实头像 URL/本地路径在
-     * user 表——不富化则九宫格永远拿不到成员头像 URL、退化成字母。
-     * user_type 未知（未解析出 profile）→ 保留，不误伤普通成员。
-     */
-    private suspend fun filterSystemUsers(members: List<GroupMemberEntry>): List<GroupMemberEntry> {
-        val profiles = runCatching { PrivChat.client.listUsersByIds(members.map { it.userId }) }
-            .getOrNull()?.getOrNull()
-            ?.associateBy { it.userId }
-            .orEmpty()
-        return members
-            .filterNot { SystemUser.isSystemType(profiles[it.userId]?.userType?.toInt()) }
-            .map { m ->
-                // avatarUrl 已是 local-first（file://<local> 优先，未缓存回落网络 URL）；
-                // 九宫格据此直接命中真实头像文件或触发补下载。roster 自带 avatar 为空才覆盖。
-                val hydrated = profiles[m.userId]?.avatarUrl
-                if (m.avatar.isBlank() && !hydrated.isNullOrBlank()) m.copy(avatar = hydrated) else m
-            }
     }
 
     /** 登出/切号清空，防串号。 */

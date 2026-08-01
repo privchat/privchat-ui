@@ -216,34 +216,20 @@ object PrivChat {
     }
 
     /**
-     * 按 userId **取齐身份数据**,再交给规则入口 [UserDisplay.of] 算展示名。
+     * 群内直接消费 SDK 的 canonical [GroupMemberEntry.displayName]。成员投影尚未到达时，
+     * 才以本地 user 投影兼容兜底；UI 不再复制群内 alias/nickname 优先级。
      *
-     * 职责分工:这里只负责「从哪儿取 remark / nickname / username / userType」,
-     * **展示名规则本身不在这里** —— 那是 [UserDisplay] 的事(它还处理系统用户本地化,
-     * 那条规则很容易在重写时漏掉,我第一版就漏了)。规则只能有一份实现,
-     * 再写一个"唯一入口"就等于没有唯一入口。
-     *
-     * 数据来源两处,缺一不可:
-     * - **群成员**(`_groupMembers`)提供群名片 remark 与群内昵称,per-channel;
-     * - **本地 user 表投影**([knownUsers])提供 nickname / username / userType。
-     *
-     * 聊天页此前只看第一处,发言人不在**已加载的**成员列表里就直接 `uid.toString()`。
-     * 群成员列表是分页拉的,589 人的群里大多数人都不在,而他们的昵称其实一直躺在
-     * 第二处 —— 只是没有任何代码去读。
-     *
-     * ⚠️ **调用方必须先 collect [knownUsers]**(以及需要 remark 时 collect
-     * [groupMembers]),否则资料异步到达后 Compose 不会重组,界面会一直停在 uid。
-     * 这个函数读的是快照,它自己不能让谁重组。
+     * 调用方仍须 collect [knownUsers] 和 [groupMembers]，否则异步资料到达不会触发重组。
      */
     fun displayNameOf(userId: ULong, channelId: ULong? = null): String {
         val member = if (channelId == null) null else {
             _groupMembers.value.firstOrNull { it.userId == userId && it.channelId == channelId }
         }
+        member?.displayName?.takeIf { it.isNotBlank() }?.let { return it }
         val profile = _knownUsers.value[userId]
         return UserDisplay.of(
-            username = profile?.username,
-            nickname = profile?.nickname?.takeIf { it.isNotBlank() } ?: member?.name,
-            remark = member?.remark,
+            username = profile?.username?.takeUnless { it == userId.toString() },
+            nickname = profile?.nickname,
             userId = userId.toLong(),
             userType = profile?.userType,
         )

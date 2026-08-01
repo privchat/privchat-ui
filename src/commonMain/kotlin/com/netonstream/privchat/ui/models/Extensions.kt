@@ -160,15 +160,6 @@ val GroupMemberEntry.isAdmin: Boolean
 val GroupMemberEntry.isMember: Boolean
     get() = role == 0
 
-/** 显示名称（统一走 [UserDisplay.of]：备注 > name(昵称) > uid）。 */
-val GroupMemberEntry.displayName: String
-    get() = UserDisplay.of(
-        username = null,
-        nickname = name,
-        remark = remark,
-        userId = userId.toLong(),
-    )
-
 /** 角色名称 */
 val GroupMemberEntry.roleName: String
     get() = when (role) {

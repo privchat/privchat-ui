@@ -1278,7 +1278,7 @@ fun MessagePage(
                 MentionPicker(
                     members = filteredMembers,
                     onPick = { member ->
-                        val displayName = member.remark.ifBlank { member.name }
+                        val displayName = member.displayName
                         val ins = replaceMentionQuery(inputText, displayName, member.userId)
                         inputText = ins.text
                         mentionSpans.add(ins.span)
@@ -1567,9 +1567,8 @@ fun MessagePage(
 /**
  * 群消息气泡上方的发送者名字。
  *
- * 展示名**规则**不在这里,统一由 [UserDisplay.of] 实现
- * (IDENTITY_STORE_SPEC §5.2: 系统用户本地化 / remark > nickname > username > uid)。
- * 这个函数只负责「从两处快照里把身份数据取齐」。
+ * 成员存在时直接消费 SDK 的 canonical [GroupMemberEntry.displayName]。只有旧缓存或同步尚未
+ * 给出成员投影时，才使用 user 投影兼容兜底；这里不再复制群内 alias/nickname 规则。
  *
  * 原实现只在 [members] 里找,找不到就直接 `userId.toString()`。那份列表是
  * 「**已加载的**群成员」,不是「群成员」:群成员是分页拉的,589 人的群里绝大多数
@@ -1588,11 +1587,11 @@ internal fun resolveGroupMessageSenderName(
     users: Map<ULong, UserProfileSnapshot>,
 ): String {
     val member = members.firstOrNull { it.userId == userId && it.channelId == channelId }
+    member?.displayName?.takeIf { it.isNotBlank() }?.let { return it }
     val profile = users[userId]
     return UserDisplay.of(
-        username = profile?.username,
-        nickname = profile?.nickname?.takeIf { it.isNotBlank() } ?: member?.name,
-        remark = member?.remark,
+        username = profile?.username?.takeUnless { it == userId.toString() },
+        nickname = profile?.nickname,
         userId = userId.toLong(),
         userType = profile?.userType,
     )
@@ -3555,10 +3554,10 @@ private fun resolveMentionEdit(
     return output to survivors
 }
 
-/** 在备注/昵称上做前缀匹配（忽略大小写）。*/
+/** 在 SDK canonical display name 上做前缀匹配（忽略大小写）。 */
 private fun matchMemberQuery(member: GroupMemberEntry, query: String): Boolean {
     val q = query.lowercase()
-    return member.name.lowercase().contains(q) || member.remark.lowercase().contains(q)
+    return member.displayName.lowercase().contains(q)
 }
 
 /**
@@ -3582,7 +3581,7 @@ private fun MentionPicker(
         ScrollView(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 members.forEach { member ->
-                    val displayName = member.remark.ifBlank { member.name }
+                    val displayName = member.displayName
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

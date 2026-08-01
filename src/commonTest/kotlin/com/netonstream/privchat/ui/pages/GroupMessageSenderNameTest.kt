@@ -37,6 +37,7 @@ class GroupMessageSenderNameTest {
         role = 0,
         status = 1,
         inviteUserId = 0u,
+        displayName = remark.ifBlank { name },
     )
 
     private fun profile(
@@ -67,6 +68,23 @@ class GroupMessageSenderNameTest {
         assertEquals(
             "用户昵称",
             resolveGroupMessageSenderName(42u, channelId, listOf(member(42u, "用户昵称")), emptyMap()),
+        )
+    }
+
+    @Test
+    fun canonicalMemberDisplayCannotBeOverriddenByUiFallbackFields() {
+        val member = member(42u, "旧昵称").copy(
+            remark = "旧备注",
+            displayName = "SDK 权威名称",
+        )
+        assertEquals(
+            "SDK 权威名称",
+            resolveGroupMessageSenderName(
+                42u,
+                channelId,
+                listOf(member),
+                mapOf(42uL to profile(42u, nickname = "过期 user 投影")),
+            ),
         )
     }
 
