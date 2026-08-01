@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.runtime
 
+import com.netonstream.privchat.sdk.SessionPhase
 import com.netonstream.privchat.ui.common.base.currentTimeMillis
 import com.netonstream.privchat.ui.i18n.PrivChatStrings
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -135,58 +136,77 @@ object ClientRuntime {
     private var hadSession = false
 
     /**
-     * 当前账号世代。[reset]（登出/切号）时自增；对账快照必须带上自己被采样时的世代，
-     * 世代对不上就整条丢弃。
+     * 上一份被接受的会话快照身份（账号 uid + 会话世代），由 SDK 权威给出。
      *
-     * 不带世代的对账在切号时是有害的：旧账号的 1.5s 采样可能在新账号已经登录之后才
-     * 到达，把新账号的连接态覆盖成旧账号的——那正是「切号后横幅乱跳」的来源。
+     * 为什么不能由本层自己发号：本层看不到「同一个 client 原地切号」，也看不到
+     * 「同一账号被强制登出后重新登录」——后者 uid 一模一样，但那是新会话。世代必须
+     * 来自 Rust actor，它是唯一知道会话何时真正重建的地方。
      */
-    private var sessionGeneration: Long = 0
-    fun currentSessionGeneration(): Long = sessionGeneration
+    private var lastAccountUid: String? = null
+    private var lastSessionEpoch: Long = -1L
 
     /**
-     * 用 SDK 的**精确**会话阶段对账（[com.netonstream.privchat.sdk.SessionPhase] 的字符串形式，
-     * 由 app 层每 1.5s 的既有监控喂入，不新增定时器）。
+     * 用 SDK 的权威会话快照对账连接状态。
      *
      * 存在的理由：`reconnecting` 原本只由 `connection_state_changed → authenticated`
      * 这个**边沿**清除。连接若在宿主监听建立之前就恢复、或恢复期间根本没产生状态跃迁，
      * 那个边沿就永远不会再来——横幅一旦亮起就再也熄不掉，而 SDK 其实在正常收发。
      * 边沿是通知，状态才是事实；这里让事实兜底。
      *
-     * **只有 `authenticated` 能清 `reconnecting`。** `connected` / `loggedin` 都可能跑在
-     * 服务端尚未授权的通道上，据此撤横幅等于谎报就绪。
+     * 三条规则：
+     *  1. **只有 [SessionPhase.Authenticated] 能清 `reconnecting`。** Connected /
+     *     LoggedIn 都可能跑在服务端尚未授权的通道上，据此撤横幅等于谎报就绪。
+     *  2. **陈旧快照丢弃。** 世代比已接受的小 = 上一次会话在途的采样，不许覆盖当前会话。
+     *  3. **终态 sticky。** 强制登出写下的 [ClientRuntimeError.AuthExpired] 只能被
+     *     **新会话世代**清除。晚到的 Authenticated 快照属于旧会话，绝不能把它抹掉——
+     *     否则用户会看到「已被踢下线」闪一下就变回正常，然后所有请求全是 401。
      */
-    fun reconcileSessionPhase(phaseRaw: String, generation: Long) {
-        if (generation != sessionGeneration) return // 旧账号的快照，丢弃
-        val cur = _connectivity.value
-        when (phaseRaw.lowercase()) {
-            "authenticated" -> {
-                if (!cur.authenticated || cur.reconnecting) {
-                    hadSession = true
-                    _connectivity.value = cur.copy(
-                        gatewayConnected = true,
-                        authenticated = true,
-                        networkReachable = true,
-                        reconnecting = false,
-                        reconnectAttempt = 0,
-                        serverBusy = false,
-                        lastConnectedAt = currentTimeMillis(),
-                        lastError = null,
-                    )
-                }
+    fun reconcileSessionSnapshot(phase: SessionPhase, accountUid: String?, sessionEpoch: Long) {
+        if (sessionEpoch < lastSessionEpoch) return // 规则 2：陈旧快照
+        val isNewSession = sessionEpoch > lastSessionEpoch || accountUid != lastAccountUid
+        lastSessionEpoch = sessionEpoch
+        lastAccountUid = accountUid
+        _connectivity.value = reduceSessionPhase(_connectivity.value, phase, isNewSession)
+        if (phase == SessionPhase.Authenticated) hadSession = true
+    }
+
+    /**
+     * 完整对账 reducer：把 [ConnectivityState] 中**所有**由会话阶段决定的字段一次算清。
+     *
+     * 只修 `authenticated` 是不够的——那样 `gatewayConnected` 之类的残留会永久留在
+     * 状态里（阶段回到 New 却仍标着 gateway 已连）。对账的意思是「以权威状态为准重算」，
+     * 不是「挑一个字段修一下」。
+     *
+     * `networkReachable` 不在此列：它是宿主的系统 reachability 镜像，会话阶段不是它的
+     * 真源。唯一例外是 Authenticated——收发都通了，任何说「没网」的镜像都已被事实证伪。
+     */
+    internal fun reduceSessionPhase(
+        cur: ConnectivityState,
+        phase: SessionPhase,
+        isNewSession: Boolean,
+    ): ConnectivityState {
+        // 规则 3：终态只有新会话能清。
+        val terminal = cur.lastError is ClientRuntimeError.AuthExpired && !isNewSession
+        return when (phase) {
+            SessionPhase.Authenticated -> {
+                if (terminal) cur else cur.copy(
+                    gatewayConnected = true,
+                    authenticated = true,
+                    networkReachable = true,
+                    reconnecting = false,
+                    reconnectAttempt = 0,
+                    serverBusy = false,
+                    lastConnectedAt = currentTimeMillis(),
+                    lastError = null,
+                )
             }
-            // 未鉴权的三态：只把 authenticated 拉下来，不去动 reconnecting——
-            // 「是否在重连」由事件与 hadSession 决定，这里不越权改写。
-            "new", "terminated", "shutdown" -> {
-                if (cur.authenticated) {
-                    _connectivity.value = cur.copy(gatewayConnected = false, authenticated = false)
-                }
-            }
-            "connected", "loggedin" -> {
-                if (cur.authenticated) {
-                    _connectivity.value = cur.copy(authenticated = false)
-                }
-            }
+            // transport 通了但未获授权：gateway 为真、authenticated 必须为假。
+            // `reconnecting` 不动——「是否在重连」由事件与 hadSession 决定，这里不越权。
+            SessionPhase.Connected, SessionPhase.LoggedIn ->
+                cur.copy(gatewayConnected = true, authenticated = false)
+            // 无会话 / 已终止 / 已关停：连接维度全部归零。
+            SessionPhase.New, SessionPhase.Terminated, SessionPhase.Shutdown ->
+                cur.copy(gatewayConnected = false, authenticated = false)
         }
     }
 
@@ -340,8 +360,10 @@ object ClientRuntime {
     /** 登出/切号：清空（spec §14 防串号）。 */
     fun reset() {
         hadSession = false
-        // 世代自增：此刻之前采样的对账快照全部作废，不许覆盖新账号的状态。
-        sessionGeneration += 1
+        // 身份忘掉，但**不要**伪造世代：世代的真源在 Rust actor。这里只是让下一份
+        // 快照必然被判为「新会话」，从而允许它清掉本次登出留下的终态。
+        lastAccountUid = null
+        lastSessionEpoch = -1L
         _connectivity.value = ConnectivityState(networkReachable = _connectivity.value.networkReachable)
         _sync.value = SyncState()
         _send.value = SendQueueState()
