@@ -939,6 +939,7 @@ data class PrivChatSettingsStrings(
     val settingsProfile: String,
     val settingsWallet: String,
     val settingsUserId: String,
+    /** 「我」页展示自己账号名的标签（PROFILE_VISIBILITY §D1：username 对 Self 可见）。 */
     val settingsUsername: String,
     val settingsMobile: String,
     val settingsNickname: String,
