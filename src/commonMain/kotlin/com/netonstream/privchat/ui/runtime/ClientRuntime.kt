@@ -134,6 +134,62 @@ object ClientRuntime {
     /** 是否建立过认证会话（区分「首次连接中」与「重连中」）。 */
     private var hadSession = false
 
+    /**
+     * 当前账号世代。[reset]（登出/切号）时自增；对账快照必须带上自己被采样时的世代，
+     * 世代对不上就整条丢弃。
+     *
+     * 不带世代的对账在切号时是有害的：旧账号的 1.5s 采样可能在新账号已经登录之后才
+     * 到达，把新账号的连接态覆盖成旧账号的——那正是「切号后横幅乱跳」的来源。
+     */
+    private var sessionGeneration: Long = 0
+    fun currentSessionGeneration(): Long = sessionGeneration
+
+    /**
+     * 用 SDK 的**精确**会话阶段对账（[com.netonstream.privchat.sdk.SessionPhase] 的字符串形式，
+     * 由 app 层每 1.5s 的既有监控喂入，不新增定时器）。
+     *
+     * 存在的理由：`reconnecting` 原本只由 `connection_state_changed → authenticated`
+     * 这个**边沿**清除。连接若在宿主监听建立之前就恢复、或恢复期间根本没产生状态跃迁，
+     * 那个边沿就永远不会再来——横幅一旦亮起就再也熄不掉，而 SDK 其实在正常收发。
+     * 边沿是通知，状态才是事实；这里让事实兜底。
+     *
+     * **只有 `authenticated` 能清 `reconnecting`。** `connected` / `loggedin` 都可能跑在
+     * 服务端尚未授权的通道上，据此撤横幅等于谎报就绪。
+     */
+    fun reconcileSessionPhase(phaseRaw: String, generation: Long) {
+        if (generation != sessionGeneration) return // 旧账号的快照，丢弃
+        val cur = _connectivity.value
+        when (phaseRaw.lowercase()) {
+            "authenticated" -> {
+                if (!cur.authenticated || cur.reconnecting) {
+                    hadSession = true
+                    _connectivity.value = cur.copy(
+                        gatewayConnected = true,
+                        authenticated = true,
+                        networkReachable = true,
+                        reconnecting = false,
+                        reconnectAttempt = 0,
+                        serverBusy = false,
+                        lastConnectedAt = currentTimeMillis(),
+                        lastError = null,
+                    )
+                }
+            }
+            // 未鉴权的三态：只把 authenticated 拉下来，不去动 reconnecting——
+            // 「是否在重连」由事件与 hadSession 决定，这里不越权改写。
+            "new", "terminated", "shutdown" -> {
+                if (cur.authenticated) {
+                    _connectivity.value = cur.copy(gatewayConnected = false, authenticated = false)
+                }
+            }
+            "connected", "loggedin" -> {
+                if (cur.authenticated) {
+                    _connectivity.value = cur.copy(authenticated = false)
+                }
+            }
+        }
+    }
+
     // ---- Connectivity 喂入口（app handleSdkEvent） ----
 
     /** `connection_state_changed`：直接吃 SDK raw 态（authenticated/connected/connecting/disconnected/shutdown/new）。 */
@@ -141,7 +197,11 @@ object ClientRuntime {
         val now = currentTimeMillis()
         val cur = _connectivity.value
         _connectivity.value = when (toStateRaw.lowercase()) {
-            "authenticated", "loggedin" -> {
+            // ⚠️ `loggedin` **不是**已认证。Rust 侧写死了这条：`Connected/LoggedIn` 都可能
+            // 跑在服务端尚未授权的通道上（重连刚握好 TCP、ConnAuth 还没回），此时发业务
+            // RPC 只会拿到 10000。把它并进这里会让横幅在「连上但没鉴权」的窗口里提前撤下，
+            // 用户以为能发消息，实际发不出去。
+            "authenticated" -> {
                 hadSession = true
                 cur.copy(
                     gatewayConnected = true,
@@ -157,7 +217,11 @@ object ClientRuntime {
                     lastError = null,
                 )
             }
-            "connected" -> cur.copy(gatewayConnected = true, authenticated = false, reconnecting = hadSession)
+            "connected", "loggedin" -> cur.copy(
+                gatewayConnected = true,
+                authenticated = false,
+                reconnecting = hadSession,
+            )
             "connecting" -> cur.copy(
                 gatewayConnected = false,
                 authenticated = false,
@@ -276,6 +340,8 @@ object ClientRuntime {
     /** 登出/切号：清空（spec §14 防串号）。 */
     fun reset() {
         hadSession = false
+        // 世代自增：此刻之前采样的对账快照全部作废，不许覆盖新账号的状态。
+        sessionGeneration += 1
         _connectivity.value = ConnectivityState(networkReachable = _connectivity.value.networkReachable)
         _sync.value = SyncState()
         _send.value = SendQueueState()
