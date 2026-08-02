@@ -19,7 +19,7 @@ import com.netonstream.privchat.ui.models.SystemUser
  *
  * 写入两条路径：
  * 1. App `loadGroupMembers` 拉取 canonical 投影并过滤后 `setMembers`（成员页/主动刷新）；
- * 2. `ensureMembers` 惰性加载（会话列表里未打开过的群，九宫格需要）。
+ * 2. `ensureMembers` 只读本地投影（会话列表九宫格不得触发网络）。
  *
  * 放在 ui 层（与 PrivChat/ConversationPage/GroupCollageAvatar 同层）：truth 在 ui，
  * app 层只写不另存，避免双真源（对齐 presence 既有模式）。
@@ -47,18 +47,16 @@ object GroupStore {
     }
 
     /**
-     * 惰性加载（九宫格 / 会话列表未打开过的群）：本地取 → 退化则 sync → **批量解析 user_type 过滤系统用户** → 存。
-     * 已加载 / 并发进入直接跳过（in-flight 去重）。失败静默，下次进入列表重试。
+     * 惰性读取（九宫格 / 会话列表未打开过的群）：只读本地 canonical 投影。
+     *
+     * 会话列表可能同时渲染几十或几百个群。这里发 `syncGroupMembers`
+     * 会把启动和打开聊天退化成 O(group_count) 个全量 roster RPC。完整成员
+     * 同步只能由成员/设置页面的显式入口发起。
      */
     suspend fun ensureMembers(channelId: ULong) {
         if (membersByChannel.containsKey(channelId) || !inFlight.add(channelId)) return
         try {
-            var raw = PrivChat.client.getGroupMembers(channelId, null, null).getOrNull().orEmpty()
-            // 本地为空或 canonical displayName 只能退化为 uid 时，同步一次 roster 后重读。
-            if (raw.isEmpty() || raw.any { it.displayName.toULongOrNull() == it.userId }) {
-                PrivChat.client.syncGroupMembers(channelId)
-                raw = PrivChat.client.getGroupMembers(channelId, null, null).getOrNull().orEmpty()
-            }
+            val raw = PrivChat.client.getGroupMembers(channelId, null, null).getOrNull().orEmpty()
             if (raw.isNotEmpty()) {
                 membersByChannel[channelId] = raw.filterNot { SystemUser.isSystemType(it.userType) }
             }

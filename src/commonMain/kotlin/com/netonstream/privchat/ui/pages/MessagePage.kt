@@ -512,9 +512,6 @@ fun MessagePage(
             PrivChat.client.groupPinnedMessages(channel.channelId)
         }.onSuccess { pinnedMessages = it }
     }
-    LaunchedEffect(channel.channelId) {
-        if (!channel.isDm) refreshPinnedMessages()
-    }
     // Typing 节流：记录上次发送 typing 的时间戳（毫秒）
     var lastTypingSentMs by remember { mutableStateOf(0L) }
     // 当前页面是否已经上报过“正在输入”
@@ -558,6 +555,10 @@ fun MessagePage(
 
     // 加载消息 + 订阅 typing 事件
     LaunchedEffect(channel.channelId) {
+        println(
+            "[MessagePage] initial load start: channelId=${channel.channelId} " +
+                "channelType=${channel.channelType} cached=${PrivChat.cachedMessages(channel.channelId).size}",
+        )
         PrivChat.setCurrentChannel(channel.channelId)
         val cachedBeforeLoad = PrivChat.cachedMessages(channel.channelId)
         if (cachedBeforeLoad.isNotEmpty()) {
@@ -593,11 +594,14 @@ fun MessagePage(
                 onError?.invoke(strings.globalSearchAnchorMissing)
                 // 同上：降级回常规窗口时也要走 openConversation，否则锚点不可见的会话
                 // 会退回纯本地读，本地为空就又是「暂无聊天内容」。
-                val list = onLoadMessages?.invoke(channel.channelId, channel.channelType)?.getOrNull()
-                    ?: withContext(Dispatchers.Default) {
+                val list = if (onLoadMessages != null) {
+                    onLoadMessages.invoke(channel.channelId, channel.channelType).getOrNull()
+                } else {
+                    withContext(Dispatchers.Default) {
                         PrivChat.client.openConversation(channel.channelId, channel.channelType, 50u)
                             .getOrNull()?.messages
                     }
+                }
                 if (list != null) PrivChat.updateMessages(channel.channelId, list)
             }
         } else {
@@ -606,13 +610,20 @@ fun MessagePage(
             // 纯本地读时，本地没有这个会话的消息就永远显示「暂无聊天内容」——而上滑翻页
             // 救不了它：翻页要有一个已存在的锚点往前翻，一条都没有时连起点都没有。
             // openConversation 在本地为空时补一次最新窗口，本地有内容则直接返回不打网络。
-            val list = onLoadMessages?.invoke(channel.channelId, channel.channelType)?.getOrNull()
-                ?: withContext(Dispatchers.Default) {
+            val list = if (onLoadMessages != null) {
+                onLoadMessages.invoke(channel.channelId, channel.channelType).getOrNull()
+            } else {
+                withContext(Dispatchers.Default) {
                     PrivChat.client.openConversation(channel.channelId, channel.channelType, 50u)
                         .getOrNull()?.messages
                 }
+            }
             if (list != null) PrivChat.updateMessages(channel.channelId, list)
         }
+        println(
+            "[MessagePage] initial load done: channelId=${channel.channelId} " +
+                "messages=${PrivChat.cachedMessages(channel.channelId).size}",
+        )
         // 加载对端已读水位（cold start）
         runCatching {
             withContext(Dispatchers.Default) {
@@ -622,6 +633,12 @@ fun MessagePage(
             }
         }
         hasInitialLoadCompleted = true
+        // Conversation history owns the entry critical path. Pinned-message
+        // hydration is secondary and must not occupy the serialized SDK actor
+        // before openConversation has materialized the first window.
+        if (!channel.isDm) {
+            scope.launch { refreshPinnedMessages() }
+        }
         // 标记已读
         runCatching {
             onMarkRead?.invoke(channel.channelId, channel.channelType)
