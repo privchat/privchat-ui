@@ -456,4 +456,11 @@ internal val viAuxiliary = PrivChatAuxiliaryStrings(
     startupConnecting = "Đang kết nối máy chủ…",
     startupLoadingLocal = "Đang tải hội thoại cục bộ…",
     startupSyncing = "Đang đồng bộ tin nhắn…",
+    syncStageTemplate = "Đang đồng bộ {stage}",
+    syncStageContacts = "danh bạ",
+    syncStageGroups = "nhóm",
+    syncStageConversations = "cuộc trò chuyện",
+    syncStageProfiles = "hồ sơ",
+    syncStageReadState = "trạng thái đã đọc",
+    syncStagePrivacy = "cài đặt riêng tư",
 )

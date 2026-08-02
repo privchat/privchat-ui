@@ -456,4 +456,11 @@ internal val enAuxiliary = PrivChatAuxiliaryStrings(
     startupConnecting = "Connecting to server…",
     startupLoadingLocal = "Loading local conversations…",
     startupSyncing = "Syncing messages…",
+    syncStageTemplate = "Syncing {stage}",
+    syncStageContacts = "contacts",
+    syncStageGroups = "groups",
+    syncStageConversations = "conversations",
+    syncStageProfiles = "profiles",
+    syncStageReadState = "read state",
+    syncStagePrivacy = "privacy settings",
 )

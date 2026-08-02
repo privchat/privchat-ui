@@ -422,6 +422,13 @@ data class PrivChatStrings(
     val startupConnecting: String get() = dAuxiliary.startupConnecting
     val startupLoadingLocal: String get() = dAuxiliary.startupLoadingLocal
     val startupSyncing: String get() = dAuxiliary.startupSyncing
+    val syncStageTemplate: String get() = dAuxiliary.syncStageTemplate
+    val syncStageContacts: String get() = dAuxiliary.syncStageContacts
+    val syncStageGroups: String get() = dAuxiliary.syncStageGroups
+    val syncStageConversations: String get() = dAuxiliary.syncStageConversations
+    val syncStageProfiles: String get() = dAuxiliary.syncStageProfiles
+    val syncStageReadState: String get() = dAuxiliary.syncStageReadState
+    val syncStagePrivacy: String get() = dAuxiliary.syncStagePrivacy
 }
 
 data class PrivChatStringsPatch(

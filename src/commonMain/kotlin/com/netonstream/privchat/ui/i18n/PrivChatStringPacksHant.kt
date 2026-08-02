@@ -456,4 +456,11 @@ internal val hantAuxiliary = PrivChatAuxiliaryStrings(
     startupConnecting = "正在連接伺服器…",
     startupLoadingLocal = "正在載入本地會話…",
     startupSyncing = "正在同步訊息…",
+    syncStageTemplate = "正在同步{stage}",
+    syncStageContacts = "聯絡人",
+    syncStageGroups = "群組",
+    syncStageConversations = "會話",
+    syncStageProfiles = "使用者資料",
+    syncStageReadState = "已讀狀態",
+    syncStagePrivacy = "隱私設定",
 )

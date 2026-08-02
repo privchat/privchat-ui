@@ -1373,9 +1373,27 @@ data class PrivChatAuxiliaryStrings(
     val startupConnecting: String,
     val startupLoadingLocal: String,
     val startupSyncing: String,
+    /**
+     * 首屏同步进度。[syncStageTemplate] 是整句模板，用 {stage} 占位——英语/越南语的
+     * 语序与中文不同，"正在同步" + 名词这种拼接在那两种语言里会读不通。
+     */
+    val syncStageTemplate: String,
+    val syncStageContacts: String,
+    val syncStageGroups: String,
+    val syncStageConversations: String,
+    val syncStageProfiles: String,
+    val syncStageReadState: String,
+    val syncStagePrivacy: String,
 )
 
 data class PrivChatAuxiliaryStringsPatch(
+    val syncStageTemplate: String? = null,
+    val syncStageContacts: String? = null,
+    val syncStageGroups: String? = null,
+    val syncStageConversations: String? = null,
+    val syncStageProfiles: String? = null,
+    val syncStageReadState: String? = null,
+    val syncStagePrivacy: String? = null,
     val changePasswordTitle: String? = null,
     val changePasswordNew: String? = null,
     val changePasswordConfirm: String? = null,
@@ -1602,7 +1620,14 @@ val PrivChatAuxiliaryStringsPatch.isEmpty: Boolean
         startupVerifyingAccount == null &&
         startupConnecting == null &&
         startupLoadingLocal == null &&
-        startupSyncing == null
+        startupSyncing == null &&
+        syncStageTemplate == null &&
+        syncStageContacts == null &&
+        syncStageGroups == null &&
+        syncStageConversations == null &&
+        syncStageProfiles == null &&
+        syncStageReadState == null &&
+        syncStagePrivacy == null
 
 fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivChatAuxiliaryStrings {
     if (patch == null || patch.isEmpty) return this
@@ -1719,5 +1744,12 @@ fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivC
         startupConnecting = patch.startupConnecting ?: startupConnecting,
         startupLoadingLocal = patch.startupLoadingLocal ?: startupLoadingLocal,
         startupSyncing = patch.startupSyncing ?: startupSyncing,
+        syncStageTemplate = patch.syncStageTemplate ?: syncStageTemplate,
+        syncStageContacts = patch.syncStageContacts ?: syncStageContacts,
+        syncStageGroups = patch.syncStageGroups ?: syncStageGroups,
+        syncStageConversations = patch.syncStageConversations ?: syncStageConversations,
+        syncStageProfiles = patch.syncStageProfiles ?: syncStageProfiles,
+        syncStageReadState = patch.syncStageReadState ?: syncStageReadState,
+        syncStagePrivacy = patch.syncStagePrivacy ?: syncStagePrivacy,
     )
 }

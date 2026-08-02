@@ -458,4 +458,11 @@ internal val zhAuxiliary = PrivChatAuxiliaryStrings(
     startupConnecting = "正在连接服务器…",
     startupLoadingLocal = "正在加载本地会话…",
     startupSyncing = "正在同步消息…",
+    syncStageTemplate = "正在同步{stage}",
+    syncStageContacts = "联系人",
+    syncStageGroups = "群组",
+    syncStageConversations = "会话",
+    syncStageProfiles = "用户资料",
+    syncStageReadState = "已读状态",
+    syncStagePrivacy = "隐私设置",
 )
