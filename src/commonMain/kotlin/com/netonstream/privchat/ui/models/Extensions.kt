@@ -148,23 +148,43 @@ val GroupEntry.avatarLetter: String
 
 // ========== GroupMemberEntry 扩展 ==========
 
+/**
+ * 群成员角色 —— 编号与协议权威定义 `GroupMemberRole` 一致：
+ * **Member=0 / Owner=1 / Admin=2**。
+ *
+ * `0` 是权限最低的那一个：字段缺失、默认值、老版本不认识的取值都会落在 0，
+ * 让 0 代表群主等于把「读取失败」变成「提权」。
+ *
+ * 本地库自 `V20260803120000__group_member_role_canonical` 起存的就是这套编号
+ * （更早的版本 owner/admin 是反的，由该迁移换过来）。
+ */
+object GroupRole {
+    const val MEMBER = 0
+    const val OWNER = 1
+    const val ADMIN = 2
+}
+
 /** 是否群主 */
 val GroupMemberEntry.isOwner: Boolean
-    get() = role == 2
+    get() = role == GroupRole.OWNER
 
 /** 是否管理员 */
 val GroupMemberEntry.isAdmin: Boolean
-    get() = role == 1
+    get() = role == GroupRole.ADMIN
 
-/** 是否普通成员 */
+/** 是否普通成员：注意「不是群主也不是管理员」才算，未知取值一律按成员。 */
 val GroupMemberEntry.isMember: Boolean
-    get() = role == 0
+    get() = !isOwner && !isAdmin
+
+/** 是否具备群管理权限。各处不要再各写一遍 `isOwner || isAdmin`。 */
+val GroupMemberEntry.canManageGroup: Boolean
+    get() = isOwner || isAdmin
 
 /** 角色名称 */
 val GroupMemberEntry.roleName: String
-    get() = when (role) {
-        2 -> "群主"
-        1 -> "管理员"
+    get() = when {
+        isOwner -> "群主"
+        isAdmin -> "管理员"
         else -> "成员"
     }
 
