@@ -56,7 +56,16 @@ object GroupStore {
     suspend fun ensureMembers(channelId: ULong) {
         if (membersByChannel.containsKey(channelId) || !inFlight.add(channelId)) return
         try {
-            val raw = PrivChat.client.getGroupMembers(channelId, null, null).getOrNull().orEmpty()
+            // 只取九宫格需要的那一页。协议支持分页后仍传 null 等于要整份花名册——
+            // 750 人的群一次 126 KB，而这里只会用到前 9 个。
+            //
+            // 多取一些余量（TILE_PAGE_SIZE > 9）：topNine 会先滤掉系统用户再排序，
+            // 正好取 9 个的话滤完可能不够铺满九宫格。
+            // 参数是 (limit, offset)，不是 (page, size)——写反就是「从第 20 个开始只取 1 个」，
+            // 九宫格会静默变成一个头像，而且没有任何报错。
+            val raw = PrivChat.client
+                .getGroupMembers(channelId, TILE_PAGE_SIZE, 0u)
+                .getOrNull().orEmpty()
             if (raw.isNotEmpty()) {
                 membersByChannel[channelId] = raw.filterNot { SystemUser.isSystemType(it.userType) }
             }
@@ -66,6 +75,12 @@ object GroupStore {
             inFlight.remove(channelId)
         }
     }
+
+    /**
+     * 九宫格惰性拉取的页大小。九宫格用 9 个，这里多取一截给系统用户过滤留余量。
+     * 完整名单由成员页显式拉，不走这条路径。
+     */
+    private const val TILE_PAGE_SIZE: UInt = 20u
 
     /** 登出/切号清空，防串号。 */
     fun clear() {
