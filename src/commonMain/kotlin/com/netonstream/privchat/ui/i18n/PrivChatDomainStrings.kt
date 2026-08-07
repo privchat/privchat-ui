@@ -1340,6 +1340,14 @@ data class PrivChatAuxiliaryStrings(
     val signInDayUnit: String,
     val signInSuccessTitle: String,
     val signInCashCredited: String,
+    val bindMobileSkip: String,
+    val bindMobileTitle: String,
+    val bindMobileHint: String,
+    val bindMobilePlaceholder: String,
+    val bindMobileButton: String,
+    val bindMobileErrTaken: String,
+    val bindMobileErrBound: String,
+    val bindMobileErrInvalid: String,
     val inviteBindTitle: String,
     val inviteBindPlaceholder: String,
     val inviteBindButton: String,
@@ -1474,6 +1482,14 @@ data class PrivChatAuxiliaryStringsPatch(
     val signInDayUnit: String? = null,
     val signInSuccessTitle: String? = null,
     val signInCashCredited: String? = null,
+    val bindMobileSkip: String? = null,
+    val bindMobileTitle: String? = null,
+    val bindMobileHint: String? = null,
+    val bindMobilePlaceholder: String? = null,
+    val bindMobileButton: String? = null,
+    val bindMobileErrTaken: String? = null,
+    val bindMobileErrBound: String? = null,
+    val bindMobileErrInvalid: String? = null,
     val inviteBindTitle: String? = null,
     val inviteBindPlaceholder: String? = null,
     val inviteBindButton: String? = null,
@@ -1589,6 +1605,14 @@ val PrivChatAuxiliaryStringsPatch.isEmpty: Boolean
         signInDayUnit == null &&
         signInSuccessTitle == null &&
         signInCashCredited == null &&
+        bindMobileSkip == null &&
+        bindMobileTitle == null &&
+        bindMobileHint == null &&
+        bindMobilePlaceholder == null &&
+        bindMobileButton == null &&
+        bindMobileErrTaken == null &&
+        bindMobileErrBound == null &&
+        bindMobileErrInvalid == null &&
         inviteBindTitle == null &&
         inviteBindPlaceholder == null &&
         inviteBindButton == null &&
@@ -1712,6 +1736,14 @@ fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivC
         signInDayUnit = patch.signInDayUnit ?: signInDayUnit,
         signInSuccessTitle = patch.signInSuccessTitle ?: signInSuccessTitle,
         signInCashCredited = patch.signInCashCredited ?: signInCashCredited,
+        bindMobileSkip = patch.bindMobileSkip ?: bindMobileSkip,
+        bindMobileTitle = patch.bindMobileTitle ?: bindMobileTitle,
+        bindMobileHint = patch.bindMobileHint ?: bindMobileHint,
+        bindMobilePlaceholder = patch.bindMobilePlaceholder ?: bindMobilePlaceholder,
+        bindMobileButton = patch.bindMobileButton ?: bindMobileButton,
+        bindMobileErrTaken = patch.bindMobileErrTaken ?: bindMobileErrTaken,
+        bindMobileErrBound = patch.bindMobileErrBound ?: bindMobileErrBound,
+        bindMobileErrInvalid = patch.bindMobileErrInvalid ?: bindMobileErrInvalid,
         inviteBindTitle = patch.inviteBindTitle ?: inviteBindTitle,
         inviteBindPlaceholder = patch.inviteBindPlaceholder ?: inviteBindPlaceholder,
         inviteBindButton = patch.inviteBindButton ?: inviteBindButton,

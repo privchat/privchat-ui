@@ -386,6 +386,14 @@ data class PrivChatStrings(
     val signInDayUnit: String get() = dAuxiliary.signInDayUnit
     val signInSuccessTitle: String get() = dAuxiliary.signInSuccessTitle
     val signInCashCredited: String get() = dAuxiliary.signInCashCredited
+    val bindMobileSkip: String get() = dAuxiliary.bindMobileSkip
+    val bindMobileTitle: String get() = dAuxiliary.bindMobileTitle
+    val bindMobileHint: String get() = dAuxiliary.bindMobileHint
+    val bindMobilePlaceholder: String get() = dAuxiliary.bindMobilePlaceholder
+    val bindMobileButton: String get() = dAuxiliary.bindMobileButton
+    val bindMobileErrTaken: String get() = dAuxiliary.bindMobileErrTaken
+    val bindMobileErrBound: String get() = dAuxiliary.bindMobileErrBound
+    val bindMobileErrInvalid: String get() = dAuxiliary.bindMobileErrInvalid
     val inviteBindTitle: String get() = dAuxiliary.inviteBindTitle
     val inviteBindPlaceholder: String get() = dAuxiliary.inviteBindPlaceholder
     val inviteBindButton: String get() = dAuxiliary.inviteBindButton
