@@ -50,6 +50,7 @@ internal val hantMessage = PrivChatMessageStrings(
     messageSending = "傳送中...",
     messageSendFailed = "傳送失敗",
     messageAttachmentSourceMissing = "原檔案已不存在，請重新選擇後傳送",
+    messageAttachmentTooLarge = "檔案超過大小限制，無法傳送",
     messageInputHint = "輸入訊息...",
     messageVoiceHint = "按住說話",
     presenceOnline = "在線",

@@ -50,6 +50,7 @@ internal val zhMessage = PrivChatMessageStrings(
     messageSending = "发送中...",
     messageSendFailed = "发送失败",
     messageAttachmentSourceMissing = "原文件已不存在，请重新选择后发送",
+    messageAttachmentTooLarge = "文件超过大小限制，无法发送",
     messageInputHint = "输入消息...",
     messageVoiceHint = "按住说话",
     presenceOnline = "在线",

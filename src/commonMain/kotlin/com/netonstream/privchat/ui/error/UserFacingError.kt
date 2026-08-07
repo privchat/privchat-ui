@@ -20,6 +20,9 @@ import kotlin.coroutines.cancellation.CancellationException
  */
 object UserFacingError {
 
+    /** `privchat_protocol::ErrorCode::FileTooLarge`。附件超过服务端硬顶，签发 token 时即被拒。 */
+    private const val SERVER_CODE_FILE_TOO_LARGE = 20602
+
     /**
      * @param throwable the caught error (nullable for `Result.exceptionOrNull()` call sites)
      * @param fallback  action-specific, user-readable message shown when the error is
@@ -32,6 +35,7 @@ object UserFacingError {
         if (isCancellation(throwable)) return fallback
         // 结构化错误优先于字符串嗅探：SDK 已给出类型时不要再猜文案。
         typedMessage(throwable)?.let { return it }
+        serverCodeMessage(throwable)?.let { return it }
         return if (isTransportFailure(throwable)) PrivChatI18n.current.networkError else fallback
     }
 
@@ -44,6 +48,20 @@ object UserFacingError {
         is SdkError.AttachmentSourceMissing -> PrivChatI18n.current.messageAttachmentSourceMissing
         else -> null
     }
+
+    /**
+     * 服务端业务错误码 → 本地化文案（ERROR_CODE_SPEC）。
+     *
+     * 有些失败通用文案盖不住。附件超限就是一例：服务端在**签发上传 token 那一步**就拒绝，
+     * 用户还没开始上传；如果这里只回一句「发送失败」，用户根本不知道是文件太大，会一遍遍
+     * 重试同一个视频。错误码是客户端唯一可靠的判据——服务端的中文文案不能直出（其它语言
+     * 就漏了），也不能靠嗅字符串。
+     */
+    private fun serverCodeMessage(throwable: Throwable?): String? =
+        when (serverReasonCode(throwable)) {
+            SERVER_CODE_FILE_TOO_LARGE -> PrivChatI18n.current.messageAttachmentTooLarge
+            else -> null
+        }
 
     /**
      * String variant for call sites that already hold a raw message (e.g. an error

@@ -50,6 +50,7 @@ internal val enMessage = PrivChatMessageStrings(
     messageSending = "Sending...",
     messageSendFailed = "Send failed",
     messageAttachmentSourceMissing = "The original file is no longer available. Please pick it again.",
+    messageAttachmentTooLarge = "This file is over the size limit and cannot be sent.",
     messageInputHint = "Type a message...",
     messageVoiceHint = "Hold to talk",
     presenceOnline = "Online",

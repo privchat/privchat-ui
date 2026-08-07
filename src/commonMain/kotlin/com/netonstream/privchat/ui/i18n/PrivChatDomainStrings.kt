@@ -159,6 +159,7 @@ data class PrivChatMessageStrings(
     val messageSending: String,
     val messageSendFailed: String,
     val messageAttachmentSourceMissing: String,
+    val messageAttachmentTooLarge: String,
     val messageInputHint: String,
     val messageVoiceHint: String,
     val presenceOnline: String,
@@ -179,6 +180,7 @@ data class PrivChatMessageStringsPatch(
     val messageSending: String? = null,
     val messageSendFailed: String? = null,
     val messageAttachmentSourceMissing: String? = null,
+    val messageAttachmentTooLarge: String? = null,
     val messageInputHint: String? = null,
     val messageVoiceHint: String? = null,
     val presenceOnline: String? = null,
@@ -199,6 +201,7 @@ val PrivChatMessageStringsPatch.isEmpty: Boolean
         messageSending == null &&
         messageSendFailed == null &&
         messageAttachmentSourceMissing == null &&
+        messageAttachmentTooLarge == null &&
         messageInputHint == null &&
         messageVoiceHint == null &&
         presenceOnline == null &&
@@ -220,6 +223,7 @@ fun PrivChatMessageStrings.merge(patch: PrivChatMessageStringsPatch?): PrivChatM
         messageSending = patch.messageSending ?: messageSending,
         messageSendFailed = patch.messageSendFailed ?: messageSendFailed,
         messageAttachmentSourceMissing = patch.messageAttachmentSourceMissing ?: messageAttachmentSourceMissing,
+        messageAttachmentTooLarge = patch.messageAttachmentTooLarge ?: messageAttachmentTooLarge,
         messageInputHint = patch.messageInputHint ?: messageInputHint,
         messageVoiceHint = patch.messageVoiceHint ?: messageVoiceHint,
         presenceOnline = patch.presenceOnline ?: presenceOnline,
