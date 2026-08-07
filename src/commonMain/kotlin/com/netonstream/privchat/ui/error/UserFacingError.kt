@@ -2,6 +2,7 @@ package com.netonstream.privchat.ui.error
 
 import com.netonstream.privchat.sdk.SdkError
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Central mapper from a raw [Throwable] to a **safe, user-facing** message.
@@ -26,6 +27,9 @@ object UserFacingError {
      */
     fun message(throwable: Throwable?, fallback: String): String {
         logRaw(throwable)
+        // 取消不是错误——见 [isCancellation]。调用方应先用 isCancellation 过滤；万一漏了，
+        // 至少不要把框架的英文内部消息当成一条业务失败推给用户。
+        if (isCancellation(throwable)) return fallback
         // 结构化错误优先于字符串嗅探：SDK 已给出类型时不要再猜文案。
         typedMessage(throwable)?.let { return it }
         return if (isTransportFailure(throwable)) PrivChatI18n.current.networkError else fallback
@@ -49,12 +53,41 @@ object UserFacingError {
      */
     fun ofMessage(message: String?): String? {
         if (message.isNullOrBlank()) return message
+        // 取消不是错误：返回 null，调用方据此**什么都不显示**（而不是换个文案继续弹）。
+        if (isCancellationMessage(message)) {
+            println("[UserFacingError] cancellation is not an error, dropped: $message")
+            return null
+        }
         return if (isTransportFailureMessage(message)) {
             println("[UserFacingError] transport failure message hidden: $message")
             PrivChatI18n.current.networkError
         } else {
             message
         }
+    }
+
+    /**
+     * 协程取消不是错误。
+     *
+     * UI 发起的调用跑在 Composable 的 scope 上，用户退出页面时这个 scope 会被取消，
+     * `runCatching` / `Result` 会把 [CancellationException] 当成一次失败捕获。但错误
+     * 出口（`_errorMessage`）是全局的、不随页面销毁，于是「退出页面」这个完全正常的
+     * 操作会变成下一个页面上的一个报错框——2026-08-07 生产反馈里会话列表偶发弹出
+     * `The coroutine scope left the composition` 就是这么来的。
+     *
+     * 字符串嗅探是必要的兜底：跨 FFI/Result 边界回来的取消经常已经丢了异常类型，
+     * 只剩一句消息文本。
+     */
+    fun isCancellation(throwable: Throwable?): Boolean {
+        if (throwable == null) return false
+        if (throwable is CancellationException) return true
+        return isCancellationMessage(throwable.message)
+    }
+
+    fun isCancellationMessage(message: String?): Boolean {
+        val m = (message ?: "").lowercase()
+        if (m.isBlank()) return false
+        return CANCELLATION_MARKERS.any { m.contains(it) }
     }
 
     /**
@@ -109,5 +142,18 @@ object UserFacingError {
         "网络已断开",
         "网络连接",
         "网络错误",
+    )
+
+    // Compose/Kuikly 与 kotlinx.coroutines 在取消时给出的消息。全小写匹配。
+    // "The coroutine scope left the composition" 是 rememberCoroutineScope 随 Composable
+    // 一起销毁时抛的那一条——用户按了返回键，仅此而已。
+    private val CANCELLATION_MARKERS = listOf(
+        "left the composition",
+        "cancellationexception",
+        "job was cancelled",
+        "parent job is cancelled",
+        "was cancelled",
+        "scope was closed",
+        "coroutine scope",
     )
 }

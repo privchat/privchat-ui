@@ -1521,23 +1521,19 @@ fun MessagePage(
                                     }
                             }
                             result.onFailure { error ->
-                                if (error is CancellationException) return@onFailure
-                                val message = error.message.orEmpty()
-                                if (message.contains("left the composition", ignoreCase = true) ||
-                                    message.contains("cancel", ignoreCase = true)
-                                ) {
-                                    return@onFailure
-                                }
-                                onError?.invoke(error.message ?: strings.networkError)
+                                // 取消不是错误（用户发送中途离开页面），原始异常文本也不上屏。
+                                if (UserFacingError.isCancellation(error)) return@onFailure
+                                onError?.invoke(
+                                    UserFacingError.message(error, strings.messageSendFailed)
+                                )
                             }
                         } catch (_: CancellationException) {
                             // 用户在发送过程中离开页面，scope 被取消，忽略即可
                         } catch (e: Exception) {
-                            val message = e.message.orEmpty()
-                            if (!message.contains("left the composition", ignoreCase = true) &&
-                                !message.contains("cancel", ignoreCase = true)
-                            ) {
-                                onError?.invoke(e.message ?: strings.networkError)
+                            if (!UserFacingError.isCancellation(e)) {
+                                onError?.invoke(
+                                    UserFacingError.message(e, strings.messageSendFailed)
+                                )
                             }
                         }
                     }
