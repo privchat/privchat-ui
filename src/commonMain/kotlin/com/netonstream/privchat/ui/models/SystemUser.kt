@@ -60,15 +60,19 @@ object SystemUser {
         // 数据层已带出 DM 对端 userType/username(本地 user 实体在场时),
         // 单点规则同步判定,零网络零二次处理;peerUserType 缺席时退回
         // resolveUid 异步缓存(isSystemUid)与 username 兼容通道。
+        // 名字拿不到时**不回退 uid**（spec CLIENT_GLOBAL_STATE_AND_IDENTITY_STORE_SPEC
+        // §27.5）。这里曾经写 `entry.peerUserId?.toString()`，于是邀请码注册的新用户
+        // 进主界面第一眼看到的就是一串 `100000007`：对端 user 实体还没同步到，服务端
+        // 按约定发的是空串，客户端却自己把 uid 补了回去。
+        //
+        // 空名字交给上面 LaunchedEffect 里的 resolveUid 异步补齐（local-first 拉 profile
+        // → 落 user 表 → 列表查询自然拿到真名），这期间显示 typed loading。
         entry.isDm -> localizedNameFor(
-            name = when {
-                entry.name.isNotBlank() -> entry.name
-                else -> entry.peerUserId?.toString() ?: ""
-            },
+            name = entry.name,
             username = entry.peerUsername ?: entry.name.takeIf { isSystem(it) },
             userType = entry.peerUserType
                 ?: if (isSystemUid(entry.peerUserId)) 1 else null,
-        )
+        ).ifBlank { PrivChatI18n.current.loading }
         entry.name.isBlank() -> PrivChatI18n.current.groupChatFallback
         else -> entry.name
     }
