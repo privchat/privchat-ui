@@ -1630,7 +1630,7 @@ private fun PinnedMessagesBar(
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(name = Icons.bookmark, size = IconSizes.Default.small, tint = colors.primary)
+        Icon(name = Icons.bookmark, size = IconSizes.Default.sm, tint = colors.primary)
         HorizontalSpacer(8.dp)
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -1648,7 +1648,7 @@ private fun PinnedMessagesBar(
         if (canManage) {
             HorizontalSpacer(8.dp)
             Box(modifier = Modifier.clickable(onClick = onUnpin)) {
-                Icon(name = Icons.close, size = IconSizes.Default.small, tint = colors.mutedForeground)
+                Icon(name = Icons.close, size = IconSizes.Default.sm, tint = colors.mutedForeground)
             }
         }
     }
@@ -2474,7 +2474,7 @@ private fun NewMessagesBubble(count: Int, onClick: () -> Unit) {
         Icon(
             name = Icons.keyboard_arrow_down,
             tint = colors.primary,
-            size = IconSizes.Default.medium,
+            size = IconSizes.Default.lg,
         )
     }
 }

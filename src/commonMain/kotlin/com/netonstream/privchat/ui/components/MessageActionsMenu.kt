@@ -478,7 +478,7 @@ private fun ActionList(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             ) {
-                Icon(name = item.icon, size = IconSizes.Default.medium, tint = tint)
+                Icon(name = item.icon, size = IconSizes.Default.lg, tint = tint)
                 Text(
                     text = item.label,
                     style = Typography.BodySmall,
