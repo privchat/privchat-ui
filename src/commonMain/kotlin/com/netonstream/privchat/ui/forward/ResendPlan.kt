@@ -7,6 +7,7 @@
 package com.netonstream.privchat.ui.forward
 
 import com.netonstream.privchat.sdk.PrivchatClient
+import com.netonstream.privchat.sdk.dto.DownloadedAttachment
 import com.netonstream.privchat.sdk.dto.MessageContentKind
 import com.netonstream.privchat.sdk.dto.MessageEntry
 
@@ -105,11 +106,16 @@ suspend fun executeResendPlan(
     sendText: suspend (ULong, Int, String) -> Result<*>,
     sendMedia: suspend (channelId: ULong, path: String, displayFileName: String?, caption: String?) -> Result<*>,
     sendVoice: suspend (ULong, String, Long) -> Result<*>,
-    downloadToCache: suspend (fileId: String, fileUrl: String, fileName: String?, mimeType: String?) -> Result<String>,
+    downloadToCache: suspend (fileId: String, fileUrl: String, fileName: String?, mimeType: String?) -> Result<DownloadedAttachment>,
 ): Result<Unit> = when (plan) {
     is ResendPlan.Text -> sendText(channelId, channelType, plan.text).map { }
 
     is ResendPlan.Attachment -> {
+        // 本地已有就用本地那份；否则下载，**并且用 SDK 给回来的路径和名字**。
+        // 曾经这里只拿路径、名字沿用本地消息上的值：对方客户端没写文件名时就成了空，
+        // 一张图于是被当成「文件」重发出去。
+        var downloadedName: String? = null
+        var downloadedMime: String? = null
         val path = plan.localPath ?: run {
             // 🔴 id 和 URL 有一个就够：老消息只有 URL，新消息只有 file_id。
             // 两个都要的话，这两类消息都会重发不出去。
@@ -118,13 +124,18 @@ suspend fun executeResendPlan(
             if (fileId.isEmpty() && fileUrl.isEmpty()) {
                 null
             } else {
-                downloadToCache(fileId, fileUrl, plan.fileName, plan.mimeType).getOrNull()
+                downloadToCache(fileId, fileUrl, plan.fileName, plan.mimeType).getOrNull()?.also {
+                    downloadedName = it.displayFileName.takeIf { name -> name.isNotBlank() }
+                    downloadedMime = it.mimeType.takeIf { mime -> mime.isNotBlank() }
+                }?.localPath
             }
         }
+        // 展示名优先用服务端那个：本地消息上的名字可能压根没有。
+        val displayName = downloadedName ?: plan.fileName
         when {
             path == null -> Result.failure(IllegalStateException("attachment unavailable"))
             plan.voiceDurationMs != null -> sendVoice(channelId, path, plan.voiceDurationMs).map { }
-            else -> sendMedia(channelId, path, plan.fileName, plan.caption).map { }
+            else -> sendMedia(channelId, path, displayName, plan.caption).map { }
         }
     }
 
@@ -150,6 +161,6 @@ suspend fun resendMessageToChannel(
     sendMedia = { cid, path, name, caption -> client.sendMedia(cid, path, null, name, caption) },
     sendVoice = { cid, path, ms -> client.sendVoiceFromPath(cid, path, ms, null, null) },
     downloadToCache = { fileId, fileUrl, name, mime ->
-        client.downloadAttachmentToCache(fileId, fileUrl, null, name, mime)
+        client.downloadAttachmentDetailed(fileId, fileUrl, null, name, mime)
     },
 )
