@@ -167,6 +167,12 @@ fun MessageContent(
             // 自己的文字/普通气泡是深色底（messageBubbleSelf），primary 与气泡同为 0xFF18181B
             // 会撞色隐形 —— 改用气泡前景浅色（messageTextSelf），保证「✓✓ 已读」可见。
             val readColor = if (isSelf && !isMediaBubble) colors.messageTextSelf else colors.primary
+            // 上传进度按**本地消息 id** 取：SDK 发进度时带的就是它。
+            val uploads = com.netonstream.privchat.ui.runtime.ClientRuntime.uploads
+                .collectAsState().value
+            val uploadPercent = uploads
+                .fractionOf(message.id.toString())
+                ?.let { (it * 100).toInt().coerceIn(0, 100) }
             MessageFooter(
                 timestamp = message.timestamp,
                 status = message.status,
@@ -178,6 +184,7 @@ fun MessageContent(
                 delivered = message.delivered,
                 onFailedClick = onFailedClick,
                 mediaWidthDp = mediaWidthDp,
+                uploadPercent = uploadPercent,
             )
         } else if (isMoneyCard) {
             // 资金卡片：只显示时间，不显示发送中/发送失败/已读状态（服务端注入天然 Sent）。
@@ -1256,6 +1263,7 @@ private fun MessageFooter(
     // 媒体（图片/视频）气泡：footer 宽度对齐图片外框宽度（dp），时间/状态右对齐到图片右边缘，
     // 不再 fillMaxWidth 把整列撑到屏幕边。null = 文本等普通气泡，沿用 fillMaxWidth。
     mediaWidthDp: Int? = null,
+    uploadPercent: Int? = null,
 ) {
     Row(
         modifier = if (mediaWidthDp != null) Modifier.width(mediaWidthDp.dp) else Modifier.fillMaxWidth(),
@@ -1281,6 +1289,7 @@ private fun MessageFooter(
                 isReadByPts = isReadByPts,
                 delivered = delivered,
                 onFailedClick = onFailedClick,
+                uploadPercent = uploadPercent,
             )
         }
     }
@@ -1300,9 +1309,19 @@ private fun MessageStatusIcon(
     isReadByPts: Boolean = false,
     delivered: Boolean = false,
     onFailedClick: (() -> Unit)? = null,
+    /** 上传进度百分比；null = 不在上传（或没有进度可报）。 */
+    uploadPercent: Int? = null,
 ) {
     val (icon, label, iconColor) = when {
         status == MessageStatus.Failed -> Triple("❗", "发送失败 · 重试", Theme.colors.destructive)
+        // 🔴 上传中的媒体：把百分比摆出来。
+        //
+        // 大文件在弱网下「发送中」可能停留好几分钟，只有一个不动的 ⏳ 时，用户没法
+        // 区分「在传」和「卡死了」——他们的应对是长按重发，于是刚传上去的部分全白费。
+        // 有数字在动，等待才是可以忍受的。
+        (status == MessageStatus.Pending || status == MessageStatus.Sending) &&
+            uploadPercent != null ->
+            Triple("⏳", "发送中 $uploadPercent%", color)
         status == MessageStatus.Pending || status == MessageStatus.Sending ->
             Triple("⏳", "发送中", color)
         isReadByPts || status == MessageStatus.Read ->

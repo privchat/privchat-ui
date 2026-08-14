@@ -120,6 +120,24 @@ data class SendQueueState(
     val lastFailureMessageId: ULong? = null,
 )
 
+/**
+ * 附件上传进度。
+ *
+ * 🔴 计的是**服务端已确认**的字节，不是「已经发出去」的字节。用后者的话，弱网下进度条
+ * 会先冲到 100%，然后在超时重传时往回退——用户看到的就是「传完了又没传完」。
+ */
+data class UploadProgressState(
+    /** 本地消息 id → (已确认字节, 总字节)。传完或失败后移除。 */
+    val inFlight: Map<String, Pair<Long, Long>> = emptyMap(),
+) {
+    /** 0f..1f；不在上传中返回 null，UI 据此决定画不画进度。 */
+    fun fractionOf(localMessageId: String): Float? {
+        val (done, total) = inFlight[localMessageId] ?: return null
+        if (total <= 0L) return null
+        return (done.toDouble() / total.toDouble()).coerceIn(0.0, 1.0).toFloat()
+    }
+}
+
 // ========== 全局对象 ==========
 
 object ClientRuntime {
@@ -130,6 +148,9 @@ object ClientRuntime {
     val sync: StateFlow<SyncState> = _sync.asStateFlow()
 
     private val _send = MutableStateFlow(SendQueueState())
+
+    private val _uploads = MutableStateFlow(UploadProgressState())
+    val uploads: StateFlow<UploadProgressState> = _uploads.asStateFlow()
     val send: StateFlow<SendQueueState> = _send.asStateFlow()
 
     /** 是否建立过认证会话（区分「首次连接中」与「重连中」）。 */
@@ -342,6 +363,24 @@ object ClientRuntime {
     }
 
     /** 消息发送成功（status=Sent）：成功信号清 serverBusy。 */
+    /** 收到一条上传进度。`uploaded == total` 表示这一份传完了，从表里摘掉。 */
+    fun onAttachmentUploadProgress(localMessageId: String, uploaded: Long, total: Long) {
+        _uploads.value = UploadProgressState(
+            if (total > 0L && uploaded >= total) {
+                _uploads.value.inFlight - localMessageId
+            } else {
+                _uploads.value.inFlight + (localMessageId to (uploaded to total))
+            }
+        )
+    }
+
+    /** 这条消息不再上传了（发送成功/失败/取消）：别把进度条永远留在屏幕上。 */
+    fun onAttachmentUploadFinished(localMessageId: String) {
+        if (localMessageId in _uploads.value.inFlight) {
+            _uploads.value = UploadProgressState(_uploads.value.inFlight - localMessageId)
+        }
+    }
+
     fun onMessageSendSucceeded() {
         clearServerBusy()
     }
