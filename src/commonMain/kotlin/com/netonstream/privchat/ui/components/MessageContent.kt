@@ -96,9 +96,13 @@ fun MessageContent(
 ) {
     val colors = Theme.colors
     val textColor = if (isSelf) colors.messageTextSelf else colors.messageTextOther
-    val secondaryTextColor = if (isSelf) colors.messageTextSelf.copy(alpha = 0.7f) else colors.mutedForeground
-
     val parsed = message.parsedContent
+    // 🔴 媒体气泡（图片/视频）背景透明，footer 直接落在页面白底上：自己发的消息若沿用
+    // 深色气泡里的浅色 `messageTextSelf`，时间/发送中/进度就是白字白底——什么都看不见。
+    // 媒体气泡一律用 mutedForeground，与对方消息一致。
+    val secondaryTextColor = if (
+        isSelf && parsed.type != MessageType.IMAGE && parsed.type != MessageType.VIDEO
+    ) colors.messageTextSelf.copy(alpha = 0.7f) else colors.mutedForeground
     // [TRACE] 排查 Bug2：气泡右下角时间+状态不显示。footer 只在 parsed.type == SYSTEM 时
     // 被跳过——但走到这里说明已经按 BUBBLE 渲染（RenderType.BUBBLE）。如果 parsed.type 是
     // SYSTEM，意味着 contentType() != SYSTEM 但 parseMessageType(messageType, content, extra)
