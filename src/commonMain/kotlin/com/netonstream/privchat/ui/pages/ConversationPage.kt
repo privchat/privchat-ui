@@ -68,6 +68,13 @@ fun ConversationPage(
     onScan: () -> Unit = {},
     onMyQrCode: () -> Unit = {},
     networkStatusBar: (@Composable () -> Unit)? = null,
+    /**
+     * 连接/同步状态文案，显示在**标题位**取代「消息」。
+     *
+     * Telegram 的做法：标题栏本来就是空的，断线时借用它，恢复了自然变回去——不必为一条
+     * 临时状态永久让出一行高度，列表也不会在状态出现/消失时整体跳动。
+     */
+    statusTitle: String? = null,
     onPinChannel: (suspend (ULong, Boolean) -> Result<Boolean>)? = null,
     onMuteChannel: (suspend (ULong, Boolean) -> Result<Boolean>)? = null,
     onHideChannel: (suspend (ULong) -> Result<Boolean>)? = null,
@@ -145,7 +152,7 @@ fun ConversationPage(
             // 顶部导航栏
             if (showNavBar) {
                 NavBar(
-                    title = strings.conversationTitle,
+                    title = statusTitle ?: strings.conversationTitle,
                     rightWidgetWidth = 96.dp,
                     rightWidget = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
