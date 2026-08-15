@@ -19,6 +19,10 @@ import com.gearui.primitives.BadgeTheme
 import com.gearui.primitives.HorizontalSpacer
 import com.gearui.primitives.VerticalSpacer
 import com.tencent.kuikly.compose.ui.unit.Dp
+import com.gearui.components.loading.Loading
+import com.gearui.components.loading.LoadingIcon
+import com.gearui.components.loading.LoadingLayout
+import com.gearui.components.loading.LoadingSize
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.navbar.NavBarItem
 import com.gearui.components.contextmenu.ContextMenu
@@ -75,6 +79,14 @@ fun ConversationPage(
      * 临时状态永久让出一行高度，列表也不会在状态出现/消失时整体跳动。
      */
     statusTitle: String? = null,
+    /**
+     * 状态是否「进行中」。true 时标题前面转圈。
+     *
+     * 只有连接中/重连中/同步中该转——它们表示**正在努力**，转圈是在说"还没放弃"。
+     * 「网络已断开」「登录失效」是停下来的状态，给它们配个转圈等于承诺一个不会发生的
+     * 恢复。
+     */
+    statusBusy: Boolean = false,
     onPinChannel: (suspend (ULong, Boolean) -> Result<Boolean>)? = null,
     onMuteChannel: (suspend (ULong, Boolean) -> Result<Boolean>)? = null,
     onHideChannel: (suspend (ULong) -> Result<Boolean>)? = null,
@@ -152,7 +164,20 @@ fun ConversationPage(
             // 顶部导航栏
             if (showNavBar) {
                 NavBar(
-                    title = statusTitle ?: strings.conversationTitle,
+                    title = if (statusTitle == null) strings.conversationTitle else "",
+                    titleWidget = if (statusTitle != null && statusBusy) {
+                        {
+                            Loading(
+                                size = LoadingSize.SMALL,
+                                icon = LoadingIcon.CIRCLE,
+                                text = statusTitle,
+                                layout = LoadingLayout.HORIZONTAL,
+                                color = Theme.colors.foreground,
+                            )
+                        }
+                    } else if (statusTitle != null) {
+                        { Text(text = statusTitle, style = Typography.TitleMedium, color = Theme.colors.foreground) }
+                    } else null,
                     rightWidgetWidth = 96.dp,
                     rightWidget = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
