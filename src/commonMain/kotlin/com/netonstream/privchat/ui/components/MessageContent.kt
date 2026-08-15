@@ -173,6 +173,10 @@ fun MessageContent(
             val uploadPercent = uploads
                 .fractionOf(message.id.toString())
                 ?.let { (it * 100).toInt().coerceIn(0, 100) }
+            // 百分比之外再给字节量：光看 "37%" 判断不了是卡住了还是文件本来就大，
+            // "2.1MB / 5.6MB" 一眼能看出还剩多少、走没走动。
+            val uploadBytes = uploads.inFlight[message.id.toString()]
+                ?.let { (sent, total) -> "${humanBytes(sent)} / ${humanBytes(total)}" }
             MessageFooter(
                 timestamp = message.timestamp,
                 status = message.status,
@@ -185,6 +189,7 @@ fun MessageContent(
                 onFailedClick = onFailedClick,
                 mediaWidthDp = mediaWidthDp,
                 uploadPercent = uploadPercent,
+                uploadBytes = uploadBytes,
             )
         } else if (isMoneyCard) {
             // 资金卡片：只显示时间，不显示发送中/发送失败/已读状态（服务端注入天然 Sent）。
@@ -1264,6 +1269,7 @@ private fun MessageFooter(
     // 不再 fillMaxWidth 把整列撑到屏幕边。null = 文本等普通气泡，沿用 fillMaxWidth。
     mediaWidthDp: Int? = null,
     uploadPercent: Int? = null,
+    uploadBytes: String? = null,
 ) {
     Row(
         modifier = if (mediaWidthDp != null) Modifier.width(mediaWidthDp.dp) else Modifier.fillMaxWidth(),
@@ -1290,6 +1296,7 @@ private fun MessageFooter(
                 delivered = delivered,
                 onFailedClick = onFailedClick,
                 uploadPercent = uploadPercent,
+                uploadBytes = uploadBytes,
             )
         }
     }
@@ -1311,6 +1318,7 @@ private fun MessageStatusIcon(
     onFailedClick: (() -> Unit)? = null,
     /** 上传进度百分比；null = 不在上传（或没有进度可报）。 */
     uploadPercent: Int? = null,
+    uploadBytes: String? = null,
 ) {
     val (icon, label, iconColor) = when {
         status == MessageStatus.Failed -> Triple("❗", "发送失败 · 重试", Theme.colors.destructive)
@@ -1321,7 +1329,11 @@ private fun MessageStatusIcon(
         // 有数字在动，等待才是可以忍受的。
         (status == MessageStatus.Pending || status == MessageStatus.Sending) &&
             uploadPercent != null ->
-            Triple("⏳", "发送中 $uploadPercent%", color)
+            Triple(
+                "⏳",
+                if (uploadBytes != null) "$uploadBytes · $uploadPercent%" else "发送中 $uploadPercent%",
+                color,
+            )
         status == MessageStatus.Pending || status == MessageStatus.Sending ->
             Triple("⏳", "发送中", color)
         isReadByPts || status == MessageStatus.Read ->
@@ -1352,4 +1364,15 @@ private fun MessageStatusIcon(
             color = iconColor,
         )
     }
+}
+
+/// 字节数转人读格式。上传进度用，所以只到 MB 就够——再大的附件本来也传不动。
+private fun humanBytes(n: Long): String = when {
+    n >= 1024L * 1024L -> {
+        val mb = n.toDouble() / (1024.0 * 1024.0)
+        val one = (mb * 10).toLong()
+        "${one / 10}.${one % 10}MB"
+    }
+    n >= 1024L -> "${n / 1024}KB"
+    else -> "${n}B"
 }
