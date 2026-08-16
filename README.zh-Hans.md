@@ -32,10 +32,11 @@ App 原样复用。
 
 1. **privchat-ui 只通过 `PrivchatClient` 接触网络。** 它不开 socket、不解析线上报文、
    不决定何时重连。这些都由 Rust SDK 做，Kotlin 绑定暴露出来，本层负责渲染。
-2. **privchat-ui 只用 GearUI Kit 画界面。** 按钮、输入框、列表、底部面板、toast、
-   对话框、头像、主题、间距、i18n 管线——全部来自 `com.gearui.*`。底下的 Compose 原语
-   （`com.tencent.kuikly.compose.*` 的 `Modifier`、布局、动画）在布局需要时会直接用，
-   但 GearUI 已有的控件一律不自己造。
+2. **privchat-ui 依赖的是 GearUI Kit，不是 KuiklyUI。** `build.gradle.kts` 里没有任何
+   KuiklyUI 依赖声明。按钮、输入框、列表、底部面板、toast、对话框、主题、间距、i18n 管线
+   ——全部来自 `com.gearui.*`。页面代码里出现的 Compose 原语（`com.tencent.kuikly.compose.*`
+   下的 `Modifier`、布局、动画）是 GearUI Kit 以 `api` 方式对外暴露的那部分，传递依赖过来的；
+   kit 哪天换渲染器，它们跟着 kit 走。
 
 ## SDK 层怎么用
 
@@ -144,8 +145,9 @@ token，不 fork、不改皮。
   App **只在** `App(languageTag = …)` 设一次语言；这个 provider 不能再单独传 tag。
   文案按域拆分，任何单个类都不会撞上 Android 的 DEX / 255 参数上限。
 
-唯一有意跨越边界的地方，是直接 import `com.tencent.kuikly.compose.*` 拿 `Modifier`、布局
-容器和动画。GearUI 本身就建在它们上面；用它们排布局，跟绕开 GearUI 自造控件不是一回事。
+关于 `com.tencent.kuikly.compose.*` 下的 `Modifier`、布局容器和动画 import：它们不是第二个
+依赖。GearUI Kit 把 `com.tencent.kuikly-open:compose` 以 `api` 暴露，所以它们本来就是「依赖
+GearUI Kit」的一部分；privchat-ui 自己没有声明任何 KuiklyUI。
 
 ## 接进 App
 

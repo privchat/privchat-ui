@@ -36,11 +36,13 @@ Two rules follow from that picture and the code is arranged to keep them true:
    opens a socket, never parses a wire message, never decides when to reconnect.
    The Rust SDK does all of that; the Kotlin binding exposes it; this layer
    renders it.
-2. **privchat-ui draws only with GearUI Kit.** Buttons, inputs, lists, sheets,
-   toasts, dialogs, avatars, theming, spacing, i18n plumbing — all of it comes
-   from `com.gearui.*`. The Compose primitives underneath (`Modifier`, layout,
-   animation from `com.tencent.kuikly.compose.*`) are used directly where a
-   layout needs them, but no widget is hand-rolled that GearUI already has.
+2. **privchat-ui depends on GearUI Kit, not on KuiklyUI.** `build.gradle.kts`
+   declares no KuiklyUI dependency at all. Buttons, inputs, lists, sheets,
+   toasts, dialogs, theming, spacing, i18n plumbing — all of it comes from
+   `com.gearui.*`. The Compose primitives that appear in page code (`Modifier`,
+   layout, animation under `com.tencent.kuikly.compose.*`) are the ones GearUI
+   Kit re-exports as its own `api` surface; they arrive transitively and would
+   follow the kit if it ever swapped renderers.
 
 ## How the SDK is used
 
@@ -172,10 +174,10 @@ restyle them.
   must not be handed a tag of its own. Strings are split into domains so no
   single class hits Android's DEX / 255-parameter limits.
 
-The one place the boundary is crossed deliberately is the raw
-`com.tencent.kuikly.compose.*` imports for `Modifier`, layout containers and
-animation. GearUI is itself built on those; using them for layout is not the
-same as bypassing GearUI for a widget.
+On the `com.tencent.kuikly.compose.*` imports for `Modifier`, layout containers
+and animation: those are not a second dependency. GearUI Kit exposes
+`com.tencent.kuikly-open:compose` as `api`, so they are part of what "depending
+on GearUI Kit" means; privchat-ui declares nothing of KuiklyUI itself.
 
 ## Wiring it into an app
 
