@@ -14,7 +14,7 @@ App 原样复用。
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  privchat-app          最终发行的 App：登录、启动、导航壳、  │
+│  宿主 App              最终发行的 App：登录、启动、导航壳、  │
 │                        推送、设置                          │
 ├──────────────────────────────────────────────────────────┤
 │  privchat-ui（本仓库）  页面 + 聊天组件 + 运行时状态；        │
@@ -83,7 +83,7 @@ PrivChat.client.forwardMessage(...)
 连接、同步、发送队列。App 层把 SDK 事件喂进来，页面只订阅它的 `StateFlow`。
 
 ```
-SDK 事件 ──▶ App: PrivChatSDKManager.handleSdkEvent ──▶ ClientRuntime.on…()
+SDK 事件 ──▶ 宿主 App 的事件处理 ──▶ ClientRuntime.on…()
                                                              │
    ConnectivityState / SyncState / SendQueueState  ◀─────────┘
                      │
@@ -151,7 +151,7 @@ GearUI Kit」的一部分；privchat-ui 自己没有声明任何 KuiklyUI。
 
 ## 接进 App
 
-App 这样把三层拼起来——摘自 `privchat-app`，不是为 README 编的：
+宿主 App 这样把三层拼起来——摘自真实 App，不是为 README 编的：
 
 ```kotlin
 // 1. SDK client 由 App 创建（设备 id、服务器、存储路径……）
@@ -234,4 +234,3 @@ com.netonstream.privchat:sdk    → ../privchat-sdk-kotlin
 
 - [GearUI Kit](https://github.com/gearui/gearui-kit)——本仓库依赖的设计系统
 - [privchat-sdk-kotlin](https://github.com/privchat/privchat-sdk-kotlin)——Kotlin SDK 绑定
-- [privchat/app](https://github.com/privchat/app)——把三者装配起来的发行 App

@@ -14,7 +14,7 @@ in Kotlin Multiplatform and used unchanged by the Android and iOS apps.
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  privchat-app          the shipping app: login, startup,  │
+│  host app              the shipping app: login, startup,  │
 │                        navigation shell, push, settings   │
 ├──────────────────────────────────────────────────────────┤
 │  privchat-ui  (this)   pages + chat components + runtime  │
@@ -97,7 +97,7 @@ send queue. The app layer feeds it SDK events; pages subscribe to its
 `StateFlow`s and nothing else.
 
 ```
-SDK event ──▶ app: PrivChatSDKManager.handleSdkEvent ──▶ ClientRuntime.on…()
+SDK event ──▶ host app's event handler ──▶ ClientRuntime.on…()
                                                               │
    ConnectivityState / SyncState / SendQueueState  ◀──────────┘
                      │
@@ -181,8 +181,8 @@ on GearUI Kit" means; privchat-ui declares nothing of KuiklyUI itself.
 
 ## Wiring it into an app
 
-The app composes the three layers like this — this is lifted from
-`privchat-app`, not invented for the README:
+The host app composes the three layers like this — this is lifted from a
+real app, not invented for the README:
 
 ```kotlin
 // 1. SDK client is created by the app (device id, server, storage path…)
@@ -265,4 +265,3 @@ There is no JVM target, so `commonTest` runs through one of those two.
 
 - [GearUI Kit](https://github.com/gearui/gearui-kit) — the design system this is built on
 - [privchat-sdk-kotlin](https://github.com/privchat/privchat-sdk-kotlin) — the Kotlin SDK binding
-- [privchat/app](https://github.com/privchat/app) — the shipping app that assembles all three
