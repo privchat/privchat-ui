@@ -366,6 +366,7 @@ internal val hantAuxiliary = PrivChatAuxiliaryStrings(
     timeSaturday = "週六",
     systemTemplates = mapOf(
             "system.member_invited" to "{0} 邀請 {1+} 加入了群聊",
+            "system.friend_request_accepted" to "我們已經是好友了",
             "system.group_mute_all_on" to "{0} 開啟了全員禁言",
             "system.group_mute_all_off" to "{0} 解除了全員禁言",
             "system.member_joined"  to "{0} 加入了群聊",

@@ -368,6 +368,7 @@ internal val zhAuxiliary = PrivChatAuxiliaryStrings(
 
 
                 "system.member_invited" to "{0} 邀请 {1+} 加入了群聊",
+                "system.friend_request_accepted" to "我们已经是好友了",
                 "system.group_mute_all_on" to "{0} 开启了全员禁言",
                 "system.group_mute_all_off" to "{0} 解除了全员禁言",
                 "system.member_joined"  to "{0} 加入了群聊",

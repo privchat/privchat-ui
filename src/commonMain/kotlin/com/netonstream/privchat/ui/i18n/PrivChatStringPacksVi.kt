@@ -366,6 +366,7 @@ internal val viAuxiliary = PrivChatAuxiliaryStrings(
     timeSaturday = "T7",
     systemTemplates = mapOf(
             "system.member_invited" to "{0} đã mời {1+} vào nhóm",
+            "system.friend_request_accepted" to "Chúng ta đã là bạn bè",
             "system.group_mute_all_on" to "{0} đã bật cấm chat toàn nhóm",
             "system.group_mute_all_off" to "{0} đã tắt cấm chat toàn nhóm",
             "system.member_joined"  to "{0} đã tham gia nhóm",
