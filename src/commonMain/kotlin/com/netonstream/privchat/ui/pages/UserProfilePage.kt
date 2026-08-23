@@ -21,7 +21,7 @@ import com.gearui.components.toast.Toast
 
 import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
-import com.gearui.foundation.primitives.GearLazyColumn
+import com.tencent.kuikly.compose.foundation.lazy.LazyColumn
 import com.gearui.foundation.typography.Typography
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.tencent.kuikly.compose.foundation.background
@@ -87,7 +87,8 @@ fun UserProfilePage(
         )
 
         // 可滚动内容
-        GearLazyColumn(modifier = Modifier.fillMaxSize()) {
+        // Keep profile actions out of the shared drag gesture wrapper.
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
             // 用户头像和信息区域 - 微信风格：左侧头像，右侧信息
             item {
                 Row(
@@ -364,7 +365,7 @@ fun FriendProfilePage(
         )
 
         // 可滚动内容
-        GearLazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
             // 好友头像和信息区域 - 微信风格：左侧头像，右侧信息
             item {
                 Row(
