@@ -2557,7 +2557,8 @@ private fun MessageInputBar(
             "📍", "🚗", "✈️", "⌛", "✅", "❌", "❓", "❗"
         )
     }
-    val inputControlHeight = 40.dp
+    // 输入栏一行里所有控件同高：单行输入框、圆形按钮、语音条、发送按钮。
+    val inputControlHeight = 32.dp
     val panelHostHeight = 228.dp
     val panelTopSpacing = 8.dp
     val rawKeyboardVisible = keyboardHeight > 0.dp
@@ -2810,6 +2811,9 @@ private fun MessageInputBar(
                         placeholder = "输入消息",
                         modifier = Modifier.weight(1f),
                         maxLines = 8,
+                        // 单行压到与两侧按钮齐平的 32dp（实测行盒 26dp，故 3dp 内边距）；
+                        // 多行时照常向上生长。
+                        verticalPadding = 3.dp,
                         autoFocus = pendingAutoFocus,
                         focusRequester = inputFocusRequester,
                         onFocusChanged = { focused ->
@@ -2849,9 +2853,7 @@ private fun MessageInputBar(
                     Button(
                         text = "发送",
                         theme = ButtonTheme.PRIMARY,
-                        // 输入栏里所有控件同高（inputControlHeight=40dp）：圆形按钮、
-                        // 文本框、语音条、发送按钮。SMALL(32dp) 会矮一截。
-                        size = ButtonSize.MEDIUM,
+                        size = ButtonSize.SMALL,
                         disabled = loading,
                         loading = loading,
                         onClick = { onSend() },
@@ -3095,7 +3097,7 @@ private fun VoiceRecordingOverlay(
 private fun CircleIconButton(
     icon: String,
     onClick: () -> Unit,
-    size: Dp = 40.dp,
+    size: Dp = 32.dp,
 ) {
     val colors = Theme.colors
     Box(
