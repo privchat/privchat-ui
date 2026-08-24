@@ -259,10 +259,10 @@ private fun ContactEntryIcon(icon: String) {
         modifier = Modifier
             .size(AvatarSizeTokens.Small.size)
             .clip(RoundedCornerShape(8.dp))
-            .background(colors.muted),
+            .background(colors.primary),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(name = icon, size = 18.dp, tint = colors.primary)
+        Icon(name = icon, size = 18.dp, tint = colors.primaryForeground)
     }
 }
 
