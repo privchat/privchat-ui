@@ -97,6 +97,7 @@ import com.tencent.kuikly.compose.ui.draw.clip
 import com.tencent.kuikly.compose.ui.draw.alpha
 import com.tencent.kuikly.compose.ui.zIndex
 import com.tencent.kuikly.compose.ui.unit.dp
+import com.tencent.kuikly.compose.ui.unit.sp
 import com.netonstream.privchat.ui.common.base.currentTimeMillis
 import com.tencent.kuikly.compose.ui.graphics.Color
 import com.tencent.kuikly.compose.ui.text.LinkAnnotation
@@ -2811,9 +2812,11 @@ private fun MessageInputBar(
                         placeholder = "输入消息",
                         modifier = Modifier.weight(1f),
                         maxLines = 8,
-                        // 单行压到与两侧按钮齐平的 32dp（实测行盒 26dp，故 3dp 内边距）；
-                        // 多行时照常向上生长。
-                        verticalPadding = 3.dp,
+                        // 单行压到与两侧按钮齐平的 32dp，且文字在框内垂直居中：
+                        // 行高取接近字体自然行高的 20sp（多出来的行距全被加在基线下方，
+                        // 24sp 会让单行明显偏上），再配 6dp 内边距凑满 32dp。
+                        verticalPadding = 6.dp,
+                        lineHeight = 19.sp,
                         autoFocus = pendingAutoFocus,
                         focusRequester = inputFocusRequester,
                         onFocusChanged = { focused ->
