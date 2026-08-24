@@ -2563,6 +2563,23 @@ private fun MessageInputBar(
     val rawKeyboardVisible = keyboardHeight > 0.dp
     // 对键盘消失信号做 150ms 防抖，避免切换 app 时系统短暂重置 inset 导致布局闪烁
     var keyboardVisible by remember { mutableStateOf(rawKeyboardVisible) }
+
+    // 语音→文字：只把焦点请求交给 textarea 的 autoFocus 不足以在 iOS 上唤起键盘，
+    // 必须显式 show()；delay 一帧等 textarea 完成组合，否则 requestFocus 落空。
+    LaunchedEffect(voiceMode, pendingAutoFocus) {
+        if (!voiceMode && pendingAutoFocus) {
+            // 等 textarea 完成组合并挂上原生输入视图，再请求焦点。焦点先到位、
+            // 随后 show() 才能把软键盘唤起（先 show 后 focus 会被忽略）。
+            delay(80)
+            runCatching { inputFocusRequester.requestFocus() }
+            keyboardController?.show()
+            delay(120)
+            if (!keyboardVisible) {
+                runCatching { inputFocusRequester.requestFocus() }
+                keyboardController?.show()
+            }
+        }
+    }
     LaunchedEffect(rawKeyboardVisible) {
         if (rawKeyboardVisible) {
             keyboardVisible = true
@@ -2832,7 +2849,9 @@ private fun MessageInputBar(
                     Button(
                         text = "发送",
                         theme = ButtonTheme.PRIMARY,
-                        size = ButtonSize.SMALL,
+                        // 输入栏里所有控件同高（inputControlHeight=40dp）：圆形按钮、
+                        // 文本框、语音条、发送按钮。SMALL(32dp) 会矮一截。
+                        size = ButtonSize.MEDIUM,
                         disabled = loading,
                         loading = loading,
                         onClick = { onSend() },
@@ -3076,12 +3095,13 @@ private fun VoiceRecordingOverlay(
 private fun CircleIconButton(
     icon: String,
     onClick: () -> Unit,
+    size: Dp = 40.dp,
 ) {
     val colors = Theme.colors
     Box(
         modifier = Modifier
-            .size(32.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .size(size)
+            .clip(RoundedCornerShape(size / 2))
             .background(colors.muted)
             .clickable { onClick() },
         contentAlignment = Alignment.Center,
