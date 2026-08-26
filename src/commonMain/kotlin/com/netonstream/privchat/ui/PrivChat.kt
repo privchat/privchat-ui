@@ -702,14 +702,21 @@ object PrivChat {
      * 巧合就没了——那批消息带着今天的时间戳排到了真正更新的消息后面。
      *
      * 现在的规则不依赖任何时钟：
-     * - 未确认（无 server_message_id）的本地消息排在最新端；
      * - 已确认消息按 per-channel 权威顺序 `pts`；
-     * - pts 缺失或相同用 `server_message_id`（服务端雪花，时间有序）；
-     * - 最后用本地主键 `id` 兜底，保证同一批输入的顺序稳定。
+     * - 未确认（无 server_message_id）的本地消息**也有 pts**——建行时锚定了当时的
+     *   pts 水位（Rust SDK `create_local_message`），所以它排在「写它的时候已经存在
+     *   的最后一条」之后；
+     * - 同一个 pts 上已确认在前、未确认在后；
+     * - 再用 `server_message_id`（服务端雪花，时间有序）与本地主键 `id` 兜底。
+     *
+     * 🔴 未确认组不能再当主键。上一版把它放在元组第一位，于是**发送失败的消息不论
+     * 什么时候发的都会被顶到会话末尾**——早上失败的视频排在了晚上收到的图片后面，
+     * 位置由「确认与否」而不是「什么时候发的」决定。这份比较器与 Rust SDK 的
+     * `list_messages` 排序键是同一套元组，必须一起改，否则两边给出的顺序会打架。
      */
     private val DISPLAY_ORDER: Comparator<MessageEntry> =
-        compareBy<MessageEntry> { if ((it.serverMessageId ?: 0uL) == 0uL) 1 else 0 }
-            .thenBy { it.pts ?: 0uL }
+        compareBy<MessageEntry> { it.pts ?: 0uL }
+            .thenBy { if ((it.serverMessageId ?: 0uL) == 0uL) 1 else 0 }
             .thenBy { it.serverMessageId ?: 0uL }
             .thenBy { it.id }
 
