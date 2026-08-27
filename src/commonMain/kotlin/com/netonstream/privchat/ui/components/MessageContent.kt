@@ -640,8 +640,13 @@ private fun VideoContent(
 ) {
     val (width, height) = attachmentBubbleSize(parsed.width, parsed.height)
     // 同图片:只用本地已下载的文件。远程 url 指向加密 blob,渲染器解不开。
+    //
+    // 🔴 **不能退回 `localMediaPath`**：那是视频文件本身（.mov/.mp4），图片解码器解不开。
+    // 退回它的后果不是报错，是画出一片**透明**——气泡只剩一个孤零零的播放按钮。
+    // 而且这个坑只在「看过一次之后」才现形：没下载时 localMediaPath 是 null，走 else
+    // 分支还有占位底色；看完一次 media 落了盘，反而把底色弄没了。
+    // 视频的图像来源只有一个：缩略图。
     val videoThumb = message.localThumbnailPath?.let { "file://$it" }
-        ?: message.localMediaPath?.let { "file://$it" }
 
     // UX-2：视频气泡点击预览 + 长按弹菜单。
     val menuTrigger = LocalMessageMenuTrigger.current
@@ -659,7 +664,10 @@ private fun VideoContent(
     Box(
         modifier = gestureMod
             .size(width.dp, height.dp)
-            .clip(RoundedCornerShape(8.dp)),
+            .clip(RoundedCornerShape(8.dp))
+            // 底色恒在：缩略图缺失、还没解码完、解码失败，任何一种情况下气泡都得是
+            // 一个成形的方块，而不是一个浮在聊天背景上的播放按钮。
+            .background(Theme.colors.muted),
         contentAlignment = Alignment.Center,
     ) {
         if (!videoThumb.isNullOrBlank()) {
