@@ -167,10 +167,6 @@ fun MessageContent(
                     attachmentBubbleSize(parsed.width, parsed.height).first
                 else -> null
             }
-            // 「已读」强调色：媒体气泡（透明底，footer 落在白色页面）用 primary（深色，可见）；
-            // 自己的文字/普通气泡是深色底（messageBubbleSelf），primary 与气泡同为 0xFF18181B
-            // 会撞色隐形 —— 改用气泡前景浅色（messageTextSelf），保证「✓✓ 已读」可见。
-            val readColor = if (isSelf && !isMediaBubble) colors.messageTextSelf else colors.primary
             // 上传进度按**本地消息 id** 取：SDK 发进度时带的就是它。
             val uploads = com.netonstream.privchat.ui.runtime.ClientRuntime.uploads
                 .collectAsState().value
@@ -186,7 +182,6 @@ fun MessageContent(
                 status = message.status,
                 isSelf = isSelf,
                 secondaryTextColor = secondaryTextColor,
-                readColor = readColor,
                 messagePts = message.pts,
                 peerReadPts = peerReadPts,
                 delivered = message.delivered,
@@ -1272,7 +1267,6 @@ private fun MessageFooter(
     status: MessageStatus,
     isSelf: Boolean,
     secondaryTextColor: Color,
-    readColor: Color,
     messagePts: ULong? = null,
     peerReadPts: ULong? = null,
     delivered: Boolean = false,
@@ -1303,7 +1297,6 @@ private fun MessageFooter(
             MessageStatusIcon(
                 status = status,
                 color = secondaryTextColor,
-                readColor = readColor,
                 isReadByPts = isReadByPts,
                 delivered = delivered,
                 onFailedClick = onFailedClick,
@@ -1324,7 +1317,6 @@ private fun MessageFooter(
 private fun MessageStatusIcon(
     status: MessageStatus,
     color: Color,
-    readColor: Color,
     isReadByPts: Boolean = false,
     delivered: Boolean = false,
     onFailedClick: (() -> Unit)? = null,
@@ -1348,8 +1340,11 @@ private fun MessageStatusIcon(
             )
         status == MessageStatus.Pending || status == MessageStatus.Sending ->
             Triple("⏳", "发送中", color)
+        // 「已读」与时间同色。它不是需要抢注意力的状态——消息已经送到了，读者没有任何
+        // 动作要做；把它挑成强调色只会让每条自己发的消息末尾都有一处高对比色块在跳。
+        // 需要强调的只有「发送失败」（destructive），那才要用户处理。
         isReadByPts || status == MessageStatus.Read ->
-            Triple("✓✓", "已读", readColor)
+            Triple("✓✓", "已读", color)
         delivered -> Triple("✓✓", "已送达", color)
         else -> Triple("✓", "已发送", color)
     }
