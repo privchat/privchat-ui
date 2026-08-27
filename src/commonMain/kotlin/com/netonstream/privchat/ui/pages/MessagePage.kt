@@ -2535,7 +2535,17 @@ private fun MessageInputBar(
         buildList {
             add(PlusAction(Icons.image, "相册", onPickImage))
             add(PlusAction(Icons.camera_alt, "相机", onPickCamera))
-            add(PlusAction(Icons.flag, "位置", onLocation))
+            // 位置入口暂时下线（LOCATION_ENTRY_ENABLED=false）。
+            //
+            // 发送侧还没接定位：Info.plist 里没有 NSLocationWhenInUseUsageDescription，
+            // iOS 上一旦真去取坐标会**直接崩**；就算不崩，一个点了没反应的按钮在审核
+            // 眼里是「功能不完整」。接收侧照常渲染位置消息（对端/历史消息不受影响），
+            // 只是本端不再提供入口。
+            //
+            // 留开关不删代码：定位接好、权限文案补上之后翻回 true 即可。
+            if (LOCATION_ENTRY_ENABLED) {
+                add(PlusAction(Icons.flag, "位置", onLocation))
+            }
             // 红包/转账 PLATFORM-only：moneyEnabled 才显示（BUILTIN 隐藏入口）。
             if (moneyEnabled) {
                 add(PlusAction(Icons.mail, "红包", onRedPacket))
@@ -3651,3 +3661,11 @@ private fun MentionPicker(
         }
     }
 }
+
+/**
+ * 「+」面板是否显示位置入口。
+ *
+ * 暂为 false：发送侧未接定位（缺 `NSLocationWhenInUseUsageDescription`，iOS 取坐标会崩），
+ * 接收侧不受影响。定位接好后翻回 true。
+ */
+private const val LOCATION_ENTRY_ENABLED = false
