@@ -57,6 +57,8 @@ fun ContactPage(
     onFriendClick: (FriendEntry) -> Unit,
     onGroupClick: (GroupEntry) -> Unit = {},
     onAddFriend: () -> Unit = {},
+    /** 顶栏放大镜 → 全局搜索页（与会话页同一动作，spec §7.1）。 */
+    onGlobalSearch: () -> Unit = {},
     onFriendRequestClick: () -> Unit = {},
     @Suppress("UNUSED_PARAMETER") onMyGroupsClick: () -> Unit = {},
     onFriendSettings: (FriendEntry) -> Unit = {},
@@ -82,7 +84,19 @@ fun ContactPage(
     val groupsTabLabel = "${strings.contactGroups} ${groups.size}"
 
     Column(modifier = modifier.fillMaxSize()) {
-        NavBar(title = strings.contactTitle)
+        NavBar(
+            title = strings.contactTitle,
+            rightItems = listOf(
+                com.gearui.components.navbar.NavBarItem(
+                    icon = com.gearui.components.icon.Icons.search,
+                    onClick = onGlobalSearch,
+                ),
+                com.gearui.components.navbar.NavBarItem(
+                    icon = com.gearui.components.icon.Icons.person_add,
+                    onClick = onAddFriend,
+                ),
+            ),
+        )
         networkStatusBar?.invoke()
 
         Tabs(
@@ -98,17 +112,6 @@ fun ContactPage(
             size = TabsSize.MEDIUM,
             outlineType = TabsOutlineType.UNDERLINE,
             showDivider = true,
-        )
-
-        SearchBar(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            placeholder = strings.search,
-            shape = com.gearui.components.searchbar.SearchBarShape.SQUARE,
-            alignment = com.gearui.components.searchbar.SearchBarAlignment.CENTER,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
         )
 
         when (selectedTab) {

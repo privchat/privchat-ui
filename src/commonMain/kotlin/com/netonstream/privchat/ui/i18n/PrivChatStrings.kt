@@ -120,6 +120,11 @@ data class PrivChatStrings(
     val globalSearchTitle: String get() = dSearch.globalSearchTitle
     val globalSearchPlaceholder: String get() = dSearch.globalSearchPlaceholder
     val globalSearchSectionChannels: String get() = dSearch.globalSearchSectionChannels
+    val globalSearchSectionContacts: String get() = dSearch.globalSearchSectionContacts
+    val globalSearchSectionGroups: String get() = dSearch.globalSearchSectionGroups
+    val globalSearchMoreContacts: String get() = dSearch.globalSearchMoreContacts
+    val globalSearchMoreGroups: String get() = dSearch.globalSearchMoreGroups
+    val globalSearchMoreMessages: String get() = dSearch.globalSearchMoreMessages
     val globalSearchSectionMessages: String get() = dSearch.globalSearchSectionMessages
     val globalSearchNoResult: String get() = dSearch.globalSearchNoResult
     val globalSearchLoadMore: String get() = dSearch.globalSearchLoadMore

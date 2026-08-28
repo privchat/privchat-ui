@@ -407,6 +407,11 @@ data class PrivChatSearchStrings(
     val globalSearchTitle: String,
     val globalSearchPlaceholder: String,
     val globalSearchSectionChannels: String,
+    val globalSearchSectionContacts: String,
+    val globalSearchSectionGroups: String,
+    val globalSearchMoreContacts: String,
+    val globalSearchMoreGroups: String,
+    val globalSearchMoreMessages: String,
     val globalSearchSectionMessages: String,
     val globalSearchNoResult: String,
     val globalSearchLoadMore: String,
@@ -428,6 +433,11 @@ data class PrivChatSearchStringsPatch(
     val globalSearchTitle: String? = null,
     val globalSearchPlaceholder: String? = null,
     val globalSearchSectionChannels: String? = null,
+    val globalSearchSectionContacts: String? = null,
+    val globalSearchSectionGroups: String? = null,
+    val globalSearchMoreContacts: String? = null,
+    val globalSearchMoreGroups: String? = null,
+    val globalSearchMoreMessages: String? = null,
     val globalSearchSectionMessages: String? = null,
     val globalSearchNoResult: String? = null,
     val globalSearchLoadMore: String? = null,
@@ -449,6 +459,11 @@ val PrivChatSearchStringsPatch.isEmpty: Boolean
         globalSearchTitle == null &&
         globalSearchPlaceholder == null &&
         globalSearchSectionChannels == null &&
+        globalSearchSectionContacts == null &&
+        globalSearchSectionGroups == null &&
+        globalSearchMoreContacts == null &&
+        globalSearchMoreGroups == null &&
+        globalSearchMoreMessages == null &&
         globalSearchSectionMessages == null &&
         globalSearchNoResult == null &&
         globalSearchLoadMore == null &&
@@ -471,6 +486,11 @@ fun PrivChatSearchStrings.merge(patch: PrivChatSearchStringsPatch?): PrivChatSea
         globalSearchTitle = patch.globalSearchTitle ?: globalSearchTitle,
         globalSearchPlaceholder = patch.globalSearchPlaceholder ?: globalSearchPlaceholder,
         globalSearchSectionChannels = patch.globalSearchSectionChannels ?: globalSearchSectionChannels,
+        globalSearchSectionContacts = patch.globalSearchSectionContacts ?: globalSearchSectionContacts,
+        globalSearchSectionGroups = patch.globalSearchSectionGroups ?: globalSearchSectionGroups,
+        globalSearchMoreContacts = patch.globalSearchMoreContacts ?: globalSearchMoreContacts,
+        globalSearchMoreGroups = patch.globalSearchMoreGroups ?: globalSearchMoreGroups,
+        globalSearchMoreMessages = patch.globalSearchMoreMessages ?: globalSearchMoreMessages,
         globalSearchSectionMessages = patch.globalSearchSectionMessages ?: globalSearchSectionMessages,
         globalSearchNoResult = patch.globalSearchNoResult ?: globalSearchNoResult,
         globalSearchLoadMore = patch.globalSearchLoadMore ?: globalSearchLoadMore,

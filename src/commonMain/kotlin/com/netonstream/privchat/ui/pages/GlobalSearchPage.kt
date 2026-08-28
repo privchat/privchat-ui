@@ -43,6 +43,8 @@ fun GlobalSearchPage(
     onOpenMessageHit: (channel: ChannelListEntry, anchorMessageId: ULong) -> Unit,
     /** 点击会话命中：正常打开聊天页 */
     onOpenChannel: (ChannelListEntry) -> Unit,
+    /** 点击联系人命中：打开与该好友的 DM（宿主走 direct/get_or_create 链路）。 */
+    onOpenUserChat: (ULong) -> Unit = {},
     /**
      * 会话内搜索（CHANNEL scope）：非空时只搜该会话云端历史，不显示会话命中区，
      * 从聊天页「…」菜单进入；null = 全局搜索（会话列表入口，本地会话 + 云端全局）。
@@ -68,11 +70,26 @@ fun GlobalSearchPage(
     var error by remember { mutableStateOf(false) }
     var retryNonce by remember { mutableStateOf(0) }
 
-    // 本地会话即时过滤（不 debounce，纯内存）。会话内搜索时不展示会话命中。
-    val localChannelHits = remember(query, channels, scopeId) {
+    // 钻取态（spec §7.1）：null=分组总览；CONTACTS/GROUPS/MESSAGES=该组全量。
+    // 页内状态切换而不是 push 新路由——query、已拉取的远程结果全部原地保留。
+    var drill by remember { mutableStateOf<SearchDrill?>(null) }
+
+    val friends by PrivChat.friends.collectAsState()
+
+    // 本地组即时过滤（无 debounce，纯内存；spec §7.1）。会话内搜索不展示。
+    val contactHits = remember(query, friends, scopeId) {
         val q = query.trim()
         if (q.isEmpty() || scopeId != null) emptyList()
-        else channels.filter { it.displayName.contains(q, ignoreCase = true) }.take(20)
+        else friends.filter { f ->
+            (f.remark?.contains(q, ignoreCase = true) == true) ||
+                (f.nickname?.contains(q, ignoreCase = true) == true) ||
+                f.username.contains(q, ignoreCase = true)
+        }
+    }
+    val groupHits = remember(query, channels, scopeId) {
+        val q = query.trim()
+        if (q.isEmpty() || scopeId != null) emptyList()
+        else channels.filter { !it.isDm && it.displayName.contains(q, ignoreCase = true) }
     }
 
     // 远程搜索：debounce 400ms；query 变化自动取消 in-flight（过期结果天然丢弃）
@@ -122,15 +139,23 @@ fun GlobalSearchPage(
 
     Column(modifier = modifier.fillMaxSize().background(colors.background)) {
         NavBar(
-            title = if (scopeChannel != null) strings.globalSearchPlaceholder else strings.globalSearchTitle,
+            title = when {
+                scopeChannel != null -> strings.globalSearchPlaceholder
+                drill == SearchDrill.CONTACTS -> strings.globalSearchSectionContacts
+                drill == SearchDrill.GROUPS -> strings.globalSearchSectionGroups
+                drill == SearchDrill.MESSAGES -> strings.globalSearchSectionMessages
+                else -> strings.globalSearchTitle
+            },
             useDefaultBack = true,
-            onBackClick = onBack,
+            // 钻取态返回先回总览（同一 query 不丢），总览态才真正退出。
+            onBackClick = { if (drill != null) drill = null else onBack() },
         )
 
         SearchBar(
             value = query,
-            onValueChange = { query = it },
+            onValueChange = { query = it; drill = null },
             placeholder = strings.globalSearchPlaceholder,
+            autoFocus = true,
             showCancel = true,
             onCancel = onBack,
             shape = com.gearui.components.searchbar.SearchBarShape.SQUARE,
@@ -140,8 +165,8 @@ fun GlobalSearchPage(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         )
 
-        val nothing = localChannelHits.isEmpty() && hits.isEmpty()
-        if (error && localChannelHits.isEmpty() && !isSearching) {
+        val nothing = contactHits.isEmpty() && groupHits.isEmpty() && hits.isEmpty()
+        if (error && contactHits.isEmpty() && groupHits.isEmpty() && !isSearching) {
             // 失败终态：可见错误 + 可点重试（复用 networkError/retry，避免新增 i18n key）。
             Column(
                 modifier = Modifier.fillMaxWidth().weight(1f),
@@ -166,22 +191,65 @@ fun GlobalSearchPage(
                 EmptyState(message = strings.globalSearchNoResult)
             }
         } else {
+            // 每组在总览态最多 3 条（spec §7.1）；钻取态该组全量、其余组隐藏。
+            val overviewCap = 3
+            val showContacts = scopeId == null && contactHits.isNotEmpty() &&
+                (drill == null || drill == SearchDrill.CONTACTS)
+            val showGroups = scopeId == null && groupHits.isNotEmpty() &&
+                (drill == null || drill == SearchDrill.GROUPS)
+            val showMessages = hits.isNotEmpty() && (drill == null || drill == SearchDrill.MESSAGES)
+            val visibleContacts = if (drill == SearchDrill.CONTACTS) contactHits else contactHits.take(overviewCap)
+            val visibleGroups = if (drill == SearchDrill.GROUPS) groupHits else groupHits.take(overviewCap)
+            val visibleHits = if (drill == SearchDrill.MESSAGES) hits else hits.take(overviewCap)
+
             GearLazyColumn(modifier = Modifier.fillMaxSize()) {
-                if (localChannelHits.isNotEmpty()) {
-                    item { SearchSectionHeader(strings.globalSearchSectionChannels) }
-                    items(localChannelHits.size) { i ->
-                        val ch = localChannelHits[i]
+                if (showContacts) {
+                    item { SearchSectionHeader(strings.globalSearchSectionContacts) }
+                    items(visibleContacts.size) { i ->
+                        val f = visibleContacts[i]
+                        val display = f.remark?.takeIf { it.isNotBlank() }
+                            ?: f.nickname?.takeIf { it.isNotBlank() }
+                            ?: f.username
+                        Cell(
+                            title = display,
+                            leading = {
+                                com.netonstream.privchat.ui.avatar.PrivChatAvatar(
+                                    model = com.netonstream.privchat.ui.avatar.AvatarModel(
+                                        userId = f.userId.toLong(),
+                                        displayName = display,
+                                        username = f.username,
+                                        remoteUrl = f.avatarUrl,
+                                        seed = "u:" + f.userId,
+                                    ),
+                                    size = 40.dp,
+                                )
+                            },
+                            arrow = true,
+                            onClick = { onOpenUserChat(f.userId) },
+                        )
+                    }
+                    if (drill == null && contactHits.size > overviewCap) {
+                        item { SearchMoreRow(strings.globalSearchMoreContacts) { drill = SearchDrill.CONTACTS } }
+                    }
+                }
+                if (showGroups) {
+                    item { SearchSectionHeader(strings.globalSearchSectionGroups) }
+                    items(visibleGroups.size) { i ->
+                        val ch = visibleGroups[i]
                         Cell(
                             title = ch.displayName,
                             arrow = true,
                             onClick = { onOpenChannel(ch) },
                         )
                     }
+                    if (drill == null && groupHits.size > overviewCap) {
+                        item { SearchMoreRow(strings.globalSearchMoreGroups) { drill = SearchDrill.GROUPS } }
+                    }
                 }
-                if (hits.isNotEmpty()) {
+                if (showMessages) {
                     item { SearchSectionHeader(strings.globalSearchSectionMessages) }
-                    items(hits.size) { i ->
-                        val hit = hits[i]
+                    items(visibleHits.size) { i ->
+                        val hit = visibleHits[i]
                         MessageHitRow(
                             hit = hit,
                             channelName = scopeChannel?.displayName
@@ -195,7 +263,10 @@ fun GlobalSearchPage(
                             },
                         )
                     }
-                    if (nextCursor != null) {
+                    if (drill == null && scopeId == null && (hits.size > overviewCap || nextCursor != null)) {
+                        item { SearchMoreRow(strings.globalSearchMoreMessages) { drill = SearchDrill.MESSAGES } }
+                    }
+                    if ((drill == SearchDrill.MESSAGES || scopeId != null) && nextCursor != null) {
                         item {
                             Box(
                                 modifier = Modifier
@@ -262,4 +333,17 @@ private fun MessageHitRow(
             Text(text = hit.snippet, color = colors.mutedForeground, maxLines = 1)
         }
     }
+}
+
+/** 钻取组（spec §7.1）。 */
+private enum class SearchDrill { CONTACTS, GROUPS, MESSAGES }
+
+/** 「更多X」行：整行可点，右侧箭头。 */
+@Composable
+private fun SearchMoreRow(label: String, onClick: () -> Unit) {
+    Cell(
+        title = label,
+        arrow = true,
+        onClick = onClick,
+    )
 }

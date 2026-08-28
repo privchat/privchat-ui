@@ -242,20 +242,6 @@ fun ConversationPage(
             modifier = Modifier.fillMaxSize(),
             state = listState,
         ) {
-            // 搜索栏 item：随列表滚动，下拉显示，上滑消失
-            item {
-                SearchBar(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = strings.search,
-                    shape = com.gearui.components.searchbar.SearchBarShape.SQUARE,
-                    alignment = com.gearui.components.searchbar.SearchBarAlignment.CENTER,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-            }
-
             if (filteredChannels.isEmpty()) {
                 // 空状态
                 item {
