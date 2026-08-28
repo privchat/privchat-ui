@@ -162,6 +162,7 @@ fun UserProfilePage(
                         // 已是好友或系统账号，显示发送消息按钮
                         Button(
                             text = strings.userProfileSendMessage,
+                            icon = Icons.chat,
                             type = ButtonType.FILL,
                             theme = ButtonTheme.PRIMARY,
                             onClick = onSendMessage,
@@ -185,6 +186,7 @@ fun UserProfilePage(
                         //     →server 幂等；已关注后按钮变 disabled，避免误点
                         Button(
                             text = strings.userProfileSendMessage,
+                            icon = Icons.chat,
                             type = ButtonType.FILL,
                             theme = ButtonTheme.PRIMARY,
                             onClick = onSendMessage,
@@ -232,6 +234,7 @@ fun UserProfilePage(
                                 isFromFriendRequest -> strings.userProfileAcceptFriendRequest
                                 else -> strings.userProfileAddFriend
                             },
+                            icon = Icons.person_add,
                             type = ButtonType.FILL,
                             theme = ButtonTheme.PRIMARY,
                             disabled = hasSentFriendRequest,

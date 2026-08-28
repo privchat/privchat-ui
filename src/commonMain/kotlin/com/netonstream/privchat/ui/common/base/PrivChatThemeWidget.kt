@@ -49,12 +49,26 @@ object PrivChatThemeExtension {
     val Colors.chatColors: ChatColors
         get() {
             val isDark = isDarkTheme
-            return if (isDark) {
-                // 暗色沿用中性气泡：品牌暗色配色尚未设计（主题 spec 暗色也回落原厂），
-                // 此时 primary 是近白，直接拿来当气泡会变成一块刺眼白板。
+            // 自己的气泡在亮暗两种模式下都用品牌主色（微信绿不分模式，同理）。
+            //
+            // 判据是 primary 的亮度而不是模式：BUILTIN（无品牌覆盖）的暗色主题 primary
+            // 是原厂近白（#FAFAFA），拿来当气泡就是一块刺眼白板——亮度落在两端说明这是
+            // 原厂中性主题，退回中性灰气泡；落在中段说明是真品牌色（Weey 黄 0.82、
+            // 福寿红 0.23），照用。
+            val primaryLum =
+                0.2126f * primary.red + 0.7152f * primary.green + 0.0722f * primary.blue
+            val primaryIsBranded = primaryLum in 0.05f..0.9f
+            return if (isDark && !primaryIsBranded) {
                 ChatColors(
                     bubbleSelf = Color(0xFF3F3F46),
                     onBubbleSelf = Color(0xFFFAFAFA),
+                    bubbleOther = Color(0xFF1A1C24),
+                    onBubbleOther = Color(0xFFFAFAFA),
+                )
+            } else if (isDark) {
+                ChatColors(
+                    bubbleSelf = primary,
+                    onBubbleSelf = contentColorOn(primary),
                     bubbleOther = Color(0xFF1A1C24),
                     onBubbleOther = Color(0xFFFAFAFA),
                 )
