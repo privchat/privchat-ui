@@ -995,6 +995,7 @@ data class PrivChatSettingsStrings(
     val settingsHelp: String,
     val settingsFeedback: String,
     val settingsSwitchAccount: String,
+    val settingsAddAccount: String,
 )
 
 data class PrivChatSettingsStringsPatch(
@@ -1052,6 +1053,7 @@ data class PrivChatSettingsStringsPatch(
     val settingsHelp: String? = null,
     val settingsFeedback: String? = null,
     val settingsSwitchAccount: String? = null,
+    val settingsAddAccount: String? = null,
 )
 
 val PrivChatSettingsStringsPatch.isEmpty: Boolean
@@ -1108,7 +1110,8 @@ val PrivChatSettingsStringsPatch.isEmpty: Boolean
         settingsSectionHelp == null &&
         settingsHelp == null &&
         settingsFeedback == null &&
-        settingsSwitchAccount == null
+        settingsSwitchAccount == null &&
+        settingsAddAccount == null
 
 fun PrivChatSettingsStrings.merge(patch: PrivChatSettingsStringsPatch?): PrivChatSettingsStrings {
     if (patch == null || patch.isEmpty) return this
@@ -1167,6 +1170,7 @@ fun PrivChatSettingsStrings.merge(patch: PrivChatSettingsStringsPatch?): PrivCha
         settingsHelp = patch.settingsHelp ?: settingsHelp,
         settingsFeedback = patch.settingsFeedback ?: settingsFeedback,
         settingsSwitchAccount = patch.settingsSwitchAccount ?: settingsSwitchAccount,
+        settingsAddAccount = patch.settingsAddAccount ?: settingsAddAccount,
     )
 }
 

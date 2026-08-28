@@ -269,6 +269,7 @@ data class PrivChatStrings(
     val settingsHelp: String get() = dSettings.settingsHelp
     val settingsFeedback: String get() = dSettings.settingsFeedback
     val settingsSwitchAccount: String get() = dSettings.settingsSwitchAccount
+    val settingsAddAccount: String get() = dSettings.settingsAddAccount
     val permissionAllowAny: String get() = dFriend.permissionAllowAny
     val permissionDenyAny: String get() = dFriend.permissionDenyAny
     val permissionRequireRequest: String get() = dFriend.permissionRequireRequest

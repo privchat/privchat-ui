@@ -298,6 +298,7 @@ internal val zhSettings = PrivChatSettingsStrings(
     settingsHelp = "帮助中心",
     settingsFeedback = "意见反馈",
     settingsSwitchAccount = "切换账号",
+    settingsAddAccount = "添加账号",
 )
 
 internal val zhAbout = PrivChatAboutStrings(

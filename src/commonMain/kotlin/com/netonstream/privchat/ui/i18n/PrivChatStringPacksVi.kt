@@ -298,6 +298,7 @@ internal val viSettings = PrivChatSettingsStrings(
     settingsHelp = "Trung tâm trợ giúp",
     settingsFeedback = "Phản hồi",
     settingsSwitchAccount = "Chuyển tài khoản",
+    settingsAddAccount = "Thêm tài khoản",
 )
 
 internal val viAbout = PrivChatAboutStrings(

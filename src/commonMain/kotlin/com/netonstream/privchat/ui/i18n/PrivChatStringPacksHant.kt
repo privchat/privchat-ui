@@ -298,6 +298,7 @@ internal val hantSettings = PrivChatSettingsStrings(
     settingsHelp = "幫助中心",
     settingsFeedback = "意見回饋",
     settingsSwitchAccount = "切換帳號",
+    settingsAddAccount = "新增帳號",
 )
 
 internal val hantAbout = PrivChatAboutStrings(

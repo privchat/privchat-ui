@@ -298,6 +298,7 @@ internal val enSettings = PrivChatSettingsStrings(
     settingsHelp = "Help Center",
     settingsFeedback = "Feedback",
     settingsSwitchAccount = "Switch Account",
+    settingsAddAccount = "Add Account",
 )
 
 internal val enAbout = PrivChatAboutStrings(
