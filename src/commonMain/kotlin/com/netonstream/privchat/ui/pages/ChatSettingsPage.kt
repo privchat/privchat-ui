@@ -438,7 +438,6 @@ fun ChatSettingsPage(
     }
 
     // 加群方式选择走全局 ActionSheet 单例，需在页面根部挂 Host。
-    ActionSheet.Host()
 }
 
 /** 群设置开关行：左标题 + 右 Switch。 */

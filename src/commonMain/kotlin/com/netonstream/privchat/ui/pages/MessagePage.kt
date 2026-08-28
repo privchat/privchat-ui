@@ -1574,7 +1574,6 @@ fun MessagePage(
     }
     // UX-3 / UX-4：文本内联实体点击后的 ActionSheet 通过全局单例弹出，
     // 必须有一个 Host 挂载在页面根部才能接收显示请求。
-    ActionSheet.Host()
     }
 }
 

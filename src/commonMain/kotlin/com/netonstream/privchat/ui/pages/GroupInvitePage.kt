@@ -74,33 +74,24 @@ fun GroupInvitePage(
             title = "邀请好友",
             useDefaultBack = true,
             onBackClick = onBack,
-            rightWidgetWidth = 96.dp,
+            rightWidgetWidth = com.netonstream.privchat.ui.components.NavBarActionSlotWidthWide,
             rightWidget = {
                 val label = if (selected.isEmpty()) "邀请" else "邀请(${selected.size})"
-                val color = if (canSubmit) colors.primary else colors.mutedForeground
-                Box(
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                        .clickable(enabled = canSubmit) {
-                            isSubmitting = true
-                            coroutineScope.launch {
-                                onInvite(selected.values.toList()).fold(
-                                    onSuccess = { isSubmitting = false },
-                                    onFailure = { e ->
-                                        isSubmitting = false
-                                        onError(e.message ?: "邀请失败")
-                                    },
-                                )
-                            }
-                        },
+                com.netonstream.privchat.ui.components.NavBarAction(
+                    text = label,
+                    enabled = canSubmit,
+                    loading = isSubmitting,
                 ) {
-                    Text(
-                        text = label,
-                        style = Typography.BodyMedium,
-                        color = color,
-                        maxLines = 1,
-                        softWrap = false,
-                    )
+                    isSubmitting = true
+                    coroutineScope.launch {
+                        onInvite(selected.values.toList()).fold(
+                            onSuccess = { isSubmitting = false },
+                            onFailure = { e ->
+                                isSubmitting = false
+                                onError(e.message ?: "邀请失败")
+                            },
+                        )
+                    }
                 }
             },
         )

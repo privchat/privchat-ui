@@ -68,37 +68,28 @@ fun GroupCreatePage(
             title = "创建群聊",
             useDefaultBack = true,
             onBackClick = onBack,
-            rightWidgetWidth = 96.dp,
+            rightWidgetWidth = com.netonstream.privchat.ui.components.NavBarActionSlotWidthWide,
             rightWidget = {
                 val label = if (selected.isEmpty()) "创建" else "创建(${selected.size})"
-                val color = if (canCreate) colors.primary else colors.mutedForeground
-                Box(
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                        .clickable(enabled = canCreate) {
-                            val ids = selected.values.map { it.userId }
-                            val displayName = groupName.trim().ifEmpty {
-                                selected.values.joinToString("、") { it.displayName }.take(40)
-                            }
-                            isCreating = true
-                            coroutineScope.launch {
-                                onCreate(displayName, ids).fold(
-                                    onSuccess = { isCreating = false },
-                                    onFailure = { e ->
-                                        isCreating = false
-                                        onError(e.message ?: "创建失败")
-                                    },
-                                )
-                            }
-                        },
+                com.netonstream.privchat.ui.components.NavBarAction(
+                    text = label,
+                    enabled = canCreate,
+                    loading = isCreating,
                 ) {
-                    Text(
-                        text = label,
-                        style = Typography.BodyMedium,
-                        color = color,
-                        maxLines = 1,
-                        softWrap = false,
-                    )
+                    val ids = selected.values.map { it.userId }
+                    val displayName = groupName.trim().ifEmpty {
+                        selected.values.joinToString("、") { it.displayName }.take(40)
+                    }
+                    isCreating = true
+                    coroutineScope.launch {
+                        onCreate(displayName, ids).fold(
+                            onSuccess = { isCreating = false },
+                            onFailure = { e ->
+                                isCreating = false
+                                onError(e.message ?: "创建失败")
+                            },
+                        )
+                    }
                 }
             },
         )

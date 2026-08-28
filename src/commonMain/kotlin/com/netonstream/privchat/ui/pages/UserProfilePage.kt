@@ -465,6 +465,7 @@ fun FriendProfilePage(
                 ) {
                     Button(
                         text = strings.userProfileSendMessage,
+                        icon = Icons.chat,
                         type = ButtonType.FILL,
                         theme = ButtonTheme.PRIMARY,
                         onClick = onSendMessage,

@@ -28,6 +28,8 @@ import com.gearui.components.toast.Toast
 import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.typography.Typography
+import com.gearui.components.icon.Icons
+import com.gearui.foundation.primitives.Icon
 import com.gearui.components.image.GearImage
 import com.gearui.components.image.ImageFit
 import com.gearui.components.image.ImageShape
@@ -282,7 +284,7 @@ private fun TextContent(
 /**
  * 按实体类型弹出 ActionSheet；调用方只需传入一个 `Entity`，
  * 所有 “打开链接 / 拨号 / 发短信 / 发邮件 / 复制” 都封装在这里。
- * 依赖页面根部已挂载 `ActionSheet.Host()`（见 MessagePage）。
+ * ActionSheet 宿主由 gearui `App()` 全局挂载，页面无需（也不得）自行挂 Host。
  */
 private fun showEntityActionSheet(
     entity: MessageTextEntity,
@@ -672,16 +674,9 @@ private fun VideoContent(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
-        } else {
-            GearImage(
-                painter = null,
-                placeholderText = "视频",
-                fit = ImageFit.COVER,
-                shape = ImageShape.ROUNDED,
-                cornerRadius = 8.dp,
-                modifier = Modifier.fillMaxSize(),
-            )
         }
+        // 缩略图缺失时不再垫占位组件：外层 Box 已有底色，播放按钮 + 时长角标足以
+        // 说明「这是条视频」。占位文字会从播放按钮后面透出来，看着像渲染叠错了层。
 
         // 播放按钮
         Box(
@@ -691,10 +686,10 @@ private fun VideoContent(
                 .background(Color.Black.copy(alpha = 0.5f)),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = "▶",
-                style = Typography.HeadlineMedium,
-                color = Color.White,
+            Icon(
+                name = Icons.play_arrow,
+                size = 26.dp,
+                tint = Color.White,
             )
         }
 

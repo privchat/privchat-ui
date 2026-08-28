@@ -65,18 +65,13 @@ fun GroupNameEditPage(
             useDefaultBack = true,
             onBackClick = onBack,
             rightWidget = {
-                Text(
+                com.netonstream.privchat.ui.components.NavBarAction(
                     text = strings.save,
-                    style = Typography.BodyLarge,
-                    color = if (canSave) colors.primary else colors.mutedForeground,
-                    modifier = if (canSave) {
-                        Modifier.clickable(onClick = doSave).padding(horizontal = 4.dp)
-                    } else {
-                        Modifier.padding(horizontal = 4.dp)
-                    },
+                    enabled = canSave,
+                    onClick = doSave,
                 )
             },
-            rightWidgetWidth = 64.dp,
+            rightWidgetWidth = com.netonstream.privchat.ui.components.NavBarActionSlotWidth,
         )
 
         Column(modifier = Modifier.padding(16.dp)) {

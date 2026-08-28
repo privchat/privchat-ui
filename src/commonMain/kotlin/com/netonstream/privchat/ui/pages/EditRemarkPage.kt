@@ -59,28 +59,22 @@ fun EditRemarkPage(
             title = strings.userProfileRemark,
             useDefaultBack = true,
             onBackClick = onBack,
+            rightWidgetWidth = com.netonstream.privchat.ui.components.NavBarActionSlotWidth,
             rightWidget = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clickable(enabled = canSave) {
-                            isSaving = true
-                            scope.launch {
-                                val alias = remark.trim().ifEmpty { null }
-                                onSave(alias).fold(
-                                    onSuccess = { onBack() },
-                                    onFailure = { onError?.invoke(it.message ?: strings.networkError) },
-                                )
-                                isSaving = false
-                            }
-                        },
-                    contentAlignment = Alignment.Center
+                com.netonstream.privchat.ui.components.NavBarAction(
+                    text = strings.save,
+                    enabled = canSave,
+                    loading = isSaving,
                 ) {
-                    Text(
-                        text = strings.save,
-                        style = Typography.BodyMedium,
-                        color = if (canSave) Theme.colors.primary else Theme.colors.mutedForeground,
-                    )
+                    isSaving = true
+                    scope.launch {
+                        val alias = remark.trim().ifEmpty { null }
+                        onSave(alias).fold(
+                            onSuccess = { onBack() },
+                            onFailure = { onError?.invoke(it.message ?: strings.networkError) },
+                        )
+                        isSaving = false
+                    }
                 }
             }
         )

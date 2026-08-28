@@ -248,7 +248,6 @@ fun GroupMembersPage(
     }
 
     // 禁言时长选择走全局 ActionSheet 单例，需在页面根部挂 Host。
-    ActionSheet.Host()
 
     // 转让群主二次确认(不可逆操作)。
     val pendingTransfer = transferTarget

@@ -5,6 +5,8 @@ import com.netonstream.privchat.sdk.dto.FriendEntry
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.cell.Cell
+import com.gearui.primitives.composite.Card
+import com.gearui.primitives.Divider
 import com.gearui.components.switch.Switch
 import com.gearui.components.dialog.Dialog
 import com.gearui.components.dialog.DialogContent
@@ -16,6 +18,7 @@ import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.layout.*
+import com.tencent.kuikly.compose.foundation.layout.PaddingValues
 import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -74,105 +77,76 @@ fun FriendSettingsPage(
             onBackClick = onBack,
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // 与「我」页同一套布局语言：16dp 内嵌 + 圆角 Card 分组（UIKit inset-grouped）。
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            Spacer(modifier = Modifier.height(16.dp))
 
-        // 设置选项
-        Column(modifier = Modifier.fillMaxWidth().background(colors.surface)) {
-            // 编辑备注
-            Cell(
-                title = strings.userProfileRemark,
-                note = friend.remark ?: strings.settingsNotSet,
-                arrow = true,
-                onClick = onEditRemark
-            )
-
-            // 分隔线
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp)
-                    .height(0.5.dp)
-                    .background(colors.border)
-            )
-
-            // 推荐分享给别人
-            Cell(
-                title = strings.friendSettingsShare,
-                arrow = true,
-                onClick = onShareFriend
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 开关选项
-        Column(modifier = Modifier.fillMaxWidth().background(colors.surface)) {
-            // 特别关注
-            Cell(
-                title = strings.friendSettingsSpecialFollow,
-                trailing = {
-                    Switch(
-                        checked = isSpecialFollow,
-                        onCheckedChange = { checked ->
-                            isSpecialFollow = checked
-                            onSetSpecialFollow(checked)
-                        }
-                    )
-                }
-            )
-
-            // 分隔线
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp)
-                    .height(0.5.dp)
-                    .background(colors.border)
-            )
-
-            // 加入黑名单
-            Cell(
-                title = strings.userProfileBlockUser,
-                trailing = {
-                    Switch(
-                        checked = isBlocked,
-                        onCheckedChange = { checked ->
-                            scope.launch {
-                                onSetBlocked(checked).onSuccess {
-                                    isBlocked = checked
-                                }
-                            }
-                        }
-                    )
-                }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 举报用户（App Store UGC 1.2；与拉黑同区域）
-        if (onReportUser != null) {
-            Column(modifier = Modifier.fillMaxWidth().background(colors.surface)) {
+            Card(padding = PaddingValues(0.dp)) {
                 Cell(
-                    title = "举报",
-                    onClick = { onReportUser.invoke() },
+                    title = strings.userProfileRemark,
+                    note = friend.remark ?: strings.settingsNotSet,
+                    arrow = true,
+                    onClick = onEditRemark
+                )
+                Divider(insetStart = 16.dp)
+                Cell(
+                    title = strings.friendSettingsShare,
+                    arrow = true,
+                    onClick = onShareFriend
                 )
             }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
 
-        // 删除联系人
-        Column(modifier = Modifier.fillMaxWidth().background(colors.surface)) {
-            Cell(
-                title = strings.friendSettingsDelete,
-                onClick = { showDeleteConfirmDialog = true },
-                trailing = {
-                    Text(
-                        text = "",
-                        color = colors.destructive
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Card(padding = PaddingValues(0.dp)) {
+                Cell(
+                    title = strings.friendSettingsSpecialFollow,
+                    trailing = {
+                        Switch(
+                            checked = isSpecialFollow,
+                            onCheckedChange = { checked ->
+                                isSpecialFollow = checked
+                                onSetSpecialFollow(checked)
+                            }
+                        )
+                    }
+                )
+                Divider(insetStart = 16.dp)
+                Cell(
+                    title = strings.userProfileBlockUser,
+                    trailing = {
+                        Switch(
+                            checked = isBlocked,
+                            onCheckedChange = { checked ->
+                                scope.launch {
+                                    onSetBlocked(checked).onSuccess {
+                                        isBlocked = checked
+                                    }
+                                }
+                            }
+                        )
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 举报 + 删除：一组破坏性/治理操作（App Store UGC 1.2）。
+            Card(padding = PaddingValues(0.dp)) {
+                if (onReportUser != null) {
+                    Cell(
+                        title = "举报",
+                        onClick = { onReportUser.invoke() },
                     )
+                    Divider(insetStart = 16.dp)
                 }
-            )
+                // 破坏性操作：红字（UIKit destructive 行的做法）。
+                Cell(
+                    title = strings.friendSettingsDelete,
+                    titleColor = colors.destructive,
+                    onClick = { showDeleteConfirmDialog = true },
+                )
+            }
         }
     }
 
