@@ -966,6 +966,10 @@ data class PrivChatSettingsStrings(
     val profileAvatarUploading: String,
     val profileAvatarPendingSave: String,
     val profileAvatarChange: String,
+    val profileAvatarTitle: String,
+    val profileAvatarPickFromAlbum: String,
+    val profileAvatarSaveImage: String,
+    val profileAvatarSaved: String,
     val settingsFriendPermission: String,
     val settingsAppearance: String,
     val settingsLanguage: String,
@@ -1024,6 +1028,10 @@ data class PrivChatSettingsStringsPatch(
     val profileAvatarUploading: String? = null,
     val profileAvatarPendingSave: String? = null,
     val profileAvatarChange: String? = null,
+    val profileAvatarTitle: String? = null,
+    val profileAvatarPickFromAlbum: String? = null,
+    val profileAvatarSaveImage: String? = null,
+    val profileAvatarSaved: String? = null,
     val settingsFriendPermission: String? = null,
     val settingsAppearance: String? = null,
     val settingsLanguage: String? = null,
@@ -1082,6 +1090,10 @@ val PrivChatSettingsStringsPatch.isEmpty: Boolean
         profileAvatarUploading == null &&
         profileAvatarPendingSave == null &&
         profileAvatarChange == null &&
+        profileAvatarTitle == null &&
+        profileAvatarPickFromAlbum == null &&
+        profileAvatarSaveImage == null &&
+        profileAvatarSaved == null &&
         settingsFriendPermission == null &&
         settingsAppearance == null &&
         settingsLanguage == null &&
@@ -1141,6 +1153,10 @@ fun PrivChatSettingsStrings.merge(patch: PrivChatSettingsStringsPatch?): PrivCha
         profileAvatarUploading = patch.profileAvatarUploading ?: profileAvatarUploading,
         profileAvatarPendingSave = patch.profileAvatarPendingSave ?: profileAvatarPendingSave,
         profileAvatarChange = patch.profileAvatarChange ?: profileAvatarChange,
+        profileAvatarTitle = patch.profileAvatarTitle ?: profileAvatarTitle,
+        profileAvatarPickFromAlbum = patch.profileAvatarPickFromAlbum ?: profileAvatarPickFromAlbum,
+        profileAvatarSaveImage = patch.profileAvatarSaveImage ?: profileAvatarSaveImage,
+        profileAvatarSaved = patch.profileAvatarSaved ?: profileAvatarSaved,
         settingsFriendPermission = patch.settingsFriendPermission ?: settingsFriendPermission,
         settingsAppearance = patch.settingsAppearance ?: settingsAppearance,
         settingsLanguage = patch.settingsLanguage ?: settingsLanguage,

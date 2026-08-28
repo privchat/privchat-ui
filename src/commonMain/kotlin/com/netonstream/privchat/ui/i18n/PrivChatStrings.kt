@@ -240,6 +240,10 @@ data class PrivChatStrings(
     val profileAvatarUploading: String get() = dSettings.profileAvatarUploading
     val profileAvatarPendingSave: String get() = dSettings.profileAvatarPendingSave
     val profileAvatarChange: String get() = dSettings.profileAvatarChange
+    val profileAvatarTitle: String get() = dSettings.profileAvatarTitle
+    val profileAvatarPickFromAlbum: String get() = dSettings.profileAvatarPickFromAlbum
+    val profileAvatarSaveImage: String get() = dSettings.profileAvatarSaveImage
+    val profileAvatarSaved: String get() = dSettings.profileAvatarSaved
     val settingsFriendPermission: String get() = dSettings.settingsFriendPermission
     val settingsAppearance: String get() = dSettings.settingsAppearance
     val settingsLanguage: String get() = dSettings.settingsLanguage
