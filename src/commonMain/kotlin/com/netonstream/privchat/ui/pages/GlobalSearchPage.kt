@@ -58,6 +58,9 @@ fun GlobalSearchPage(
     val channels by PrivChat.channels.collectAsState()
     val channelsById = remember(channels) { channels.associateBy { it.channelId } }
     val scopeId = scopeChannel?.channelId
+    val knownUsers by PrivChat.knownUsers.collectAsState()
+    val currentUserIdText by PrivChat.currentUserId.collectAsState()
+    val currentUserName by PrivChat.currentUserName.collectAsState()
 
     var query by remember { mutableStateOf("") }
     var hits by remember { mutableStateOf<List<SearchHistoryHit>>(emptyList()) }
@@ -73,6 +76,8 @@ fun GlobalSearchPage(
     // 钻取态（spec §7.1）：null=分组总览；CONTACTS/GROUPS/MESSAGES=该组全量。
     // 页内状态切换而不是 push 新路由——query、已拉取的远程结果全部原地保留。
     var drill by remember { mutableStateOf<SearchDrill?>(null) }
+    // 微信式二级钻取：点「某个会话的 N 条相关记录」→ 会话内命中列表（带发送者头像）。
+    var channelDrill by remember { mutableStateOf<ChannelListEntry?>(null) }
 
     val friends by PrivChat.friends.collectAsState()
 
@@ -93,7 +98,8 @@ fun GlobalSearchPage(
     }
 
     // 远程搜索：debounce 400ms；query 变化自动取消 in-flight（过期结果天然丢弃）
-    LaunchedEffect(query, retryNonce) {
+    val effectiveScopeId = scopeId ?: channelDrill?.channelId
+    LaunchedEffect(query, retryNonce, effectiveScopeId) {
         val q = query.trim()
         hits = emptyList()
         nextCursor = null
@@ -105,12 +111,15 @@ fun GlobalSearchPage(
         }
         isSearching = true
         delay(400L)
-        val result = PrivChat.client.searchMessageHistory(q, channelId = scopeId)
+        val result = PrivChat.client.searchMessageHistory(q, channelId = effectiveScopeId)
         isSearching = false
         searched = true
         result
             .onSuccess { page ->
-                hits = page.hits
+                // 防御层：非 text 命中（系统消息的结构化 JSON、媒体元数据）不展示。
+                // 权威修复在服务端索引（只索引 message_type=0）与 SDK 入库闸口
+                // （searchable_word 只收文本），这里兜的是「旧服务端还没带上过滤」的窗口。
+                hits = page.hits.filter { it.messageType == "text" }
                 nextCursor = page.nextCursor
             }
             .onFailure {
@@ -128,9 +137,9 @@ fun GlobalSearchPage(
         if (q.length < 2 || isLoadingMore) return
         isLoadingMore = true
         scope.launch {
-            PrivChat.client.searchMessageHistory(q, channelId = scopeId, cursor = cursor)
+            PrivChat.client.searchMessageHistory(q, channelId = effectiveScopeId, cursor = cursor)
                 .onSuccess { page ->
-                    hits = hits + page.hits
+                    hits = hits + page.hits.filter { it.messageType == "text" }
                     nextCursor = page.nextCursor
                 }
             isLoadingMore = false
@@ -138,32 +147,44 @@ fun GlobalSearchPage(
     }
 
     Column(modifier = modifier.fillMaxSize().background(colors.background)) {
-        NavBar(
-            title = when {
-                scopeChannel != null -> strings.globalSearchPlaceholder
-                drill == SearchDrill.CONTACTS -> strings.globalSearchSectionContacts
-                drill == SearchDrill.GROUPS -> strings.globalSearchSectionGroups
-                drill == SearchDrill.MESSAGES -> strings.globalSearchSectionMessages
-                else -> strings.globalSearchTitle
-            },
-            useDefaultBack = true,
-            // 钻取态返回先回总览（同一 query 不丢），总览态才真正退出。
-            onBackClick = { if (drill != null) drill = null else onBack() },
-        )
-
-        SearchBar(
-            value = query,
-            onValueChange = { query = it; drill = null },
-            placeholder = strings.globalSearchPlaceholder,
-            autoFocus = true,
-            showCancel = true,
-            onCancel = onBack,
-            shape = com.gearui.components.searchbar.SearchBarShape.SQUARE,
-            alignment = com.gearui.components.searchbar.SearchBarAlignment.CENTER,
+        // 微信式顶栏：一行 [<返回][搜索框（放大镜+清除x）][取消]，没有标题行。
+        // 返回逐级回退：会话钻取 → 分组钻取 → 总览 → 退出。
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        )
+                // 路由宿主已为无 NavBar 页面补过顶部安全区，这里再加一次就是双倍留白。
+                .padding(vertical = 6.dp, horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clickable {
+                        when {
+                            channelDrill != null -> channelDrill = null
+                            drill != null -> drill = null
+                            else -> onBack()
+                        }
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                com.gearui.foundation.primitives.Icon(
+                    name = com.gearui.components.icon.Icons.chevron_left,
+                    size = 24.dp,
+                    tint = colors.foreground,
+                )
+            }
+            SearchBar(
+                value = query,
+                onValueChange = { query = it; drill = null; channelDrill = null },
+                placeholder = strings.globalSearchPlaceholder,
+                autoFocus = true,
+                showCancel = true,
+                onCancel = onBack,
+                shape = com.gearui.components.searchbar.SearchBarShape.SQUARE,
+                modifier = Modifier.weight(1f).padding(end = 12.dp),
+            )
+        }
 
         val nothing = contactHits.isEmpty() && groupHits.isEmpty() && hits.isEmpty()
         if (error && contactHits.isEmpty() && groupHits.isEmpty() && !isSearching) {
@@ -193,11 +214,11 @@ fun GlobalSearchPage(
         } else {
             // 每组在总览态最多 3 条（spec §7.1）；钻取态该组全量、其余组隐藏。
             val overviewCap = 3
-            val showContacts = scopeId == null && contactHits.isNotEmpty() &&
+            val showContacts = scopeId == null && channelDrill == null && contactHits.isNotEmpty() &&
                 (drill == null || drill == SearchDrill.CONTACTS)
-            val showGroups = scopeId == null && groupHits.isNotEmpty() &&
+            val showGroups = scopeId == null && channelDrill == null && groupHits.isNotEmpty() &&
                 (drill == null || drill == SearchDrill.GROUPS)
-            val showMessages = hits.isNotEmpty() && (drill == null || drill == SearchDrill.MESSAGES)
+            val showMessages = hits.isNotEmpty() && (drill == null || drill == SearchDrill.MESSAGES || channelDrill != null)
             val visibleContacts = if (drill == SearchDrill.CONTACTS) contactHits else contactHits.take(overviewCap)
             val visibleGroups = if (drill == SearchDrill.GROUPS) groupHits else groupHits.take(overviewCap)
             val visibleHits = if (drill == SearchDrill.MESSAGES) hits else hits.take(overviewCap)
@@ -248,25 +269,74 @@ fun GlobalSearchPage(
                 }
                 if (showMessages) {
                     item { SearchSectionHeader(strings.globalSearchSectionMessages) }
-                    items(visibleHits.size) { i ->
-                        val hit = visibleHits[i]
-                        MessageHitRow(
-                            hit = hit,
-                            channelName = scopeChannel?.displayName
-                                ?: channelsById[hit.channelId]?.displayName
-                                ?: hit.channelId.toString(),
-                            onClick = {
-                                // 会话内搜索：命中一定属于 scopeChannel，直接用它兜底。
-                                (scopeChannel ?: channelsById[hit.channelId])?.let { ch ->
-                                    onOpenMessageHit(ch, hit.messageId)
-                                }
-                            },
-                        )
+                    if (effectiveScopeId == null) {
+                        // 全局态：按会话聚合（微信式）——会话头像 + 名称 + N条相关的聊天记录。
+                        // 计数基于已拉取页；还有下一页时用「N+」表示下界，不冒充精确值。
+                        val grouped = hits.groupBy { it.channelId }
+                            .entries
+                            .sortedByDescending { e -> e.value.maxOf { it.createdAt } }
+                        val visibleGroups2 = if (drill == SearchDrill.MESSAGES) grouped else grouped.take(overviewCap)
+                        items(visibleGroups2.size) { i ->
+                            val (chId, chHits) = visibleGroups2[i]
+                            val ch = channelsById[chId]
+                            val name = ch?.displayName ?: chId.toString()
+                            val countText = strings.globalSearchRelatedPrefix +
+                                chHits.size + (if (nextCursor != null) "+" else "") +
+                                strings.globalSearchRelatedSuffix
+                            Cell(
+                                title = name,
+                                description = countText,
+                                leading = {
+                                    if (ch != null && !ch.isDm) {
+                                        com.netonstream.privchat.ui.avatar.GroupCollageAvatar(
+                                            channelId = chId,
+                                            name = name,
+                                            size = 40.dp,
+                                        )
+                                    } else {
+                                        val peer = ch?.peerUserId
+                                        val snap = peer?.let { knownUsers[it] }
+                                        com.netonstream.privchat.ui.avatar.PrivChatAvatar(
+                                            model = com.netonstream.privchat.ui.avatar.AvatarModel(
+                                                userId = peer?.toLong(),
+                                                displayName = name,
+                                                remoteUrl = snap?.avatar ?: ch?.avatarUrl,
+                                                seed = peer?.let { "u:" + it },
+                                            ),
+                                            size = 40.dp,
+                                        )
+                                    }
+                                },
+                                arrow = true,
+                                onClick = { if (ch != null) channelDrill = ch },
+                            )
+                        }
+                        if (drill == null && (grouped.size > overviewCap || nextCursor != null)) {
+                            item { SearchMoreRow(strings.globalSearchMoreMessages) { drill = SearchDrill.MESSAGES } }
+                        }
+                    } else {
+                        // 会话内命中列表（微信式）：发送者头像 + 名字 + 高亮 snippet + 时间。
+                        items(hits.size) { i ->
+                            val hit = hits[i]
+                            val senderSnap = knownUsers[hit.senderUserId]
+                            val isSelf = currentUserIdText == hit.senderUserId
+                            ScopedMessageHitRow(
+                                hit = hit,
+                                senderName = if (isSelf) {
+                                    currentUserName ?: PrivChat.displayNameOf(hit.senderUserId, effectiveScopeId)
+                                } else {
+                                    PrivChat.displayNameOf(hit.senderUserId, effectiveScopeId)
+                                },
+                                senderAvatarUrl = senderSnap?.avatar,
+                                onClick = {
+                                    (scopeChannel ?: channelDrill ?: channelsById[hit.channelId])?.let { ch ->
+                                        onOpenMessageHit(ch, hit.messageId)
+                                    }
+                                },
+                            )
+                        }
                     }
-                    if (drill == null && scopeId == null && (hits.size > overviewCap || nextCursor != null)) {
-                        item { SearchMoreRow(strings.globalSearchMoreMessages) { drill = SearchDrill.MESSAGES } }
-                    }
-                    if ((drill == SearchDrill.MESSAGES || scopeId != null) && nextCursor != null) {
+                    if (effectiveScopeId != null && nextCursor != null) {
                         item {
                             Box(
                                 modifier = Modifier
@@ -346,4 +416,72 @@ private fun SearchMoreRow(label: String, onClick: () -> Unit) {
         arrow = true,
         onClick = onClick,
     )
+}
+
+/** 会话内命中行（微信式）：发送者头像 + 名字，snippet 高亮，右侧时间。 */
+@Composable
+private fun ScopedMessageHitRow(
+    hit: SearchHistoryHit,
+    senderName: String,
+    senderAvatarUrl: String?,
+    onClick: () -> Unit,
+) {
+    val colors = Theme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        com.netonstream.privchat.ui.avatar.PrivChatAvatar(
+            model = com.netonstream.privchat.ui.avatar.AvatarModel(
+                userId = hit.senderUserId.toLong(),
+                displayName = senderName,
+                remoteUrl = senderAvatarUrl,
+                seed = "u:" + hit.senderUserId,
+            ),
+            size = 40.dp,
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = senderName,
+                    color = colors.mutedForeground,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = com.netonstream.privchat.ui.utils.Formatter.conversationTime(hit.createdAt),
+                    color = colors.mutedForeground,
+                )
+            }
+            Spacer(modifier = Modifier.height(2.dp))
+            SnippetText(hit)
+        }
+    }
+}
+
+/** snippet 高亮渲染（首段命中主题色）。 */
+@Composable
+private fun SnippetText(hit: SearchHistoryHit) {
+    val colors = Theme.colors
+    val range = hit.highlightRanges.firstOrNull()
+    if (range != null && range.first in 0 until hit.snippet.length && range.second <= hit.snippet.length && range.first < range.second) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            val chars = hit.snippet.toCharArray()
+            val prefix = chars.concatToString(0, range.first)
+            val match = chars.concatToString(range.first, range.second)
+            val suffix = chars.concatToString(range.second, chars.size)
+            if (prefix.isNotEmpty()) Text(text = prefix, color = colors.foreground, maxLines = 1)
+            Text(text = match, color = colors.primary, maxLines = 1)
+            if (suffix.isNotEmpty()) Text(text = suffix, color = colors.foreground, maxLines = 1)
+        }
+    } else {
+        Text(text = hit.snippet, color = colors.foreground, maxLines = 1)
+    }
 }

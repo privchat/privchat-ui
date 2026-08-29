@@ -408,6 +408,8 @@ data class PrivChatSearchStrings(
     val globalSearchPlaceholder: String,
     val globalSearchSectionChannels: String,
     val globalSearchSectionContacts: String,
+    val globalSearchRelatedPrefix: String,
+    val globalSearchRelatedSuffix: String,
     val globalSearchSectionGroups: String,
     val globalSearchMoreContacts: String,
     val globalSearchMoreGroups: String,
@@ -434,6 +436,8 @@ data class PrivChatSearchStringsPatch(
     val globalSearchPlaceholder: String? = null,
     val globalSearchSectionChannels: String? = null,
     val globalSearchSectionContacts: String? = null,
+    val globalSearchRelatedPrefix: String? = null,
+    val globalSearchRelatedSuffix: String? = null,
     val globalSearchSectionGroups: String? = null,
     val globalSearchMoreContacts: String? = null,
     val globalSearchMoreGroups: String? = null,
@@ -460,6 +464,8 @@ val PrivChatSearchStringsPatch.isEmpty: Boolean
         globalSearchPlaceholder == null &&
         globalSearchSectionChannels == null &&
         globalSearchSectionContacts == null &&
+        globalSearchRelatedPrefix == null &&
+        globalSearchRelatedSuffix == null &&
         globalSearchSectionGroups == null &&
         globalSearchMoreContacts == null &&
         globalSearchMoreGroups == null &&
@@ -487,6 +493,8 @@ fun PrivChatSearchStrings.merge(patch: PrivChatSearchStringsPatch?): PrivChatSea
         globalSearchPlaceholder = patch.globalSearchPlaceholder ?: globalSearchPlaceholder,
         globalSearchSectionChannels = patch.globalSearchSectionChannels ?: globalSearchSectionChannels,
         globalSearchSectionContacts = patch.globalSearchSectionContacts ?: globalSearchSectionContacts,
+        globalSearchRelatedPrefix = patch.globalSearchRelatedPrefix ?: globalSearchRelatedPrefix,
+        globalSearchRelatedSuffix = patch.globalSearchRelatedSuffix ?: globalSearchRelatedSuffix,
         globalSearchSectionGroups = patch.globalSearchSectionGroups ?: globalSearchSectionGroups,
         globalSearchMoreContacts = patch.globalSearchMoreContacts ?: globalSearchMoreContacts,
         globalSearchMoreGroups = patch.globalSearchMoreGroups ?: globalSearchMoreGroups,
