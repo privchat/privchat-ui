@@ -8,6 +8,7 @@ import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.components.ChatAvatar
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.gearui.theme.Theme
+import com.gearui.theme.groupedBackground
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.typography.Typography
@@ -128,7 +129,7 @@ fun ChatSettingsPage(
         else -> strings.groupSettingsJoinPolicyApproval
     }
 
-    Column(modifier = modifier.fillMaxSize().background(colors.background)) {
+    Column(modifier = modifier.fillMaxSize().background(colors.groupedBackground)) {
         // 顶部导航栏
         NavBar(
             title = strings.chatSettingsTitle,

@@ -15,6 +15,7 @@ import com.gearui.components.button.ButtonType
 import com.gearui.components.button.ButtonTheme
 import com.gearui.components.button.ButtonSize
 import com.gearui.theme.Theme
+import com.gearui.theme.groupedBackground
 import com.gearui.foundation.primitives.Text
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.layout.*
@@ -69,7 +70,7 @@ fun FriendSettingsPage(
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var isDeleting by remember { mutableStateOf(false) }
 
-    Column(modifier = modifier.fillMaxSize().background(colors.background)) {
+    Column(modifier = modifier.fillMaxSize().background(colors.groupedBackground)) {
         // 顶部导航栏
         NavBar(
             title = strings.friendSettingsTitle,
