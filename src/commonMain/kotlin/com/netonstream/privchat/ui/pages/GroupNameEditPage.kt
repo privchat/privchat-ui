@@ -49,7 +49,7 @@ fun GroupNameEditPage(
             scope.launch {
                 onSave(trimmed).fold(
                     onSuccess = { onBack() },
-                    onFailure = { onError?.invoke(it.message ?: strings.networkError) },
+                    onFailure = { onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(it, strings.networkError)) },
                 )
             }
         }

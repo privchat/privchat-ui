@@ -188,21 +188,12 @@ fun GlobalSearchPage(
 
         val nothing = contactHits.isEmpty() && groupHits.isEmpty() && hits.isEmpty()
         if (error && contactHits.isEmpty() && groupHits.isEmpty() && !isSearching) {
-            // 失败终态：可见错误 + 可点重试（复用 networkError/retry，避免新增 i18n key）。
-            Column(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Text(text = strings.networkError, color = colors.mutedForeground)
-                Box(
-                    modifier = Modifier
-                        .padding(top = 12.dp)
-                        .clickable(onClick = { retryNonce += 1 }),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(text = strings.retry, color = colors.primary)
-                }
+            // 失败终态：统一 PageError（可见错误 + 重试），不再各写各的。
+            Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                com.netonstream.privchat.ui.components.PageError(
+                    message = strings.networkError,
+                    onRetry = { retryNonce += 1 },
+                )
             }
         } else if (query.trim().length >= 2 && searched && nothing && !isSearching) {
             Box(

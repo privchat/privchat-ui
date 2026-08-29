@@ -86,7 +86,7 @@ fun GroupCreatePage(
                             onSuccess = { isCreating = false },
                             onFailure = { e ->
                                 isCreating = false
-                                onError(e.message ?: "创建失败")
+                                onError(com.netonstream.privchat.ui.error.UserFacingError.message(e, "创建失败"))
                             },
                         )
                     }

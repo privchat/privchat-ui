@@ -88,7 +88,7 @@ fun GroupInvitePage(
                             onSuccess = { isSubmitting = false },
                             onFailure = { e ->
                                 isSubmitting = false
-                                onError(e.message ?: "邀请失败")
+                                onError(com.netonstream.privchat.ui.error.UserFacingError.message(e, "邀请失败"))
                             },
                         )
                     }

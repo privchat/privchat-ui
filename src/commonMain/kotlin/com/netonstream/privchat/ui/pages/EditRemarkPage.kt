@@ -71,7 +71,7 @@ fun EditRemarkPage(
                         val alias = remark.trim().ifEmpty { null }
                         onSave(alias).fold(
                             onSuccess = { onBack() },
-                            onFailure = { onError?.invoke(it.message ?: strings.networkError) },
+                            onFailure = { onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(it, strings.networkError)) },
                         )
                         isSaving = false
                     }

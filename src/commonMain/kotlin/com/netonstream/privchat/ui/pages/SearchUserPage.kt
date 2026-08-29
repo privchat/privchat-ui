@@ -75,7 +75,7 @@ fun SearchUserPage(
                     },
                     onFailure = { error ->
                         isSearching = false
-                        errorMessage = error.message ?: strings.searchUserError
+                        errorMessage = com.netonstream.privchat.ui.error.UserFacingError.message(error, strings.searchUserError)
                     }
                 )
             }

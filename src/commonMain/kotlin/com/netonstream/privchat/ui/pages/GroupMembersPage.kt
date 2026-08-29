@@ -90,7 +90,7 @@ fun GroupMembersPage(
                     withContext(Dispatchers.Default) {
                         PrivChat.client.groupMuteMember(member.channelId, member.userId, seconds)
                     }.onSuccess { Toast.success(strings.groupMuteSuccess) }
-                        .onFailure { onError?.invoke(it.message ?: strings.networkError) }
+                        .onFailure { onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(it, strings.networkError)) }
                 }
             },
         )
@@ -101,7 +101,7 @@ fun GroupMembersPage(
             withContext(Dispatchers.Default) {
                 PrivChat.client.groupUnmuteMember(member.channelId, member.userId)
             }.onSuccess { Toast.success(strings.groupUnmuteSuccess) }
-                .onFailure { onError?.invoke(it.message ?: strings.networkError) }
+                .onFailure { onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(it, strings.networkError)) }
         }
     }
 
@@ -121,7 +121,7 @@ fun GroupMembersPage(
                     0 -> scope.launch {
                         val next = if (member.isAdmin) "member" else "admin"
                         onSetRole(member, next).onFailure {
-                            onError?.invoke(it.message ?: strings.networkError)
+                            onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(it, strings.networkError))
                         }
                     }
                     1 -> transferTarget = member
@@ -191,7 +191,7 @@ fun GroupMembersPage(
                                     onClick = {
                                         scope.launch {
                                             onRemoveMember(member).onFailure {
-                                                onError?.invoke(it.message ?: strings.networkError)
+                                                onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(it, strings.networkError))
                                             }
                                         }
                                     },
@@ -277,7 +277,7 @@ fun GroupMembersPage(
                         transferTarget = null
                         scope.launch {
                             onTransferOwner(target).onFailure {
-                                onError?.invoke(it.message ?: strings.networkError)
+                                onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(it, strings.networkError))
                             }
                         }
                     },

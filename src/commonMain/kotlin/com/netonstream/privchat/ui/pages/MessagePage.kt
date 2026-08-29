@@ -174,7 +174,7 @@ private fun showBotMenu(
         }.fold(
             onSuccess = { menu -> presentBotMenuSheet(channel, menu, scope, onError) },
             onFailure = { e ->
-                onError?.invoke("菜单加载失败：${e.message ?: "未知错误"}")
+                onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(e, "菜单加载失败"))
             },
         )
     }
@@ -249,7 +249,7 @@ private fun dispatchTransferAction(
                 }
             },
             onFailure = { e ->
-                onError?.invoke("调用失败：${e.message ?: "未知错误"}")
+                onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(e, "调用失败"))
             },
         )
     }
@@ -287,7 +287,7 @@ private fun dispatchMessageAction(
             )
         }
         result.onFailure { e ->
-            onError?.invoke("发送失败：${e.message ?: "未知错误"}")
+            onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(e, "发送失败"))
         }
     }
 }
@@ -339,7 +339,7 @@ private fun dispatchWebAction(
                 }
             },
             onFailure = { e ->
-                onError?.invoke("准备链接失败：${e.message ?: "未知错误"}")
+                onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(e, "准备链接失败"))
             },
         )
     }
@@ -1397,13 +1397,13 @@ fun MessagePage(
                             }
                         }
                         result?.onFailure { e ->
-                            val message = e.message ?: strings.networkError
+                            val message = com.netonstream.privchat.ui.error.UserFacingError.message(e, strings.networkError)
                             if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
                                 onError?.invoke(message)
                             }
                         }
                     } catch (e: Exception) {
-                        val message = e.message ?: strings.networkError
+                        val message = com.netonstream.privchat.ui.error.UserFacingError.message(e, strings.networkError)
                         if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
                             onError?.invoke(message)
                         }
@@ -1425,13 +1425,13 @@ fun MessagePage(
                             }
                         }
                         result?.onFailure { e ->
-                            val message = e.message ?: strings.networkError
+                            val message = com.netonstream.privchat.ui.error.UserFacingError.message(e, strings.networkError)
                             if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
                                 onError?.invoke(message)
                             }
                         }
                     } catch (e: Exception) {
-                        val message = e.message ?: strings.networkError
+                        val message = com.netonstream.privchat.ui.error.UserFacingError.message(e, strings.networkError)
                         if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
                             onError?.invoke(message)
                         }
@@ -1453,13 +1453,13 @@ fun MessagePage(
                             }
                         }
                         result?.onFailure { e ->
-                            val message = e.message ?: strings.networkError
+                            val message = com.netonstream.privchat.ui.error.UserFacingError.message(e, strings.networkError)
                             if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
                                 onError?.invoke(message)
                             }
                         }
                     } catch (e: Exception) {
-                        val message = e.message ?: strings.networkError
+                        val message = com.netonstream.privchat.ui.error.UserFacingError.message(e, strings.networkError)
                         if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
                             onError?.invoke(message)
                         }

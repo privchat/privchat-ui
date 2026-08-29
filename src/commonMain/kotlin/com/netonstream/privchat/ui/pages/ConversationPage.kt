@@ -269,7 +269,7 @@ fun ConversationPage(
                                 val result = onPinChannel?.invoke(channel.channelId, pin)
                                     ?: PrivChat.client.pinChannel(channel.channelId, pin)
                                 result.onFailure { error ->
-                                    onError?.invoke(error.message ?: strings.networkError)
+                                    onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(error, strings.networkError))
                                 }
                             }
                         },
@@ -278,7 +278,7 @@ fun ConversationPage(
                                 val result = onMuteChannel?.invoke(channel.channelId, mute)
                                     ?: PrivChat.client.muteChannel(channel.channelId, mute)
                                 result.onFailure { error ->
-                                    onError?.invoke(error.message ?: strings.networkError)
+                                    onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(error, strings.networkError))
                                 }
                             }
                         },
@@ -286,7 +286,7 @@ fun ConversationPage(
                             scope.launch {
                                 val handler = onHideChannel ?: return@launch
                                 handler(channel.channelId).onFailure { error ->
-                                    onError?.invoke(error.message ?: strings.networkError)
+                                    onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(error, strings.networkError))
                                 }
                             }
                         },
@@ -294,7 +294,7 @@ fun ConversationPage(
                             scope.launch {
                                 val handler = onDeleteChannel ?: return@launch
                                 handler(channel.channelId).onFailure { error ->
-                                    onError?.invoke(error.message ?: strings.networkError)
+                                    onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(error, strings.networkError))
                                 }
                             }
                         },

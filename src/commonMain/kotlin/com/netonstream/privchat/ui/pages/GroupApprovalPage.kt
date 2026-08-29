@@ -55,17 +55,11 @@ fun GroupApprovalPage(
         NavBar(title = strings.groupApprovalTitle, useDefaultBack = true, onBackClick = onBack)
 
         when {
-            error && approvals.isEmpty() && !loading -> Column(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Text(text = strings.networkError, color = Theme.colors.mutedForeground)
-                Box(
-                    modifier = Modifier.padding(top = 12.dp).clickable(onClick = {
-                        scope.launch { error = GroupApprovalStore.refresh(channelId).isFailure }
-                    }),
-                ) { Text(text = strings.retry, color = Theme.colors.primary) }
+            error && approvals.isEmpty() && !loading -> Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                com.netonstream.privchat.ui.components.PageError(
+                    message = strings.networkError,
+                    onRetry = { scope.launch { error = GroupApprovalStore.refresh(channelId).isFailure } },
+                )
             }
 
             approvals.isEmpty() && !loading -> Box(
