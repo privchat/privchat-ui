@@ -37,7 +37,7 @@ object PrivChatThemeExtension {
     /**
      * 前景色按底色亮度自动取黑或白（WCAG 相对亮度近似）。
      *
-     * 品牌主色可能是浅黄(#FFD238)、深绿(微信那种)、深红(福寿)——浅底必须配黑字、
+     * 品牌主色可能是浅黄(#FFD238)、深绿(微信那种)、深红——浅底必须配黑字、
      * 深底必须配白字，写死任何一种都会在另一类品牌上变成低对比甚至不可读。
      * 0.6 的阈值把三类品牌都分对：黄 0.82 → 黑字；绿 0.57 / 红 0.23 / 蓝 0.12 → 白字。
      */
@@ -54,7 +54,7 @@ object PrivChatThemeExtension {
             // 判据是 primary 的亮度而不是模式：BUILTIN（无品牌覆盖）的暗色主题 primary
             // 是原厂近白（#FAFAFA），拿来当气泡就是一块刺眼白板——亮度落在两端说明这是
             // 原厂中性主题，退回中性灰气泡；落在中段说明是真品牌色（Weey 黄 0.82、
-            // 福寿红 0.23），照用。
+            // 深红约 0.23），照用。
             val primaryLum =
                 0.2126f * primary.red + 0.7152f * primary.green + 0.0722f * primary.blue
             val primaryIsBranded = primaryLum in 0.05f..0.9f
@@ -73,7 +73,7 @@ object PrivChatThemeExtension {
                     onBubbleOther = Color(0xFFFAFAFA),
                 )
             } else {
-                // 自己的气泡=品牌主色（白标：Weey 黄 / 福寿红 / PrivChat 蓝），
+                // 自己的气泡=品牌主色（白标：Weey 黄 / PrivChat 蓝），
                 // 文字随主色亮度取黑或白。气泡内的时间、「✓✓ 已读」、发送进度都由
                 // onBubbleSelf 派生（见 MessageContent），所以两者必须成对切换。
                 ChatColors(
