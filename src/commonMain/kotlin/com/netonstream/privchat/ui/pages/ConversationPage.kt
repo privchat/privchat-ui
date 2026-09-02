@@ -24,6 +24,8 @@ import com.gearui.components.loading.LoadingIcon
 import com.gearui.components.loading.LoadingLayout
 import com.gearui.components.loading.LoadingSize
 import com.gearui.components.navbar.NavBar
+import com.gearui.components.navbar.NavBarActionSlot
+import com.gearui.components.navbar.NavBarDefaults
 import com.gearui.components.navbar.NavBarItem
 import com.gearui.components.contextmenu.ContextMenu
 import com.gearui.components.contextmenu.ContextMenuItem
@@ -178,18 +180,17 @@ fun ConversationPage(
                     } else if (statusTitle != null) {
                         { Text(text = statusTitle, style = Typography.TitleMedium, color = Theme.colors.foreground) }
                     } else null,
-                    rightWidgetWidth = 96.dp,
+                    // 🔴 用 kit 的槽位宽度算总宽，别写死。写死过 96dp，而两个图标按
+                    // NavBarItem 的标准是 2×56dp——于是这一页的顶部图标比联系人页窄、
+                    // 间距也不一样。同一个顶栏两套几何，只能靠肉眼比截图才发现。
+                    rightWidgetWidth = NavBarDefaults.actionSlotWidth * 2,
                     rightWidget = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                         // 全局搜索(聊天记录)入口
-                        Box(
-                            modifier = Modifier
-                                .padding(horizontal = 4.dp, vertical = 8.dp)
-                                .clickable(onClick = onGlobalSearch),
-                        ) {
+                        NavBarActionSlot(onClick = onGlobalSearch) {
                             Icon(
                                 name = Icons.search,
-                                size = 24.dp,
+                                size = NavBarDefaults.actionIconSize,
                                 tint = Theme.colors.foreground,
                             )
                         }
@@ -219,14 +220,10 @@ fun ConversationPage(
                                 ),
                             ),
                         ) { onOpen ->
-                            Box(
-                                modifier = Modifier
-                                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                                    .clickable(onClick = onOpen),
-                            ) {
+                            NavBarActionSlot(onClick = onOpen) {
                                 Icon(
                                     name = Icons.add,
-                                    size = 24.dp,
+                                    size = NavBarDefaults.actionIconSize,
                                     tint = Theme.colors.foreground,
                                 )
                             }
