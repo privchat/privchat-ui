@@ -287,7 +287,10 @@ fun UserProfilePage(
                     value = remarkInput,
                     onValueChange = { remarkInput = it },
                     placeholder = strings.friendRequestInputPlaceholder,
-                    maxLines = 3
+                    maxLines = 3,
+                    // 🔴 多行 Input 的高度由调用方给（组件有意不自己定，见 Input.kt）。
+                    // 不给的话它会占满可用高度，把整个弹窗撑成全屏、按钮挤出屏幕外。
+                    modifier = Modifier.fillMaxWidth().height(88.dp)
                 )
             },
             actions = {
