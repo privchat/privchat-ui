@@ -645,6 +645,19 @@ private fun VideoContent(
     // 视频的图像来源只有一个：缩略图。
     val videoThumb = message.localThumbnailPath?.let { "file://$it" }
 
+    // 🔴 与 ImageContent 一样，没有本地封面就触发一次下载。
+    //
+    // 这里原来只读 localThumbnailPath，没有就渲染灰底——**发送端**有本地文件所以
+    // 封面正常，**接收端**永远是一个灰方块加播放键，而且链路上不报任何错。图片那条
+    // 早就接了 ensureThumbnail，视频这条一直没跟上。
+    //
+    // ensure 语义：已经有了 / 协议层确无缩略图，SDK 侧直接返回，重复调用无副作用。
+    if (videoThumb.isNullOrBlank()) {
+        LaunchedEffect(message.id) {
+            MediaDownloadManager.ensureThumbnail(message.id)
+        }
+    }
+
     // UX-2：视频气泡点击预览 + 长按弹菜单。
     val menuTrigger = LocalMessageMenuTrigger.current
     val gestureMod = if (onVideoPreview != null || menuTrigger != null) {
