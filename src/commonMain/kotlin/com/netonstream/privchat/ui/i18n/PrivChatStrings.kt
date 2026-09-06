@@ -260,6 +260,11 @@ data class PrivChatStrings(
     val settingsAbout: String get() = dSettings.settingsAbout
     val settingsMore: String get() = dSettings.settingsMore
     val settingsLogout: String get() = dSettings.settingsLogout
+    val settingsDeleteAccount: String get() = dSettings.settingsDeleteAccount
+    val settingsDeleteAccountTitle: String get() = dSettings.settingsDeleteAccountTitle
+    val settingsDeleteAccountHint: String get() = dSettings.settingsDeleteAccountHint
+    val settingsDeleteAccountConfirm: String get() = dSettings.settingsDeleteAccountConfirm
+    val deleteAccountFailed: String get() = dSettings.deleteAccountFailed
     val settingsSectionAccount: String get() = dSettings.settingsSectionAccount
     val settingsAccountSecurity: String get() = dSettings.settingsAccountSecurity
     val settingsPrivacy: String get() = dSettings.settingsPrivacy

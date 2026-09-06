@@ -1007,6 +1007,11 @@ data class PrivChatSettingsStrings(
     val settingsAbout: String,
     val settingsMore: String,
     val settingsLogout: String,
+    val settingsDeleteAccount: String,
+    val settingsDeleteAccountTitle: String,
+    val settingsDeleteAccountHint: String,
+    val settingsDeleteAccountConfirm: String,
+    val deleteAccountFailed: String,
     val settingsSectionAccount: String,
     val settingsAccountSecurity: String,
     val settingsPrivacy: String,
@@ -1069,6 +1074,11 @@ data class PrivChatSettingsStringsPatch(
     val settingsAbout: String? = null,
     val settingsMore: String? = null,
     val settingsLogout: String? = null,
+    val settingsDeleteAccount: String? = null,
+    val settingsDeleteAccountTitle: String? = null,
+    val settingsDeleteAccountHint: String? = null,
+    val settingsDeleteAccountConfirm: String? = null,
+    val deleteAccountFailed: String? = null,
     val settingsSectionAccount: String? = null,
     val settingsAccountSecurity: String? = null,
     val settingsPrivacy: String? = null,
@@ -1131,6 +1141,11 @@ val PrivChatSettingsStringsPatch.isEmpty: Boolean
         settingsAbout == null &&
         settingsMore == null &&
         settingsLogout == null &&
+        settingsDeleteAccount == null &&
+        settingsDeleteAccountTitle == null &&
+        settingsDeleteAccountHint == null &&
+        settingsDeleteAccountConfirm == null &&
+        deleteAccountFailed == null &&
         settingsSectionAccount == null &&
         settingsAccountSecurity == null &&
         settingsPrivacy == null &&
@@ -1194,6 +1209,11 @@ fun PrivChatSettingsStrings.merge(patch: PrivChatSettingsStringsPatch?): PrivCha
         settingsAbout = patch.settingsAbout ?: settingsAbout,
         settingsMore = patch.settingsMore ?: settingsMore,
         settingsLogout = patch.settingsLogout ?: settingsLogout,
+        settingsDeleteAccount = patch.settingsDeleteAccount ?: settingsDeleteAccount,
+        settingsDeleteAccountTitle = patch.settingsDeleteAccountTitle ?: settingsDeleteAccountTitle,
+        settingsDeleteAccountHint = patch.settingsDeleteAccountHint ?: settingsDeleteAccountHint,
+        settingsDeleteAccountConfirm = patch.settingsDeleteAccountConfirm ?: settingsDeleteAccountConfirm,
+        deleteAccountFailed = patch.deleteAccountFailed ?: deleteAccountFailed,
         settingsSectionAccount = patch.settingsSectionAccount ?: settingsSectionAccount,
         settingsAccountSecurity = patch.settingsAccountSecurity ?: settingsAccountSecurity,
         settingsPrivacy = patch.settingsPrivacy ?: settingsPrivacy,
