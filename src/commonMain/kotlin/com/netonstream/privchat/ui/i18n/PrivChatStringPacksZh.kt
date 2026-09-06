@@ -17,6 +17,8 @@ internal val zhCommon = PrivChatCommonStrings(
     noData = "暂无数据",
     networkError = "网络错误",
     connectionNotReady = "连接尚未就绪，请稍后重试",
+    pushDefaultTitle = "新消息",
+    pushDefaultBody = "你收到一条新消息",
 )
 
 internal val zhConversation = PrivChatConversationStrings(

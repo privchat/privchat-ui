@@ -17,6 +17,8 @@ internal val hantCommon = PrivChatCommonStrings(
     noData = "暫無資料",
     networkError = "網路錯誤",
     connectionNotReady = "連線尚未就緒，請稍後重試",
+    pushDefaultTitle = "新訊息",
+    pushDefaultBody = "你收到一則新訊息",
 )
 
 internal val hantConversation = PrivChatConversationStrings(

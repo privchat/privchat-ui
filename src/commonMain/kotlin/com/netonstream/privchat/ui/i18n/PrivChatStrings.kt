@@ -37,6 +37,8 @@ data class PrivChatStrings(
     val noData: String get() = dCommon.noData
     val networkError: String get() = dCommon.networkError
     val connectionNotReady: String get() = dCommon.connectionNotReady
+    val pushDefaultTitle: String get() = dCommon.pushDefaultTitle
+    val pushDefaultBody: String get() = dCommon.pushDefaultBody
     val tabConversation: String get() = dConversation.tabConversation
     val tabContact: String get() = dConversation.tabContact
     val tabMe: String get() = dConversation.tabMe

@@ -17,6 +17,8 @@ internal val viCommon = PrivChatCommonStrings(
     noData = "Không có dữ liệu",
     networkError = "Lỗi mạng",
     connectionNotReady = "Kết nối chưa sẵn sàng, vui lòng thử lại sau",
+    pushDefaultTitle = "Tin nhắn mới",
+    pushDefaultBody = "Bạn có một tin nhắn mới",
 )
 
 internal val viConversation = PrivChatConversationStrings(

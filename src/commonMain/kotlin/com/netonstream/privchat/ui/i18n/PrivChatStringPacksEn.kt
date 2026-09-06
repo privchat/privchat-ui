@@ -17,6 +17,8 @@ internal val enCommon = PrivChatCommonStrings(
     noData = "No data",
     networkError = "Network error",
     connectionNotReady = "Connection is not ready yet, please retry shortly",
+    pushDefaultTitle = "New message",
+    pushDefaultBody = "You have a new message",
 )
 
 internal val enConversation = PrivChatConversationStrings(

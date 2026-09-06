@@ -21,6 +21,15 @@ data class PrivChatCommonStrings(
     val networkError: String,
     /** 会话尚未就绪（连接中/重连中）时的可重试提示。 */
     val connectionNotReady: String,
+    /**
+     * 远程推送的兜底标题/正文。
+     *
+     * 推送 payload 里没有会话名——服务端不知道这台设备用哪种语言，客户端此刻也
+     * 未必已经同步到这个会话（可能是被这条推送刚拉起来的冷进程）。进 App 之后
+     * 看到的才是真实会话名。
+     */
+    val pushDefaultTitle: String,
+    val pushDefaultBody: String,
 )
 
 data class PrivChatCommonStringsPatch(
@@ -36,6 +45,8 @@ data class PrivChatCommonStringsPatch(
     val noData: String? = null,
     val networkError: String? = null,
     val connectionNotReady: String? = null,
+    val pushDefaultTitle: String? = null,
+    val pushDefaultBody: String? = null,
 )
 
 val PrivChatCommonStringsPatch.isEmpty: Boolean
@@ -50,7 +61,9 @@ val PrivChatCommonStringsPatch.isEmpty: Boolean
         retry == null &&
         noData == null &&
         networkError == null &&
-        connectionNotReady == null
+        connectionNotReady == null &&
+        pushDefaultTitle == null &&
+        pushDefaultBody == null
 
 fun PrivChatCommonStrings.merge(patch: PrivChatCommonStringsPatch?): PrivChatCommonStrings {
     if (patch == null || patch.isEmpty) return this
@@ -67,6 +80,8 @@ fun PrivChatCommonStrings.merge(patch: PrivChatCommonStringsPatch?): PrivChatCom
         noData = patch.noData ?: noData,
         networkError = patch.networkError ?: networkError,
         connectionNotReady = patch.connectionNotReady ?: connectionNotReady,
+        pushDefaultTitle = patch.pushDefaultTitle ?: pushDefaultTitle,
+        pushDefaultBody = patch.pushDefaultBody ?: pushDefaultBody,
     )
 }
 
