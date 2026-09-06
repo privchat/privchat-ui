@@ -94,7 +94,16 @@ fun SearchUserPage(
         SearchBar(
             value = searchQuery,
             onValueChange = {
-                searchQuery = it
+                // 🔴 强制小写。
+                //
+                // iOS 键盘会把首字母自动大写，用户看到的是 "Peertest" 而账号规则是
+                // 小写字母开头——搜出来能不能命中取决于服务端是否大小写不敏感，而
+                // 输入框里显示的东西本身就是错的。
+                //
+                // 声明式的 KeyboardCapitalization.None 在 Kuikly 的 iOS 桥上不生效
+                // （同 gearui Input.kt 里记的 visualTransformation 那条），所以在这里
+                // 直接归一化。另一种合法输入是手机号（纯数字），小写化对它是空操作。
+                searchQuery = it.lowercase()
                 errorMessage = null
                 noResult = false
             },
