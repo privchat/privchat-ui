@@ -283,6 +283,15 @@ data class PrivChatStrings(
     val privacyHint: String get() = dSettings.privacyHint
     val settingsSectionGeneral: String get() = dSettings.settingsSectionGeneral
     val settingsNotification: String get() = dSettings.settingsNotification
+    val notificationsSectionAlert: String get() = dSettings.notificationsSectionAlert
+    val notificationsSound: String get() = dSettings.notificationsSound
+    val notificationsVibration: String get() = dSettings.notificationsVibration
+    val notificationsSectionMute: String get() = dSettings.notificationsSectionMute
+    val notificationsGlobalMute: String get() = dSettings.notificationsGlobalMute
+    val notificationsSectionPrivacy: String get() = dSettings.notificationsSectionPrivacy
+    val notificationsHidePreview: String get() = dSettings.notificationsHidePreview
+    val notificationsHidePreviewHint: String get() = dSettings.notificationsHidePreviewHint
+    val notificationsSyncFailed: String get() = dSettings.notificationsSyncFailed
     val settingsSectionHelp: String get() = dSettings.settingsSectionHelp
     val settingsHelp: String get() = dSettings.settingsHelp
     val settingsFeedback: String get() = dSettings.settingsFeedback
@@ -371,6 +380,8 @@ data class PrivChatStrings(
     val previewLink: String get() = dAuxiliary.previewLink
     val previewContactCard: String get() = dAuxiliary.previewContactCard
     val previewRedPacket: String get() = dAuxiliary.previewRedPacket
+    val previewForward: String get() = dAuxiliary.previewForward
+    val previewMoneyTransfer: String get() = dAuxiliary.previewMoneyTransfer
     val previewSystemFallback: String get() = dAuxiliary.previewSystemFallback
     val previewUnknown: String get() = dAuxiliary.previewUnknown
     val previewRecalled: String get() = dAuxiliary.previewRecalled

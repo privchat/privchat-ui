@@ -1043,6 +1043,15 @@ data class PrivChatSettingsStrings(
     val privacyHint: String,
     val settingsSectionGeneral: String,
     val settingsNotification: String,
+    val notificationsSectionAlert: String,
+    val notificationsSound: String,
+    val notificationsVibration: String,
+    val notificationsSectionMute: String,
+    val notificationsGlobalMute: String,
+    val notificationsSectionPrivacy: String,
+    val notificationsHidePreview: String,
+    val notificationsHidePreviewHint: String,
+    val notificationsSyncFailed: String,
     val settingsSectionHelp: String,
     val settingsHelp: String,
     val settingsFeedback: String,
@@ -1110,6 +1119,15 @@ data class PrivChatSettingsStringsPatch(
     val privacyHint: String? = null,
     val settingsSectionGeneral: String? = null,
     val settingsNotification: String? = null,
+    val notificationsSectionAlert: String? = null,
+    val notificationsSound: String? = null,
+    val notificationsVibration: String? = null,
+    val notificationsSectionMute: String? = null,
+    val notificationsGlobalMute: String? = null,
+    val notificationsSectionPrivacy: String? = null,
+    val notificationsHidePreview: String? = null,
+    val notificationsHidePreviewHint: String? = null,
+    val notificationsSyncFailed: String? = null,
     val settingsSectionHelp: String? = null,
     val settingsHelp: String? = null,
     val settingsFeedback: String? = null,
@@ -1177,6 +1195,15 @@ val PrivChatSettingsStringsPatch.isEmpty: Boolean
         privacyHint == null &&
         settingsSectionGeneral == null &&
         settingsNotification == null &&
+        notificationsSectionAlert == null &&
+        notificationsSound == null &&
+        notificationsVibration == null &&
+        notificationsSectionMute == null &&
+        notificationsGlobalMute == null &&
+        notificationsSectionPrivacy == null &&
+        notificationsHidePreview == null &&
+        notificationsHidePreviewHint == null &&
+        notificationsSyncFailed == null &&
         settingsSectionHelp == null &&
         settingsHelp == null &&
         settingsFeedback == null &&
@@ -1245,6 +1272,15 @@ fun PrivChatSettingsStrings.merge(patch: PrivChatSettingsStringsPatch?): PrivCha
         privacyHint = patch.privacyHint ?: privacyHint,
         settingsSectionGeneral = patch.settingsSectionGeneral ?: settingsSectionGeneral,
         settingsNotification = patch.settingsNotification ?: settingsNotification,
+        notificationsSectionAlert = patch.notificationsSectionAlert ?: notificationsSectionAlert,
+        notificationsSound = patch.notificationsSound ?: notificationsSound,
+        notificationsVibration = patch.notificationsVibration ?: notificationsVibration,
+        notificationsSectionMute = patch.notificationsSectionMute ?: notificationsSectionMute,
+        notificationsGlobalMute = patch.notificationsGlobalMute ?: notificationsGlobalMute,
+        notificationsSectionPrivacy = patch.notificationsSectionPrivacy ?: notificationsSectionPrivacy,
+        notificationsHidePreview = patch.notificationsHidePreview ?: notificationsHidePreview,
+        notificationsHidePreviewHint = patch.notificationsHidePreviewHint ?: notificationsHidePreviewHint,
+        notificationsSyncFailed = patch.notificationsSyncFailed ?: notificationsSyncFailed,
         settingsSectionHelp = patch.settingsSectionHelp ?: settingsSectionHelp,
         settingsHelp = patch.settingsHelp ?: settingsHelp,
         settingsFeedback = patch.settingsFeedback ?: settingsFeedback,
@@ -1389,6 +1425,9 @@ data class PrivChatAuxiliaryStrings(
     val previewLink: String,
     val previewContactCard: String,
     val previewRedPacket: String,
+    /** 转发消息 / 转账的类型占位符。与服务端 `PushLocale::preview_for_type` 同一份分类。 */
+    val previewForward: String,
+    val previewMoneyTransfer: String,
     val previewSystemFallback: String,
     val previewUnknown: String,
     val previewRecalled: String,
@@ -1531,6 +1570,8 @@ data class PrivChatAuxiliaryStringsPatch(
     val previewLink: String? = null,
     val previewContactCard: String? = null,
     val previewRedPacket: String? = null,
+    val previewForward: String? = null,
+    val previewMoneyTransfer: String? = null,
     val previewSystemFallback: String? = null,
     val previewUnknown: String? = null,
     val previewRecalled: String? = null,
@@ -1654,6 +1695,8 @@ val PrivChatAuxiliaryStringsPatch.isEmpty: Boolean
         previewLink == null &&
         previewContactCard == null &&
         previewRedPacket == null &&
+        previewForward == null &&
+        previewMoneyTransfer == null &&
         previewSystemFallback == null &&
         previewUnknown == null &&
         previewRecalled == null &&
@@ -1785,6 +1828,8 @@ fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivC
         previewLink = patch.previewLink ?: previewLink,
         previewContactCard = patch.previewContactCard ?: previewContactCard,
         previewRedPacket = patch.previewRedPacket ?: previewRedPacket,
+        previewForward = patch.previewForward ?: previewForward,
+        previewMoneyTransfer = patch.previewMoneyTransfer ?: previewMoneyTransfer,
         previewSystemFallback = patch.previewSystemFallback ?: previewSystemFallback,
         previewUnknown = patch.previewUnknown ?: previewUnknown,
         previewRecalled = patch.previewRecalled ?: previewRecalled,
