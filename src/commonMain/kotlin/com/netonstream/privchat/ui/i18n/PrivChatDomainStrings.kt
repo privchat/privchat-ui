@@ -1445,6 +1445,15 @@ data class PrivChatAuxiliaryStrings(
     val friendRequestDeclineFailed: String,
     val messageRecallFailed: String,
     val qrImageDecodeFailed: String,
+    val qrScanAimHint: String,
+    val qrScanPickFromAlbum: String,
+    val qrScanNoQrInImage: String,
+    val qrScanNotPrivChat: String,
+    val qrScanUnsupported: String,
+    val qrScanSelf: String,
+    val qrScanResolveFailed: String,
+    val qrScanGroupJoined: String,
+    val qrScanGroupPending: String,
     val saveFailed: String,
     val operationFailed: String,
     val smsCodeError: String,
@@ -1589,6 +1598,15 @@ data class PrivChatAuxiliaryStringsPatch(
     val friendRequestDeclineFailed: String? = null,
     val messageRecallFailed: String? = null,
     val qrImageDecodeFailed: String? = null,
+    val qrScanAimHint: String? = null,
+    val qrScanPickFromAlbum: String? = null,
+    val qrScanNoQrInImage: String? = null,
+    val qrScanNotPrivChat: String? = null,
+    val qrScanUnsupported: String? = null,
+    val qrScanSelf: String? = null,
+    val qrScanResolveFailed: String? = null,
+    val qrScanGroupJoined: String? = null,
+    val qrScanGroupPending: String? = null,
     val saveFailed: String? = null,
     val operationFailed: String? = null,
     val smsCodeError: String? = null,
@@ -1714,6 +1732,15 @@ val PrivChatAuxiliaryStringsPatch.isEmpty: Boolean
         friendRequestDeclineFailed == null &&
         messageRecallFailed == null &&
         qrImageDecodeFailed == null &&
+        qrScanAimHint == null &&
+        qrScanPickFromAlbum == null &&
+        qrScanNoQrInImage == null &&
+        qrScanNotPrivChat == null &&
+        qrScanUnsupported == null &&
+        qrScanSelf == null &&
+        qrScanResolveFailed == null &&
+        qrScanGroupJoined == null &&
+        qrScanGroupPending == null &&
         saveFailed == null &&
         operationFailed == null &&
         smsCodeError == null &&
@@ -1847,6 +1874,15 @@ fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivC
         friendRequestDeclineFailed = patch.friendRequestDeclineFailed ?: friendRequestDeclineFailed,
         messageRecallFailed = patch.messageRecallFailed ?: messageRecallFailed,
         qrImageDecodeFailed = patch.qrImageDecodeFailed ?: qrImageDecodeFailed,
+        qrScanAimHint = patch.qrScanAimHint ?: qrScanAimHint,
+        qrScanPickFromAlbum = patch.qrScanPickFromAlbum ?: qrScanPickFromAlbum,
+        qrScanNoQrInImage = patch.qrScanNoQrInImage ?: qrScanNoQrInImage,
+        qrScanNotPrivChat = patch.qrScanNotPrivChat ?: qrScanNotPrivChat,
+        qrScanUnsupported = patch.qrScanUnsupported ?: qrScanUnsupported,
+        qrScanSelf = patch.qrScanSelf ?: qrScanSelf,
+        qrScanResolveFailed = patch.qrScanResolveFailed ?: qrScanResolveFailed,
+        qrScanGroupJoined = patch.qrScanGroupJoined ?: qrScanGroupJoined,
+        qrScanGroupPending = patch.qrScanGroupPending ?: qrScanGroupPending,
         saveFailed = patch.saveFailed ?: saveFailed,
         operationFailed = patch.operationFailed ?: operationFailed,
         smsCodeError = patch.smsCodeError ?: smsCodeError,

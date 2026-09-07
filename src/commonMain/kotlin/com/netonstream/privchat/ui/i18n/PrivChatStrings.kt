@@ -395,6 +395,15 @@ data class PrivChatStrings(
     val friendRequestDeclineFailed: String get() = dAuxiliary.friendRequestDeclineFailed
     val messageRecallFailed: String get() = dAuxiliary.messageRecallFailed
     val qrImageDecodeFailed: String get() = dAuxiliary.qrImageDecodeFailed
+    val qrScanAimHint: String get() = dAuxiliary.qrScanAimHint
+    val qrScanPickFromAlbum: String get() = dAuxiliary.qrScanPickFromAlbum
+    val qrScanNoQrInImage: String get() = dAuxiliary.qrScanNoQrInImage
+    val qrScanNotPrivChat: String get() = dAuxiliary.qrScanNotPrivChat
+    val qrScanUnsupported: String get() = dAuxiliary.qrScanUnsupported
+    val qrScanSelf: String get() = dAuxiliary.qrScanSelf
+    val qrScanResolveFailed: String get() = dAuxiliary.qrScanResolveFailed
+    val qrScanGroupJoined: String get() = dAuxiliary.qrScanGroupJoined
+    val qrScanGroupPending: String get() = dAuxiliary.qrScanGroupPending
     val saveFailed: String get() = dAuxiliary.saveFailed
     val operationFailed: String get() = dAuxiliary.operationFailed
     val smsCodeError: String get() = dAuxiliary.smsCodeError
