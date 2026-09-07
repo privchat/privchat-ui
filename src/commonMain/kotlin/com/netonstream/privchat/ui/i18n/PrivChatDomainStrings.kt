@@ -1045,6 +1045,10 @@ data class PrivChatSettingsStrings(
     val settingsNotification: String,
     val notificationsSectionAlert: String,
     val notificationsSound: String,
+    /**
+     * 振动开关的标题。文案里写明"应用内"是刻意的：远程通知的振动由系统决定，
+     * APNs / FCM 的 payload 里没有这个旋钮，这个开关管不到锁屏。
+     */
     val notificationsVibration: String,
     val notificationsSectionMute: String,
     val notificationsGlobalMute: String,
