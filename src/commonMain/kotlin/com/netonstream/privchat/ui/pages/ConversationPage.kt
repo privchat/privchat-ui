@@ -33,7 +33,6 @@ import com.gearui.components.popover.PopoverPlacement
 import com.gearui.components.icon.Icons
 import com.gearui.components.cell.Cell
 import com.gearui.components.empty.EmptyState
-import com.gearui.components.searchbar.SearchBar
 import com.gearui.components.swipecell.SwipeCell
 import com.gearui.components.swipecell.SwipeCellAction
 import com.gearui.components.swipecell.SwipeCellActionTheme
@@ -133,22 +132,25 @@ fun ConversationPage(
     }
 
     // 双击底部「消息」Tab 回到列表顶部：外部每次双击把计数 +1，这里响应变化滚动。
-    // 目标同样是 index=1（首条会话置顶、搜索栏隐藏），与下面新消息置顶的落点一致。
+    //
+    // 落点是 **index=0**。这里曾经写 1，注释说「index=0 是搜索栏」——那个内嵌搜索栏
+    // 后来挪到了 NavBar 的放大镜图标，列表第一个 item 就是第一条会话，于是每次滚动
+    // 都把最新的那条会话推出视口：冷启动后用户看到的第一行是第二条会话，
+    // 上面还露着半行被截断的边缘。
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > 0 && filteredChannels.isNotEmpty()) {
-            listState.animateScrollToItem(1)
+            listState.animateScrollToItem(0)
         }
     }
 
-    // 任意频道收到新消息时自动滚动到列表顶部
-    // index=0 是搜索栏，index=1 是第一条会话，滚到 1 保持搜索栏隐藏（与 iOS 效果一致）
+    // 任意频道收到新消息时自动滚动到列表顶部（index=0 = 第一条会话，见上面的说明）。
     val channelUpdateMarker = remember(channels) {
         channels.maxOfOrNull { it.lastTs } ?: 0UL
     }
     LaunchedEffect(channelUpdateMarker) {
         if (channelUpdateMarker > 0UL && filteredChannels.isNotEmpty()) {
             delay(50)
-            listState.scrollToItem(1)
+            listState.scrollToItem(0)
         }
     }
 
@@ -234,7 +236,7 @@ fun ConversationPage(
             }
             networkStatusBar?.invoke()
 
-        // 会话列表（搜索栏作为第一个 item，下拉时出现，上划时隐藏）
+        // 会话列表。搜索入口在 NavBar 的放大镜图标上，列表里没有搜索栏 item。
         GearLazyColumn(
             modifier = Modifier.fillMaxSize(),
             state = listState,
