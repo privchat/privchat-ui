@@ -28,7 +28,6 @@ import com.gearui.components.actionsheet.ActionSheetItem
 import com.gearui.components.toast.Toast
 import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
-import com.gearui.foundation.typography.Typography
 import com.gearui.components.icon.Icons
 import com.gearui.foundation.primitives.Icon
 import com.gearui.components.image.GearImage
@@ -202,7 +201,7 @@ fun MessageContent(
             ) {
                 Text(
                     text = Formatter.messageTime(message.timestamp),
-                    style = Typography.Label,
+                    style = Theme.typography.label,
                     color = secondaryTextColor,
                 )
             }
@@ -230,13 +229,13 @@ private fun TextContent(
     if (safeEntities.isEmpty()) {
         Text(
             text = text,
-            style = Typography.BodyMedium,
+            style = Theme.typography.bodyMedium,
             color = textColor,
         )
         return
     }
 
-    val bodyStyle = Typography.BodyMedium
+    val bodyStyle = Theme.typography.bodyMedium
     // 链接色必须跟所在气泡背景有对比：
     // - 自己的气泡是 primary 同色的深底，用白色正文色；
     // - 对方的气泡用 info（链接蓝）。这里原本用 primary，而 primary 在暗色主题下是近白，
@@ -482,11 +481,11 @@ private fun DownloadBadge(state: MediaDownloadState) {
             if (state is MediaDownloadState.Downloading) {
                 Loading(size = LoadingSize.SMALL, color = Color.White)
             }
-            Text(text = icon, style = Typography.TitleMedium, color = Color.White)
+            Text(text = icon, style = Theme.typography.titleMedium, color = Color.White)
         }
         if (percent != null) {
             VerticalSpacer(4.dp)
-            Text(text = percent, style = Typography.Label, color = Color.White)
+            Text(text = percent, style = Theme.typography.label, color = Color.White)
         }
     }
 }
@@ -719,7 +718,7 @@ private fun VideoContent(
             ) {
                 Text(
                     text = Formatter.duration(parsed.duration),
-                    style = Typography.Label,
+                    style = Theme.typography.label,
                     color = Color.White,
                 )
             }
@@ -762,7 +761,7 @@ private fun VoiceContent(
         if (isSelf) {
             Text(
                 text = Formatter.voiceDuration(duration),
-                style = Typography.BodyMedium,
+                style = Theme.typography.bodyMedium,
                 color = textColor,
             )
             HorizontalSpacer(8.dp)
@@ -772,7 +771,7 @@ private fun VoiceContent(
             HorizontalSpacer(8.dp)
             Text(
                 text = Formatter.voiceDuration(duration),
-                style = Typography.BodyMedium,
+                style = Theme.typography.bodyMedium,
                 color = textColor,
             )
         }
@@ -865,7 +864,7 @@ private fun FileContent(
         Column {
             Text(
                 text = parsed.fileName ?: PrivChatI18n.current.a11yFile,
-                style = Typography.BodyMedium,
+                style = Theme.typography.bodyMedium,
                 color = textColor,
                 maxLines = 1,
             )
@@ -874,7 +873,7 @@ private fun FileContent(
                 VerticalSpacer(2.dp)
                 Text(
                     text = sub,
-                    style = Typography.Label,
+                    style = Theme.typography.label,
                     color = secondaryTextColor,
                 )
             }
@@ -912,7 +911,7 @@ private fun FileLeadingBadge(
         }
         Text(
             text = icon,
-            style = Typography.TitleMedium,
+            style = Theme.typography.titleMedium,
             color = if (hasLocal || state is MediaDownloadState.Done) null else Color.White,
         )
     }
@@ -961,7 +960,7 @@ private fun StickerContent(
     } else {
         Text(
             text = parsed.text ?: "😀",
-            style = Typography.DisplayMedium,
+            style = Theme.typography.displayMedium,
         )
     }
 }
@@ -1012,13 +1011,13 @@ private fun LocationContent(
                     contentScale = ContentScale.Crop,
                 )
             } else {
-                Text(text = "📍", style = Typography.TitleLarge)
+                Text(text = "📍", style = Theme.typography.titleLarge)
             }
         }
         VerticalSpacer(6.dp)
         Text(
             text = title,
-            style = Typography.BodyMedium,
+            style = Theme.typography.bodyMedium,
             color = textColor,
             maxLines = 2,
         )
@@ -1030,7 +1029,7 @@ private fun LocationContent(
             VerticalSpacer(2.dp)
             Text(
                 text = subtitle,
-                style = Typography.Label,
+                style = Theme.typography.label,
                 color = secondaryTextColor,
                 maxLines = 2,
             )
@@ -1075,15 +1074,15 @@ private fun LinkContent(
             VerticalSpacer(6.dp)
         }
         if (title.isNotBlank()) {
-            Text(text = title, style = Typography.BodyMedium, color = textColor, maxLines = 2)
+            Text(text = title, style = Theme.typography.bodyMedium, color = textColor, maxLines = 2)
         }
         if (desc != null) {
             VerticalSpacer(2.dp)
-            Text(text = desc, style = Typography.BodySmall, color = secondaryTextColor, maxLines = 2)
+            Text(text = desc, style = Theme.typography.bodySmall, color = secondaryTextColor, maxLines = 2)
         }
         if (!url.isNullOrBlank()) {
             VerticalSpacer(4.dp)
-            Text(text = url, style = Typography.Label, color = secondaryTextColor, maxLines = 1)
+            Text(text = url, style = Theme.typography.label, color = secondaryTextColor, maxLines = 1)
         }
     }
 }
@@ -1131,7 +1130,7 @@ private fun ContactContent(
             HorizontalSpacer(10.dp)
             Text(
                 text = displayName,
-                style = Typography.BodyMedium,
+                style = Theme.typography.bodyMedium,
                 color = textColor,
                 maxLines = 1,
             )
@@ -1144,7 +1143,7 @@ private fun ContactContent(
                 .background(Theme.colors.border),
         )
         VerticalSpacer(6.dp)
-        Text(text = PrivChatI18n.current.contactCardLabel, style = Typography.Label, color = secondaryTextColor)
+        Text(text = PrivChatI18n.current.contactCardLabel, style = Theme.typography.label, color = secondaryTextColor)
     }
 }
 
@@ -1157,7 +1156,7 @@ private fun UnknownContent(
 ) {
     Text(
         text = PrivChatI18n.current.unsupportedContent,
-        style = Typography.BodyMedium,
+        style = Theme.typography.bodyMedium,
         color = textColor,
     )
 }
@@ -1200,13 +1199,13 @@ private fun RedPacketMessageView(
         else -> PrivChatI18n.current.redPacketUnsupportedVersion
     }
     MoneyCardScaffold(icon = "🧧", bg = RedPacketColor, refId = refId, clickable = clickable, onOpen = onOpen) {
-        Text(text = title, style = Typography.BodyMedium, color = Color.White)
+        Text(text = title, style = Theme.typography.bodyMedium, color = Color.White)
         subtitle?.let {
             VerticalSpacer(3.dp)
-            Text(text = it, style = Typography.Label, color = Color.White.copy(alpha = 0.85f))
+            Text(text = it, style = Theme.typography.label, color = Color.White.copy(alpha = 0.85f))
         }
         VerticalSpacer(5.dp)
-        Text(text = statusText, style = Typography.Label, color = Color.White.copy(alpha = 0.95f))
+        Text(text = statusText, style = Theme.typography.label, color = Color.White.copy(alpha = 0.95f))
     }
 }
 
@@ -1237,13 +1236,13 @@ private fun MoneyTransferMessageView(
         else -> PrivChatI18n.current.transferCredited
     }
     MoneyCardScaffold(icon = "💸", bg = TransferColor, refId = refId, clickable = clickable, onOpen = onOpen) {
-        Text(text = title, style = Typography.BodyMedium, color = Color.White)
+        Text(text = title, style = Theme.typography.bodyMedium, color = Color.White)
         parsed.moneyAmountText?.takeIf { it.isNotBlank() }?.let {
             VerticalSpacer(4.dp)
-            Text(text = it, style = Typography.TitleLarge, color = Color.White)
+            Text(text = it, style = Theme.typography.titleLarge, color = Color.White)
         }
         VerticalSpacer(5.dp)
-        Text(text = statusText, style = Typography.Label, color = Color.White.copy(alpha = 0.95f))
+        Text(text = statusText, style = Theme.typography.label, color = Color.White.copy(alpha = 0.95f))
     }
 }
 
@@ -1266,7 +1265,7 @@ private fun MoneyCardScaffold(
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = icon, style = Typography.TitleLarge, color = Color.White)
+        Text(text = icon, style = Theme.typography.titleLarge, color = Color.White)
         HorizontalSpacer(12.dp)
         Column(modifier = Modifier.weight(1f)) { content() }
     }
@@ -1299,7 +1298,7 @@ private fun MessageFooter(
         // 时间
         Text(
             text = Formatter.messageTime(timestamp),
-            style = Typography.Label,
+            style = Theme.typography.label,
             color = secondaryTextColor,
         )
 
@@ -1376,13 +1375,13 @@ private fun MessageStatusIcon(
     ) {
         Text(
             text = icon,
-            style = Typography.Label,
+            style = Theme.typography.label,
             color = iconColor,
         )
         HorizontalSpacer(3.dp)
         Text(
             text = label,
-            style = Typography.Label,
+            style = Theme.typography.label,
             color = iconColor,
         )
     }

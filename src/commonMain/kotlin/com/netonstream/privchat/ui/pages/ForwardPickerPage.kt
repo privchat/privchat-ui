@@ -10,7 +10,6 @@ import com.netonstream.privchat.ui.models.displayName
 import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
-import com.gearui.foundation.typography.Typography
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.runtime.LocalRuntimeEnvironment
 import com.gearui.runtime.LocalRuntimeFlags
@@ -252,7 +251,7 @@ fun ForwardPickerPage(
                 ) {
                     Text(
                         text = strings.forwardSelectedCount.withArgs(selected.size, FORWARD_MAX_TARGETS),
-                        style = Typography.Label,
+                        style = Theme.typography.label,
                         color = colors.mutedForeground,
                     )
                     Spacer(modifier = Modifier.weight(1f))
@@ -284,7 +283,7 @@ private fun ForwardSectionHeader(title: String) {
     ) {
         Text(
             text = title,
-            style = Typography.TitleSmall,
+            style = Theme.typography.titleSmall,
             color = colors.foreground,
         )
     }

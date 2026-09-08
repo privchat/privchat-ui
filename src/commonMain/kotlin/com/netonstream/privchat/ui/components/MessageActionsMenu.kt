@@ -13,7 +13,6 @@ import com.gearui.foundation.layout.Spacing
 import com.gearui.foundation.primitives.Icon
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.typography.IconSizes
-import com.gearui.foundation.typography.Typography
 import com.gearui.overlay.OverlayOptions
 import com.gearui.overlay.OverlayPlacement
 import com.gearui.overlay.OverlayDismissPolicy
@@ -419,7 +418,7 @@ private fun ReactionBar(
                     .clickable { onReaction(emoji) },
                 contentAlignment = Alignment.Center,
             ) {
-                Text(text = emoji, style = Typography.TitleExtraLarge)
+                Text(text = emoji, style = Theme.typography.titleExtraLarge)
             }
         }
         if (onMoreReactions != null) {
@@ -431,7 +430,7 @@ private fun ReactionBar(
                     .clickable { onMoreReactions() },
                 contentAlignment = Alignment.Center,
             ) {
-                Text(text = "+", style = Typography.TitleExtraLarge, color = colors.mutedForeground)
+                Text(text = "+", style = Theme.typography.titleExtraLarge, color = colors.mutedForeground)
             }
         }
     }
@@ -481,7 +480,7 @@ private fun ActionList(
                 Icon(name = item.icon, size = IconSizes.Default.lg, tint = tint)
                 Text(
                     text = item.label,
-                    style = Typography.BodySmall,
+                    style = Theme.typography.bodySmall,
                     color = tint,
                 )
             }

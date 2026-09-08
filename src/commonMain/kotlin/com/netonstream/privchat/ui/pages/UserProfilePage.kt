@@ -24,7 +24,6 @@ import com.gearui.components.toast.Toast
 import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.tencent.kuikly.compose.foundation.lazy.LazyColumn
-import com.gearui.foundation.typography.Typography
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.layout.*
@@ -116,7 +115,7 @@ fun UserProfilePage(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = user.nickname ?: user.username,
-                                style = Typography.TitleLarge,
+                                style = Theme.typography.titleLarge,
                                 color = Theme.colors.foreground
                             )
                             UserTypeBadge(
@@ -132,14 +131,14 @@ fun UserProfilePage(
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = strings.userProfileSystemAccount,
-                                style = Typography.BodySmall,
+                                style = Theme.typography.bodySmall,
                                 color = Theme.colors.mutedForeground
                             )
                         } else if (handle != null) {
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = "${strings.settingsUsername}: $handle",
-                                style = Typography.BodySmall,
+                                style = Theme.typography.bodySmall,
                                 color = Theme.colors.mutedForeground
                             )
                         }
@@ -396,7 +395,7 @@ fun FriendProfilePage(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = remark,
-                                    style = Typography.TitleLarge,
+                                    style = Theme.typography.titleLarge,
                                     color = Theme.colors.foreground
                                 )
                                 UserTypeBadge(
@@ -411,12 +410,12 @@ fun FriendProfilePage(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = "${strings.userProfileNickname}: ",
-                                    style = Typography.BodySmall,
+                                    style = Theme.typography.bodySmall,
                                     color = Theme.colors.mutedForeground
                                 )
                                 Text(
                                     text = friend.nickname ?: friend.username,
-                                    style = Typography.BodySmall,
+                                    style = Theme.typography.bodySmall,
                                     color = Theme.colors.mutedForeground
                                 )
                             }
@@ -425,7 +424,7 @@ fun FriendProfilePage(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = friend.nickname ?: friend.username,
-                                    style = Typography.TitleLarge,
+                                    style = Theme.typography.titleLarge,
                                     color = Theme.colors.foreground
                                 )
                                 UserTypeBadge(
@@ -441,7 +440,7 @@ fun FriendProfilePage(
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = "${strings.settingsUsername}: $friendHandle",
-                                style = Typography.BodySmall,
+                                style = Theme.typography.bodySmall,
                                 color = Theme.colors.mutedForeground
                             )
                         }
@@ -503,7 +502,7 @@ private fun UserTypeBadge(userType: Short, modifier: Modifier = Modifier) {
     ) {
         Text(
             text = label,
-            style = Typography.Label,
+            style = Theme.typography.label,
             color = fg,
         )
     }

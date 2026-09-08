@@ -8,7 +8,6 @@ import com.gearui.components.button.ButtonType
 import com.gearui.components.icon.Icons
 import com.gearui.foundation.primitives.Icon
 import com.gearui.foundation.primitives.Text
-import com.gearui.foundation.typography.Typography
 import com.gearui.theme.Theme
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.tencent.kuikly.compose.foundation.layout.Arrangement
@@ -50,7 +49,7 @@ fun PageError(
         Column(modifier = Modifier.height(12.dp)) {}
         Text(
             text = message,
-            style = Typography.BodyLarge,
+            style = Theme.typography.bodyLarge,
             color = colors.mutedForeground,
         )
         if (onRetry != null) {

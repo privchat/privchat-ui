@@ -11,7 +11,6 @@ import com.gearui.theme.Theme
 import com.gearui.theme.groupedBackground
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
-import com.gearui.foundation.typography.Typography
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.cell.Cell
@@ -215,7 +214,7 @@ fun ChatSettingsPage(
                     item {
                         Text(
                             text = strings.groupSettingsSectionTitle,
-                            style = Typography.Label,
+                            style = Theme.typography.label,
                             color = colors.mutedForeground,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         )
@@ -367,7 +366,7 @@ fun ChatSettingsPage(
                     ) {
                         Text(
                             text = strings.chatSettingsLeaveGroup,
-                            style = Typography.BodyMedium,
+                            style = Theme.typography.bodyMedium,
                             color = if (leaveEnabled) colors.destructive else colors.mutedForeground
                         )
                     }
@@ -380,7 +379,7 @@ fun ChatSettingsPage(
                         ) {
                             Text(
                                 text = strings.groupOwnerCannotLeave,
-                                style = Typography.BodySmall,
+                                style = Theme.typography.bodySmall,
                                 color = colors.mutedForeground,
                             )
                         }

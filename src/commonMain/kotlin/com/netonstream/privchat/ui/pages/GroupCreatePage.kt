@@ -10,7 +10,6 @@ import com.gearui.theme.Theme
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
-import com.gearui.foundation.typography.Typography
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.cell.Cell
 import com.gearui.components.checkbox.Checkbox
@@ -131,7 +130,7 @@ fun GroupCreatePage(
         ) {
             Text(
                 text = strings.groupPickerSelectedCount.withArgs(selected.size, GROUP_CREATE_MAX_MEMBERS),
-                style = Typography.BodySmall,
+                style = Theme.typography.bodySmall,
                 color = colors.mutedForeground,
             )
         }

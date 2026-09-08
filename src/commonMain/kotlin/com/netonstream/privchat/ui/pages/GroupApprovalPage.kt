@@ -9,7 +9,6 @@ import com.gearui.theme.Theme
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.primitives.Text
-import com.gearui.foundation.typography.Typography
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.empty.EmptyState
 import com.gearui.components.button.Button
@@ -123,11 +122,11 @@ private fun ApprovalRow(
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = displayName, style = Typography.BodyLarge, color = colors.foreground)
+                Text(text = displayName, style = Theme.typography.bodyLarge, color = colors.foreground)
                 val msg = item.message?.takeIf { it.isNotBlank() }
                 if (msg != null) {
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(text = msg, style = Typography.BodySmall, color = colors.mutedForeground)
+                    Text(text = msg, style = Theme.typography.bodySmall, color = colors.mutedForeground)
                 }
             }
         }

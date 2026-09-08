@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.pages
 
+import com.gearui.theme.Theme
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.dto.GroupMemberEntry
 import com.netonstream.privchat.ui.PrivChat
@@ -9,7 +10,6 @@ import com.netonstream.privchat.ui.models.isAdmin
 import com.netonstream.privchat.ui.models.isOwner
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.gearui.foundation.primitives.Text
-import com.gearui.foundation.typography.Typography
 import com.tencent.kuikly.compose.ui.graphics.Color
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.foundation.primitives.GearLazyColumn
@@ -229,14 +229,14 @@ fun GroupMembersPage(
                                 member.isOwner -> ({
                                     Text(
                                         text = strings.groupOwner,
-                                        style = Typography.Label,
+                                        style = Theme.typography.label,
                                         color = Color(0xFFF97316),
                                     )
                                 })
                                 member.isAdmin -> ({
                                     Text(
                                         text = strings.groupAdmin,
-                                        style = Typography.Label,
+                                        style = Theme.typography.label,
                                         color = Color(0xFFEF4444),
                                     )
                                 })

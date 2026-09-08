@@ -10,7 +10,6 @@ import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
-import com.gearui.foundation.typography.Typography
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.primitives.Badge
 import com.gearui.components.navbar.NavBar
@@ -280,7 +279,7 @@ private fun SectionHeader(title: String) {
     ) {
         Text(
             text = title,
-            style = Typography.TitleSmall,
+            style = Theme.typography.titleSmall,
             color = colors.foreground,
         )
     }
@@ -297,7 +296,7 @@ private fun LetterHeader(letter: String) {
     ) {
         Text(
             text = letter,
-            style = Typography.Label,
+            style = Theme.typography.label,
             color = colors.mutedForeground,
         )
     }

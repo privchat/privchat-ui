@@ -10,7 +10,6 @@ import com.gearui.theme.Theme
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
-import com.gearui.foundation.typography.Typography
 import com.gearui.components.cell.Cell
 import com.gearui.components.checkbox.Checkbox
 import com.gearui.components.checkbox.CheckboxSize
@@ -118,7 +117,7 @@ fun GroupInvitePage(
         ) {
             Text(
                 text = strings.groupPickerSelectedCount.withArgs(selected.size, GROUP_INVITE_MAX_BATCH),
-                style = Typography.BodySmall,
+                style = Theme.typography.bodySmall,
                 color = colors.mutedForeground,
             )
         }

@@ -40,7 +40,6 @@ import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.primitives.ScrollView
 import com.gearui.foundation.typography.IconSizes
-import com.gearui.foundation.typography.Typography
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.primitives.HorizontalSpacer
 import com.gearui.primitives.VerticalSpacer
@@ -930,13 +929,13 @@ fun MessagePage(
                 ) {
                     Text(
                         text = truncatedTitle,
-                        style = Typography.TitleMedium,
+                        style = Theme.typography.titleMedium,
                         color = Theme.colors.foreground,
                     )
                     if (presenceText != null) {
                         Text(
                             text = presenceText,
-                            style = Typography.Label,
+                            style = Theme.typography.label,
                             color = if (peerPresence?.isOnline == true) {
                                 Theme.colors.onlineStatus
                             } else {
@@ -1653,12 +1652,12 @@ private fun PinnedMessagesBar(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = if (count > 1) "${strings.pinnedMessagesTitle} ($count)" else strings.pinnedMessagesTitle,
-                style = Typography.Label,
+                style = Theme.typography.label,
                 color = colors.primary,
             )
             Text(
                 text = preview,
-                style = Typography.BodySmall,
+                style = Theme.typography.bodySmall,
                 color = colors.foreground,
                 maxLines = 1,
             )
@@ -1690,7 +1689,7 @@ private fun DmPresenceStatus(
         if (statusText != null) {
             Text(
                 text = statusText,
-                style = Typography.Label,
+                style = Theme.typography.label,
                 color = statusColor,
             )
         }
@@ -1932,20 +1931,20 @@ private fun MessageRow(
                 Row(modifier = Modifier.padding(start = 4.dp, bottom = 3.dp)) {
                     Text(
                         text = senderDisplayName,
-                        style = Typography.Label,
+                        style = Theme.typography.label,
                         color = colors.mutedForeground,
                     )
                     // 三端统一:群主橙字、管理红字(web/h5 同色)。
                     when (senderRole) {
                         2 -> Text(
                             text = "【${strings.groupOwner}】",
-                            style = Typography.Label,
+                            style = Theme.typography.label,
                             color = Color(0xFFF97316),
                             modifier = Modifier.padding(start = 2.dp),
                         )
                         1 -> Text(
                             text = "【${strings.groupAdminTag}】",
-                            style = Typography.Label,
+                            style = Theme.typography.label,
                             color = Color(0xFFEF4444),
                             modifier = Modifier.padding(start = 2.dp),
                         )
@@ -2084,7 +2083,7 @@ private fun SystemMessageRow(
             when {
                 message.isRevoked -> Text(
                     text = strings.messageRevoked,
-                    style = Typography.Label,
+                    style = Theme.typography.label,
                     color = colors.mutedForeground,
                 )
                 parsed.systemTemplate != null -> SystemTemplateText(
@@ -2099,7 +2098,7 @@ private fun SystemMessageRow(
                 )
                 else -> Text(
                     text = parsed.text ?: "",
-                    style = Typography.Label,
+                    style = Theme.typography.label,
                     color = colors.mutedForeground,
                 )
             }
@@ -2177,9 +2176,9 @@ private fun SystemTemplateText(
     KuiklyText(
         text = annotated,
         color = textColor,
-        fontSize = Typography.Label.fontSize,
-        fontWeight = Typography.Label.fontWeight,
-        lineHeight = Typography.Label.lineHeight,
+        fontSize = Theme.typography.label.fontSize,
+        fontWeight = Theme.typography.label.fontWeight,
+        lineHeight = Theme.typography.label.lineHeight,
     )
 }
 
@@ -2288,12 +2287,12 @@ private fun MessageReactionsRow(
             ) {
                 Text(
                     text = chip.emoji,
-                    style = Typography.BodySmall,
+                    style = Theme.typography.bodySmall,
                     color = colors.foreground,
                 )
                 Text(
                     text = chip.count.toString(),
-                    style = Typography.Label,
+                    style = Theme.typography.label,
                     color = colors.mutedForeground,
                 )
             }
@@ -2404,7 +2403,7 @@ private fun MessageGroupDivider(previous: MessageEntry?, current: MessageEntry) 
     ) {
         Text(
             text = label,
-            style = Typography.Caption,
+            style = Theme.typography.caption,
             color = Theme.colors.mutedForeground,
         )
     }
@@ -2426,7 +2425,7 @@ private fun FloatingDateHeader(label: String) {
     ) {
         Text(
             text = label,
-            style = Typography.Caption,
+            style = Theme.typography.caption,
             color = Color.White,
         )
     }
@@ -2455,7 +2454,7 @@ private fun UnreadDivider(count: Int) {
         HorizontalSpacer(8.dp)
         Text(
             text = strings.unreadDividerLabel.withArgs(count),
-            style = Typography.Caption,
+            style = Theme.typography.caption,
             color = colors.mutedForeground,
         )
         HorizontalSpacer(8.dp)
@@ -2487,7 +2486,7 @@ private fun NewMessagesBubble(count: Int, onClick: () -> Unit) {
     ) {
         Text(
             text = strings.unreadJumpLabel.withArgs(count),
-            style = Typography.Label,
+            style = Theme.typography.label,
             color = colors.primary,
         )
         HorizontalSpacer(6.dp)
@@ -2832,7 +2831,7 @@ private fun MessageInputBar(
                     ) {
                         Text(
                             text = btnText,
-                            style = Typography.BodyMedium,
+                            style = Theme.typography.bodyMedium,
                             color = btnTextColor,
                         )
                     }
@@ -2972,7 +2971,7 @@ private fun MessageInputBar(
                                                     .clickable { onTextChange(text + emoji) },
                                                 contentAlignment = Alignment.Center,
                                             ) {
-                                                Text(text = emoji, style = Typography.HeadlineSmall)
+                                                Text(text = emoji, style = Theme.typography.headlineSmall)
                                             }
                                         }
                                         repeat((emojiColumns - rowEmojis.size).coerceAtLeast(0)) {
@@ -3177,7 +3176,7 @@ private fun PlusActionItem(
             Icon(name = icon, size = 22.dp, tint = colors.foreground)
         }
         VerticalSpacer(6.dp)
-        Text(text = text, style = Typography.Label, color = colors.mutedForeground)
+        Text(text = text, style = Theme.typography.label, color = colors.mutedForeground)
     }
 }
 
@@ -3456,12 +3455,12 @@ private fun ReplyBar(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = strings.replyToPrefix.withArgs(senderLabel),
-                style = Typography.Label,
+                style = Theme.typography.label,
                 color = colors.mutedForeground,
             )
             Text(
                 text = summarizeForReply(strings, message),
-                style = Typography.BodySmall,
+                style = Theme.typography.bodySmall,
                 color = colors.foreground,
             )
         }
@@ -3513,13 +3512,13 @@ private fun ReplyQuoteBanner(
             if (senderText != null) {
                 Text(
                     text = senderText,
-                    style = Typography.Label,
+                    style = Theme.typography.label,
                     color = secondary,
                 )
             }
             Text(
                 text = summary,
-                style = Typography.BodySmall,
+                style = Theme.typography.bodySmall,
                 color = foreground,
             )
         }
@@ -3655,7 +3654,7 @@ private fun MentionPicker(
                         HorizontalSpacer(10.dp)
                         Text(
                             text = displayName,
-                            style = Typography.BodyMedium,
+                            style = Theme.typography.bodyMedium,
                             color = colors.foreground,
                         )
                     }

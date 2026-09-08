@@ -12,7 +12,6 @@ import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
-import com.gearui.foundation.typography.Typography
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.primitives.Badge
 import com.gearui.primitives.BadgeTheme
@@ -180,7 +179,7 @@ fun ConversationPage(
                             )
                         }
                     } else if (statusTitle != null) {
-                        { Text(text = statusTitle, style = Typography.TitleMedium, color = Theme.colors.foreground) }
+                        { Text(text = statusTitle, style = Theme.typography.titleMedium, color = Theme.colors.foreground) }
                     } else null,
                     // 🔴 用 kit 的槽位宽度算总宽，别写死。写死过 96dp，而两个图标按
                     // NavBarItem 的标准是 2×56dp——于是这一页的顶部图标比联系人页窄、
@@ -404,7 +403,7 @@ private fun ChannelItem(
                     // 标题
                     Text(
                         text = item.title,
-                        style = Typography.BodyLarge,
+                        style = Theme.typography.bodyLarge,
                         color = colors.foreground,
                         maxLines = 1,
                         modifier = Modifier.weight(1f)
@@ -443,14 +442,14 @@ private fun ChannelItem(
                         ) {
                             Text(
                                 text = strings.conversationDraft,
-                                style = Typography.BodySmall,
+                                style = Theme.typography.bodySmall,
                                 color = colors.destructive,
                                 maxLines = 1,
                             )
                             HorizontalSpacer(2.dp)
                             Text(
                                 text = draft,
-                                style = Typography.BodySmall,
+                                style = Theme.typography.bodySmall,
                                 color = colors.mutedForeground,
                                 maxLines = 1,
                                 modifier = Modifier.weight(1f),
@@ -459,7 +458,7 @@ private fun ChannelItem(
                     } else {
                         Text(
                             text = buildDescription(channel, draft, strings),
-                            style = Typography.BodySmall,
+                            style = Theme.typography.bodySmall,
                             color = colors.mutedForeground,
                             maxLines = 1,
                             modifier = Modifier.weight(1f)
@@ -471,7 +470,7 @@ private fun ChannelItem(
                     // 时间
                     Text(
                         text = Formatter.conversationTime(channel.lastMessageTime),
-                        style = Typography.Label,
+                        style = Theme.typography.label,
                         color = colors.mutedForeground,
                     )
                 }

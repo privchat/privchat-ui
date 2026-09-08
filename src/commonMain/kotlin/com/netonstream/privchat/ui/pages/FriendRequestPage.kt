@@ -11,7 +11,6 @@ import com.gearui.theme.Theme
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.primitives.Text
-import com.gearui.foundation.typography.Typography
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.empty.EmptyState
 import com.gearui.components.tabs.Tab
@@ -207,20 +206,20 @@ private fun ReceivedRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = displayName,
-                    style = Typography.BodyLarge,
+                    style = Theme.typography.bodyLarge,
                     color = colors.foreground,
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = subtitle,
-                    style = Typography.BodySmall,
+                    style = Theme.typography.bodySmall,
                     color = colors.mutedForeground,
                 )
             }
             if (!isPending) {
                 Text(
                     text = receivedStatusLabel(request.status, strings),
-                    style = Typography.BodyMedium,
+                    style = Theme.typography.bodyMedium,
                     color = colors.mutedForeground,
                 )
             }
@@ -323,13 +322,13 @@ private fun SentRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = displayName,
-                style = Typography.BodyLarge,
+                style = Theme.typography.bodyLarge,
                 color = colors.foreground,
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = subtitle,
-                style = Typography.BodySmall,
+                style = Theme.typography.bodySmall,
                 color = colors.mutedForeground,
             )
         }
@@ -345,7 +344,7 @@ private fun SentRow(
         } else {
             Text(
                 text = sentStatusLabel(request.status, strings),
-                style = Typography.BodyMedium,
+                style = Theme.typography.bodyMedium,
                 color = colors.mutedForeground,
             )
         }
@@ -367,7 +366,7 @@ private fun SectionHeaderRow(title: String) {
     ) {
         Text(
             text = title,
-            style = Typography.Label,
+            style = Theme.typography.label,
             color = colors.mutedForeground,
         )
     }

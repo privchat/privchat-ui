@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.avatar
 
+import com.gearui.theme.Theme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,7 +15,6 @@ import com.tencent.kuikly.compose.foundation.Image
 import com.tencent.kuikly.compose.ui.layout.ContentScale
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.foundation.primitives.Text
-import com.gearui.foundation.typography.Typography
 import com.netonstream.privchat.sdk.dto.GroupMemberEntry
 import com.netonstream.privchat.ui.models.displayName
 import com.tencent.kuikly.compose.foundation.background
@@ -192,7 +192,7 @@ private fun CollageCell(member: GroupMemberEntry, cell: Dp) {
         // lineHeight = fontSize:小格子里默认行高会把字挤偏,压平后才真正居中
         Text(
             text = resolved.initials,
-            style = Typography.BodyMedium.copy(fontSize = fontSize, lineHeight = fontSize),
+            style = Theme.typography.bodyMedium.copy(fontSize = fontSize, lineHeight = fontSize),
             color = resolved.foregroundColor,
         )
     }
