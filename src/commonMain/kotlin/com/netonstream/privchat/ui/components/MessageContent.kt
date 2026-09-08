@@ -9,6 +9,7 @@ import com.netonstream.privchat.sdk.dto.MessageTextEntity
 import com.netonstream.privchat.sdk.dto.MessageTextEntityType
 import com.netonstream.privchat.sdk.dto.MessageStatus
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
+import com.netonstream.privchat.ui.i18n.withArgs
 import com.netonstream.privchat.ui.media.MediaDownloadManager
 import com.netonstream.privchat.ui.media.MediaDownloadState
 import com.netonstream.privchat.ui.media.MediaOpener
@@ -295,16 +296,16 @@ private fun showEntityActionSheet(
             val url = entity.value
             ActionSheet.showList(
                 items = listOf(
-                    ActionSheetItem(label = "打开链接"),
-                    ActionSheetItem(label = "复制链接"),
+                    ActionSheetItem(label = PrivChatI18n.current.linkOpen),
+                    ActionSheetItem(label = PrivChatI18n.current.linkCopy),
                 ),
                 description = url,
                 onSelected = { _, index ->
                     when (index) {
-                        0 -> if (!ExternalLinkBridge.openUri(url)) Toast.error("无法打开链接")
+                        0 -> if (!ExternalLinkBridge.openUri(url)) Toast.error(PrivChatI18n.current.linkOpenFailed)
                         1 -> {
                             ClipboardBridge.setText(url)
-                            Toast.success("已复制")
+                            Toast.success(PrivChatI18n.current.messageCopied)
                         }
                     }
                 },
@@ -316,18 +317,18 @@ private fun showEntityActionSheet(
             val normalized = entity.value
             ActionSheet.showList(
                 items = listOf(
-                    ActionSheetItem(label = "拨号"),
-                    ActionSheetItem(label = "发送短信"),
-                    ActionSheetItem(label = "复制号码"),
+                    ActionSheetItem(label = PrivChatI18n.current.phoneDial),
+                    ActionSheetItem(label = PrivChatI18n.current.phoneSms),
+                    ActionSheetItem(label = PrivChatI18n.current.phoneCopy),
                 ),
                 description = phone,
                 onSelected = { _, index ->
                     when (index) {
-                        0 -> if (!ExternalLinkBridge.openUri("tel:$normalized")) Toast.error("无法打开拨号面板")
-                        1 -> if (!ExternalLinkBridge.openUri("sms:$normalized")) Toast.error("无法打开短信")
+                        0 -> if (!ExternalLinkBridge.openUri("tel:$normalized")) Toast.error(PrivChatI18n.current.phoneDialFailed)
+                        1 -> if (!ExternalLinkBridge.openUri("sms:$normalized")) Toast.error(PrivChatI18n.current.phoneSmsFailed)
                         2 -> {
                             ClipboardBridge.setText(phone)
-                            Toast.success("已复制")
+                            Toast.success(PrivChatI18n.current.messageCopied)
                         }
                     }
                 },
@@ -336,11 +337,11 @@ private fun showEntityActionSheet(
 
         MessageTextEntityType.Number -> {
             ActionSheet.showList(
-                items = listOf(ActionSheetItem(label = "复制号码")),
+                items = listOf(ActionSheetItem(label = PrivChatI18n.current.phoneCopy)),
                 description = entity.text,
                 onSelected = { _, _ ->
                     ClipboardBridge.setText(entity.value)
-                    Toast.success("已复制")
+                    Toast.success(PrivChatI18n.current.messageCopied)
                 },
             )
         }
@@ -349,16 +350,16 @@ private fun showEntityActionSheet(
             val email = entity.value
             ActionSheet.showList(
                 items = listOf(
-                    ActionSheetItem(label = "发送邮件"),
-                    ActionSheetItem(label = "复制邮箱"),
+                    ActionSheetItem(label = PrivChatI18n.current.emailSend),
+                    ActionSheetItem(label = PrivChatI18n.current.emailCopy),
                 ),
                 description = email,
                 onSelected = { _, index ->
                     when (index) {
-                        0 -> if (!ExternalLinkBridge.openUri("mailto:$email")) Toast.error("无法打开邮件")
+                        0 -> if (!ExternalLinkBridge.openUri("mailto:$email")) Toast.error(PrivChatI18n.current.emailOpenFailed)
                         1 -> {
                             ClipboardBridge.setText(email)
-                            Toast.success("已复制")
+                            Toast.success(PrivChatI18n.current.messageCopied)
                         }
                     }
                 },
@@ -371,7 +372,7 @@ private fun showEntityActionSheet(
                 onMentionClick(userId)
             } else {
                 ClipboardBridge.setText(entity.text)
-                Toast.success("已复制")
+                Toast.success(PrivChatI18n.current.messageCopied)
             }
         }
 
@@ -604,7 +605,7 @@ private fun ImageContent(
         if (!thumbModel.isNullOrBlank()) {
             Image(
                 painter = rememberAsyncImagePainter(model = thumbModel),
-                contentDescription = "图片",
+                contentDescription = PrivChatI18n.current.a11yImage,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
@@ -683,7 +684,7 @@ private fun VideoContent(
         if (!videoThumb.isNullOrBlank()) {
             Image(
                 painter = rememberAsyncImagePainter(model = videoThumb),
-                contentDescription = "视频",
+                contentDescription = PrivChatI18n.current.a11yVideo,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
@@ -863,7 +864,7 @@ private fun FileContent(
         HorizontalSpacer(8.dp)
         Column {
             Text(
-                text = parsed.fileName ?: "文件",
+                text = parsed.fileName ?: PrivChatI18n.current.a11yFile,
                 style = Typography.BodyMedium,
                 color = textColor,
                 maxLines = 1,
@@ -933,9 +934,12 @@ private fun fileSubtitle(
         }
         is MediaDownloadState.Paused -> {
             val pct = percentText(state.bytes, state.total)
-            listOfNotNull(sizeStr, pct?.let { "已暂停 $it" } ?: "已暂停").joinToString(" · ")
+            listOfNotNull(
+                sizeStr,
+                pct?.let { PrivChatI18n.current.downloadPausedAt.withArgs(it) } ?: PrivChatI18n.current.downloadPaused,
+            ).joinToString(" · ")
         }
-        is MediaDownloadState.Failed -> listOfNotNull(sizeStr, "下载失败").joinToString(" · ")
+        is MediaDownloadState.Failed -> listOfNotNull(sizeStr, PrivChatI18n.current.downloadFailed).joinToString(" · ")
         else -> sizeStr
     }
 }
@@ -950,7 +954,7 @@ private fun StickerContent(
     if (parsed.attachmentUrl != null) {
         Image(
             painter = rememberAsyncImagePainter(model = parsed.attachmentUrl),
-            contentDescription = parsed.text ?: "表情",
+            contentDescription = parsed.text ?: PrivChatI18n.current.a11ySticker,
             modifier = Modifier.size(100.dp),
             contentScale = ContentScale.Fit,
         )
@@ -977,12 +981,14 @@ private fun LocationContent(
 ) {
     val lat = parsed.latitude
     val lng = parsed.longitude
-    val title = parsed.locationName?.takeIf { it.isNotBlank() }
+    // 先算「有没有真实地名」，再决定显示什么：地图 App 的标注只该收真实地名，
+    // 之前那句 `title.takeIf { it != "位置" }` 是拿兜底文案当哨兵值——文案一翻译就失效。
+    val placeName = parsed.locationName?.takeIf { it.isNotBlank() }
         ?: parsed.address?.takeIf { it.isNotBlank() }
-        ?: "位置"
+    val title = placeName ?: PrivChatI18n.current.locationFallbackTitle
     val clickMod = if (lat != null && lng != null) {
         Modifier.clickable {
-            ExternalLinkBridge.openMap(lat, lng, parsed.coordinateSystem, title.takeIf { it != "位置" })
+            ExternalLinkBridge.openMap(lat, lng, parsed.coordinateSystem, placeName)
         }
     } else {
         Modifier
@@ -1105,8 +1111,8 @@ private fun ContactContent(
         ?: friend?.nickname?.takeIf { it.isNotBlank() }
         ?: parsed.contactName?.takeIf { it.isNotBlank() }
         ?: friend?.username
-        ?: uid?.let { "用户 #$it" }
-        ?: "用户名片"
+        ?: uid?.let { PrivChatI18n.current.contactCardUnnamed.withArgs(it) }
+        ?: PrivChatI18n.current.contactCardFallback
     val avatarUrl = friend?.avatarUrl ?: parsed.contactAvatarUrl
     val clickMod = if (uid != null && onContactClick != null) {
         Modifier.clickable { onContactClick(uid) }
@@ -1138,7 +1144,7 @@ private fun ContactContent(
                 .background(Theme.colors.border),
         )
         VerticalSpacer(6.dp)
-        Text(text = "个人名片", style = Typography.Label, color = secondaryTextColor)
+        Text(text = PrivChatI18n.current.contactCardLabel, style = Typography.Label, color = secondaryTextColor)
     }
 }
 
@@ -1150,7 +1156,7 @@ private fun UnknownContent(
     textColor: Color,
 ) {
     Text(
-        text = "[不支持的消息类型]",
+        text = PrivChatI18n.current.unsupportedContent,
         style = Typography.BodyMedium,
         color = textColor,
     )
@@ -1177,21 +1183,21 @@ private fun RedPacketMessageView(
 ) {
     val refId = parsed.moneyRefId
     val clickable = refId != null && onOpen != null
-    val title = parsed.moneyTitle?.takeIf { it.isNotBlank() } ?: "恭喜发财，大吉大利"
+    val title = parsed.moneyTitle?.takeIf { it.isNotBlank() } ?: PrivChatI18n.current.redPacketDefaultTitle
     val subtitle = when (parsed.moneyType) {
-        1 -> "拼手气红包"
-        0 -> "普通红包"
+        1 -> PrivChatI18n.current.redPacketLucky
+        0 -> PrivChatI18n.current.redPacketNormal
         else -> null
     }
     // 实时状态优先（会话页据领取/抢完系统消息推导）：2=已抢完/过期、1=我已领取；否则回退 content 快照。
     val liveStatus = refId?.let { redPacketStatusOf?.invoke(it) } ?: 0
     val statusText = when {
-        liveStatus == 2 -> "红包已被抢完"
-        liveStatus == 1 -> "已领取，已存入余额"
-        parsed.moneyStatus == "finished" -> "红包已被抢完"
-        parsed.moneyStatus == "expired" || parsed.moneyStatus == "refunding" -> "红包已过期"
-        onOpen != null -> "领取红包"
-        else -> "请在支持红包的版本查看"
+        liveStatus == 2 -> PrivChatI18n.current.redPacketDrained
+        liveStatus == 1 -> PrivChatI18n.current.redPacketClaimed
+        parsed.moneyStatus == "finished" -> PrivChatI18n.current.redPacketDrained
+        parsed.moneyStatus == "expired" || parsed.moneyStatus == "refunding" -> PrivChatI18n.current.redPacketExpired
+        onOpen != null -> PrivChatI18n.current.redPacketClaim
+        else -> PrivChatI18n.current.redPacketUnsupportedVersion
     }
     MoneyCardScaffold(icon = "🧧", bg = RedPacketColor, refId = refId, clickable = clickable, onOpen = onOpen) {
         Text(text = title, style = Typography.BodyMedium, color = Color.White)
@@ -1221,14 +1227,14 @@ private fun MoneyTransferMessageView(
     val refunded = parsed.moneyStatus == "refunded"
     val peer = counterpartyName.takeIf { it.isNotBlank() }
     val title = when {
-        refunded || peer == null -> "转账"
-        isSelf -> "转账给 $peer"
-        else -> "$peer 向你转账"
+        refunded || peer == null -> PrivChatI18n.current.transferTitle
+        isSelf -> PrivChatI18n.current.transferToPeer.withArgs(peer)
+        else -> PrivChatI18n.current.transferFromPeer.withArgs(peer)
     }
     val statusText = when {
-        refunded -> "已退回"
-        isSelf -> "已到账"
-        else -> "已存入余额"
+        refunded -> PrivChatI18n.current.transferRefunded
+        isSelf -> PrivChatI18n.current.transferReceived
+        else -> PrivChatI18n.current.transferCredited
     }
     MoneyCardScaffold(icon = "💸", bg = TransferColor, refId = refId, clickable = clickable, onOpen = onOpen) {
         Text(text = title, style = Typography.BodyMedium, color = Color.White)
@@ -1333,7 +1339,7 @@ private fun MessageStatusIcon(
     uploadBytes: String? = null,
 ) {
     val (icon, label, iconColor) = when {
-        status == MessageStatus.Failed -> Triple("❗", "发送失败 · 重试", Theme.colors.destructive)
+        status == MessageStatus.Failed -> Triple("❗", PrivChatI18n.current.statusSendFailedRetry, Theme.colors.destructive)
         // 🔴 上传中的媒体：把百分比摆出来。
         //
         // 大文件在弱网下「发送中」可能停留好几分钟，只有一个不动的 ⏳ 时，用户没法
@@ -1343,18 +1349,19 @@ private fun MessageStatusIcon(
             uploadPercent != null ->
             Triple(
                 "⏳",
-                if (uploadBytes != null) "$uploadBytes · $uploadPercent%" else "发送中 $uploadPercent%",
+                if (uploadBytes != null) "$uploadBytes · $uploadPercent%"
+                else PrivChatI18n.current.statusUploading.withArgs(uploadPercent),
                 color,
             )
         status == MessageStatus.Pending || status == MessageStatus.Sending ->
-            Triple("⏳", "发送中", color)
+            Triple("⏳", PrivChatI18n.current.statusSendingShort, color)
         // 「已读」与时间同色。它不是需要抢注意力的状态——消息已经送到了，读者没有任何
         // 动作要做；把它挑成强调色只会让每条自己发的消息末尾都有一处高对比色块在跳。
         // 需要强调的只有「发送失败」（destructive），那才要用户处理。
         isReadByPts || status == MessageStatus.Read ->
-            Triple("✓✓", "已读", color)
-        delivered -> Triple("✓✓", "已送达", color)
-        else -> Triple("✓", "已发送", color)
+            Triple("✓✓", PrivChatI18n.current.statusRead, color)
+        delivered -> Triple("✓✓", PrivChatI18n.current.statusDelivered, color)
+        else -> Triple("✓", PrivChatI18n.current.statusSent, color)
     }
 
     val modifier = if (status == MessageStatus.Failed && onFailedClick != null) {

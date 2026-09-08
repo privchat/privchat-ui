@@ -33,6 +33,8 @@ import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageBub
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageTextOther
 import com.netonstream.privchat.ui.utils.Formatter
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
+import com.netonstream.privchat.ui.i18n.PrivChatStrings
+import com.netonstream.privchat.ui.i18n.withArgs
 import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
@@ -162,7 +164,7 @@ private fun showBotMenu(
         presentBotMenuSheet(channel, menu, scope, onError)
         return
     }
-    Toast.show("加载菜单…")
+    Toast.show(PrivChatI18n.current.menuLoading)
     scope.launch {
         BotMenuController.loadOrCached(
             channelId = channel.channelId,
@@ -174,7 +176,7 @@ private fun showBotMenu(
         }.fold(
             onSuccess = { menu -> presentBotMenuSheet(channel, menu, scope, onError) },
             onFailure = { e ->
-                onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(e, "菜单加载失败"))
+                onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(e, PrivChatI18n.current.menuLoadFailed))
             },
         )
     }
@@ -187,7 +189,7 @@ private fun presentBotMenuSheet(
     onError: ((String) -> Unit)?,
 ) {
     if (menu.items.isEmpty()) {
-        Toast.show("当前会话没有可用菜单")
+        Toast.show(PrivChatI18n.current.menuEmpty)
         return
     }
     ActionSheet.showList(
@@ -226,13 +228,13 @@ private fun dispatchTransferAction(
     onError: ((String) -> Unit)?,
 ) {
     if (!action.route.startsWith("bot/")) {
-        onError?.invoke("非法 transfer route：${action.route}")
+        onError?.invoke(PrivChatI18n.current.menuInvalidRoute.withArgs(action.route))
         return
     }
     val bodyBytes = action.body
         ?.let { botActionJson.encodeToString(JsonObject.serializer(), it).encodeToByteArray() }
         ?: ByteArray(0)
-    Toast.show("处理中…")
+    Toast.show(PrivChatI18n.current.messageProcessing)
     scope.launch {
         val result = withContext(Dispatchers.Default) {
             PrivChat.client.transfer(channel.channelId, action.route, bodyBytes, 0u)
@@ -243,13 +245,13 @@ private fun dispatchTransferAction(
                     val preview = reply.data.takeIf { it.isNotEmpty() }
                         ?.decodeToString()
                         ?.takeIf { it.length <= 200 }
-                    Toast.success(preview ?: "已完成")
+                    Toast.success(preview ?: PrivChatI18n.current.menuActionDone)
                 } else {
                     onError?.invoke("[${reply.code}] ${reply.message.ifBlank { PrivChatI18n.current.operationFailed }}")
                 }
             },
             onFailure = { e ->
-                onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(e, "调用失败"))
+                onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(e, PrivChatI18n.current.menuInvokeFailed))
             },
         )
     }
@@ -263,7 +265,7 @@ private fun dispatchMessageAction(
     onError: ((String) -> Unit)?,
 ) {
     val text = action.text.ifBlank {
-        onError?.invoke("菜单消息内容为空：${item.id}")
+        onError?.invoke(PrivChatI18n.current.menuEmptyContent.withArgs(item.id))
         return
     }
     // BOT_INTERACTION_SPEC §5.1：from_menu / menu_item_id / command 必须透传到
@@ -287,7 +289,7 @@ private fun dispatchMessageAction(
             )
         }
         result.onFailure { e ->
-            onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(e, "发送失败"))
+            onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(e, PrivChatI18n.current.messageSendFailed))
         }
     }
 }
@@ -300,22 +302,22 @@ private fun dispatchWebAction(
 ) {
     if (!action.url.startsWith("https://")) {
         // BOT_INTERACTION_SPEC §8.2：v1 强制 HTTPS。
-        onError?.invoke("仅允许 HTTPS 链接")
+        onError?.invoke(PrivChatI18n.current.linkHttpsOnly)
         return
     }
     val prefetch = action.prefetchSignedUrlRoute
     if (prefetch.isNullOrBlank()) {
         if (!ExternalLinkBridge.openUri(action.url)) {
-            onError?.invoke("无法打开链接")
+            onError?.invoke(PrivChatI18n.current.linkOpenFailed)
         }
         return
     }
     if (!prefetch.startsWith("bot/")) {
-        onError?.invoke("非法 prefetch route：$prefetch")
+        onError?.invoke(PrivChatI18n.current.menuInvalidRoute.withArgs(prefetch))
         return
     }
     // 先走 transfer 拿一次性 signed URL（reply.data 是 JSON {"url": "..."}）。
-    Toast.show("准备中…")
+    Toast.show(PrivChatI18n.current.menuPreparing)
     scope.launch {
         val result = withContext(Dispatchers.Default) {
             PrivChat.client.transfer(channel.channelId, prefetch, ByteArray(0), 0u)
@@ -323,7 +325,7 @@ private fun dispatchWebAction(
         result.fold(
             onSuccess = { reply ->
                 if (!reply.isOk) {
-                    onError?.invoke("[${reply.code}] ${reply.message.ifBlank { "签名失败" }}")
+                    onError?.invoke("[${reply.code}] ${reply.message.ifBlank { PrivChatI18n.current.menuSignFailed }}")
                     return@fold
                 }
                 val signed = runCatching {
@@ -335,11 +337,11 @@ private fun dispatchWebAction(
                 }.getOrNull()
                 val target = signed?.takeIf { it.startsWith("https://") } ?: action.url
                 if (!ExternalLinkBridge.openUri(target)) {
-                    onError?.invoke("无法打开链接")
+                    onError?.invoke(PrivChatI18n.current.linkOpenFailed)
                 }
             },
             onFailure = { e ->
-                onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(e, "准备链接失败"))
+                onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(e, PrivChatI18n.current.menuPrepareLinkFailed))
             },
         )
     }
@@ -426,8 +428,12 @@ fun MessagePage(
             val tpl = p.systemTemplate ?: continue
             val rpId = p.systemRefs?.firstOrNull { it.type == "red_packet" }?.targetId ?: continue
             when {
-                tpl.contains("抢完") || tpl.contains("过期") -> map[rpId] = 2
-                tpl.contains("领取") -> {
+                // i18n-exempt: 匹配服务端下发的系统消息模板，不是展示文案。
+                // 🔴 服务端目前把红包系统消息发成中文散文（privchat-protocol
+                // notification.rs 直接拼「红包已被抢完」），所以这里只能按中文子串
+                // 反推状态。服务端改成发模板 key 之前，这段没法做对。
+                tpl.contains("抢完") || tpl.contains("过期") -> map[rpId] = 2 // i18n-exempt: 服务端模板
+                tpl.contains("领取") -> { // i18n-exempt: 同上,匹配服务端模板
                     val claimer = p.systemRefs?.firstOrNull { it.type == "user" }?.targetId
                     if (myId != null && claimer == myId && (map[rpId] ?: 0) < 1) map[rpId] = 1
                 }
@@ -1019,7 +1025,7 @@ fun MessagePage(
                             contentAlignment = Alignment.Center,
                         ) {
                             EmptyState(
-                                message = "暂无聊天内容",
+                                message = strings.chatEmpty,
                             )
                         }
                     } else {
@@ -1158,7 +1164,7 @@ fun MessagePage(
                                     onMoneyTransferClick = onMoneyTransferClick,
                                     onReply = { target ->
                                         if (target.serverMessageId == null) {
-                                            Toast.error("原消息尚未发送")
+                                            Toast.error(strings.messageOriginalNotSentYet)
                                         } else {
                                             pendingReply = target
                                         }
@@ -1166,7 +1172,7 @@ fun MessagePage(
                                     replyLookup = { serverId -> messagesByServerId[serverId] },
                                     senderLabelOf = { uid ->
                                         when {
-                                            uid == currentUserId -> "我"
+                                            uid == currentUserId -> strings.messageSenderSelf
                                             channel.isDm -> channel.displayName.ifBlank { uid.toString() }
                                             // 走全局唯一入口（IDENTITY_STORE_SPEC §5.2：
                                             // remark > nickname > username > uid）。
@@ -1196,7 +1202,7 @@ fun MessagePage(
                                     onPinMessage = { target, pin ->
                                         val serverId = target.serverMessageId
                                         if (serverId == null) {
-                                            Toast.error("原消息尚未发送")
+                                            Toast.error(strings.messageOriginalNotSentYet)
                                         } else {
                                             scope.launch {
                                                 withContext(Dispatchers.Default) {
@@ -1398,13 +1404,17 @@ fun MessagePage(
                         }
                         result?.onFailure { e ->
                             val message = com.netonstream.privchat.ui.error.UserFacingError.message(e, strings.networkError)
-                            if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
+                            if (!message.contains("cancel", ignoreCase = true) && // i18n-exempt: 匹配系统取消提示
+                                !message.contains("取消") // i18n-exempt: 匹配系统取消提示
+                            ) {
                                 onError?.invoke(message)
                             }
                         }
                     } catch (e: Exception) {
                         val message = com.netonstream.privchat.ui.error.UserFacingError.message(e, strings.networkError)
-                        if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
+                        if (!message.contains("cancel", ignoreCase = true) && // i18n-exempt: 匹配系统取消提示
+                                !message.contains("取消") // i18n-exempt: 匹配系统取消提示
+                            ) {
                             onError?.invoke(message)
                         }
                     } finally {
@@ -1426,13 +1436,17 @@ fun MessagePage(
                         }
                         result?.onFailure { e ->
                             val message = com.netonstream.privchat.ui.error.UserFacingError.message(e, strings.networkError)
-                            if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
+                            if (!message.contains("cancel", ignoreCase = true) && // i18n-exempt: 匹配系统取消提示
+                                !message.contains("取消") // i18n-exempt: 匹配系统取消提示
+                            ) {
                                 onError?.invoke(message)
                             }
                         }
                     } catch (e: Exception) {
                         val message = com.netonstream.privchat.ui.error.UserFacingError.message(e, strings.networkError)
-                        if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
+                        if (!message.contains("cancel", ignoreCase = true) && // i18n-exempt: 匹配系统取消提示
+                                !message.contains("取消") // i18n-exempt: 匹配系统取消提示
+                            ) {
                             onError?.invoke(message)
                         }
                     } finally {
@@ -1454,13 +1468,17 @@ fun MessagePage(
                         }
                         result?.onFailure { e ->
                             val message = com.netonstream.privchat.ui.error.UserFacingError.message(e, strings.networkError)
-                            if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
+                            if (!message.contains("cancel", ignoreCase = true) && // i18n-exempt: 匹配系统取消提示
+                                !message.contains("取消") // i18n-exempt: 匹配系统取消提示
+                            ) {
                                 onError?.invoke(message)
                             }
                         }
                     } catch (e: Exception) {
                         val message = com.netonstream.privchat.ui.error.UserFacingError.message(e, strings.networkError)
-                        if (!message.contains("cancel", ignoreCase = true) && !message.contains("取消")) {
+                        if (!message.contains("cancel", ignoreCase = true) && // i18n-exempt: 匹配系统取消提示
+                                !message.contains("取消") // i18n-exempt: 匹配系统取消提示
+                            ) {
                             onError?.invoke(message)
                         }
                     } finally {
@@ -1469,13 +1487,13 @@ fun MessagePage(
                 }
             },
             onLocation = {
-                onError?.invoke("位置功能即将支持")
+                onError?.invoke(strings.featureLocationComingSoon)
             },
             onRedPacket = { onRedPacket?.invoke() },
             onMoneyTransfer = { onMoneyTransfer?.invoke() },
             moneyEnabled = onRedPacket != null,
             onContact = {
-                onError?.invoke("联系人功能即将支持")
+                onError?.invoke(strings.featureContactComingSoon)
             },
             onSend = {
                 if (inputText.isNotBlank()) {
@@ -1568,7 +1586,7 @@ fun MessagePage(
             contentAlignment = Alignment.Center,
         ) {
             com.gearui.components.loading.Loading(
-                text = mediaPrepLabel.ifBlank { "处理中…" },
+                text = mediaPrepLabel.ifBlank { strings.messageProcessing },
             )
         }
     }
@@ -1825,10 +1843,10 @@ private fun MessageRow(
     if (showRetryDialog) {
         ConfirmDialog(
             visible = true,
-            title = "重新发送",
-            message = "是否重新发送这条消息？",
-            confirmText = "重新发送",
-            cancelText = "取消",
+            title = strings.resendTitle,
+            message = strings.resendConfirm,
+            confirmText = strings.resendTitle,
+            cancelText = strings.cancel,
             onConfirm = {
                 showRetryDialog = false
                 scope.launch {
@@ -2024,7 +2042,7 @@ private fun MessageRow(
             HorizontalSpacer(8.dp)
             ChatAvatar(
                 url = null,
-                name = "我",
+                name = strings.messageSenderSelf,
                 size = AvatarSizeTokens.Small.size,
                 userId = selfUserId?.toLong(),
                 modifier = Modifier.align(Alignment.Bottom),
@@ -2420,6 +2438,7 @@ private fun FloatingDateHeader(label: String) {
  */
 @Composable
 private fun UnreadDivider(count: Int) {
+    val strings = PrivChatI18n.strings
     val colors = Theme.colors
     Row(
         modifier = Modifier
@@ -2435,7 +2454,7 @@ private fun UnreadDivider(count: Int) {
         )
         HorizontalSpacer(8.dp)
         Text(
-            text = "以下为未读消息 ($count)",
+            text = strings.unreadDividerLabel.withArgs(count),
             style = Typography.Caption,
             color = colors.mutedForeground,
         )
@@ -2455,6 +2474,7 @@ private fun UnreadDivider(count: Int) {
  */
 @Composable
 private fun NewMessagesBubble(count: Int, onClick: () -> Unit) {
+    val strings = PrivChatI18n.strings
     val colors = Theme.colors
     Row(
         modifier = Modifier
@@ -2466,7 +2486,7 @@ private fun NewMessagesBubble(count: Int, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "$count 条新消息",
+            text = strings.unreadJumpLabel.withArgs(count),
             style = Typography.Label,
             color = colors.primary,
         )
@@ -2512,6 +2532,7 @@ private fun MessageInputBar(
     showMenuButton: Boolean = false,
     onMenuClick: () -> Unit = {},
 ) {
+    val strings = PrivChatI18n.strings
     val colors = Theme.colors
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -2530,10 +2551,11 @@ private fun MessageInputBar(
         }
     }
     var lastKeyboardHeight by remember { mutableStateOf(0f) }
-    val plusActions = remember(moneyEnabled) {
+    // strings 进 key：切语言后这些标签必须重算，否则加号面板还停在旧语言。
+    val plusActions = remember(moneyEnabled, strings) {
         buildList {
-            add(PlusAction(Icons.image, "相册", onPickImage))
-            add(PlusAction(Icons.camera_alt, "相机", onPickCamera))
+            add(PlusAction(Icons.image, strings.plusAlbum, onPickImage))
+            add(PlusAction(Icons.camera_alt, strings.plusCamera, onPickCamera))
             // 位置入口暂时下线（LOCATION_ENTRY_ENABLED=false）。
             //
             // 发送侧还没接定位：Info.plist 里没有 NSLocationWhenInUseUsageDescription，
@@ -2543,15 +2565,15 @@ private fun MessageInputBar(
             //
             // 留开关不删代码：定位接好、权限文案补上之后翻回 true 即可。
             if (LOCATION_ENTRY_ENABLED) {
-                add(PlusAction(Icons.flag, "位置", onLocation))
+                add(PlusAction(Icons.flag, strings.plusLocation, onLocation))
             }
             // 红包/转账 PLATFORM-only：moneyEnabled 才显示（BUILTIN 隐藏入口）。
             if (moneyEnabled) {
-                add(PlusAction(Icons.mail, "红包", onRedPacket))
-                add(PlusAction(Icons.mail, "转账", onMoneyTransfer))
+                add(PlusAction(Icons.mail, strings.plusRedPacket, onRedPacket))
+                add(PlusAction(Icons.mail, strings.plusMoneyTransfer, onMoneyTransfer))
             }
-            add(PlusAction(Icons.attach_file, "文件", onPickFile))
-            add(PlusAction(Icons.contacts, "联系人", onContact))
+            add(PlusAction(Icons.attach_file, strings.plusFile, onPickFile))
+            add(PlusAction(Icons.contacts, strings.plusContact, onContact))
         }
     }
     val plusPages = remember(plusActions) { plusActions.chunked(8) }
@@ -2763,9 +2785,9 @@ private fun MessageInputBar(
                         else -> colors.muted
                     }
                     val btnText = when {
-                        isInCancelZone -> "松开 取消"
-                        isRecording -> "松开 发送"
-                        else -> "按住 说话"
+                        isInCancelZone -> strings.voiceReleaseToCancel
+                        isRecording -> strings.voiceReleaseToSend
+                        else -> strings.voiceHoldToTalk
                     }
                     val btnTextColor = if (isInCancelZone) Color.White
                                       else if (isRecording) colors.primaryForeground
@@ -2818,7 +2840,7 @@ private fun MessageInputBar(
                     AutoResizeTextarea(
                         value = text,
                         onValueChange = onTextChange,
-                        placeholder = "输入消息",
+                        placeholder = strings.messageInputHint,
                         modifier = Modifier.weight(1f),
                         maxLines = 8,
                         // 单行压到与两侧按钮齐平的 32dp，且文字在框内垂直居中：
@@ -2863,7 +2885,7 @@ private fun MessageInputBar(
                 // 右侧：有文字时显示发送按钮，否则显示 ➕
                 if (text.isNotBlank()) {
                     Button(
-                        text = "发送",
+                        text = strings.messageSend,
                         theme = ButtonTheme.PRIMARY,
                         size = ButtonSize.SMALL,
                         disabled = loading,
@@ -2969,7 +2991,7 @@ private fun MessageInputBar(
                             contentAlignment = Alignment.BottomEnd,
                         ) {
                             Button(
-                                text = "删除",
+                                text = strings.delete,
                                 theme = ButtonTheme.DEFAULT,
                                 size = ButtonSize.SMALL,
                                 onClick = {
@@ -3195,7 +3217,7 @@ private fun MessageActionsWrapper(
                             val text = message.parsedContent.text.orEmpty()
                             if (text.isNotEmpty()) {
                                 ClipboardBridge.setText(text)
-                                Toast.success("已复制")
+                                Toast.success(strings.messageCopied)
                             }
                         }
                         ContentMessageType.LINK -> {
@@ -3203,7 +3225,7 @@ private fun MessageActionsWrapper(
                                 ?: message.parsedContent.text.orEmpty()
                             if (url.isNotEmpty()) {
                                 ClipboardBridge.setText(url)
-                                Toast.success("已复制")
+                                Toast.success(strings.messageCopied)
                             }
                         }
                         else -> { /* Policy 不会派发到其他类型 */ }
@@ -3213,15 +3235,15 @@ private fun MessageActionsWrapper(
                     scope.launch {
                         val localPath = resolveLocalImagePath(message)
                         if (localPath == null) {
-                            Toast.error("保存失败：图片未下载完成")
+                            Toast.error(strings.messageSaveFailedNotDownloaded)
                             return@launch
                         }
-                        Toast.show("正在保存…")
+                        Toast.show(strings.messageSaving)
                         val result = withContext(Dispatchers.Default) {
                             MediaSaver.saveImage(localPath)
                         }
                         result.fold(
-                            onSuccess = { Toast.success("已保存到相册") },
+                            onSuccess = { Toast.success(strings.messageSavedToAlbum) },
                             onFailure = { Toast.error(UserFacingError.message(it, PrivChatI18n.current.saveFailed)) },
                         )
                     }
@@ -3259,19 +3281,19 @@ private fun MessageActionsWrapper(
                     if (handler != null) {
                         handler(message)
                     } else {
-                        Toast.show("转发功能即将支持")
+                        Toast.show(strings.featureForwardComingSoon)
                     }
                 }
                 MessageActionKind.Reply -> {
                     val handler = onReply
-                    if (handler != null) handler(message) else Toast.show("回复功能即将支持")
+                    if (handler != null) handler(message) else Toast.show(strings.featureReplyComingSoon)
                 }
                 MessageActionKind.Pin -> onPinMessage?.invoke(message, true)
                 MessageActionKind.Unpin -> onPinMessage?.invoke(message, false)
-                MessageActionKind.Select -> Toast.show("多选功能即将支持")
+                MessageActionKind.Select -> Toast.show(strings.featureSelectComingSoon)
                 MessageActionKind.Report -> {
                     val handler = onReportMessage
-                    if (handler != null) handler(message) else Toast.show("举报功能暂不可用")
+                    if (handler != null) handler(message) else Toast.show(strings.featureReportUnavailable)
                 }
             }
         }
@@ -3322,30 +3344,30 @@ private fun MessageActionKind.toMessageAction(
     onClick: () -> Unit,
 ): MessageAction = when (this) {
     MessageActionKind.Reply ->
-        MessageAction(label = "回复", icon = Icons.reply, onClick = onClick)
+        MessageAction(label = PrivChatI18n.current.actionReply, icon = Icons.reply, onClick = onClick)
     MessageActionKind.Copy ->
-        MessageAction(label = "复制文字", icon = Icons.content_copy, onClick = onClick)
+        MessageAction(label = PrivChatI18n.current.actionCopyText, icon = Icons.content_copy, onClick = onClick)
     MessageActionKind.SaveImage ->
-        MessageAction(label = "保存图片", icon = Icons.download, onClick = onClick)
+        MessageAction(label = PrivChatI18n.current.actionSaveImage, icon = Icons.download, onClick = onClick)
     MessageActionKind.Recall ->
-        MessageAction(label = "撤回", icon = Icons.autorenew, onClick = onClick)
+        MessageAction(label = PrivChatI18n.current.actionRecall, icon = Icons.autorenew, onClick = onClick)
     MessageActionKind.Forward ->
-        MessageAction(label = "转发", icon = Icons.forward, onClick = onClick)
+        MessageAction(label = PrivChatI18n.current.actionForward, icon = Icons.forward, onClick = onClick)
     MessageActionKind.Pin ->
         MessageAction(label = strings.messagePin, icon = Icons.bookmark, onClick = onClick)
     MessageActionKind.Unpin ->
         MessageAction(label = strings.messageUnpin, icon = Icons.bookmark_border, onClick = onClick)
     MessageActionKind.DeleteLocal -> {
         val label = when (message.status) {
-            MessageStatus.Pending, MessageStatus.Sending -> "取消发送"
-            else -> "本地删除"
+            MessageStatus.Pending, MessageStatus.Sending -> PrivChatI18n.current.actionCancelSend
+            else -> PrivChatI18n.current.actionDeleteLocal
         }
         MessageAction(label = label, icon = Icons.delete, danger = true, onClick = onClick)
     }
     MessageActionKind.Select ->
-        MessageAction(label = "选择", icon = Icons.check_box_outline_blank, onClick = onClick)
+        MessageAction(label = PrivChatI18n.current.actionSelect, icon = Icons.check_box_outline_blank, onClick = onClick)
     MessageActionKind.Report ->
-        MessageAction(label = "举报", icon = Icons.flag, danger = true, onClick = onClick)
+        MessageAction(label = PrivChatI18n.current.actionReport, icon = Icons.flag, danger = true, onClick = onClick)
 }
 
 /**
@@ -3384,37 +3406,23 @@ private suspend fun resolveLocalImagePath(message: MessageEntry): String? {
 
 // ==================== REPLY_SPEC 辅助 ====================
 
+/** 引用摘要的截断长度：再长就把输入栏顶起来了。 */
+private const val REPLY_SUMMARY_MAX_CHARS = 40
+
 /**
- * REPLY_SPEC §4.2：按内容类型生成回复态摘要文案。
- * 撤回状态优先兜底（直接显示"该消息已撤回"）。
+ * REPLY_SPEC §4.2：回复态摘要文案。
+ *
+ * 类型 → 标签的映射只有 [previewOf] 一份（PreviewRenderer 是会话列表和这里共用的
+ * 渲染单点）。这里以前抄了一份 when 分支，于是同一条语音消息在会话列表里是
+ * 「[语音] 3"」、在引用条里是「[语音 3s]」，而且那份副本是硬编码中文。
  */
-private fun summarizeForReply(message: MessageEntry): String {
-    if (message.isRevoked) return "该消息已撤回"
-    return when (message.contentType()) {
-        ContentMessageType.TEXT -> {
-            val t = message.parsedContent.text.orEmpty()
-            if (t.length > 40) t.take(40) + "…" else t
-        }
-        ContentMessageType.IMAGE -> "[图片]"
-        ContentMessageType.VIDEO -> "[视频]"
-        ContentMessageType.VOICE -> {
-            val secs = message.parsedContent.duration
-            if (secs != null && secs > 0) "[语音 ${secs}s]" else "[语音]"
-        }
-        ContentMessageType.FILE -> {
-            val name = message.parsedContent.fileName.orEmpty()
-            if (name.isNotBlank()) "[文件] $name" else "[文件]"
-        }
-        ContentMessageType.LINK -> message.parsedContent.linkTitle
-            ?: message.parsedContent.linkUrl
-            ?: "[链接]"
-        ContentMessageType.STICKER -> "[表情]"
-        ContentMessageType.CONTACT_CARD -> "[联系人]"
-        ContentMessageType.LOCATION -> "[位置]"
-        ContentMessageType.FORWARD -> "[转发]"
-        ContentMessageType.RED_PACKET -> "[红包]"
-        ContentMessageType.MONEY_TRANSFER -> "[转账]"
-        ContentMessageType.SYSTEM, null -> "[消息]"
+private fun summarizeForReply(strings: PrivChatStrings, message: MessageEntry): String {
+    if (message.isRevoked) return strings.messageRevoked
+    val text = strings.previewOf(message)
+    return if (text.length > REPLY_SUMMARY_MAX_CHARS) {
+        text.take(REPLY_SUMMARY_MAX_CHARS) + "…"
+    } else {
+        text
     }
 }
 
@@ -3428,6 +3436,7 @@ private fun ReplyBar(
     channelDisplayName: String,
     onDismiss: () -> Unit,
 ) {
+    val strings = PrivChatI18n.strings
     val colors = Theme.colors
     val senderLabel = channelDisplayName.ifBlank { message.fromUid.toString() }
     Row(
@@ -3446,12 +3455,12 @@ private fun ReplyBar(
         HorizontalSpacer(8.dp)
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "回复 $senderLabel",
+                text = strings.replyToPrefix.withArgs(senderLabel),
                 style = Typography.Label,
                 color = colors.mutedForeground,
             )
             Text(
-                text = summarizeForReply(message),
+                text = summarizeForReply(strings, message),
                 style = Typography.BodySmall,
                 color = colors.foreground,
             )
@@ -3479,8 +3488,9 @@ private fun ReplyQuoteBanner(
     senderLabelOf: ((ULong) -> String)? = null,
     onClick: (() -> Unit)? = null,
 ) {
+    val strings = PrivChatI18n.strings
     val colors = Theme.colors
-    val summary = original?.let { summarizeForReply(it) } ?: "该消息已失效"
+    val summary = original?.let { summarizeForReply(strings, it) } ?: strings.replyOriginalUnavailable
     val senderText = original?.let { senderLabelOf?.invoke(it.fromUid) ?: it.fromUid.toString() }
     val foreground = if (isSelf) colors.primaryForeground else colors.foreground
     val secondary = if (isSelf) colors.primaryForeground else colors.mutedForeground

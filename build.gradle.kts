@@ -93,3 +93,56 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 }
+
+/**
+ * 硬编码中文护栏。
+ *
+ * 「界面文案一律走语言包」这条规矩以前只写在文档里，没有任何东西在执行它，于是
+ * 整个创建群聊页在英文界面下还是全中文。这个 task 把规矩变成会失败的构建。
+ *
+ * 判定：commonMain 的 .kt 里出现带中文的字符串字面量即失败。豁免只有两类，
+ * 都必须在同一行用行尾注释标注原因：
+ *   - `// i18n-exempt: <原因>` —— 匹配底层错误文本这类**非展示**用途
+ *   - i18n 目录自身（语言包就是中文的所在）
+ */
+val checkNoHardcodedChinese by tasks.registering {
+    group = "verification"
+    description = "Fails if commonMain has Chinese string literals outside the language packs"
+    val sources = fileTree("src/commonMain/kotlin") { include("**/*.kt") }
+    inputs.files(sources)
+    // 无产物：声明一个 marker 让 Gradle 能做增量。
+    val marker = layout.buildDirectory.file("i18n-guard.ok")
+    outputs.file(marker)
+    doLast {
+        val chinese = Regex("\"[^\"]*[\\u4e00-\\u9fff][^\"]*\"")
+        val comment = Regex("^\\s*(//|\\*|/\\*)")
+        val logCall = Regex("\\b(println|print|Log\\.[dviwe]|logD|logI|logW|logE|logV)\\s*\\(")
+        val offenders = mutableListOf<String>()
+        sources.forEach { file ->
+            if (file.path.contains("/i18n/")) return@forEach
+            file.readLines().forEachIndexed { idx, line ->
+                if (comment.containsMatchIn(line)) return@forEachIndexed
+                if (line.contains("i18n-exempt:")) return@forEachIndexed
+                // 日志不是界面。开发者读的诊断信息用中文写没问题，也不该逼进语言包。
+                if (logCall.containsMatchIn(line)) return@forEachIndexed
+                if (chinese.containsMatchIn(line)) {
+                    offenders += "${file.relativeTo(projectDir)}:${idx + 1}: ${line.trim()}"
+                }
+            }
+        }
+        marker.get().asFile.also { it.parentFile.mkdirs() }.writeText("checked ${sources.files.size} files\n")
+        if (offenders.isNotEmpty()) {
+            throw GradleException(
+                buildString {
+                    appendLine("Hardcoded Chinese found in ${offenders.size} place(s).")
+                    appendLine("Move the text into PrivChatDomainStrings.kt + all four packs, or, if this")
+                    appendLine("string matches underlying error text rather than being shown, mark the line")
+                    appendLine("with `// i18n-exempt: <why>`.")
+                    offenders.forEach { appendLine("  $it") }
+                }
+            )
+        }
+    }
+}
+
+tasks.named("check") { dependsOn(checkNoHardcodedChinese) }

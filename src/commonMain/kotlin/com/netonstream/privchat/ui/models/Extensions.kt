@@ -180,14 +180,6 @@ val GroupMemberEntry.isMember: Boolean
 val GroupMemberEntry.canManageGroup: Boolean
     get() = isOwner || isAdmin
 
-/** 角色名称 */
-val GroupMemberEntry.roleName: String
-    get() = when {
-        isOwner -> "群主"
-        isAdmin -> "管理员"
-        else -> "成员"
-    }
-
 // ========== LatestChannelEvent 扩展 ==========
 
 /** 事件时间（转为 Long） */

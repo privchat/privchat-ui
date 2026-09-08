@@ -127,11 +127,15 @@ private fun renderPreview(
 
         MessageType.CONTACT -> strings.previewContactCard
 
-        // Money Message 预览（RP-ferry）。MVP 用字面文案；i18n key 后续补。
+        // Money Message 预览（RP-ferry）：标签走语言包，后面接红包标题 / 转账金额。
         MessageType.RED_PACKET ->
-            effectiveParsed.moneyTitle?.takeIf { it.isNotBlank() }?.let { "[红包] $it" } ?: "[红包]"
+            effectiveParsed.moneyTitle?.takeIf { it.isNotBlank() }
+                ?.let { "${strings.previewRedPacket} $it" }
+                ?: strings.previewRedPacket
         MessageType.MONEY_TRANSFER ->
-            effectiveParsed.moneyAmountText?.takeIf { it.isNotBlank() }?.let { "[转账] $it" } ?: "[转账]"
+            effectiveParsed.moneyAmountText?.takeIf { it.isNotBlank() }
+                ?.let { "${strings.previewMoneyTransfer} $it" }
+                ?: strings.previewMoneyTransfer
 
         MessageType.SYSTEM -> renderSystemPreview(strings, effectiveParsed, rawContent)
 

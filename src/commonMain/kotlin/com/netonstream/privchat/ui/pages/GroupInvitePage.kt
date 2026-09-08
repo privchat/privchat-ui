@@ -3,6 +3,8 @@ package com.netonstream.privchat.ui.pages
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.dto.FriendEntry
 import com.netonstream.privchat.ui.components.ChatAvatar
+import com.netonstream.privchat.ui.i18n.PrivChatI18n
+import com.netonstream.privchat.ui.i18n.withArgs
 import com.netonstream.privchat.ui.models.displayName
 import com.gearui.theme.Theme
 import com.gearui.foundation.avatar.AvatarSizeTokens
@@ -46,6 +48,7 @@ fun GroupInvitePage(
     onError: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val strings = PrivChatI18n.strings
     val colors = Theme.colors
     var searchQuery by remember { mutableStateOf("") }
     val selected = remember { mutableStateMapOf<ULong, FriendEntry>() }
@@ -71,12 +74,13 @@ fun GroupInvitePage(
 
     Column(modifier = modifier.fillMaxSize().background(colors.background)) {
         NavBar(
-            title = "邀请好友",
+            title = strings.groupInviteTitle,
             useDefaultBack = true,
             onBackClick = onBack,
             rightWidgetWidth = com.netonstream.privchat.ui.components.NavBarActionSlotWidthWide,
             rightWidget = {
-                val label = if (selected.isEmpty()) "邀请" else "邀请(${selected.size})"
+                val label = if (selected.isEmpty()) strings.groupInviteAction
+                    else "${strings.groupInviteAction}(${selected.size})"
                 com.netonstream.privchat.ui.components.NavBarAction(
                     text = label,
                     enabled = canSubmit,
@@ -88,7 +92,7 @@ fun GroupInvitePage(
                             onSuccess = { isSubmitting = false },
                             onFailure = { e ->
                                 isSubmitting = false
-                                onError(com.netonstream.privchat.ui.error.UserFacingError.message(e, "邀请失败"))
+                                onError(com.netonstream.privchat.ui.error.UserFacingError.message(e, strings.groupInviteFailed))
                             },
                         )
                     }
@@ -99,7 +103,7 @@ fun GroupInvitePage(
         SearchBar(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = "搜索好友",
+            placeholder = strings.groupPickerSearchPlaceholder,
             shape = com.gearui.components.searchbar.SearchBarShape.SQUARE,
             modifier = Modifier
                 .fillMaxWidth()
@@ -113,7 +117,7 @@ fun GroupInvitePage(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "已选 ${selected.size}/$GROUP_INVITE_MAX_BATCH",
+                text = strings.groupPickerSelectedCount.withArgs(selected.size, GROUP_INVITE_MAX_BATCH),
                 style = Typography.BodySmall,
                 color = colors.mutedForeground,
             )
@@ -121,7 +125,10 @@ fun GroupInvitePage(
 
         if (filtered.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                EmptyState(message = if (friends.isEmpty()) "暂无可邀请好友" else "未匹配到好友")
+                EmptyState(
+                    message = if (friends.isEmpty()) strings.groupInviteNoFriends
+                    else strings.groupPickerNoMatch,
+                )
             }
         } else {
             GearLazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -160,7 +167,7 @@ fun GroupInvitePage(
                             } else if (!atLimit) {
                                 selected[friend.userId] = friend
                             } else {
-                                onError("最多选择 $GROUP_INVITE_MAX_BATCH 位好友")
+                                onError(strings.groupPickerMaxReached.withArgs(GROUP_INVITE_MAX_BATCH))
                             }
                         },
                     )

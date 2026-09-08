@@ -157,9 +157,10 @@ object UserFacingError {
         "socketexception",
         "connectexception",
         "unknownhostexception",
-        "网络已断开",
-        "网络连接",
-        "网络错误",
+        // i18n-exempt: 中文 locale 的 Android 会把这些词写进异常消息本身，这里是在匹配它们。
+        "网络已断开", // i18n-exempt: 中文 locale 的系统异常消息里就是这几个词
+        "网络连接", // i18n-exempt: 同上
+        "网络错误", // i18n-exempt: 同上
     )
 
     // Compose/Kuikly 与 kotlinx.coroutines 在取消时给出的消息。全小写匹配。

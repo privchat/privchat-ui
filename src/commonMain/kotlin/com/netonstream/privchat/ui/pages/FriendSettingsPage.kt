@@ -136,7 +136,7 @@ fun FriendSettingsPage(
             Card(padding = PaddingValues(0.dp)) {
                 if (onReportUser != null) {
                     Cell(
-                        title = "举报",
+                        title = strings.friendSettingsReport,
                         onClick = { onReportUser.invoke() },
                     )
                     Divider(insetStart = 16.dp)

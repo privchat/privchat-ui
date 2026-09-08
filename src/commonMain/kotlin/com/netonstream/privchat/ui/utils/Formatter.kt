@@ -4,6 +4,8 @@ import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.common.base.LocalDateTimeInfo
 import com.netonstream.privchat.ui.common.base.currentTimeMillis
 import com.netonstream.privchat.ui.common.base.epochMillisToLocalDateTime
+import com.netonstream.privchat.ui.i18n.PrivChatI18n
+import com.netonstream.privchat.ui.i18n.withArgs
 import kotlin.math.pow
 import kotlin.math.round
 
@@ -47,7 +49,7 @@ object Formatter {
         // 昨天：日期差1天（简化：用 now 减一天的开始判断）
         val yesterdayLocal = epochMillisToLocalDateTime(now - 86_400_000L, zone)
         if (yesterdayLocal.year == tsLocal.year && yesterdayLocal.month == tsLocal.month && yesterdayLocal.day == tsLocal.day) {
-            return "昨天"
+            return PrivChatI18n.current.timeYesterday
         }
 
         // 本周内（7天以内）
@@ -104,22 +106,22 @@ object Formatter {
 
         // 今天
         if (nowLocal.year == tsLocal.year && nowLocal.month == tsLocal.month && nowLocal.day == tsLocal.day) {
-            return "今天 $time"
+            return dateWithTime(PrivChatI18n.current.timeToday, time)
         }
 
         // 昨天
         val yesterdayLocal = epochMillisToLocalDateTime(now - 86_400_000L, zone)
         if (yesterdayLocal.year == tsLocal.year && yesterdayLocal.month == tsLocal.month && yesterdayLocal.day == tsLocal.day) {
-            return "昨天 $time"
+            return dateWithTime(PrivChatI18n.current.timeYesterday, time)
         }
 
         // 同年
         if (nowLocal.year == tsLocal.year) {
-            return "${tsLocal.month.toString().padStart(2, '0')}月${tsLocal.day.toString().padStart(2, '0')}日 $time"
+            return dateWithTime(monthDay(tsLocal, pad = true), time)
         }
 
         // 不同年
-        return "${tsLocal.year}年${tsLocal.month.toString().padStart(2, '0')}月${tsLocal.day.toString().padStart(2, '0')}日 $time"
+        return dateWithTime(yearMonthDay(tsLocal, pad = true), time)
     }
 
     /**
@@ -142,19 +144,19 @@ object Formatter {
         val nowLocal = epochMillisToLocalDateTime(now, zone)
         val tsLocal = epochMillisToLocalDateTime(timestamp, zone)
         if (nowLocal.year == tsLocal.year && nowLocal.month == tsLocal.month && nowLocal.day == tsLocal.day) {
-            return "今天"
+            return PrivChatI18n.current.timeToday
         }
         val yesterdayLocal = epochMillisToLocalDateTime(now - 86_400_000L, zone)
         if (yesterdayLocal.year == tsLocal.year && yesterdayLocal.month == tsLocal.month && yesterdayLocal.day == tsLocal.day) {
-            return "昨天"
+            return PrivChatI18n.current.timeYesterday
         }
         if (timestamp >= now - 7 * 86_400_000L) {
             return getDayOfWeek(tsLocal.dayOfWeek)
         }
         if (nowLocal.year == tsLocal.year) {
-            return "${tsLocal.month}月${tsLocal.day}日"
+            return monthDay(tsLocal, pad = false)
         }
-        return "${tsLocal.year}年${tsLocal.month}月${tsLocal.day}日"
+        return yearMonthDay(tsLocal, pad = false)
     }
 
     fun messageDateLabel(timestamp: ULong): String = messageDateLabel(timestamp.toLong())
@@ -203,10 +205,10 @@ object Formatter {
         val now = currentTimeMillis()
         val diffSec = (now - timestamp) / 1000L
         return when {
-            diffSec < 60 -> "刚刚"
-            diffSec < 3600 -> "${diffSec / 60} 分钟前"
-            diffSec < 86_400 -> "${diffSec / 3600} 小时前"
-            diffSec < 7 * 86_400 -> "${diffSec / 86_400} 天前"
+            diffSec < 60 -> PrivChatI18n.current.relativeJustNow
+            diffSec < 3600 -> PrivChatI18n.current.relativeMinutesAgo.withArgs(diffSec / 60)
+            diffSec < 86_400 -> PrivChatI18n.current.relativeHoursAgo.withArgs(diffSec / 3600)
+            diffSec < 7 * 86_400 -> PrivChatI18n.current.relativeDaysAgo.withArgs(diffSec / 86_400)
             else -> {
                 val local = epochMillisToLocalDateTime(timestamp, PrivChat.timeZoneId)
                 val nowLocal = epochMillisToLocalDateTime(now, PrivChat.timeZoneId)
@@ -241,7 +243,9 @@ object Formatter {
     /** 当前 local 月份的展示标签（zh-flavor），用作"收到的"列表当月分组标题。 */
     fun currentLocalMonthLabel(): String {
         val nowLocal = epochMillisToLocalDateTime(currentTimeMillis(), PrivChat.timeZoneId)
-        return "${nowLocal.year}年${nowLocal.month}月"
+        return PrivChatI18n.current.dateYearMonthPattern
+            .replace("{y}", nowLocal.year.toString())
+            .replace("{m}", nowLocal.month.toString())
     }
 
     /**
@@ -373,26 +377,6 @@ object Formatter {
      */
     fun unreadCount(count: UInt, max: Int = 99): String = unreadCount(count.toInt(), max)
 
-    /**
-     * 格式化成员数
-     *
-     * @param count 成员数
-     * @return 如 1.2万
-     */
-    fun memberCount(count: Int): String {
-        return when {
-            count < 0 -> "0"
-            count < 10000 -> count.toString()
-            count < 100000 -> "${formatDecimal(count / 10000.0, 1)}万"
-            else -> "${count / 10000}万"
-        }
-    }
-
-    /**
-     * 格式化成员数（UInt 版本）
-     */
-    fun memberCount(count: UInt): String = memberCount(count.toInt())
-
     // ========== 私有辅助方法 ==========
 
     private fun formatHHmm(local: LocalDateTimeInfo): String {
@@ -404,9 +388,28 @@ object Formatter {
     }
 
     private fun getDayOfWeek(isoDayOfWeek: Int): String {
-        val days = listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日")
-        return days.getOrElse(isoDayOfWeek - 1) { "周一" }
+        val s = PrivChatI18n.current
+        val days = listOf(
+            s.timeMonday, s.timeTuesday, s.timeWednesday, s.timeThursday,
+            s.timeFriday, s.timeSaturday, s.timeSunday,
+        )
+        return days.getOrElse(isoDayOfWeek - 1) { s.timeMonday }
     }
+
+    /** 「几月几日」——顺序交给语言包，这里只填数字。 */
+    private fun monthDay(local: LocalDateTimeInfo, pad: Boolean): String =
+        PrivChatI18n.current.dateMonthDayPattern
+            .replace("{m}", local.month.toString().let { if (pad) it.padStart(2, '0') else it })
+            .replace("{d}", local.day.toString().let { if (pad) it.padStart(2, '0') else it })
+
+    private fun yearMonthDay(local: LocalDateTimeInfo, pad: Boolean): String =
+        PrivChatI18n.current.dateYearMonthDayPattern
+            .replace("{y}", local.year.toString())
+            .replace("{m}", local.month.toString().let { if (pad) it.padStart(2, '0') else it })
+            .replace("{d}", local.day.toString().let { if (pad) it.padStart(2, '0') else it })
+
+    private fun dateWithTime(date: String, time: String): String =
+        PrivChatI18n.current.dateTimePattern.replace("{date}", date).replace("{time}", time)
 
     private fun formatDecimal(value: Double, digits: Int): String {
         val factor = 10.0.pow(digits.toDouble())

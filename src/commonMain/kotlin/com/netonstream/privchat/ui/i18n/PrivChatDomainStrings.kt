@@ -180,6 +180,122 @@ data class PrivChatMessageStrings(
     val presenceOnline: String,
     val presenceOffline: String,
     val presenceLastSeenPrefix: String,
+    val forwardTitle: String,
+    val forwardSend: String,
+    val forwardSearchPlaceholder: String,
+    val forwardEmpty: String,
+    val forwardNoMatch: String,
+    val forwardSectionRecent: String,
+    val forwardSectionFriends: String,
+    val forwardSectionGroups: String,
+    val forwardCommentPlaceholder: String,
+    /** 占位符按序替换：已选数量 / 上限。 */
+    val forwardSelectedCount: String,
+    val forwardMaxReached: String,
+    val chatEmpty: String,
+    /** 引用/回复摘要里指代自己的称呼。 */
+    val messageSenderSelf: String,
+    val messageSend: String,
+    val messageCopied: String,
+    val messageSaving: String,
+    val messageSavedToAlbum: String,
+    val messageSaveFailedNotDownloaded: String,
+    val messageOriginalNotSentYet: String,
+    val messageProcessing: String,
+    /** 未读分隔线，占位符=未读条数。 */
+    val unreadDividerLabel: String,
+    val unreadJumpLabel: String,
+    val plusAlbum: String,
+    val plusCamera: String,
+    val plusLocation: String,
+    val plusRedPacket: String,
+    val plusMoneyTransfer: String,
+    val plusFile: String,
+    val plusContact: String,
+    val voiceReleaseToCancel: String,
+    val voiceReleaseToSend: String,
+    val voiceHoldToTalk: String,
+    val actionReply: String,
+    val actionCopyText: String,
+    val actionSaveImage: String,
+    val actionRecall: String,
+    val actionForward: String,
+    val actionCancelSend: String,
+    val actionDeleteLocal: String,
+    val actionSelect: String,
+    val actionReport: String,
+    val resendTitle: String,
+    val resendConfirm: String,
+    /** 输入栏引用条的第一行，占位符=被回复的人。 */
+    val replyToPrefix: String,
+    val replyOriginalUnavailable: String,
+    val featureLocationComingSoon: String,
+    val featureContactComingSoon: String,
+    val featureForwardComingSoon: String,
+    val featureReplyComingSoon: String,
+    val featureSelectComingSoon: String,
+    val featureReportUnavailable: String,
+    val menuLoading: String,
+    val menuLoadFailed: String,
+    val menuEmpty: String,
+    val menuInvokeFailed: String,
+    val menuActionDone: String,
+    val menuPreparing: String,
+    val menuSignFailed: String,
+    val menuPrepareLinkFailed: String,
+    /** 菜单/转账路由不合法，占位符=原始 route。 */
+    val menuInvalidRoute: String,
+    /** 占位符=消息 id。 */
+    val menuEmptyContent: String,
+    val linkHttpsOnly: String,
+    val linkOpenFailed: String,
+    val linkOpen: String,
+    val linkCopy: String,
+    val phoneDial: String,
+    val phoneSms: String,
+    val phoneCopy: String,
+    val phoneDialFailed: String,
+    val phoneSmsFailed: String,
+    val emailSend: String,
+    val emailCopy: String,
+    val emailOpenFailed: String,
+    val a11yImage: String,
+    val a11yVideo: String,
+    val a11yFile: String,
+    val a11ySticker: String,
+    val downloadPaused: String,
+    /** 占位符=已完成百分比。 */
+    val downloadPausedAt: String,
+    val downloadFailed: String,
+    val locationFallbackTitle: String,
+    /** 名片没有昵称时的兜底，占位符=uid。 */
+    val contactCardUnnamed: String,
+    val contactCardFallback: String,
+    val contactCardLabel: String,
+    val unsupportedContent: String,
+    val redPacketDefaultTitle: String,
+    val redPacketLucky: String,
+    val redPacketNormal: String,
+    val redPacketDrained: String,
+    val redPacketClaimed: String,
+    val redPacketExpired: String,
+    val redPacketClaim: String,
+    val redPacketUnsupportedVersion: String,
+    val transferTitle: String,
+    /** 占位符=收款人。 */
+    val transferToPeer: String,
+    /** 占位符=付款人。 */
+    val transferFromPeer: String,
+    val transferRefunded: String,
+    val transferReceived: String,
+    val transferCredited: String,
+    val statusSendFailedRetry: String,
+    /** 占位符=进度百分比。 */
+    val statusUploading: String,
+    val statusSendingShort: String,
+    val statusRead: String,
+    val statusDelivered: String,
+    val statusSent: String,
 )
 
 data class PrivChatMessageStringsPatch(
@@ -201,6 +317,111 @@ data class PrivChatMessageStringsPatch(
     val presenceOnline: String? = null,
     val presenceOffline: String? = null,
     val presenceLastSeenPrefix: String? = null,
+    val forwardTitle: String? = null,
+    val forwardSend: String? = null,
+    val forwardSearchPlaceholder: String? = null,
+    val forwardEmpty: String? = null,
+    val forwardNoMatch: String? = null,
+    val forwardSectionRecent: String? = null,
+    val forwardSectionFriends: String? = null,
+    val forwardSectionGroups: String? = null,
+    val forwardCommentPlaceholder: String? = null,
+    val forwardSelectedCount: String? = null,
+    val forwardMaxReached: String? = null,
+    val chatEmpty: String? = null,
+    val messageSenderSelf: String? = null,
+    val messageSend: String? = null,
+    val messageCopied: String? = null,
+    val messageSaving: String? = null,
+    val messageSavedToAlbum: String? = null,
+    val messageSaveFailedNotDownloaded: String? = null,
+    val messageOriginalNotSentYet: String? = null,
+    val messageProcessing: String? = null,
+    val unreadDividerLabel: String? = null,
+    val unreadJumpLabel: String? = null,
+    val plusAlbum: String? = null,
+    val plusCamera: String? = null,
+    val plusLocation: String? = null,
+    val plusRedPacket: String? = null,
+    val plusMoneyTransfer: String? = null,
+    val plusFile: String? = null,
+    val plusContact: String? = null,
+    val voiceReleaseToCancel: String? = null,
+    val voiceReleaseToSend: String? = null,
+    val voiceHoldToTalk: String? = null,
+    val actionReply: String? = null,
+    val actionCopyText: String? = null,
+    val actionSaveImage: String? = null,
+    val actionRecall: String? = null,
+    val actionForward: String? = null,
+    val actionCancelSend: String? = null,
+    val actionDeleteLocal: String? = null,
+    val actionSelect: String? = null,
+    val actionReport: String? = null,
+    val resendTitle: String? = null,
+    val resendConfirm: String? = null,
+    val replyToPrefix: String? = null,
+    val replyOriginalUnavailable: String? = null,
+    val featureLocationComingSoon: String? = null,
+    val featureContactComingSoon: String? = null,
+    val featureForwardComingSoon: String? = null,
+    val featureReplyComingSoon: String? = null,
+    val featureSelectComingSoon: String? = null,
+    val featureReportUnavailable: String? = null,
+    val menuLoading: String? = null,
+    val menuLoadFailed: String? = null,
+    val menuEmpty: String? = null,
+    val menuInvokeFailed: String? = null,
+    val menuActionDone: String? = null,
+    val menuPreparing: String? = null,
+    val menuSignFailed: String? = null,
+    val menuPrepareLinkFailed: String? = null,
+    val menuInvalidRoute: String? = null,
+    val menuEmptyContent: String? = null,
+    val linkHttpsOnly: String? = null,
+    val linkOpenFailed: String? = null,
+    val linkOpen: String? = null,
+    val linkCopy: String? = null,
+    val phoneDial: String? = null,
+    val phoneSms: String? = null,
+    val phoneCopy: String? = null,
+    val phoneDialFailed: String? = null,
+    val phoneSmsFailed: String? = null,
+    val emailSend: String? = null,
+    val emailCopy: String? = null,
+    val emailOpenFailed: String? = null,
+    val a11yImage: String? = null,
+    val a11yVideo: String? = null,
+    val a11yFile: String? = null,
+    val a11ySticker: String? = null,
+    val downloadPaused: String? = null,
+    val downloadPausedAt: String? = null,
+    val downloadFailed: String? = null,
+    val locationFallbackTitle: String? = null,
+    val contactCardUnnamed: String? = null,
+    val contactCardFallback: String? = null,
+    val contactCardLabel: String? = null,
+    val unsupportedContent: String? = null,
+    val redPacketDefaultTitle: String? = null,
+    val redPacketLucky: String? = null,
+    val redPacketNormal: String? = null,
+    val redPacketDrained: String? = null,
+    val redPacketClaimed: String? = null,
+    val redPacketExpired: String? = null,
+    val redPacketClaim: String? = null,
+    val redPacketUnsupportedVersion: String? = null,
+    val transferTitle: String? = null,
+    val transferToPeer: String? = null,
+    val transferFromPeer: String? = null,
+    val transferRefunded: String? = null,
+    val transferReceived: String? = null,
+    val transferCredited: String? = null,
+    val statusSendFailedRetry: String? = null,
+    val statusUploading: String? = null,
+    val statusSendingShort: String? = null,
+    val statusRead: String? = null,
+    val statusDelivered: String? = null,
+    val statusSent: String? = null,
 )
 
 val PrivChatMessageStringsPatch.isEmpty: Boolean
@@ -221,7 +442,112 @@ val PrivChatMessageStringsPatch.isEmpty: Boolean
         messageVoiceHint == null &&
         presenceOnline == null &&
         presenceOffline == null &&
-        presenceLastSeenPrefix == null
+        presenceLastSeenPrefix == null &&
+        forwardTitle == null &&
+        forwardSend == null &&
+        forwardSearchPlaceholder == null &&
+        forwardEmpty == null &&
+        forwardNoMatch == null &&
+        forwardSectionRecent == null &&
+        forwardSectionFriends == null &&
+        forwardSectionGroups == null &&
+        forwardCommentPlaceholder == null &&
+        forwardSelectedCount == null &&
+        forwardMaxReached == null &&
+        chatEmpty == null &&
+        messageSenderSelf == null &&
+        messageSend == null &&
+        messageCopied == null &&
+        messageSaving == null &&
+        messageSavedToAlbum == null &&
+        messageSaveFailedNotDownloaded == null &&
+        messageOriginalNotSentYet == null &&
+        messageProcessing == null &&
+        unreadDividerLabel == null &&
+        unreadJumpLabel == null &&
+        plusAlbum == null &&
+        plusCamera == null &&
+        plusLocation == null &&
+        plusRedPacket == null &&
+        plusMoneyTransfer == null &&
+        plusFile == null &&
+        plusContact == null &&
+        voiceReleaseToCancel == null &&
+        voiceReleaseToSend == null &&
+        voiceHoldToTalk == null &&
+        actionReply == null &&
+        actionCopyText == null &&
+        actionSaveImage == null &&
+        actionRecall == null &&
+        actionForward == null &&
+        actionCancelSend == null &&
+        actionDeleteLocal == null &&
+        actionSelect == null &&
+        actionReport == null &&
+        resendTitle == null &&
+        resendConfirm == null &&
+        replyToPrefix == null &&
+        replyOriginalUnavailable == null &&
+        featureLocationComingSoon == null &&
+        featureContactComingSoon == null &&
+        featureForwardComingSoon == null &&
+        featureReplyComingSoon == null &&
+        featureSelectComingSoon == null &&
+        featureReportUnavailable == null &&
+        menuLoading == null &&
+        menuLoadFailed == null &&
+        menuEmpty == null &&
+        menuInvokeFailed == null &&
+        menuActionDone == null &&
+        menuPreparing == null &&
+        menuSignFailed == null &&
+        menuPrepareLinkFailed == null &&
+        menuInvalidRoute == null &&
+        menuEmptyContent == null &&
+        linkHttpsOnly == null &&
+        linkOpenFailed == null &&
+        linkOpen == null &&
+        linkCopy == null &&
+        phoneDial == null &&
+        phoneSms == null &&
+        phoneCopy == null &&
+        phoneDialFailed == null &&
+        phoneSmsFailed == null &&
+        emailSend == null &&
+        emailCopy == null &&
+        emailOpenFailed == null &&
+        a11yImage == null &&
+        a11yVideo == null &&
+        a11yFile == null &&
+        a11ySticker == null &&
+        downloadPaused == null &&
+        downloadPausedAt == null &&
+        downloadFailed == null &&
+        locationFallbackTitle == null &&
+        contactCardUnnamed == null &&
+        contactCardFallback == null &&
+        contactCardLabel == null &&
+        unsupportedContent == null &&
+        redPacketDefaultTitle == null &&
+        redPacketLucky == null &&
+        redPacketNormal == null &&
+        redPacketDrained == null &&
+        redPacketClaimed == null &&
+        redPacketExpired == null &&
+        redPacketClaim == null &&
+        redPacketUnsupportedVersion == null &&
+        transferTitle == null &&
+        transferToPeer == null &&
+        transferFromPeer == null &&
+        transferRefunded == null &&
+        transferReceived == null &&
+        transferCredited == null &&
+        statusSendFailedRetry == null &&
+        statusUploading == null &&
+        statusSendingShort == null &&
+        statusRead == null &&
+        statusDelivered == null &&
+        statusSent == null
 
 fun PrivChatMessageStrings.merge(patch: PrivChatMessageStringsPatch?): PrivChatMessageStrings {
     if (patch == null || patch.isEmpty) return this
@@ -244,6 +570,111 @@ fun PrivChatMessageStrings.merge(patch: PrivChatMessageStringsPatch?): PrivChatM
         presenceOnline = patch.presenceOnline ?: presenceOnline,
         presenceOffline = patch.presenceOffline ?: presenceOffline,
         presenceLastSeenPrefix = patch.presenceLastSeenPrefix ?: presenceLastSeenPrefix,
+        forwardTitle = patch.forwardTitle ?: forwardTitle,
+        forwardSend = patch.forwardSend ?: forwardSend,
+        forwardSearchPlaceholder = patch.forwardSearchPlaceholder ?: forwardSearchPlaceholder,
+        forwardEmpty = patch.forwardEmpty ?: forwardEmpty,
+        forwardNoMatch = patch.forwardNoMatch ?: forwardNoMatch,
+        forwardSectionRecent = patch.forwardSectionRecent ?: forwardSectionRecent,
+        forwardSectionFriends = patch.forwardSectionFriends ?: forwardSectionFriends,
+        forwardSectionGroups = patch.forwardSectionGroups ?: forwardSectionGroups,
+        forwardCommentPlaceholder = patch.forwardCommentPlaceholder ?: forwardCommentPlaceholder,
+        forwardSelectedCount = patch.forwardSelectedCount ?: forwardSelectedCount,
+        forwardMaxReached = patch.forwardMaxReached ?: forwardMaxReached,
+        chatEmpty = patch.chatEmpty ?: chatEmpty,
+        messageSenderSelf = patch.messageSenderSelf ?: messageSenderSelf,
+        messageSend = patch.messageSend ?: messageSend,
+        messageCopied = patch.messageCopied ?: messageCopied,
+        messageSaving = patch.messageSaving ?: messageSaving,
+        messageSavedToAlbum = patch.messageSavedToAlbum ?: messageSavedToAlbum,
+        messageSaveFailedNotDownloaded = patch.messageSaveFailedNotDownloaded ?: messageSaveFailedNotDownloaded,
+        messageOriginalNotSentYet = patch.messageOriginalNotSentYet ?: messageOriginalNotSentYet,
+        messageProcessing = patch.messageProcessing ?: messageProcessing,
+        unreadDividerLabel = patch.unreadDividerLabel ?: unreadDividerLabel,
+        unreadJumpLabel = patch.unreadJumpLabel ?: unreadJumpLabel,
+        plusAlbum = patch.plusAlbum ?: plusAlbum,
+        plusCamera = patch.plusCamera ?: plusCamera,
+        plusLocation = patch.plusLocation ?: plusLocation,
+        plusRedPacket = patch.plusRedPacket ?: plusRedPacket,
+        plusMoneyTransfer = patch.plusMoneyTransfer ?: plusMoneyTransfer,
+        plusFile = patch.plusFile ?: plusFile,
+        plusContact = patch.plusContact ?: plusContact,
+        voiceReleaseToCancel = patch.voiceReleaseToCancel ?: voiceReleaseToCancel,
+        voiceReleaseToSend = patch.voiceReleaseToSend ?: voiceReleaseToSend,
+        voiceHoldToTalk = patch.voiceHoldToTalk ?: voiceHoldToTalk,
+        actionReply = patch.actionReply ?: actionReply,
+        actionCopyText = patch.actionCopyText ?: actionCopyText,
+        actionSaveImage = patch.actionSaveImage ?: actionSaveImage,
+        actionRecall = patch.actionRecall ?: actionRecall,
+        actionForward = patch.actionForward ?: actionForward,
+        actionCancelSend = patch.actionCancelSend ?: actionCancelSend,
+        actionDeleteLocal = patch.actionDeleteLocal ?: actionDeleteLocal,
+        actionSelect = patch.actionSelect ?: actionSelect,
+        actionReport = patch.actionReport ?: actionReport,
+        resendTitle = patch.resendTitle ?: resendTitle,
+        resendConfirm = patch.resendConfirm ?: resendConfirm,
+        replyToPrefix = patch.replyToPrefix ?: replyToPrefix,
+        replyOriginalUnavailable = patch.replyOriginalUnavailable ?: replyOriginalUnavailable,
+        featureLocationComingSoon = patch.featureLocationComingSoon ?: featureLocationComingSoon,
+        featureContactComingSoon = patch.featureContactComingSoon ?: featureContactComingSoon,
+        featureForwardComingSoon = patch.featureForwardComingSoon ?: featureForwardComingSoon,
+        featureReplyComingSoon = patch.featureReplyComingSoon ?: featureReplyComingSoon,
+        featureSelectComingSoon = patch.featureSelectComingSoon ?: featureSelectComingSoon,
+        featureReportUnavailable = patch.featureReportUnavailable ?: featureReportUnavailable,
+        menuLoading = patch.menuLoading ?: menuLoading,
+        menuLoadFailed = patch.menuLoadFailed ?: menuLoadFailed,
+        menuEmpty = patch.menuEmpty ?: menuEmpty,
+        menuInvokeFailed = patch.menuInvokeFailed ?: menuInvokeFailed,
+        menuActionDone = patch.menuActionDone ?: menuActionDone,
+        menuPreparing = patch.menuPreparing ?: menuPreparing,
+        menuSignFailed = patch.menuSignFailed ?: menuSignFailed,
+        menuPrepareLinkFailed = patch.menuPrepareLinkFailed ?: menuPrepareLinkFailed,
+        menuInvalidRoute = patch.menuInvalidRoute ?: menuInvalidRoute,
+        menuEmptyContent = patch.menuEmptyContent ?: menuEmptyContent,
+        linkHttpsOnly = patch.linkHttpsOnly ?: linkHttpsOnly,
+        linkOpenFailed = patch.linkOpenFailed ?: linkOpenFailed,
+        linkOpen = patch.linkOpen ?: linkOpen,
+        linkCopy = patch.linkCopy ?: linkCopy,
+        phoneDial = patch.phoneDial ?: phoneDial,
+        phoneSms = patch.phoneSms ?: phoneSms,
+        phoneCopy = patch.phoneCopy ?: phoneCopy,
+        phoneDialFailed = patch.phoneDialFailed ?: phoneDialFailed,
+        phoneSmsFailed = patch.phoneSmsFailed ?: phoneSmsFailed,
+        emailSend = patch.emailSend ?: emailSend,
+        emailCopy = patch.emailCopy ?: emailCopy,
+        emailOpenFailed = patch.emailOpenFailed ?: emailOpenFailed,
+        a11yImage = patch.a11yImage ?: a11yImage,
+        a11yVideo = patch.a11yVideo ?: a11yVideo,
+        a11yFile = patch.a11yFile ?: a11yFile,
+        a11ySticker = patch.a11ySticker ?: a11ySticker,
+        downloadPaused = patch.downloadPaused ?: downloadPaused,
+        downloadPausedAt = patch.downloadPausedAt ?: downloadPausedAt,
+        downloadFailed = patch.downloadFailed ?: downloadFailed,
+        locationFallbackTitle = patch.locationFallbackTitle ?: locationFallbackTitle,
+        contactCardUnnamed = patch.contactCardUnnamed ?: contactCardUnnamed,
+        contactCardFallback = patch.contactCardFallback ?: contactCardFallback,
+        contactCardLabel = patch.contactCardLabel ?: contactCardLabel,
+        unsupportedContent = patch.unsupportedContent ?: unsupportedContent,
+        redPacketDefaultTitle = patch.redPacketDefaultTitle ?: redPacketDefaultTitle,
+        redPacketLucky = patch.redPacketLucky ?: redPacketLucky,
+        redPacketNormal = patch.redPacketNormal ?: redPacketNormal,
+        redPacketDrained = patch.redPacketDrained ?: redPacketDrained,
+        redPacketClaimed = patch.redPacketClaimed ?: redPacketClaimed,
+        redPacketExpired = patch.redPacketExpired ?: redPacketExpired,
+        redPacketClaim = patch.redPacketClaim ?: redPacketClaim,
+        redPacketUnsupportedVersion = patch.redPacketUnsupportedVersion ?: redPacketUnsupportedVersion,
+        transferTitle = patch.transferTitle ?: transferTitle,
+        transferToPeer = patch.transferToPeer ?: transferToPeer,
+        transferFromPeer = patch.transferFromPeer ?: transferFromPeer,
+        transferRefunded = patch.transferRefunded ?: transferRefunded,
+        transferReceived = patch.transferReceived ?: transferReceived,
+        transferCredited = patch.transferCredited ?: transferCredited,
+        statusSendFailedRetry = patch.statusSendFailedRetry ?: statusSendFailedRetry,
+        statusUploading = patch.statusUploading ?: statusUploading,
+        statusSendingShort = patch.statusSendingShort ?: statusSendingShort,
+        statusRead = patch.statusRead ?: statusRead,
+        statusDelivered = patch.statusDelivered ?: statusDelivered,
+        statusSent = patch.statusSent ?: statusSent,
     )
 }
 
@@ -690,6 +1121,7 @@ data class PrivChatFriendStrings(
     val permissionDenyAny: String,
     val permissionRequireRequest: String,
     val permissionNone: String,
+    val friendSettingsReport: String,
 )
 
 data class PrivChatFriendStringsPatch(
@@ -705,6 +1137,7 @@ data class PrivChatFriendStringsPatch(
     val permissionDenyAny: String? = null,
     val permissionRequireRequest: String? = null,
     val permissionNone: String? = null,
+    val friendSettingsReport: String? = null,
 )
 
 val PrivChatFriendStringsPatch.isEmpty: Boolean
@@ -718,7 +1151,8 @@ val PrivChatFriendStringsPatch.isEmpty: Boolean
         permissionAllowAny == null &&
         permissionDenyAny == null &&
         permissionRequireRequest == null &&
-        permissionNone == null
+        permissionNone == null &&
+        friendSettingsReport == null
 
 fun PrivChatFriendStrings.merge(patch: PrivChatFriendStringsPatch?): PrivChatFriendStrings {
     if (patch == null || patch.isEmpty) return this
@@ -734,6 +1168,7 @@ fun PrivChatFriendStrings.merge(patch: PrivChatFriendStringsPatch?): PrivChatFri
         permissionDenyAny = patch.permissionDenyAny ?: permissionDenyAny,
         permissionRequireRequest = patch.permissionRequireRequest ?: permissionRequireRequest,
         permissionNone = patch.permissionNone ?: permissionNone,
+        friendSettingsReport = patch.friendSettingsReport ?: friendSettingsReport,
     )
 }
 
@@ -841,6 +1276,24 @@ data class PrivChatGroupStrings(
     val groupCreate: String,
     val groupLeave: String,
     val groupDissolve: String,
+    val groupCreateTitle: String,
+    val groupCreateAction: String,
+    val groupCreateFailed: String,
+    val groupCreateNamePlaceholder: String,
+    val groupCreateNoFriends: String,
+    val groupInviteTitle: String,
+    val groupInviteAction: String,
+    val groupInviteFailed: String,
+    val groupInviteNoFriends: String,
+    val groupInviteMembers: String,
+    val groupPickerSearchPlaceholder: String,
+    val groupPickerNoMatch: String,
+    /** 占位符按序替换：已选数量 / 上限。 */
+    val groupPickerSelectedCount: String,
+    val groupPickerMaxReached: String,
+    val groupOwnerCannotLeave: String,
+    /** 未填群名时用成员昵称自动拼名字的分隔符。 */
+    val groupCreateNameSeparator: String,
 )
 
 data class PrivChatGroupStringsPatch(
@@ -886,6 +1339,22 @@ data class PrivChatGroupStringsPatch(
     val groupCreate: String? = null,
     val groupLeave: String? = null,
     val groupDissolve: String? = null,
+    val groupCreateTitle: String? = null,
+    val groupCreateAction: String? = null,
+    val groupCreateFailed: String? = null,
+    val groupCreateNamePlaceholder: String? = null,
+    val groupCreateNoFriends: String? = null,
+    val groupInviteTitle: String? = null,
+    val groupInviteAction: String? = null,
+    val groupInviteFailed: String? = null,
+    val groupInviteNoFriends: String? = null,
+    val groupInviteMembers: String? = null,
+    val groupPickerSearchPlaceholder: String? = null,
+    val groupPickerNoMatch: String? = null,
+    val groupPickerSelectedCount: String? = null,
+    val groupPickerMaxReached: String? = null,
+    val groupOwnerCannotLeave: String? = null,
+    val groupCreateNameSeparator: String? = null,
 )
 
 val PrivChatGroupStringsPatch.isEmpty: Boolean
@@ -930,7 +1399,23 @@ val PrivChatGroupStringsPatch.isEmpty: Boolean
         groupMember == null &&
         groupCreate == null &&
         groupLeave == null &&
-        groupDissolve == null
+        groupDissolve == null &&
+        groupCreateTitle == null &&
+        groupCreateAction == null &&
+        groupCreateFailed == null &&
+        groupCreateNamePlaceholder == null &&
+        groupCreateNoFriends == null &&
+        groupInviteTitle == null &&
+        groupInviteAction == null &&
+        groupInviteFailed == null &&
+        groupInviteNoFriends == null &&
+        groupInviteMembers == null &&
+        groupPickerSearchPlaceholder == null &&
+        groupPickerNoMatch == null &&
+        groupPickerSelectedCount == null &&
+        groupPickerMaxReached == null &&
+        groupOwnerCannotLeave == null &&
+        groupCreateNameSeparator == null
 
 fun PrivChatGroupStrings.merge(patch: PrivChatGroupStringsPatch?): PrivChatGroupStrings {
     if (patch == null || patch.isEmpty) return this
@@ -977,6 +1462,22 @@ fun PrivChatGroupStrings.merge(patch: PrivChatGroupStringsPatch?): PrivChatGroup
         groupCreate = patch.groupCreate ?: groupCreate,
         groupLeave = patch.groupLeave ?: groupLeave,
         groupDissolve = patch.groupDissolve ?: groupDissolve,
+        groupCreateTitle = patch.groupCreateTitle ?: groupCreateTitle,
+        groupCreateAction = patch.groupCreateAction ?: groupCreateAction,
+        groupCreateFailed = patch.groupCreateFailed ?: groupCreateFailed,
+        groupCreateNamePlaceholder = patch.groupCreateNamePlaceholder ?: groupCreateNamePlaceholder,
+        groupCreateNoFriends = patch.groupCreateNoFriends ?: groupCreateNoFriends,
+        groupInviteTitle = patch.groupInviteTitle ?: groupInviteTitle,
+        groupInviteAction = patch.groupInviteAction ?: groupInviteAction,
+        groupInviteFailed = patch.groupInviteFailed ?: groupInviteFailed,
+        groupInviteNoFriends = patch.groupInviteNoFriends ?: groupInviteNoFriends,
+        groupInviteMembers = patch.groupInviteMembers ?: groupInviteMembers,
+        groupPickerSearchPlaceholder = patch.groupPickerSearchPlaceholder ?: groupPickerSearchPlaceholder,
+        groupPickerNoMatch = patch.groupPickerNoMatch ?: groupPickerNoMatch,
+        groupPickerSelectedCount = patch.groupPickerSelectedCount ?: groupPickerSelectedCount,
+        groupPickerMaxReached = patch.groupPickerMaxReached ?: groupPickerMaxReached,
+        groupOwnerCannotLeave = patch.groupOwnerCannotLeave ?: groupOwnerCannotLeave,
+        groupCreateNameSeparator = patch.groupCreateNameSeparator ?: groupCreateNameSeparator,
     )
 }
 
@@ -1531,6 +2032,16 @@ data class PrivChatAuxiliaryStrings(
     val syncStageProfiles: String,
     val syncStageReadState: String,
     val syncStagePrivacy: String,
+    /** 「几月几日」的展示格式。用 {m}/{d} 具名占位符——各语言的年月日顺序不同，位置参数排不出来。 */
+    val dateMonthDayPattern: String,
+    val dateYearMonthDayPattern: String,
+    val dateYearMonthPattern: String,
+    /** 日期 + 时刻的拼接顺序。 */
+    val dateTimePattern: String,
+    val relativeJustNow: String,
+    val relativeMinutesAgo: String,
+    val relativeHoursAgo: String,
+    val relativeDaysAgo: String,
 )
 
 data class PrivChatAuxiliaryStringsPatch(
@@ -1541,6 +2052,14 @@ data class PrivChatAuxiliaryStringsPatch(
     val syncStageProfiles: String? = null,
     val syncStageReadState: String? = null,
     val syncStagePrivacy: String? = null,
+    val dateMonthDayPattern: String? = null,
+    val dateYearMonthDayPattern: String? = null,
+    val dateYearMonthPattern: String? = null,
+    val dateTimePattern: String? = null,
+    val relativeJustNow: String? = null,
+    val relativeMinutesAgo: String? = null,
+    val relativeHoursAgo: String? = null,
+    val relativeDaysAgo: String? = null,
     val changePasswordTitle: String? = null,
     val changePasswordNew: String? = null,
     val changePasswordConfirm: String? = null,
@@ -1812,7 +2331,15 @@ val PrivChatAuxiliaryStringsPatch.isEmpty: Boolean
         syncStageConversations == null &&
         syncStageProfiles == null &&
         syncStageReadState == null &&
-        syncStagePrivacy == null
+        syncStagePrivacy == null &&
+        dateMonthDayPattern == null &&
+        dateYearMonthDayPattern == null &&
+        dateYearMonthPattern == null &&
+        dateTimePattern == null &&
+        relativeJustNow == null &&
+        relativeMinutesAgo == null &&
+        relativeHoursAgo == null &&
+        relativeDaysAgo == null
 
 fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivChatAuxiliaryStrings {
     if (patch == null || patch.isEmpty) return this
@@ -1955,5 +2482,1138 @@ fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivC
         syncStageProfiles = patch.syncStageProfiles ?: syncStageProfiles,
         syncStageReadState = patch.syncStageReadState ?: syncStageReadState,
         syncStagePrivacy = patch.syncStagePrivacy ?: syncStagePrivacy,
+        dateMonthDayPattern = patch.dateMonthDayPattern ?: dateMonthDayPattern,
+        dateYearMonthDayPattern = patch.dateYearMonthDayPattern ?: dateYearMonthDayPattern,
+        dateYearMonthPattern = patch.dateYearMonthPattern ?: dateYearMonthPattern,
+        dateTimePattern = patch.dateTimePattern ?: dateTimePattern,
+        relativeJustNow = patch.relativeJustNow ?: relativeJustNow,
+        relativeMinutesAgo = patch.relativeMinutesAgo ?: relativeMinutesAgo,
+        relativeHoursAgo = patch.relativeHoursAgo ?: relativeHoursAgo,
+        relativeDaysAgo = patch.relativeDaysAgo ?: relativeDaysAgo,
+    )
+}
+
+/**
+ * 登录 / 注册 / 启动流程 / 扫码登录。单独成域：Message 与 Auxiliary 已经逼近 data class 构造器的 254 参数上限。
+ */
+@Immutable
+data class PrivChatAuthStrings(
+    val authTagline: String,
+    val authUsernamePlaceholder: String,
+    val authPasswordPlaceholder: String,
+    val authUsernameRequired: String,
+    val authPasswordRequired: String,
+    val authLogin: String,
+    val authRegister: String,
+    val authHaveAccount: String,
+    val authNoAccount: String,
+    val authGoLogin: String,
+    val authGoRegister: String,
+    val authPhoneTitle: String,
+    val authPhoneHint: String,
+    val authPhonePlaceholder: String,
+    val authPhoneInvalid: String,
+    val authContinue: String,
+    val authChangePhone: String,
+    /** 占位符=手机号。 */
+    val authCodeSentTo: String,
+    /** 占位符=剩余秒数。 */
+    val authResendCountdown: String,
+    val authResendCode: String,
+    val authAccountServerUnreachable: String,
+    val startupLoggingIn: String,
+    val startupRegistering: String,
+    val startupDataInit: String,
+    val startupInitializingSdk: String,
+    val startupConnectingServer: String,
+    val startupPreparingAccount: String,
+    val sessionExpiredGeneric: String,
+    val sessionCredentialInvalid: String,
+    val sessionInsufficientPrivilege: String,
+    val sessionStale: String,
+    val sessionAccountBanned: String,
+    val qrLoginTitle: String,
+    /** 占位符=设备名。 */
+    val qrLoginPrompt: String,
+    /** 占位符=地点。 */
+    val qrLoginLocation: String,
+    val qrLoginGrantNote: String,
+    val qrLoginReject: String,
+    val qrLoginConfirmed: String,
+    val qrLoginRejected: String,
+    val qrLoginPlatformOnly: String,
+    val qrScanUnsupportedPlatform: String,
+    val qrCameraWaitingPermission: String,
+    val qrCameraFailed: String,
+    val qrCameraPermissionHint: String,
+    val qrCameraReauthorize: String,
+    val qrLoginNetworkError: String,
+    val qrLoginNeedLogin: String,
+    val qrLoginCodeExpired: String,
+    val qrLoginCodeUsed: String,
+    /** 占位符=错误码。 */
+    val qrLoginFailedWithCode: String,
+    val countryChinaMainland: String,
+    val countryHongKong: String,
+    val countryTaiwan: String,
+    val countryUnitedStates: String,
+    val countrySingapore: String,
+    val countryMalaysia: String,
+    val countryJapan: String,
+    val countryKorea: String,
+    val countryUnitedKingdom: String,
+    val countryAustralia: String,
+    val qrMyCodeHint: String,
+    val qrGroupCodeHint: String,
+    val qrSaveToAlbum: String,
+    val qrSaving: String,
+    val qrMyCodeTitle: String,
+    val qrGroupCodeTitle: String,
+    val qrGroupRefresh: String,
+    val qrGroupRefreshing: String,
+    val qrLoadUserFailed: String,
+    val qrLoadMyCodeFailed: String,
+    val qrLoadGroupCodeFailed: String,
+    val qrEncodeFailed: String,
+    val qrRenderFailed: String,
+    val qrNotLoggedIn: String,
+    /** 群名为空时的兜底称呼。 */
+    val groupFallbackName: String,
+    val mediaCompressingVideo: String,
+    val mediaProcessingImage: String,
+    val mediaProcessingVideo: String,
+    val mediaProcessingFile: String,
+    val micPermissionRequired: String,
+    val voiceRecordFileMissing: String,
+    val groupLeaveFailed: String,
+    val conversationNotReady: String,
+    val conversationOpenFailed: String,
+    val conversationCreatedNotListed: String,
+    val forwardDone: String,
+    /** 占位符按序=成功数、失败数。 */
+    val forwardPartial: String,
+    val forwardFailed: String,
+    val pushEnableTitle: String,
+    val pushEnableMessage: String,
+    val pushEnableFailedTitle: String,
+    val pushEnableFailedMessage: String,
+    val pushGoToSettings: String,
+    val dialogGotIt: String,
+    val sdkInitFailedShort: String,
+)
+
+data class PrivChatAuthStringsPatch(
+    val authTagline: String? = null,
+    val authUsernamePlaceholder: String? = null,
+    val authPasswordPlaceholder: String? = null,
+    val authUsernameRequired: String? = null,
+    val authPasswordRequired: String? = null,
+    val authLogin: String? = null,
+    val authRegister: String? = null,
+    val authHaveAccount: String? = null,
+    val authNoAccount: String? = null,
+    val authGoLogin: String? = null,
+    val authGoRegister: String? = null,
+    val authPhoneTitle: String? = null,
+    val authPhoneHint: String? = null,
+    val authPhonePlaceholder: String? = null,
+    val authPhoneInvalid: String? = null,
+    val authContinue: String? = null,
+    val authChangePhone: String? = null,
+    val authCodeSentTo: String? = null,
+    val authResendCountdown: String? = null,
+    val authResendCode: String? = null,
+    val authAccountServerUnreachable: String? = null,
+    val startupLoggingIn: String? = null,
+    val startupRegistering: String? = null,
+    val startupDataInit: String? = null,
+    val startupInitializingSdk: String? = null,
+    val startupConnectingServer: String? = null,
+    val startupPreparingAccount: String? = null,
+    val sessionExpiredGeneric: String? = null,
+    val sessionCredentialInvalid: String? = null,
+    val sessionInsufficientPrivilege: String? = null,
+    val sessionStale: String? = null,
+    val sessionAccountBanned: String? = null,
+    val qrLoginTitle: String? = null,
+    val qrLoginPrompt: String? = null,
+    val qrLoginLocation: String? = null,
+    val qrLoginGrantNote: String? = null,
+    val qrLoginReject: String? = null,
+    val qrLoginConfirmed: String? = null,
+    val qrLoginRejected: String? = null,
+    val qrLoginPlatformOnly: String? = null,
+    val qrScanUnsupportedPlatform: String? = null,
+    val qrCameraWaitingPermission: String? = null,
+    val qrCameraFailed: String? = null,
+    val qrCameraPermissionHint: String? = null,
+    val qrCameraReauthorize: String? = null,
+    val qrLoginNetworkError: String? = null,
+    val qrLoginNeedLogin: String? = null,
+    val qrLoginCodeExpired: String? = null,
+    val qrLoginCodeUsed: String? = null,
+    val qrLoginFailedWithCode: String? = null,
+    val countryChinaMainland: String? = null,
+    val countryHongKong: String? = null,
+    val countryTaiwan: String? = null,
+    val countryUnitedStates: String? = null,
+    val countrySingapore: String? = null,
+    val countryMalaysia: String? = null,
+    val countryJapan: String? = null,
+    val countryKorea: String? = null,
+    val countryUnitedKingdom: String? = null,
+    val countryAustralia: String? = null,
+    val qrMyCodeHint: String? = null,
+    val qrGroupCodeHint: String? = null,
+    val qrSaveToAlbum: String? = null,
+    val qrSaving: String? = null,
+    val qrMyCodeTitle: String? = null,
+    val qrGroupCodeTitle: String? = null,
+    val qrGroupRefresh: String? = null,
+    val qrGroupRefreshing: String? = null,
+    val qrLoadUserFailed: String? = null,
+    val qrLoadMyCodeFailed: String? = null,
+    val qrLoadGroupCodeFailed: String? = null,
+    val qrEncodeFailed: String? = null,
+    val qrRenderFailed: String? = null,
+    val qrNotLoggedIn: String? = null,
+    val groupFallbackName: String? = null,
+    val mediaCompressingVideo: String? = null,
+    val mediaProcessingImage: String? = null,
+    val mediaProcessingVideo: String? = null,
+    val mediaProcessingFile: String? = null,
+    val micPermissionRequired: String? = null,
+    val voiceRecordFileMissing: String? = null,
+    val groupLeaveFailed: String? = null,
+    val conversationNotReady: String? = null,
+    val conversationOpenFailed: String? = null,
+    val conversationCreatedNotListed: String? = null,
+    val forwardDone: String? = null,
+    val forwardPartial: String? = null,
+    val forwardFailed: String? = null,
+    val pushEnableTitle: String? = null,
+    val pushEnableMessage: String? = null,
+    val pushEnableFailedTitle: String? = null,
+    val pushEnableFailedMessage: String? = null,
+    val pushGoToSettings: String? = null,
+    val dialogGotIt: String? = null,
+    val sdkInitFailedShort: String? = null,
+) {
+    companion object
+}
+
+val PrivChatAuthStringsPatch.isEmpty: Boolean
+    get() = authTagline == null &&
+        authUsernamePlaceholder == null &&
+        authPasswordPlaceholder == null &&
+        authUsernameRequired == null &&
+        authPasswordRequired == null &&
+        authLogin == null &&
+        authRegister == null &&
+        authHaveAccount == null &&
+        authNoAccount == null &&
+        authGoLogin == null &&
+        authGoRegister == null &&
+        authPhoneTitle == null &&
+        authPhoneHint == null &&
+        authPhonePlaceholder == null &&
+        authPhoneInvalid == null &&
+        authContinue == null &&
+        authChangePhone == null &&
+        authCodeSentTo == null &&
+        authResendCountdown == null &&
+        authResendCode == null &&
+        authAccountServerUnreachable == null &&
+        startupLoggingIn == null &&
+        startupRegistering == null &&
+        startupDataInit == null &&
+        startupInitializingSdk == null &&
+        startupConnectingServer == null &&
+        startupPreparingAccount == null &&
+        sessionExpiredGeneric == null &&
+        sessionCredentialInvalid == null &&
+        sessionInsufficientPrivilege == null &&
+        sessionStale == null &&
+        sessionAccountBanned == null &&
+        qrLoginTitle == null &&
+        qrLoginPrompt == null &&
+        qrLoginLocation == null &&
+        qrLoginGrantNote == null &&
+        qrLoginReject == null &&
+        qrLoginConfirmed == null &&
+        qrLoginRejected == null &&
+        qrLoginPlatformOnly == null &&
+        qrScanUnsupportedPlatform == null &&
+        qrCameraWaitingPermission == null &&
+        qrCameraFailed == null &&
+        qrCameraPermissionHint == null &&
+        qrCameraReauthorize == null &&
+        qrLoginNetworkError == null &&
+        qrLoginNeedLogin == null &&
+        qrLoginCodeExpired == null &&
+        qrLoginCodeUsed == null &&
+        qrLoginFailedWithCode == null &&
+        countryChinaMainland == null &&
+        countryHongKong == null &&
+        countryTaiwan == null &&
+        countryUnitedStates == null &&
+        countrySingapore == null &&
+        countryMalaysia == null &&
+        countryJapan == null &&
+        countryKorea == null &&
+        countryUnitedKingdom == null &&
+        countryAustralia == null &&
+        qrMyCodeHint == null &&
+        qrGroupCodeHint == null &&
+        qrSaveToAlbum == null &&
+        qrSaving == null &&
+        qrMyCodeTitle == null &&
+        qrGroupCodeTitle == null &&
+        qrGroupRefresh == null &&
+        qrGroupRefreshing == null &&
+        qrLoadUserFailed == null &&
+        qrLoadMyCodeFailed == null &&
+        qrLoadGroupCodeFailed == null &&
+        qrEncodeFailed == null &&
+        qrRenderFailed == null &&
+        qrNotLoggedIn == null &&
+        groupFallbackName == null &&
+        mediaCompressingVideo == null &&
+        mediaProcessingImage == null &&
+        mediaProcessingVideo == null &&
+        mediaProcessingFile == null &&
+        micPermissionRequired == null &&
+        voiceRecordFileMissing == null &&
+        groupLeaveFailed == null &&
+        conversationNotReady == null &&
+        conversationOpenFailed == null &&
+        conversationCreatedNotListed == null &&
+        forwardDone == null &&
+        forwardPartial == null &&
+        forwardFailed == null &&
+        pushEnableTitle == null &&
+        pushEnableMessage == null &&
+        pushEnableFailedTitle == null &&
+        pushEnableFailedMessage == null &&
+        pushGoToSettings == null &&
+        dialogGotIt == null &&
+        sdkInitFailedShort == null
+
+fun PrivChatAuthStrings.merge(patch: PrivChatAuthStringsPatch?): PrivChatAuthStrings {
+    if (patch == null || patch.isEmpty) return this
+    return copy(
+        authTagline = patch.authTagline ?: authTagline,
+        authUsernamePlaceholder = patch.authUsernamePlaceholder ?: authUsernamePlaceholder,
+        authPasswordPlaceholder = patch.authPasswordPlaceholder ?: authPasswordPlaceholder,
+        authUsernameRequired = patch.authUsernameRequired ?: authUsernameRequired,
+        authPasswordRequired = patch.authPasswordRequired ?: authPasswordRequired,
+        authLogin = patch.authLogin ?: authLogin,
+        authRegister = patch.authRegister ?: authRegister,
+        authHaveAccount = patch.authHaveAccount ?: authHaveAccount,
+        authNoAccount = patch.authNoAccount ?: authNoAccount,
+        authGoLogin = patch.authGoLogin ?: authGoLogin,
+        authGoRegister = patch.authGoRegister ?: authGoRegister,
+        authPhoneTitle = patch.authPhoneTitle ?: authPhoneTitle,
+        authPhoneHint = patch.authPhoneHint ?: authPhoneHint,
+        authPhonePlaceholder = patch.authPhonePlaceholder ?: authPhonePlaceholder,
+        authPhoneInvalid = patch.authPhoneInvalid ?: authPhoneInvalid,
+        authContinue = patch.authContinue ?: authContinue,
+        authChangePhone = patch.authChangePhone ?: authChangePhone,
+        authCodeSentTo = patch.authCodeSentTo ?: authCodeSentTo,
+        authResendCountdown = patch.authResendCountdown ?: authResendCountdown,
+        authResendCode = patch.authResendCode ?: authResendCode,
+        authAccountServerUnreachable = patch.authAccountServerUnreachable ?: authAccountServerUnreachable,
+        startupLoggingIn = patch.startupLoggingIn ?: startupLoggingIn,
+        startupRegistering = patch.startupRegistering ?: startupRegistering,
+        startupDataInit = patch.startupDataInit ?: startupDataInit,
+        startupInitializingSdk = patch.startupInitializingSdk ?: startupInitializingSdk,
+        startupConnectingServer = patch.startupConnectingServer ?: startupConnectingServer,
+        startupPreparingAccount = patch.startupPreparingAccount ?: startupPreparingAccount,
+        sessionExpiredGeneric = patch.sessionExpiredGeneric ?: sessionExpiredGeneric,
+        sessionCredentialInvalid = patch.sessionCredentialInvalid ?: sessionCredentialInvalid,
+        sessionInsufficientPrivilege = patch.sessionInsufficientPrivilege ?: sessionInsufficientPrivilege,
+        sessionStale = patch.sessionStale ?: sessionStale,
+        sessionAccountBanned = patch.sessionAccountBanned ?: sessionAccountBanned,
+        qrLoginTitle = patch.qrLoginTitle ?: qrLoginTitle,
+        qrLoginPrompt = patch.qrLoginPrompt ?: qrLoginPrompt,
+        qrLoginLocation = patch.qrLoginLocation ?: qrLoginLocation,
+        qrLoginGrantNote = patch.qrLoginGrantNote ?: qrLoginGrantNote,
+        qrLoginReject = patch.qrLoginReject ?: qrLoginReject,
+        qrLoginConfirmed = patch.qrLoginConfirmed ?: qrLoginConfirmed,
+        qrLoginRejected = patch.qrLoginRejected ?: qrLoginRejected,
+        qrLoginPlatformOnly = patch.qrLoginPlatformOnly ?: qrLoginPlatformOnly,
+        qrScanUnsupportedPlatform = patch.qrScanUnsupportedPlatform ?: qrScanUnsupportedPlatform,
+        qrCameraWaitingPermission = patch.qrCameraWaitingPermission ?: qrCameraWaitingPermission,
+        qrCameraFailed = patch.qrCameraFailed ?: qrCameraFailed,
+        qrCameraPermissionHint = patch.qrCameraPermissionHint ?: qrCameraPermissionHint,
+        qrCameraReauthorize = patch.qrCameraReauthorize ?: qrCameraReauthorize,
+        qrLoginNetworkError = patch.qrLoginNetworkError ?: qrLoginNetworkError,
+        qrLoginNeedLogin = patch.qrLoginNeedLogin ?: qrLoginNeedLogin,
+        qrLoginCodeExpired = patch.qrLoginCodeExpired ?: qrLoginCodeExpired,
+        qrLoginCodeUsed = patch.qrLoginCodeUsed ?: qrLoginCodeUsed,
+        qrLoginFailedWithCode = patch.qrLoginFailedWithCode ?: qrLoginFailedWithCode,
+        countryChinaMainland = patch.countryChinaMainland ?: countryChinaMainland,
+        countryHongKong = patch.countryHongKong ?: countryHongKong,
+        countryTaiwan = patch.countryTaiwan ?: countryTaiwan,
+        countryUnitedStates = patch.countryUnitedStates ?: countryUnitedStates,
+        countrySingapore = patch.countrySingapore ?: countrySingapore,
+        countryMalaysia = patch.countryMalaysia ?: countryMalaysia,
+        countryJapan = patch.countryJapan ?: countryJapan,
+        countryKorea = patch.countryKorea ?: countryKorea,
+        countryUnitedKingdom = patch.countryUnitedKingdom ?: countryUnitedKingdom,
+        countryAustralia = patch.countryAustralia ?: countryAustralia,
+        qrMyCodeHint = patch.qrMyCodeHint ?: qrMyCodeHint,
+        qrGroupCodeHint = patch.qrGroupCodeHint ?: qrGroupCodeHint,
+        qrSaveToAlbum = patch.qrSaveToAlbum ?: qrSaveToAlbum,
+        qrSaving = patch.qrSaving ?: qrSaving,
+        qrMyCodeTitle = patch.qrMyCodeTitle ?: qrMyCodeTitle,
+        qrGroupCodeTitle = patch.qrGroupCodeTitle ?: qrGroupCodeTitle,
+        qrGroupRefresh = patch.qrGroupRefresh ?: qrGroupRefresh,
+        qrGroupRefreshing = patch.qrGroupRefreshing ?: qrGroupRefreshing,
+        qrLoadUserFailed = patch.qrLoadUserFailed ?: qrLoadUserFailed,
+        qrLoadMyCodeFailed = patch.qrLoadMyCodeFailed ?: qrLoadMyCodeFailed,
+        qrLoadGroupCodeFailed = patch.qrLoadGroupCodeFailed ?: qrLoadGroupCodeFailed,
+        qrEncodeFailed = patch.qrEncodeFailed ?: qrEncodeFailed,
+        qrRenderFailed = patch.qrRenderFailed ?: qrRenderFailed,
+        qrNotLoggedIn = patch.qrNotLoggedIn ?: qrNotLoggedIn,
+        groupFallbackName = patch.groupFallbackName ?: groupFallbackName,
+        mediaCompressingVideo = patch.mediaCompressingVideo ?: mediaCompressingVideo,
+        mediaProcessingImage = patch.mediaProcessingImage ?: mediaProcessingImage,
+        mediaProcessingVideo = patch.mediaProcessingVideo ?: mediaProcessingVideo,
+        mediaProcessingFile = patch.mediaProcessingFile ?: mediaProcessingFile,
+        micPermissionRequired = patch.micPermissionRequired ?: micPermissionRequired,
+        voiceRecordFileMissing = patch.voiceRecordFileMissing ?: voiceRecordFileMissing,
+        groupLeaveFailed = patch.groupLeaveFailed ?: groupLeaveFailed,
+        conversationNotReady = patch.conversationNotReady ?: conversationNotReady,
+        conversationOpenFailed = patch.conversationOpenFailed ?: conversationOpenFailed,
+        conversationCreatedNotListed = patch.conversationCreatedNotListed ?: conversationCreatedNotListed,
+        forwardDone = patch.forwardDone ?: forwardDone,
+        forwardPartial = patch.forwardPartial ?: forwardPartial,
+        forwardFailed = patch.forwardFailed ?: forwardFailed,
+        pushEnableTitle = patch.pushEnableTitle ?: pushEnableTitle,
+        pushEnableMessage = patch.pushEnableMessage ?: pushEnableMessage,
+        pushEnableFailedTitle = patch.pushEnableFailedTitle ?: pushEnableFailedTitle,
+        pushEnableFailedMessage = patch.pushEnableFailedMessage ?: pushEnableFailedMessage,
+        pushGoToSettings = patch.pushGoToSettings ?: pushGoToSettings,
+        dialogGotIt = patch.dialogGotIt ?: dialogGotIt,
+        sdkInitFailedShort = patch.sdkInitFailedShort ?: sdkInitFailedShort,
+    )
+}
+
+/**
+ * 钱包 / 提现 / 银行卡 / 红包 / 转账 / 冻结。单独成域，避免把已有域顶到 data class 构造器的 254 参数上限。
+ */
+@Immutable
+data class PrivChatWalletStrings(
+    val walletTitle: String,
+    val walletBalance: String,
+    val walletUnsupportedMode: String,
+    /** 占位符=被冻结金额（元）。 */
+    val walletFrozenBanner: String,
+    val walletTransactions: String,
+    val walletBankCards: String,
+    val walletApplyWithdraw: String,
+    val walletBindCard: String,
+    val walletNoCards: String,
+    val walletCardHolder: String,
+    val walletCardBank: String,
+    val walletCardNumber: String,
+    val walletSubmit: String,
+    /** 占位符=可用余额。 */
+    val walletAvailableBalance: String,
+    val walletWithdrawAmount: String,
+    val walletBindCardFirst: String,
+    val walletCardSelected: String,
+    val walletSubmitWithdraw: String,
+    val walletWithdrawHistory: String,
+    val walletWithdrawRecords: String,
+    val walletNoWithdrawRecords: String,
+    val walletWithdrawDetail: String,
+    val walletFieldWithdrawAmount: String,
+    val walletFieldFee: String,
+    val walletFieldActualAmount: String,
+    val walletFieldStatus: String,
+    val walletFieldAppliedAt: String,
+    val walletFieldPaidAt: String,
+    val walletFieldHoldReason: String,
+    val walletFieldRejectReason: String,
+    val walletNoTransactions: String,
+    /** 占位符=交易后余额。 */
+    val walletBalanceAfter: String,
+    val withdrawStatusPendingReview: String,
+    val withdrawStatusPendingPayout: String,
+    val withdrawStatusProcessing: String,
+    val withdrawStatusPaid: String,
+    val withdrawStatusRejected: String,
+    val withdrawStatusFailed: String,
+    val withdrawStatusCancelled: String,
+    val withdrawStatusOnHold: String,
+    val walletStatusUnknown: String,
+    val bizTypeRecharge: String,
+    val bizTypeRechargeRefund: String,
+    val bizTypeSystemAdjust: String,
+    val bizTypeWithdrawFreeze: String,
+    val bizTypeWithdrawUnfreeze: String,
+    val bizTypeWithdrawDebit: String,
+    val bizTypeWithdrawRefund: String,
+    val bizTypeRedPacketSend: String,
+    val bizTypeRedPacketClaim: String,
+    val bizTypeRedPacketRefund: String,
+    val bizTypeTransferOut: String,
+    val bizTypeTransferIn: String,
+    val bizTypeTransferRefund: String,
+    val bizTypeSignInReward: String,
+    val bizTypeOther: String,
+    val walletErrSessionExpired: String,
+    val walletErrBadRequest: String,
+    val walletErrNotFound: String,
+    val walletErrConflict: String,
+    val walletErrLoadFailed: String,
+    val walletErrActionFailed: String,
+    val redPacketSendTitle: String,
+    val redPacketSentTitle: String,
+    val redPacketAcceptedTitle: String,
+    val redPacketSentHint: String,
+    val redPacketAcceptedHint: String,
+    val redPacketLuckyMode: String,
+    val redPacketNormalMode: String,
+    val redPacketLuckyHint: String,
+    val redPacketNormalHint: String,
+    val redPacketTotalAmount: String,
+    val redPacketAmount: String,
+    val redPacketCount: String,
+    val redPacketGreetingPlaceholder: String,
+    val redPacketStuff: String,
+    val redPacketErrAmount: String,
+    val redPacketErrCount: String,
+    val redPacketErrDmSingle: String,
+    val redPacketErrTooSmall: String,
+    val walletViewDetail: String,
+    val walletDone: String,
+    val transferSendTitle: String,
+    val transferDmOnly: String,
+    val transferCompletedTitle: String,
+    val transferAcceptedTitle: String,
+    val transferCompletedHint: String,
+    val transferAcceptedHint: String,
+    /** 占位符=收款人。 */
+    val transferConfirmTo: String,
+    /** 占位符=备注内容。 */
+    val transferRemarkPrefix: String,
+    val transferConfirmAction: String,
+    val transferAmountPlaceholder: String,
+    val transferRemarkPlaceholder: String,
+    val transferErrAmount: String,
+    val transferDetailTitle: String,
+    val transferFieldAmount: String,
+    val transferFieldSender: String,
+    val transferFieldReceiver: String,
+    val transferFieldRemark: String,
+    val transferFieldTime: String,
+    val transferFieldOrderId: String,
+    val transferStateRefunded: String,
+    val transferStateSucceeded: String,
+    val redPacketDetailTitle: String,
+    val redPacketSenderSelf: String,
+    /** 没有昵称时的兜底称呼，占位符=uid。 */
+    val walletUserFallback: String,
+    val redPacketFromSelf: String,
+    /** 占位符=发送者。 */
+    val redPacketFromPeer: String,
+    val redPacketDefaultGreeting: String,
+    val redPacketCreditedToWallet: String,
+    val redPacketOpen: String,
+    /** 占位符按序=已领个数、总个数、已领金额、总金额。 */
+    val redPacketClaimProgress: String,
+    /** 占位符按序=红包个数、总金额；后面直接拼状态文案。 */
+    val redPacketSummary: String,
+    val redPacketBestLuck: String,
+    /** 占位符=退回金额。 */
+    val redPacketStateRefundedToYou: String,
+    val redPacketStateAllClaimed: String,
+    val redPacketStateExpired: String,
+    val redPacketStateWaiting: String,
+    val redPacketStateClaimedByMe: String,
+    val redPacketStateDrained: String,
+    val redPacketStateClaimable: String,
+    val redPacketCoverFallbackName: String,
+    val redPacketCoverPeerFallback: String,
+    /** 占位符=发送者。 */
+    val redPacketCoverFrom: String,
+    val redPacketOpenShort: String,
+    val redPacketViewDetail: String,
+    val freezeTypeWithdraw: String,
+    val freezeTypeAudit: String,
+    val freezeTypeAccountFrozen: String,
+    val freezeTypeOther: String,
+    val freezeWithdrawStatusReviewing: String,
+    val freezeWithdrawStatusReturned: String,
+    val freezeWithdrawStatusPaid: String,
+    val freezeStatusExpired: String,
+    val freezeStatusHolding: String,
+    val freezeStatusReleased: String,
+    val freezeStatusDeducted: String,
+    val freezeRecordsTitle: String,
+    val freezeNoRecords: String,
+    val freezeDetailTitle: String,
+    val freezeFieldType: String,
+    val freezeFieldWithdrawAmount: String,
+    val freezeFieldFrozenAmount: String,
+    val freezeFieldRelatedOrder: String,
+    val freezeFieldNote: String,
+    val freezeFieldReason: String,
+    val previewLargeImage: String,
+    val previewImageThumb: String,
+    val previewVideoThumb: String,
+    /** 占位符=进度百分比。 */
+    val previewLoadingWithPercent: String,
+    /** 占位符=进度百分比。 */
+    val previewPausedWithPercent: String,
+    val previewLoadFailedRetrying: String,
+    val reportReasonSpam: String,
+    val reportReasonHarassment: String,
+    val reportReasonSexual: String,
+    val reportReasonFraud: String,
+    val reportReasonOther: String,
+    val reportPickReason: String,
+    val reportUnsentMessage: String,
+    val reportSubmitted: String,
+    val reportSubmitFailed: String,
+    val accountCurrentlySignedIn: String,
+    /** 占位符=账号副标题。 */
+    val accountCurrentlySignedInWith: String,
+    val desktopPickConversation: String,
+    /** 推送/会话预览里的「有人@我」前缀，占位符=原标题。 */
+    val previewMentionPrefix: String,
+    /** 占位符=链接标题。 */
+    val previewLinkWithTitle: String,
+    /** 占位符=地点名。 */
+    val previewLocationWithName: String,
+    /** 占位符=uid。 */
+    val previewContactWithUid: String,
+    val connectingShort: String,
+    val initializingShort: String,
+)
+
+data class PrivChatWalletStringsPatch(
+    val walletTitle: String? = null,
+    val walletBalance: String? = null,
+    val walletUnsupportedMode: String? = null,
+    val walletFrozenBanner: String? = null,
+    val walletTransactions: String? = null,
+    val walletBankCards: String? = null,
+    val walletApplyWithdraw: String? = null,
+    val walletBindCard: String? = null,
+    val walletNoCards: String? = null,
+    val walletCardHolder: String? = null,
+    val walletCardBank: String? = null,
+    val walletCardNumber: String? = null,
+    val walletSubmit: String? = null,
+    val walletAvailableBalance: String? = null,
+    val walletWithdrawAmount: String? = null,
+    val walletBindCardFirst: String? = null,
+    val walletCardSelected: String? = null,
+    val walletSubmitWithdraw: String? = null,
+    val walletWithdrawHistory: String? = null,
+    val walletWithdrawRecords: String? = null,
+    val walletNoWithdrawRecords: String? = null,
+    val walletWithdrawDetail: String? = null,
+    val walletFieldWithdrawAmount: String? = null,
+    val walletFieldFee: String? = null,
+    val walletFieldActualAmount: String? = null,
+    val walletFieldStatus: String? = null,
+    val walletFieldAppliedAt: String? = null,
+    val walletFieldPaidAt: String? = null,
+    val walletFieldHoldReason: String? = null,
+    val walletFieldRejectReason: String? = null,
+    val walletNoTransactions: String? = null,
+    val walletBalanceAfter: String? = null,
+    val withdrawStatusPendingReview: String? = null,
+    val withdrawStatusPendingPayout: String? = null,
+    val withdrawStatusProcessing: String? = null,
+    val withdrawStatusPaid: String? = null,
+    val withdrawStatusRejected: String? = null,
+    val withdrawStatusFailed: String? = null,
+    val withdrawStatusCancelled: String? = null,
+    val withdrawStatusOnHold: String? = null,
+    val walletStatusUnknown: String? = null,
+    val bizTypeRecharge: String? = null,
+    val bizTypeRechargeRefund: String? = null,
+    val bizTypeSystemAdjust: String? = null,
+    val bizTypeWithdrawFreeze: String? = null,
+    val bizTypeWithdrawUnfreeze: String? = null,
+    val bizTypeWithdrawDebit: String? = null,
+    val bizTypeWithdrawRefund: String? = null,
+    val bizTypeRedPacketSend: String? = null,
+    val bizTypeRedPacketClaim: String? = null,
+    val bizTypeRedPacketRefund: String? = null,
+    val bizTypeTransferOut: String? = null,
+    val bizTypeTransferIn: String? = null,
+    val bizTypeTransferRefund: String? = null,
+    val bizTypeSignInReward: String? = null,
+    val bizTypeOther: String? = null,
+    val walletErrSessionExpired: String? = null,
+    val walletErrBadRequest: String? = null,
+    val walletErrNotFound: String? = null,
+    val walletErrConflict: String? = null,
+    val walletErrLoadFailed: String? = null,
+    val walletErrActionFailed: String? = null,
+    val redPacketSendTitle: String? = null,
+    val redPacketSentTitle: String? = null,
+    val redPacketAcceptedTitle: String? = null,
+    val redPacketSentHint: String? = null,
+    val redPacketAcceptedHint: String? = null,
+    val redPacketLuckyMode: String? = null,
+    val redPacketNormalMode: String? = null,
+    val redPacketLuckyHint: String? = null,
+    val redPacketNormalHint: String? = null,
+    val redPacketTotalAmount: String? = null,
+    val redPacketAmount: String? = null,
+    val redPacketCount: String? = null,
+    val redPacketGreetingPlaceholder: String? = null,
+    val redPacketStuff: String? = null,
+    val redPacketErrAmount: String? = null,
+    val redPacketErrCount: String? = null,
+    val redPacketErrDmSingle: String? = null,
+    val redPacketErrTooSmall: String? = null,
+    val walletViewDetail: String? = null,
+    val walletDone: String? = null,
+    val transferSendTitle: String? = null,
+    val transferDmOnly: String? = null,
+    val transferCompletedTitle: String? = null,
+    val transferAcceptedTitle: String? = null,
+    val transferCompletedHint: String? = null,
+    val transferAcceptedHint: String? = null,
+    val transferConfirmTo: String? = null,
+    val transferRemarkPrefix: String? = null,
+    val transferConfirmAction: String? = null,
+    val transferAmountPlaceholder: String? = null,
+    val transferRemarkPlaceholder: String? = null,
+    val transferErrAmount: String? = null,
+    val transferDetailTitle: String? = null,
+    val transferFieldAmount: String? = null,
+    val transferFieldSender: String? = null,
+    val transferFieldReceiver: String? = null,
+    val transferFieldRemark: String? = null,
+    val transferFieldTime: String? = null,
+    val transferFieldOrderId: String? = null,
+    val transferStateRefunded: String? = null,
+    val transferStateSucceeded: String? = null,
+    val redPacketDetailTitle: String? = null,
+    val redPacketSenderSelf: String? = null,
+    val walletUserFallback: String? = null,
+    val redPacketFromSelf: String? = null,
+    val redPacketFromPeer: String? = null,
+    val redPacketDefaultGreeting: String? = null,
+    val redPacketCreditedToWallet: String? = null,
+    val redPacketOpen: String? = null,
+    val redPacketClaimProgress: String? = null,
+    val redPacketSummary: String? = null,
+    val redPacketBestLuck: String? = null,
+    val redPacketStateRefundedToYou: String? = null,
+    val redPacketStateAllClaimed: String? = null,
+    val redPacketStateExpired: String? = null,
+    val redPacketStateWaiting: String? = null,
+    val redPacketStateClaimedByMe: String? = null,
+    val redPacketStateDrained: String? = null,
+    val redPacketStateClaimable: String? = null,
+    val redPacketCoverFallbackName: String? = null,
+    val redPacketCoverPeerFallback: String? = null,
+    val redPacketCoverFrom: String? = null,
+    val redPacketOpenShort: String? = null,
+    val redPacketViewDetail: String? = null,
+    val freezeTypeWithdraw: String? = null,
+    val freezeTypeAudit: String? = null,
+    val freezeTypeAccountFrozen: String? = null,
+    val freezeTypeOther: String? = null,
+    val freezeWithdrawStatusReviewing: String? = null,
+    val freezeWithdrawStatusReturned: String? = null,
+    val freezeWithdrawStatusPaid: String? = null,
+    val freezeStatusExpired: String? = null,
+    val freezeStatusHolding: String? = null,
+    val freezeStatusReleased: String? = null,
+    val freezeStatusDeducted: String? = null,
+    val freezeRecordsTitle: String? = null,
+    val freezeNoRecords: String? = null,
+    val freezeDetailTitle: String? = null,
+    val freezeFieldType: String? = null,
+    val freezeFieldWithdrawAmount: String? = null,
+    val freezeFieldFrozenAmount: String? = null,
+    val freezeFieldRelatedOrder: String? = null,
+    val freezeFieldNote: String? = null,
+    val freezeFieldReason: String? = null,
+    val previewLargeImage: String? = null,
+    val previewImageThumb: String? = null,
+    val previewVideoThumb: String? = null,
+    val previewLoadingWithPercent: String? = null,
+    val previewPausedWithPercent: String? = null,
+    val previewLoadFailedRetrying: String? = null,
+    val reportReasonSpam: String? = null,
+    val reportReasonHarassment: String? = null,
+    val reportReasonSexual: String? = null,
+    val reportReasonFraud: String? = null,
+    val reportReasonOther: String? = null,
+    val reportPickReason: String? = null,
+    val reportUnsentMessage: String? = null,
+    val reportSubmitted: String? = null,
+    val reportSubmitFailed: String? = null,
+    val accountCurrentlySignedIn: String? = null,
+    val accountCurrentlySignedInWith: String? = null,
+    val desktopPickConversation: String? = null,
+    val previewMentionPrefix: String? = null,
+    val previewLinkWithTitle: String? = null,
+    val previewLocationWithName: String? = null,
+    val previewContactWithUid: String? = null,
+    val connectingShort: String? = null,
+    val initializingShort: String? = null,
+) {
+    companion object
+}
+
+val PrivChatWalletStringsPatch.isEmpty: Boolean
+    get() = walletTitle == null &&
+        walletBalance == null &&
+        walletUnsupportedMode == null &&
+        walletFrozenBanner == null &&
+        walletTransactions == null &&
+        walletBankCards == null &&
+        walletApplyWithdraw == null &&
+        walletBindCard == null &&
+        walletNoCards == null &&
+        walletCardHolder == null &&
+        walletCardBank == null &&
+        walletCardNumber == null &&
+        walletSubmit == null &&
+        walletAvailableBalance == null &&
+        walletWithdrawAmount == null &&
+        walletBindCardFirst == null &&
+        walletCardSelected == null &&
+        walletSubmitWithdraw == null &&
+        walletWithdrawHistory == null &&
+        walletWithdrawRecords == null &&
+        walletNoWithdrawRecords == null &&
+        walletWithdrawDetail == null &&
+        walletFieldWithdrawAmount == null &&
+        walletFieldFee == null &&
+        walletFieldActualAmount == null &&
+        walletFieldStatus == null &&
+        walletFieldAppliedAt == null &&
+        walletFieldPaidAt == null &&
+        walletFieldHoldReason == null &&
+        walletFieldRejectReason == null &&
+        walletNoTransactions == null &&
+        walletBalanceAfter == null &&
+        withdrawStatusPendingReview == null &&
+        withdrawStatusPendingPayout == null &&
+        withdrawStatusProcessing == null &&
+        withdrawStatusPaid == null &&
+        withdrawStatusRejected == null &&
+        withdrawStatusFailed == null &&
+        withdrawStatusCancelled == null &&
+        withdrawStatusOnHold == null &&
+        walletStatusUnknown == null &&
+        bizTypeRecharge == null &&
+        bizTypeRechargeRefund == null &&
+        bizTypeSystemAdjust == null &&
+        bizTypeWithdrawFreeze == null &&
+        bizTypeWithdrawUnfreeze == null &&
+        bizTypeWithdrawDebit == null &&
+        bizTypeWithdrawRefund == null &&
+        bizTypeRedPacketSend == null &&
+        bizTypeRedPacketClaim == null &&
+        bizTypeRedPacketRefund == null &&
+        bizTypeTransferOut == null &&
+        bizTypeTransferIn == null &&
+        bizTypeTransferRefund == null &&
+        bizTypeSignInReward == null &&
+        bizTypeOther == null &&
+        walletErrSessionExpired == null &&
+        walletErrBadRequest == null &&
+        walletErrNotFound == null &&
+        walletErrConflict == null &&
+        walletErrLoadFailed == null &&
+        walletErrActionFailed == null &&
+        redPacketSendTitle == null &&
+        redPacketSentTitle == null &&
+        redPacketAcceptedTitle == null &&
+        redPacketSentHint == null &&
+        redPacketAcceptedHint == null &&
+        redPacketLuckyMode == null &&
+        redPacketNormalMode == null &&
+        redPacketLuckyHint == null &&
+        redPacketNormalHint == null &&
+        redPacketTotalAmount == null &&
+        redPacketAmount == null &&
+        redPacketCount == null &&
+        redPacketGreetingPlaceholder == null &&
+        redPacketStuff == null &&
+        redPacketErrAmount == null &&
+        redPacketErrCount == null &&
+        redPacketErrDmSingle == null &&
+        redPacketErrTooSmall == null &&
+        walletViewDetail == null &&
+        walletDone == null &&
+        transferSendTitle == null &&
+        transferDmOnly == null &&
+        transferCompletedTitle == null &&
+        transferAcceptedTitle == null &&
+        transferCompletedHint == null &&
+        transferAcceptedHint == null &&
+        transferConfirmTo == null &&
+        transferRemarkPrefix == null &&
+        transferConfirmAction == null &&
+        transferAmountPlaceholder == null &&
+        transferRemarkPlaceholder == null &&
+        transferErrAmount == null &&
+        transferDetailTitle == null &&
+        transferFieldAmount == null &&
+        transferFieldSender == null &&
+        transferFieldReceiver == null &&
+        transferFieldRemark == null &&
+        transferFieldTime == null &&
+        transferFieldOrderId == null &&
+        transferStateRefunded == null &&
+        transferStateSucceeded == null &&
+        redPacketDetailTitle == null &&
+        redPacketSenderSelf == null &&
+        walletUserFallback == null &&
+        redPacketFromSelf == null &&
+        redPacketFromPeer == null &&
+        redPacketDefaultGreeting == null &&
+        redPacketCreditedToWallet == null &&
+        redPacketOpen == null &&
+        redPacketClaimProgress == null &&
+        redPacketSummary == null &&
+        redPacketBestLuck == null &&
+        redPacketStateRefundedToYou == null &&
+        redPacketStateAllClaimed == null &&
+        redPacketStateExpired == null &&
+        redPacketStateWaiting == null &&
+        redPacketStateClaimedByMe == null &&
+        redPacketStateDrained == null &&
+        redPacketStateClaimable == null &&
+        redPacketCoverFallbackName == null &&
+        redPacketCoverPeerFallback == null &&
+        redPacketCoverFrom == null &&
+        redPacketOpenShort == null &&
+        redPacketViewDetail == null &&
+        freezeTypeWithdraw == null &&
+        freezeTypeAudit == null &&
+        freezeTypeAccountFrozen == null &&
+        freezeTypeOther == null &&
+        freezeWithdrawStatusReviewing == null &&
+        freezeWithdrawStatusReturned == null &&
+        freezeWithdrawStatusPaid == null &&
+        freezeStatusExpired == null &&
+        freezeStatusHolding == null &&
+        freezeStatusReleased == null &&
+        freezeStatusDeducted == null &&
+        freezeRecordsTitle == null &&
+        freezeNoRecords == null &&
+        freezeDetailTitle == null &&
+        freezeFieldType == null &&
+        freezeFieldWithdrawAmount == null &&
+        freezeFieldFrozenAmount == null &&
+        freezeFieldRelatedOrder == null &&
+        freezeFieldNote == null &&
+        freezeFieldReason == null &&
+        previewLargeImage == null &&
+        previewImageThumb == null &&
+        previewVideoThumb == null &&
+        previewLoadingWithPercent == null &&
+        previewPausedWithPercent == null &&
+        previewLoadFailedRetrying == null &&
+        reportReasonSpam == null &&
+        reportReasonHarassment == null &&
+        reportReasonSexual == null &&
+        reportReasonFraud == null &&
+        reportReasonOther == null &&
+        reportPickReason == null &&
+        reportUnsentMessage == null &&
+        reportSubmitted == null &&
+        reportSubmitFailed == null &&
+        accountCurrentlySignedIn == null &&
+        accountCurrentlySignedInWith == null &&
+        desktopPickConversation == null &&
+        previewMentionPrefix == null &&
+        previewLinkWithTitle == null &&
+        previewLocationWithName == null &&
+        previewContactWithUid == null &&
+        connectingShort == null &&
+        initializingShort == null
+
+fun PrivChatWalletStrings.merge(patch: PrivChatWalletStringsPatch?): PrivChatWalletStrings {
+    if (patch == null || patch.isEmpty) return this
+    return copy(
+        walletTitle = patch.walletTitle ?: walletTitle,
+        walletBalance = patch.walletBalance ?: walletBalance,
+        walletUnsupportedMode = patch.walletUnsupportedMode ?: walletUnsupportedMode,
+        walletFrozenBanner = patch.walletFrozenBanner ?: walletFrozenBanner,
+        walletTransactions = patch.walletTransactions ?: walletTransactions,
+        walletBankCards = patch.walletBankCards ?: walletBankCards,
+        walletApplyWithdraw = patch.walletApplyWithdraw ?: walletApplyWithdraw,
+        walletBindCard = patch.walletBindCard ?: walletBindCard,
+        walletNoCards = patch.walletNoCards ?: walletNoCards,
+        walletCardHolder = patch.walletCardHolder ?: walletCardHolder,
+        walletCardBank = patch.walletCardBank ?: walletCardBank,
+        walletCardNumber = patch.walletCardNumber ?: walletCardNumber,
+        walletSubmit = patch.walletSubmit ?: walletSubmit,
+        walletAvailableBalance = patch.walletAvailableBalance ?: walletAvailableBalance,
+        walletWithdrawAmount = patch.walletWithdrawAmount ?: walletWithdrawAmount,
+        walletBindCardFirst = patch.walletBindCardFirst ?: walletBindCardFirst,
+        walletCardSelected = patch.walletCardSelected ?: walletCardSelected,
+        walletSubmitWithdraw = patch.walletSubmitWithdraw ?: walletSubmitWithdraw,
+        walletWithdrawHistory = patch.walletWithdrawHistory ?: walletWithdrawHistory,
+        walletWithdrawRecords = patch.walletWithdrawRecords ?: walletWithdrawRecords,
+        walletNoWithdrawRecords = patch.walletNoWithdrawRecords ?: walletNoWithdrawRecords,
+        walletWithdrawDetail = patch.walletWithdrawDetail ?: walletWithdrawDetail,
+        walletFieldWithdrawAmount = patch.walletFieldWithdrawAmount ?: walletFieldWithdrawAmount,
+        walletFieldFee = patch.walletFieldFee ?: walletFieldFee,
+        walletFieldActualAmount = patch.walletFieldActualAmount ?: walletFieldActualAmount,
+        walletFieldStatus = patch.walletFieldStatus ?: walletFieldStatus,
+        walletFieldAppliedAt = patch.walletFieldAppliedAt ?: walletFieldAppliedAt,
+        walletFieldPaidAt = patch.walletFieldPaidAt ?: walletFieldPaidAt,
+        walletFieldHoldReason = patch.walletFieldHoldReason ?: walletFieldHoldReason,
+        walletFieldRejectReason = patch.walletFieldRejectReason ?: walletFieldRejectReason,
+        walletNoTransactions = patch.walletNoTransactions ?: walletNoTransactions,
+        walletBalanceAfter = patch.walletBalanceAfter ?: walletBalanceAfter,
+        withdrawStatusPendingReview = patch.withdrawStatusPendingReview ?: withdrawStatusPendingReview,
+        withdrawStatusPendingPayout = patch.withdrawStatusPendingPayout ?: withdrawStatusPendingPayout,
+        withdrawStatusProcessing = patch.withdrawStatusProcessing ?: withdrawStatusProcessing,
+        withdrawStatusPaid = patch.withdrawStatusPaid ?: withdrawStatusPaid,
+        withdrawStatusRejected = patch.withdrawStatusRejected ?: withdrawStatusRejected,
+        withdrawStatusFailed = patch.withdrawStatusFailed ?: withdrawStatusFailed,
+        withdrawStatusCancelled = patch.withdrawStatusCancelled ?: withdrawStatusCancelled,
+        withdrawStatusOnHold = patch.withdrawStatusOnHold ?: withdrawStatusOnHold,
+        walletStatusUnknown = patch.walletStatusUnknown ?: walletStatusUnknown,
+        bizTypeRecharge = patch.bizTypeRecharge ?: bizTypeRecharge,
+        bizTypeRechargeRefund = patch.bizTypeRechargeRefund ?: bizTypeRechargeRefund,
+        bizTypeSystemAdjust = patch.bizTypeSystemAdjust ?: bizTypeSystemAdjust,
+        bizTypeWithdrawFreeze = patch.bizTypeWithdrawFreeze ?: bizTypeWithdrawFreeze,
+        bizTypeWithdrawUnfreeze = patch.bizTypeWithdrawUnfreeze ?: bizTypeWithdrawUnfreeze,
+        bizTypeWithdrawDebit = patch.bizTypeWithdrawDebit ?: bizTypeWithdrawDebit,
+        bizTypeWithdrawRefund = patch.bizTypeWithdrawRefund ?: bizTypeWithdrawRefund,
+        bizTypeRedPacketSend = patch.bizTypeRedPacketSend ?: bizTypeRedPacketSend,
+        bizTypeRedPacketClaim = patch.bizTypeRedPacketClaim ?: bizTypeRedPacketClaim,
+        bizTypeRedPacketRefund = patch.bizTypeRedPacketRefund ?: bizTypeRedPacketRefund,
+        bizTypeTransferOut = patch.bizTypeTransferOut ?: bizTypeTransferOut,
+        bizTypeTransferIn = patch.bizTypeTransferIn ?: bizTypeTransferIn,
+        bizTypeTransferRefund = patch.bizTypeTransferRefund ?: bizTypeTransferRefund,
+        bizTypeSignInReward = patch.bizTypeSignInReward ?: bizTypeSignInReward,
+        bizTypeOther = patch.bizTypeOther ?: bizTypeOther,
+        walletErrSessionExpired = patch.walletErrSessionExpired ?: walletErrSessionExpired,
+        walletErrBadRequest = patch.walletErrBadRequest ?: walletErrBadRequest,
+        walletErrNotFound = patch.walletErrNotFound ?: walletErrNotFound,
+        walletErrConflict = patch.walletErrConflict ?: walletErrConflict,
+        walletErrLoadFailed = patch.walletErrLoadFailed ?: walletErrLoadFailed,
+        walletErrActionFailed = patch.walletErrActionFailed ?: walletErrActionFailed,
+        redPacketSendTitle = patch.redPacketSendTitle ?: redPacketSendTitle,
+        redPacketSentTitle = patch.redPacketSentTitle ?: redPacketSentTitle,
+        redPacketAcceptedTitle = patch.redPacketAcceptedTitle ?: redPacketAcceptedTitle,
+        redPacketSentHint = patch.redPacketSentHint ?: redPacketSentHint,
+        redPacketAcceptedHint = patch.redPacketAcceptedHint ?: redPacketAcceptedHint,
+        redPacketLuckyMode = patch.redPacketLuckyMode ?: redPacketLuckyMode,
+        redPacketNormalMode = patch.redPacketNormalMode ?: redPacketNormalMode,
+        redPacketLuckyHint = patch.redPacketLuckyHint ?: redPacketLuckyHint,
+        redPacketNormalHint = patch.redPacketNormalHint ?: redPacketNormalHint,
+        redPacketTotalAmount = patch.redPacketTotalAmount ?: redPacketTotalAmount,
+        redPacketAmount = patch.redPacketAmount ?: redPacketAmount,
+        redPacketCount = patch.redPacketCount ?: redPacketCount,
+        redPacketGreetingPlaceholder = patch.redPacketGreetingPlaceholder ?: redPacketGreetingPlaceholder,
+        redPacketStuff = patch.redPacketStuff ?: redPacketStuff,
+        redPacketErrAmount = patch.redPacketErrAmount ?: redPacketErrAmount,
+        redPacketErrCount = patch.redPacketErrCount ?: redPacketErrCount,
+        redPacketErrDmSingle = patch.redPacketErrDmSingle ?: redPacketErrDmSingle,
+        redPacketErrTooSmall = patch.redPacketErrTooSmall ?: redPacketErrTooSmall,
+        walletViewDetail = patch.walletViewDetail ?: walletViewDetail,
+        walletDone = patch.walletDone ?: walletDone,
+        transferSendTitle = patch.transferSendTitle ?: transferSendTitle,
+        transferDmOnly = patch.transferDmOnly ?: transferDmOnly,
+        transferCompletedTitle = patch.transferCompletedTitle ?: transferCompletedTitle,
+        transferAcceptedTitle = patch.transferAcceptedTitle ?: transferAcceptedTitle,
+        transferCompletedHint = patch.transferCompletedHint ?: transferCompletedHint,
+        transferAcceptedHint = patch.transferAcceptedHint ?: transferAcceptedHint,
+        transferConfirmTo = patch.transferConfirmTo ?: transferConfirmTo,
+        transferRemarkPrefix = patch.transferRemarkPrefix ?: transferRemarkPrefix,
+        transferConfirmAction = patch.transferConfirmAction ?: transferConfirmAction,
+        transferAmountPlaceholder = patch.transferAmountPlaceholder ?: transferAmountPlaceholder,
+        transferRemarkPlaceholder = patch.transferRemarkPlaceholder ?: transferRemarkPlaceholder,
+        transferErrAmount = patch.transferErrAmount ?: transferErrAmount,
+        transferDetailTitle = patch.transferDetailTitle ?: transferDetailTitle,
+        transferFieldAmount = patch.transferFieldAmount ?: transferFieldAmount,
+        transferFieldSender = patch.transferFieldSender ?: transferFieldSender,
+        transferFieldReceiver = patch.transferFieldReceiver ?: transferFieldReceiver,
+        transferFieldRemark = patch.transferFieldRemark ?: transferFieldRemark,
+        transferFieldTime = patch.transferFieldTime ?: transferFieldTime,
+        transferFieldOrderId = patch.transferFieldOrderId ?: transferFieldOrderId,
+        transferStateRefunded = patch.transferStateRefunded ?: transferStateRefunded,
+        transferStateSucceeded = patch.transferStateSucceeded ?: transferStateSucceeded,
+        redPacketDetailTitle = patch.redPacketDetailTitle ?: redPacketDetailTitle,
+        redPacketSenderSelf = patch.redPacketSenderSelf ?: redPacketSenderSelf,
+        walletUserFallback = patch.walletUserFallback ?: walletUserFallback,
+        redPacketFromSelf = patch.redPacketFromSelf ?: redPacketFromSelf,
+        redPacketFromPeer = patch.redPacketFromPeer ?: redPacketFromPeer,
+        redPacketDefaultGreeting = patch.redPacketDefaultGreeting ?: redPacketDefaultGreeting,
+        redPacketCreditedToWallet = patch.redPacketCreditedToWallet ?: redPacketCreditedToWallet,
+        redPacketOpen = patch.redPacketOpen ?: redPacketOpen,
+        redPacketClaimProgress = patch.redPacketClaimProgress ?: redPacketClaimProgress,
+        redPacketSummary = patch.redPacketSummary ?: redPacketSummary,
+        redPacketBestLuck = patch.redPacketBestLuck ?: redPacketBestLuck,
+        redPacketStateRefundedToYou = patch.redPacketStateRefundedToYou ?: redPacketStateRefundedToYou,
+        redPacketStateAllClaimed = patch.redPacketStateAllClaimed ?: redPacketStateAllClaimed,
+        redPacketStateExpired = patch.redPacketStateExpired ?: redPacketStateExpired,
+        redPacketStateWaiting = patch.redPacketStateWaiting ?: redPacketStateWaiting,
+        redPacketStateClaimedByMe = patch.redPacketStateClaimedByMe ?: redPacketStateClaimedByMe,
+        redPacketStateDrained = patch.redPacketStateDrained ?: redPacketStateDrained,
+        redPacketStateClaimable = patch.redPacketStateClaimable ?: redPacketStateClaimable,
+        redPacketCoverFallbackName = patch.redPacketCoverFallbackName ?: redPacketCoverFallbackName,
+        redPacketCoverPeerFallback = patch.redPacketCoverPeerFallback ?: redPacketCoverPeerFallback,
+        redPacketCoverFrom = patch.redPacketCoverFrom ?: redPacketCoverFrom,
+        redPacketOpenShort = patch.redPacketOpenShort ?: redPacketOpenShort,
+        redPacketViewDetail = patch.redPacketViewDetail ?: redPacketViewDetail,
+        freezeTypeWithdraw = patch.freezeTypeWithdraw ?: freezeTypeWithdraw,
+        freezeTypeAudit = patch.freezeTypeAudit ?: freezeTypeAudit,
+        freezeTypeAccountFrozen = patch.freezeTypeAccountFrozen ?: freezeTypeAccountFrozen,
+        freezeTypeOther = patch.freezeTypeOther ?: freezeTypeOther,
+        freezeWithdrawStatusReviewing = patch.freezeWithdrawStatusReviewing ?: freezeWithdrawStatusReviewing,
+        freezeWithdrawStatusReturned = patch.freezeWithdrawStatusReturned ?: freezeWithdrawStatusReturned,
+        freezeWithdrawStatusPaid = patch.freezeWithdrawStatusPaid ?: freezeWithdrawStatusPaid,
+        freezeStatusExpired = patch.freezeStatusExpired ?: freezeStatusExpired,
+        freezeStatusHolding = patch.freezeStatusHolding ?: freezeStatusHolding,
+        freezeStatusReleased = patch.freezeStatusReleased ?: freezeStatusReleased,
+        freezeStatusDeducted = patch.freezeStatusDeducted ?: freezeStatusDeducted,
+        freezeRecordsTitle = patch.freezeRecordsTitle ?: freezeRecordsTitle,
+        freezeNoRecords = patch.freezeNoRecords ?: freezeNoRecords,
+        freezeDetailTitle = patch.freezeDetailTitle ?: freezeDetailTitle,
+        freezeFieldType = patch.freezeFieldType ?: freezeFieldType,
+        freezeFieldWithdrawAmount = patch.freezeFieldWithdrawAmount ?: freezeFieldWithdrawAmount,
+        freezeFieldFrozenAmount = patch.freezeFieldFrozenAmount ?: freezeFieldFrozenAmount,
+        freezeFieldRelatedOrder = patch.freezeFieldRelatedOrder ?: freezeFieldRelatedOrder,
+        freezeFieldNote = patch.freezeFieldNote ?: freezeFieldNote,
+        freezeFieldReason = patch.freezeFieldReason ?: freezeFieldReason,
+        previewLargeImage = patch.previewLargeImage ?: previewLargeImage,
+        previewImageThumb = patch.previewImageThumb ?: previewImageThumb,
+        previewVideoThumb = patch.previewVideoThumb ?: previewVideoThumb,
+        previewLoadingWithPercent = patch.previewLoadingWithPercent ?: previewLoadingWithPercent,
+        previewPausedWithPercent = patch.previewPausedWithPercent ?: previewPausedWithPercent,
+        previewLoadFailedRetrying = patch.previewLoadFailedRetrying ?: previewLoadFailedRetrying,
+        reportReasonSpam = patch.reportReasonSpam ?: reportReasonSpam,
+        reportReasonHarassment = patch.reportReasonHarassment ?: reportReasonHarassment,
+        reportReasonSexual = patch.reportReasonSexual ?: reportReasonSexual,
+        reportReasonFraud = patch.reportReasonFraud ?: reportReasonFraud,
+        reportReasonOther = patch.reportReasonOther ?: reportReasonOther,
+        reportPickReason = patch.reportPickReason ?: reportPickReason,
+        reportUnsentMessage = patch.reportUnsentMessage ?: reportUnsentMessage,
+        reportSubmitted = patch.reportSubmitted ?: reportSubmitted,
+        reportSubmitFailed = patch.reportSubmitFailed ?: reportSubmitFailed,
+        accountCurrentlySignedIn = patch.accountCurrentlySignedIn ?: accountCurrentlySignedIn,
+        accountCurrentlySignedInWith = patch.accountCurrentlySignedInWith ?: accountCurrentlySignedInWith,
+        desktopPickConversation = patch.desktopPickConversation ?: desktopPickConversation,
+        previewMentionPrefix = patch.previewMentionPrefix ?: previewMentionPrefix,
+        previewLinkWithTitle = patch.previewLinkWithTitle ?: previewLinkWithTitle,
+        previewLocationWithName = patch.previewLocationWithName ?: previewLocationWithName,
+        previewContactWithUid = patch.previewContactWithUid ?: previewContactWithUid,
+        connectingShort = patch.connectingShort ?: connectingShort,
+        initializingShort = patch.initializingShort ?: initializingShort,
     )
 }

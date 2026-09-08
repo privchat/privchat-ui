@@ -179,7 +179,7 @@ fun ChatSettingsPage(
                 // 邀请成员
                 item {
                     Cell(
-                        title = "邀请成员",
+                        title = strings.groupInviteMembers,
                         arrow = true,
                         onClick = onGroupInviteClick,
                     )
@@ -377,7 +377,7 @@ fun ChatSettingsPage(
                             horizontalArrangement = Arrangement.Center,
                         ) {
                             Text(
-                                text = "群主无法直接退出群聊，请先转让群主或解散群",
+                                text = strings.groupOwnerCannotLeave,
                                 style = Typography.BodySmall,
                                 color = colors.mutedForeground,
                             )

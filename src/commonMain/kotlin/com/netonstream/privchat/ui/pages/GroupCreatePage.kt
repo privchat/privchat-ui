@@ -3,6 +3,8 @@ package com.netonstream.privchat.ui.pages
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.dto.FriendEntry
 import com.netonstream.privchat.ui.components.ChatAvatar
+import com.netonstream.privchat.ui.i18n.PrivChatI18n
+import com.netonstream.privchat.ui.i18n.withArgs
 import com.netonstream.privchat.ui.models.displayName
 import com.gearui.theme.Theme
 import com.gearui.foundation.avatar.AvatarSizeTokens
@@ -60,17 +62,19 @@ fun GroupCreatePage(
         }
     }
 
+    val strings = PrivChatI18n.strings
     val coroutineScope = rememberCoroutineScope()
     val canCreate = selected.isNotEmpty() && !isCreating
 
     Column(modifier = modifier.fillMaxSize().background(colors.background)) {
         NavBar(
-            title = "创建群聊",
+            title = strings.groupCreateTitle,
             useDefaultBack = true,
             onBackClick = onBack,
             rightWidgetWidth = com.netonstream.privchat.ui.components.NavBarActionSlotWidthWide,
             rightWidget = {
-                val label = if (selected.isEmpty()) "创建" else "创建(${selected.size})"
+                val label = if (selected.isEmpty()) strings.groupCreateAction
+                    else "${strings.groupCreateAction}(${selected.size})"
                 com.netonstream.privchat.ui.components.NavBarAction(
                     text = label,
                     enabled = canCreate,
@@ -78,7 +82,7 @@ fun GroupCreatePage(
                 ) {
                     val ids = selected.values.map { it.userId }
                     val displayName = groupName.trim().ifEmpty {
-                        selected.values.joinToString("、") { it.displayName }.take(40)
+                        selected.values.joinToString(strings.groupCreateNameSeparator) { it.displayName }.take(40)
                     }
                     isCreating = true
                     coroutineScope.launch {
@@ -86,7 +90,7 @@ fun GroupCreatePage(
                             onSuccess = { isCreating = false },
                             onFailure = { e ->
                                 isCreating = false
-                                onError(com.netonstream.privchat.ui.error.UserFacingError.message(e, "创建失败"))
+                                onError(com.netonstream.privchat.ui.error.UserFacingError.message(e, strings.groupCreateFailed))
                             },
                         )
                     }
@@ -104,7 +108,7 @@ fun GroupCreatePage(
             Input(
                 value = groupName,
                 onValueChange = { groupName = it },
-                placeholder = "群名称（选填，留空将自动生成）",
+                placeholder = strings.groupCreateNamePlaceholder,
                 size = InputSize.LARGE,
             )
         }
@@ -112,7 +116,7 @@ fun GroupCreatePage(
         SearchBar(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = "搜索好友",
+            placeholder = strings.groupPickerSearchPlaceholder,
             shape = com.gearui.components.searchbar.SearchBarShape.SQUARE,
             modifier = Modifier
                 .fillMaxWidth()
@@ -126,7 +130,7 @@ fun GroupCreatePage(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "已选 ${selected.size}/$GROUP_CREATE_MAX_MEMBERS",
+                text = strings.groupPickerSelectedCount.withArgs(selected.size, GROUP_CREATE_MAX_MEMBERS),
                 style = Typography.BodySmall,
                 color = colors.mutedForeground,
             )
@@ -134,7 +138,10 @@ fun GroupCreatePage(
 
         if (filtered.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                EmptyState(message = if (friends.isEmpty()) "暂无好友可加入" else "未匹配到好友")
+                EmptyState(
+                    message = if (friends.isEmpty()) strings.groupCreateNoFriends
+                    else strings.groupPickerNoMatch,
+                )
             }
         } else {
             GearLazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -173,7 +180,7 @@ fun GroupCreatePage(
                             } else if (!atLimit) {
                                 selected[friend.userId] = friend
                             } else {
-                                onError("最多选择 $GROUP_CREATE_MAX_MEMBERS 位好友")
+                                onError(strings.groupPickerMaxReached.withArgs(GROUP_CREATE_MAX_MEMBERS))
                             }
                         },
                     )

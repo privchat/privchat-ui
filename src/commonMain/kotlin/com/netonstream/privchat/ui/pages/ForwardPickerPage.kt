@@ -32,6 +32,8 @@ import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.*
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
 import com.tencent.kuikly.compose.ui.Alignment
+import com.netonstream.privchat.ui.i18n.PrivChatI18n
+import com.netonstream.privchat.ui.i18n.withArgs
 import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.draw.clip
 import com.tencent.kuikly.compose.ui.unit.dp
@@ -95,6 +97,7 @@ fun ForwardPickerPage(
     onSend: (targets: List<ForwardTarget>, note: String?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = PrivChatI18n.strings
     val colors = Theme.colors
     val runtimeFlags = LocalRuntimeFlags.current
     val runtimeEnvironment = LocalRuntimeEnvironment.current
@@ -146,7 +149,7 @@ fun ForwardPickerPage(
             selected.remove(target.key)
         } else {
             if (selected.size >= FORWARD_MAX_TARGETS) {
-                Toast.show("最多选择 $FORWARD_MAX_TARGETS 个")
+                Toast.show(strings.forwardMaxReached.withArgs(FORWARD_MAX_TARGETS))
                 return
             }
             selected[target.key] = target
@@ -155,7 +158,7 @@ fun ForwardPickerPage(
 
     Column(modifier = modifier.fillMaxSize()) {
         NavBar(
-            title = "转发",
+            title = strings.forwardTitle,
             useDefaultBack = true,
             onBackClick = onBack,
         )
@@ -163,7 +166,7 @@ fun ForwardPickerPage(
         SearchBar(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = "搜索联系人 / 群组",
+            placeholder = strings.forwardSearchPlaceholder,
             shape = com.gearui.components.searchbar.SearchBarShape.SQUARE,
             alignment = com.gearui.components.searchbar.SearchBarAlignment.CENTER,
             modifier = Modifier
@@ -179,12 +182,15 @@ fun ForwardPickerPage(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
-                    EmptyState(message = if (searchQuery.isBlank()) "暂无可选联系人" else "未找到匹配结果")
+                    EmptyState(
+                        message = if (searchQuery.isBlank()) strings.forwardEmpty
+                        else strings.forwardNoMatch,
+                    )
                 }
             } else {
                 GearLazyColumn(modifier = Modifier.fillMaxSize()) {
                     if (filteredRecent.isNotEmpty()) {
-                        item { ForwardSectionHeader("最近聊天") }
+                        item { ForwardSectionHeader(strings.forwardSectionRecent) }
                         items(filteredRecent.size) { i ->
                             val target = filteredRecent[i]
                             ForwardTargetRow(
@@ -195,7 +201,7 @@ fun ForwardPickerPage(
                         }
                     }
                     if (filteredFriends.isNotEmpty()) {
-                        item { ForwardSectionHeader("好友") }
+                        item { ForwardSectionHeader(strings.forwardSectionFriends) }
                         items(filteredFriends.size) { i ->
                             val target = filteredFriends[i]
                             ForwardTargetRow(
@@ -206,7 +212,7 @@ fun ForwardPickerPage(
                         }
                     }
                     if (filteredGroups.isNotEmpty()) {
-                        item { ForwardSectionHeader("群组") }
+                        item { ForwardSectionHeader(strings.forwardSectionGroups) }
                         items(filteredGroups.size) { i ->
                             val target = filteredGroups[i]
                             ForwardTargetRow(
@@ -234,7 +240,7 @@ fun ForwardPickerPage(
                 Input(
                     value = note,
                     onValueChange = { if (it.length <= FORWARD_NOTE_MAX) note = it },
-                    placeholder = "留言（可选）",
+                    placeholder = strings.forwardCommentPlaceholder,
                     size = InputSize.MEDIUM,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -245,13 +251,13 @@ fun ForwardPickerPage(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "已选 ${selected.size}/$FORWARD_MAX_TARGETS",
+                        text = strings.forwardSelectedCount.withArgs(selected.size, FORWARD_MAX_TARGETS),
                         style = Typography.Label,
                         color = colors.mutedForeground,
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     Button(
-                        text = "发送",
+                        text = strings.forwardSend,
                         theme = ButtonTheme.PRIMARY,
                         size = ButtonSize.MEDIUM,
                         disabled = selected.isEmpty(),

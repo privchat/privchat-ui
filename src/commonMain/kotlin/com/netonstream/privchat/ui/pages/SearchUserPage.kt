@@ -26,24 +26,20 @@ import kotlinx.coroutines.launch
 /**
  * 搜索用户页面
  *
- * @param myAccount 我的账号
  * @param onBack 返回回调
  * @param onSearch 搜索回调，返回搜索结果
  * @param onUserFound 找到用户后的回调，传入第一个找到的用户
  * @param onScanQrCode 扫一扫回调
- * @param onPhoneContacts 手机联系人回调
  * @param onMyQrCode 我的二维码回调
  * @param modifier Modifier
  */
 @Composable
 fun SearchUserPage(
-    myAccount: String = "",
     onBack: () -> Unit,
     onSearch: suspend (String) -> Result<List<UserEntry>>,
     onUserFound: (UserEntry) -> Unit,
-    onScanQrCode: () -> Unit = {},
-    onPhoneContacts: () -> Unit = {},
-    onMyQrCode: () -> Unit = {},
+    onScanQrCode: () -> Unit,
+    onMyQrCode: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val strings = PrivChatI18n.strings
@@ -160,15 +156,6 @@ fun SearchUserPage(
                     )
                 }
 
-                // 手机联系人
-                item {
-                    Cell(
-                        title = strings.searchUserPhoneContacts,
-                        arrow = true,
-                        onClick = onPhoneContacts,
-                    )
-                }
-
                 // 分隔
                 item {
                     Spacer(modifier = Modifier.height(12.dp))
@@ -180,14 +167,6 @@ fun SearchUserPage(
                         title = strings.searchUserMyQrCode,
                         arrow = true,
                         onClick = onMyQrCode,
-                    )
-                }
-
-                // 我的账号
-                item {
-                    Cell(
-                        title = strings.searchUserMyAccount,
-                        note = myAccount,
                     )
                 }
 
