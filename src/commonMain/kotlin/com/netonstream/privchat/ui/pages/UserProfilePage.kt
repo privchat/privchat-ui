@@ -15,6 +15,8 @@ import com.gearui.components.button.ButtonTheme
 import com.gearui.components.button.ButtonSize
 import com.gearui.components.cell.Cell
 import com.gearui.components.input.Input
+import com.gearui.components.dialog.DialogAction
+import com.gearui.components.dialog.DialogActionRole
 import com.gearui.components.dialog.Dialog
 import com.gearui.components.dialog.DialogContent
 import com.gearui.components.toast.Toast
@@ -293,20 +295,15 @@ fun UserProfilePage(
                     modifier = Modifier.fillMaxWidth().height(88.dp)
                 )
             },
-            actions = {
-                Button(
+            actions = listOf(
+                DialogAction(
                     text = strings.cancel,
-                    type = ButtonType.TEXT,
-                    theme = ButtonTheme.DEFAULT,
-                    size = ButtonSize.SMALL,
-                    onClick = { showRemarkDialog = false }
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
+                    role = DialogActionRole.CANCEL,
+                    onClick = { showRemarkDialog = false },
+                ),
+                DialogAction(
                     text = strings.confirm,
-                    type = ButtonType.FILL,
-                    theme = ButtonTheme.PRIMARY,
-                    size = ButtonSize.SMALL,
+                    role = DialogActionRole.PRIMARY,
                     onClick = {
                         showRemarkDialog = false
                         isAddingFriend = true
@@ -333,9 +330,9 @@ fun UserProfilePage(
                                 }
                             )
                         }
-                    }
-                )
-            }
+                    },
+                ),
+            )
         )
     }
 }

@@ -7,6 +7,8 @@ import com.gearui.components.navbar.NavBar
 import com.gearui.components.searchbar.SearchBar
 import com.gearui.components.cell.Cell
 import com.gearui.components.empty.EmptyState
+import com.gearui.components.dialog.DialogAction
+import com.gearui.components.dialog.DialogActionRole
 import com.gearui.components.dialog.Dialog
 import com.gearui.components.dialog.DialogContent
 import com.gearui.components.button.Button
@@ -186,15 +188,13 @@ fun SearchUserPage(
         DialogContent(
             title = strings.networkError,
             message = errorMessage ?: strings.searchUserError,
-            actions = {
-                Button(
+            actions = listOf(
+                DialogAction(
                     text = strings.confirm,
-                    type = ButtonType.FILL,
-                    theme = ButtonTheme.PRIMARY,
-                    size = ButtonSize.SMALL,
-                    onClick = { errorMessage = null }
-                )
-            }
+                    role = DialogActionRole.PRIMARY,
+                    onClick = { errorMessage = null },
+                ),
+            )
         )
     }
 }

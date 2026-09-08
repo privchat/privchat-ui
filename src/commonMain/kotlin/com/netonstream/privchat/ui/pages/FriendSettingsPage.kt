@@ -8,6 +8,8 @@ import com.gearui.components.cell.Cell
 import com.gearui.primitives.composite.Card
 import com.gearui.primitives.Divider
 import com.gearui.components.switch.Switch
+import com.gearui.components.dialog.DialogAction
+import com.gearui.components.dialog.DialogActionRole
 import com.gearui.components.dialog.Dialog
 import com.gearui.components.dialog.DialogContent
 import com.gearui.components.button.Button
@@ -160,20 +162,15 @@ fun FriendSettingsPage(
         DialogContent(
             title = strings.userProfileDeleteFriendConfirmTitle,
             message = strings.userProfileDeleteFriendConfirmMessage,
-            actions = {
-                Button(
+            actions = listOf(
+                DialogAction(
                     text = strings.cancel,
-                    type = ButtonType.TEXT,
-                    theme = ButtonTheme.DEFAULT,
-                    size = ButtonSize.SMALL,
-                    onClick = { showDeleteConfirmDialog = false }
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
+                    role = DialogActionRole.CANCEL,
+                    onClick = { showDeleteConfirmDialog = false },
+                ),
+                DialogAction(
                     text = if (isDeleting) strings.userProfileDeleting else strings.confirm,
-                    type = ButtonType.FILL,
-                    theme = ButtonTheme.DANGER,
-                    size = ButtonSize.SMALL,
+                    role = DialogActionRole.DESTRUCTIVE,
                     onClick = {
                         if (!isDeleting) {
                             isDeleting = true
@@ -190,9 +187,9 @@ fun FriendSettingsPage(
                                 )
                             }
                         }
-                    }
-                )
-            }
+                    },
+                ),
+            )
         )
     }
 }

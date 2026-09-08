@@ -16,6 +16,8 @@ import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.cell.Cell
 import com.gearui.components.switch.Switch
+import com.gearui.components.dialog.DialogAction
+import com.gearui.components.dialog.DialogActionRole
 import com.gearui.components.dialog.Dialog
 import com.gearui.components.dialog.DialogContent
 import com.gearui.components.button.Button
@@ -402,22 +404,17 @@ fun ChatSettingsPage(
         DialogContent(
             title = strings.chatSettingsLeaveGroupConfirmTitle,
             message = strings.chatSettingsLeaveGroupConfirmMessage,
-            actions = {
-                Button(
+            actions = listOf(
+                DialogAction(
                     text = strings.cancel,
-                    type = ButtonType.TEXT,
-                    theme = ButtonTheme.DEFAULT,
-                    size = ButtonSize.SMALL,
-                    disabled = isLeaving,
-                    onClick = { showLeaveConfirmDialog = false }
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
+                    role = DialogActionRole.CANCEL,
+                    enabled = !(isLeaving),
+                    onClick = { showLeaveConfirmDialog = false },
+                ),
+                DialogAction(
                     text = if (isLeaving) strings.loading else strings.confirm,
-                    type = ButtonType.FILL,
-                    theme = ButtonTheme.DANGER,
-                    size = ButtonSize.SMALL,
-                    disabled = isLeaving,
+                    role = DialogActionRole.DESTRUCTIVE,
+                    enabled = !(isLeaving),
                     onClick = {
                         isLeaving = true
                         scope.launch {
@@ -432,9 +429,9 @@ fun ChatSettingsPage(
                                 }
                             )
                         }
-                    }
-                )
-            }
+                    },
+                ),
+            )
         )
     }
 

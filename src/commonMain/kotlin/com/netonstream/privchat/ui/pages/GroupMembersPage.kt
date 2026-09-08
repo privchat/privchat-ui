@@ -29,6 +29,8 @@ import com.tencent.kuikly.compose.foundation.layout.Box
 import com.tencent.kuikly.compose.foundation.layout.Column
 import com.tencent.kuikly.compose.foundation.layout.fillMaxSize
 import com.tencent.kuikly.compose.ui.Alignment
+import com.gearui.components.dialog.DialogAction
+import com.gearui.components.dialog.DialogActionRole
 import com.gearui.components.dialog.Dialog
 import com.gearui.components.dialog.DialogContent
 import com.gearui.components.button.Button
@@ -258,22 +260,17 @@ fun GroupMembersPage(
         DialogContent(
             title = strings.groupTransferOwner,
             message = strings.groupTransferOwnerConfirm,
-            actions = {
-                Button(
+            actions = listOf(
+                DialogAction(
                     text = strings.cancel,
-                    type = ButtonType.TEXT,
-                    theme = ButtonTheme.DEFAULT,
-                    size = ButtonSize.SMALL,
+                    role = DialogActionRole.CANCEL,
                     onClick = { transferTarget = null },
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
+                ),
+                DialogAction(
                     text = strings.confirm,
-                    type = ButtonType.TEXT,
-                    theme = ButtonTheme.DANGER,
-                    size = ButtonSize.SMALL,
+                    role = DialogActionRole.DESTRUCTIVE,
                     onClick = {
-                        val target = pendingTransfer ?: return@Button
+                        val target = pendingTransfer ?: return@DialogAction
                         transferTarget = null
                         scope.launch {
                             onTransferOwner(target).onFailure {
@@ -281,8 +278,8 @@ fun GroupMembersPage(
                             }
                         }
                     },
-                )
-            },
+                ),
+            ),
         )
     }
 }
