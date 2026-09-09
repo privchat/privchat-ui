@@ -31,6 +31,7 @@ import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.gearui.components.icon.Icons
 import com.gearui.foundation.primitives.Icon
+import com.gearui.foundation.typography.IconSizes
 import com.gearui.components.image.GearImage
 import com.gearui.components.image.ImageFit
 import com.gearui.components.image.ImageShape
@@ -150,7 +151,7 @@ fun MessageContent(
             MessageType.FILE -> FileContent(parsed, message, textColor, secondaryTextColor)
             MessageType.STICKER -> StickerContent(parsed)
             MessageType.LOCATION -> LocationContent(parsed, textColor, secondaryTextColor)
-            MessageType.LINK -> LinkContent(parsed, textColor, secondaryTextColor)
+            MessageType.LINK -> LinkContent(parsed, linkColorFor(isSelf), secondaryTextColor)
             MessageType.CONTACT -> ContactContent(parsed, textColor, secondaryTextColor, onContactClick)
             MessageType.RED_PACKET -> RedPacketMessageView(parsed, redPacketStatusOf, onRedPacketClick)
             MessageType.MONEY_TRANSFER -> MoneyTransferMessageView(parsed, isSelf, channelDisplayName, onMoneyTransferClick)
@@ -248,7 +249,7 @@ private fun TextContent(
     // 「这是可点的」，所以链接色要同时满足：与所在气泡底 ≥4.5（看得清）、与同段正文
     // ≥3:1（认得出）。自己/对方气泡的底色完全不同，必须分别取值，见
     // PrivChatThemeExtension.messageLinkSelf / messageLinkOther 的注释与实测数字。
-    val linkColor = if (isSelf) Theme.colors.messageLinkSelf else Theme.colors.messageLinkOther
+    val linkColor = linkColorFor(isSelf)
     val linkStyle = TextLinkStyles(style = SpanStyle(color = linkColor))
 
     val annotated = buildAnnotatedString {
@@ -1053,14 +1054,21 @@ private fun fmtCoord(v: Double): String = ((v * 100000).toLong() / 100000.0).toS
  * 缩略图由发送端 SDK 预览钩子生成（server 不爬，接收端不爬）。Phase 1 只渲染：
  * 缩略图可用 → 图 + 标题 + 描述 + url；不可用 → 纯文本卡片。点击 → 外部浏览器。
  */
+/** 可点击文本/卡片的颜色：自己与对方气泡底色不同，取值也不同。 */
+@Composable
+private fun linkColorFor(isSelf: Boolean): Color =
+    if (isSelf) Theme.colors.messageLinkSelf else Theme.colors.messageLinkOther
+
 @Composable
 private fun LinkContent(
     parsed: ParsedContent,
-    textColor: Color,
+    linkColor: Color,
     secondaryTextColor: Color,
 ) {
     val url = parsed.linkUrl
-    val title = parsed.linkTitle?.takeIf { it.isNotBlank() } ?: url ?: ""
+    // 没有真标题时用 url 顶上，但下面那行 url 就要跳过——否则同一个网址印两遍。
+    val realTitle = parsed.linkTitle?.takeIf { it.isNotBlank() }
+    val title = realTitle ?: url ?: ""
     val desc = parsed.linkDescription?.takeIf { it.isNotBlank() }
     val thumb = parsed.thumbnailUrl?.takeIf { it.isNotBlank() }
     val clickMod = if (!url.isNullOrBlank()) {
@@ -1082,13 +1090,15 @@ private fun LinkContent(
             VerticalSpacer(6.dp)
         }
         if (title.isNotBlank()) {
-            Text(text = title, style = Theme.typography.bodyMedium, color = textColor, maxLines = 2)
+            // 整块卡片是可点的，标题用链接色，不用正文色。
+            Text(text = title, style = Theme.typography.bodyMedium, color = linkColor, maxLines = 2)
         }
         if (desc != null) {
             VerticalSpacer(2.dp)
             Text(text = desc, style = Theme.typography.bodySmall, color = secondaryTextColor, maxLines = 2)
         }
-        if (!url.isNullOrBlank()) {
+        // 标题就是 url 时不再重复一行。
+        if (!url.isNullOrBlank() && realTitle != null) {
             VerticalSpacer(4.dp)
             Text(text = url, style = Theme.typography.label, color = secondaryTextColor, maxLines = 1)
         }
@@ -1206,7 +1216,7 @@ private fun RedPacketMessageView(
         onOpen != null -> PrivChatI18n.current.redPacketClaim
         else -> PrivChatI18n.current.redPacketUnsupportedVersion
     }
-    MoneyCardScaffold(icon = "🧧", bg = RedPacketColor, refId = refId, clickable = clickable, onOpen = onOpen) {
+    MoneyCardScaffold(icon = Icons.gift, bg = RedPacketColor, refId = refId, clickable = clickable, onOpen = onOpen) {
         Text(text = title, style = Theme.typography.bodyMedium, color = Color.White)
         subtitle?.let {
             VerticalSpacer(3.dp)
@@ -1243,7 +1253,7 @@ private fun MoneyTransferMessageView(
         isSelf -> PrivChatI18n.current.transferReceived
         else -> PrivChatI18n.current.transferCredited
     }
-    MoneyCardScaffold(icon = "💸", bg = TransferColor, refId = refId, clickable = clickable, onOpen = onOpen) {
+    MoneyCardScaffold(icon = Icons.wallet, bg = TransferColor, refId = refId, clickable = clickable, onOpen = onOpen) {
         Text(text = title, style = Theme.typography.bodyMedium, color = Color.White)
         parsed.moneyAmountText?.takeIf { it.isNotBlank() }?.let {
             VerticalSpacer(4.dp)
@@ -1257,6 +1267,16 @@ private fun MoneyTransferMessageView(
 /** 资金卡片外壳：固定宽度独立卡片 + 左图标 + 右文案列（内容由 [content] 提供）。 */
 @Composable
 private fun MoneyCardScaffold(
+    /**
+     * An `Icons.*` key, not a glyph.
+     *
+     * These were 🧧 and 💸 rendered through `Text(color = Color.White)`, which
+     * is a no-op: a colour emoji ignores text colour. So the red packet drew
+     * its own red on the card's red (#E5533D) and neither mark could follow
+     * the card. They also drew a different picture on every platform. Same
+     * defect the kit's own `check_emoji_as_icon` guard describes — it just did
+     * not cover this repo.
+     */
     icon: String,
     bg: Color,
     refId: String?,
@@ -1273,7 +1293,7 @@ private fun MoneyCardScaffold(
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = icon, style = Theme.typography.titleLarge, color = Color.White)
+        Icon(name = icon, size = IconSizes.Default.xl, tint = Color.White)
         HorizontalSpacer(12.dp)
         Column(modifier = Modifier.weight(1f)) { content() }
     }
