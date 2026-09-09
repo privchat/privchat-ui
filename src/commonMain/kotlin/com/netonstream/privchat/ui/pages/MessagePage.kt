@@ -3044,22 +3044,31 @@ private fun MessageInputBar(
                                 val pageActions = plusPages.getOrElse(pageIndex) { emptyList() }
                                 Column(modifier = Modifier.fillMaxSize()) {
                                     for (row in 0..1) {
+                                        // 每格恒占 1/4 宽，空位也占位——这样第二行不满 4 个时，
+                                        // 列位置仍然跟第一行一一对齐。
+                                        //
+                                        // 原来是 SpaceBetween + 缺位补一个写死 78.dp 的 Spacer，
+                                        // 而 PlusActionItem 实际宽 96.dp。SpaceBetween 分配的是**剩余
+                                        // 空间**而不是等分列宽，于是第二行少 2×18dp 内容、多出 36dp
+                                        // 剩余空间摊到间隙里，整行的列位置就跟第一行错开了。
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically,
+                                            verticalAlignment = Alignment.Top,
                                         ) {
                                             for (col in 0..3) {
                                                 val idx = row * 4 + col
                                                 val action = pageActions.getOrNull(idx)
-                                                if (action != null) {
-                                                    PlusActionItem(
-                                                        icon = action.icon,
-                                                        text = action.text,
-                                                        onClick = action.onClick,
-                                                    )
-                                                } else {
-                                                    Spacer(modifier = Modifier.width(78.dp))
+                                                Box(
+                                                    modifier = Modifier.weight(1f),
+                                                    contentAlignment = Alignment.TopCenter,
+                                                ) {
+                                                    if (action != null) {
+                                                        PlusActionItem(
+                                                            icon = action.icon,
+                                                            text = action.text,
+                                                            onClick = action.onClick,
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
@@ -3190,7 +3199,9 @@ private fun PlusActionItem(
     val colors = Theme.colors
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(96.dp).clickable { onClick() },
+        // 宽度由外层的 1/4 栅格决定，不再自带固定宽：窄屏上 1/4 可能小于 96dp，
+        // 写死会撑破格子。
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
     ) {
         Box(
             modifier = Modifier
