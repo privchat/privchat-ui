@@ -142,10 +142,24 @@ private fun FriendsTabContent(
 ) {
     val strings = PrivChatI18n.strings
 
-    val filtered = if (searchQuery.isBlank()) friends else friends.filter { f ->
-        f.displayName.contains(searchQuery, ignoreCase = true) ||
-            f.username.contains(searchQuery, ignoreCase = true)
+    // 过滤 + 按首字母分组排序，一次算好缓存住。
+    //
+    // 这三步过去裸写在组合体和 GearLazyColumn 的 scope 里，于是**每次重组都全量重算**一遍
+    // filter + groupBy + sortedBy。而 presences 是 online 小绿点的来源、变化频繁，每来一次
+    // presence 推送就重算整张好友表——好友一多，切到联系人页的卡顿就是从这里长出来的。
+    // 会话页那边（ConversationPage 的 filteredChannels）一直是 remember 的，这里是漏了。
+    val sections = remember(friends, searchQuery) {
+        val filtered = if (searchQuery.isBlank()) friends else friends.filter { f ->
+            f.displayName.contains(searchQuery, ignoreCase = true) ||
+                f.username.contains(searchQuery, ignoreCase = true)
+        }
+        filtered to filtered
+            .groupBy { it.displayName.firstOrNull()?.uppercaseChar() ?: '#' }
+            .entries
+            .sortedBy { it.key }
+            .map { it.key to it.value }
     }
+    val filtered = sections.first
 
     GearLazyColumn(modifier = Modifier.fillMaxSize()) {
         // 好友申请入口（始终顶置；搜索时也保留，便于直接进入）
@@ -161,12 +175,7 @@ private fun FriendsTabContent(
                 SectionHeader(title = "${strings.contactFriends} (${filtered.size})")
             }
 
-            val grouped = filtered.groupBy {
-                it.displayName.firstOrNull()?.uppercaseChar() ?: '#'
-            }
-            grouped.entries.sortedBy { it.key }.forEach { entry ->
-                val letter = entry.key
-                val list = entry.value
+            sections.second.forEach { (letter, list) ->
                 item { LetterHeader(letter = letter.toString()) }
                 items(list.size) { idx ->
                     val friend = list[idx]
