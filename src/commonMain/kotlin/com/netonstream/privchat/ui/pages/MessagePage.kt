@@ -29,7 +29,7 @@ import com.tencent.kuikly.compose.foundation.gestures.detectTapGestures
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.offlineStatus
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.onlineStatus
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageBubbleOther
-import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageLinkOther
+import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageLink
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageBubbleSelf
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageTextOther
 import com.netonstream.privchat.ui.utils.Formatter
@@ -395,6 +395,13 @@ fun MessagePage(
     onError: ((String) -> Unit)? = null,
     /** 搜索命中跳转：以该 server_message_id 为锚打开会话（spec §5 jump-to-message） */
     initialFocusMessageId: ULong? = null,
+    /**
+     * 当前登录用户的头像模型（AvatarStore 产出，与「我」页同一个来源）。
+     *
+     * 由调用方传入而不是这里自己拼：CurrentUserStore / AvatarStore 在 app 层，
+     * privchat-ui 拿不到。传 null 时退回首字母兜底。
+     */
+    selfAvatar: com.netonstream.privchat.ui.avatar.AvatarModel? = null,
     modifier: Modifier = Modifier,
 ) {
     val strings = PrivChatI18n.strings
@@ -1175,6 +1182,7 @@ fun MessagePage(
                                     peerReadPts = peerReadPts,
                                     reactions = messageReactions[message.id].orEmpty(),
                                     selfUserId = currentUserId,
+                                    selfAvatar = selfAvatar,
                                     onRequestForward = onRequestForward,
                                     onReportMessage = onReportMessage,
                                     onVideoPreview = onVideoPreview,
@@ -1831,6 +1839,8 @@ private fun MessageRow(
     peerReadPts: ULong? = null,
     reactions: List<com.netonstream.privchat.sdk.dto.ReactionChip> = emptyList(),
     selfUserId: ULong? = null,
+    /** 自己的头像模型；null 时退回首字母兜底。 */
+    selfAvatar: com.netonstream.privchat.ui.avatar.AvatarModel? = null,
     onRequestForward: ((MessageEntry) -> Unit)? = null,
     onReportMessage: ((MessageEntry) -> Unit)? = null,
     onVideoPreview: ((MessageEntry) -> Unit)? = null,
@@ -2062,13 +2072,27 @@ private fun MessageRow(
         // 自己头像（可选）
         if (isSelf && showAvatar) {
             HorizontalSpacer(8.dp)
-            ChatAvatar(
-                url = null,
-                name = strings.messageSenderSelf,
-                size = AvatarSizeTokens.Small.size,
-                userId = selfUserId?.toLong(),
-                modifier = Modifier.align(Alignment.Bottom),
-            )
+            // 自己的头像走全局 AvatarModel（AvatarStore，与「我」页/好友/群成员同一套解析）。
+            //
+            // 这里原来写死 `url = null` + `name = strings.messageSenderSelf`：url 恒空，
+            // 所以上传过的头像永远不显示；name 是「我」这个字，所以首字母兜底画出来的也是
+            // 「我」而不是昵称首字。一个昵称叫 Demo 的用户，气泡边上却是「我」——
+            // 它压根没走全局头像那条路。
+            if (selfAvatar != null) {
+                com.netonstream.privchat.ui.avatar.PrivChatAvatar(
+                    model = selfAvatar,
+                    size = AvatarSizeTokens.Small.size,
+                    modifier = Modifier.align(Alignment.Bottom),
+                )
+            } else {
+                ChatAvatar(
+                    url = null,
+                    name = strings.messageSenderSelf,
+                    size = AvatarSizeTokens.Small.size,
+                    userId = selfUserId?.toLong(),
+                    modifier = Modifier.align(Alignment.Bottom),
+                )
+            }
         }
     }
 }
@@ -2115,10 +2139,8 @@ private fun SystemMessageRow(
                     templateDict = strings.systemTemplates,
                     listSeparator = strings.systemListSeparator,
                     textColor = colors.mutedForeground,
-                    // 人名是可点的链接，用链接语义色 info，不能用品牌主色：Weey 的 primary
-                    // 是黄色，浅色背景上一片糊；气泡里的链接早就改成 messageLinkOther 了
-                    // （见 PrivChatThemeWidget 的注释），系统消息这行当时漏改。
-                    linkColor = colors.messageLinkOther,
+                    // 人名是可点的链接，用全局唯一的链接色——和气泡里的链接必须同色。
+                    linkColor = colors.messageLink,
                     onUserClick = onUserClick,
                     onRedPacketClick = onRedPacketClick,
                 )

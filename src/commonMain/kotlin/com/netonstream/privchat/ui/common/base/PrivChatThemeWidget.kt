@@ -7,6 +7,7 @@ import com.gearui.theme.Theme
 import com.gearui.theme.ThemeMode
 import com.gearui.theme.Colors
 import com.tencent.kuikly.compose.ui.graphics.Color
+import kotlin.math.pow
 
 data class ChatColors(
     val bubbleSelf: Color,
@@ -109,39 +110,61 @@ object PrivChatThemeExtension {
     val Colors.messageTextOther: Color
         get() = chatColors.onBubbleOther
 
-    /**
-     * 可点击文本（链接/手机号/@提及）在**对方气泡与系统消息**上的颜色。
-     *
-     * 不能用 `primary`：那是「主按钮底色」，暗色主题下是近白，跟气泡文字色撞在一起。
-     *
-     * 也不再直接等于 `info`。去掉下划线之后颜色成了唯一的「这是可点的」提示，判据就从
-     * 「链接 vs 背景」变成了还要加一条「链接 vs 同段正文 ≥ 3:1」——`info` 的暗色值
-     * `#60A5FA` 对白正文只有 2.44，压深到 `#3B82F6` 才够（4.62 / 3.52）。亮色的
-     * `#2563EB` 两条都过（4.70 / 3.85），沿用。
-     *
-     * 之所以在这里定值而不是去改 gearui 的 `info`：`info` 是冻结 token，还被状态提示等
-     * 处消费，为聊天气泡的判据去动它会波及无关组件。
-     */
-    val Colors.messageLinkOther: Color
-        get() = if (isDarkTheme) Color(0xFF3B82F6) else Color(0xFF2563EB)
+    /** 链接蓝候选：从深到浅，都还读得出是「链接蓝」。取值只在这条色阶上选，不即兴调色。 */
+    private val LINK_BLUE_RAMP = listOf(
+        Color(0xFF1E3A8A), Color(0xFF1D4ED8), Color(0xFF2563EB), Color(0xFF1466F4),
+        Color(0xFF3B82F6), Color(0xFF60A5FA), Color(0xFF93C5FD),
+    )
+
+    private fun relativeLuminance(c: Color): Float {
+        fun ch(v: Float) = if (v <= 0.04045f) v / 12.92f else ((v + 0.055f) / 1.055f).pow(2.4f)
+        return 0.2126f * ch(c.red) + 0.7152f * ch(c.green) + 0.0722f * ch(c.blue)
+    }
+
+    private fun contrast(a: Color, b: Color): Float {
+        val la = relativeLuminance(a)
+        val lb = relativeLuminance(b)
+        return (maxOf(la, lb) + 0.05f) / (minOf(la, lb) + 0.05f)
+    }
 
     /**
-     * 可点击文本在**自己气泡**上的颜色。
+     * 可点击文本的颜色。**全局唯一一个链接色**：链接、手机号、@提及、系统消息里的人名，
+     * 不分气泡、不分位置，同一主题下只有这一个值。
      *
-     * 自己气泡是品牌主色铺满的（Weey 黄 `#FFD238` / PrivChat 蓝 `#0046BE`），
-     * 所以这里不能用固定的一个蓝：深蓝落在 PrivChat 蓝底上对比度 1.20（看不见），
-     * 浅蓝落在 Weey 黄底上 1.25（同样看不见）。按气泡自身亮度选深/浅。
+     * 曾经按「自己气泡 / 对方气泡」分成两个值，各自更清楚，代价是**同一屏上出现两种蓝**
+     * ——系统消息里的人名和自己消息里的链接不一样色，而它们是同一种东西。链接色是语义，
+     * 不该是背景的函数。
      *
-     * 🔴 已知残留：品牌色饱和度太高时蓝没有余量，两条判据无法同时满足——
-     * Weey 黄底 4.64/2.97，PrivChat 蓝底 4.45/1.73（后者链接跟白正文几乎分不开）。
-     * 微信/Telegram 在自己气泡上都保留了下划线正是因为这个。要彻底解决只有两条路：
-     * 自己气泡上保留一个非颜色提示，或者别让自己气泡整块铺品牌色。
+     * 但值也不能写死两个常量：自己气泡铺的是**品牌主色**，Weey 是黄（很亮）、PrivChat 是
+     * 蓝（很暗）、无品牌回退是中性灰。为黄色调的深蓝落到灰气泡上只有 2.11——写死等于
+     * 只照顾了当时手头那个品牌。
+     *
+     * 所以这里**按当前主题实际的三种底色**（系统消息底 / 对方气泡 / 自己气泡）从固定色阶里
+     * 挑「最小对比度最大」的那个，任何品牌都自动成立。
+     *
+     * 🔴 已知上限：品牌色饱和时，色阶里没有一个点能在三种底色上都过 4.5——深色主题下三种
+     * 底色分别配黑字、白字、中灰字，单一颜色要和三种正文都拉开 3:1 时 luminance 窗口是
+     * 空集。选出来的是最均衡点，不是全部达标点。要在深色下同时拿到 4.5，得让自己气泡
+     * 别整块铺品牌色。
      */
-    val Colors.messageLinkSelf: Color
+    val Colors.messageLink: Color
         get() {
-            val b = chatColors.bubbleSelf
-            val lum = 0.2126f * b.red + 0.7152f * b.green + 0.0722f * b.blue
-            return if (lum > 0.5f) Color(0xFF1D4ED8) else Color(0xFF93C5FD)
+            // 每个面都是「底色 + 它自己的正文色」：链接要在底上看得清，
+            // 又要和身边的正文分得开（去掉下划线后颜色是唯一提示）。
+            val faces = listOf(
+                muted to mutedForeground,
+                chatColors.bubbleOther to chatColors.onBubbleOther,
+                chatColors.bubbleSelf to chatColors.onBubbleSelf,
+            )
+            return LINK_BLUE_RAMP.maxByOrNull { candidate ->
+                val minBackground = faces.minOf { (bg, _) -> contrast(candidate, bg) }
+                val minText = faces.minOf { (_, text) -> contrast(candidate, text) }
+                // 排序是分层的，**底色可读性优先**：链接首先得看得见。
+                // 反过来把「和正文分得开」当硬条件时，会选出在深底上对比 1.01 的深蓝
+                // ——和白字分得很开，但整段字本身看不见了。
+                // 底色对比封顶 4.5（够用即可，不为了刷高分再往极端走），余量再用来比正文区分。
+                minOf(minBackground, 4.5f) * 100f + minOf(minText, 4.5f)
+            } ?: LINK_BLUE_RAMP[2]
         }
 
     /**

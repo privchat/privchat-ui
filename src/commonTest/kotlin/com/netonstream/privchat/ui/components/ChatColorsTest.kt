@@ -2,7 +2,7 @@ package com.netonstream.privchat.ui.components
 
 import com.gearui.theme.Themes
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.chatColors
-import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageLinkOther
+import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageLink
 import kotlin.test.Test
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
@@ -33,7 +33,7 @@ class ChatColorsTest {
     @Test
     fun linkColorContrastsWithOtherBubble() {
         listOf(Themes.Light.colors, Themes.Dark.colors).forEach { colors ->
-            val delta = luminance(colors.messageLinkOther) - luminance(colors.chatColors.bubbleOther)
+            val delta = luminance(colors.messageLink) - luminance(colors.chatColors.bubbleOther)
             assertTrue(
                 delta * delta > 0.04f,
                 "链接色与对方气泡背景亮度过近（差 $delta），实体文本会隐形",
@@ -42,18 +42,35 @@ class ChatColorsTest {
     }
 
     /**
-     * 链接**不再有下划线**，颜色是「这是可点的」唯一提示，所以还要跟同一段正文分得开。
+     * 🔴 这里原本还有一条「链接色必须与同段正文 ≥3:1」（WCAG 1.4.1，去掉下划线后颜色是
+     * 唯一提示）。**它和「全局同一个链接色」不可兼得，已经量过了，不是没测出来。**
      *
-     * WCAG 1.4.1：仅靠颜色传递信息时，需与周围文字有 ≥3:1 的对比（手机上没有 hover
-     * 可以补第二个提示）。这条挡的是「把链接调成好看的浅蓝，结果跟白正文糊成一片」。
+     * 深色主题里三种底色分别配中灰字（系统消息）、白字（对方气泡）、黑字或白字（自己气泡，
+     * 取决于品牌主色明暗）。一个颜色要同时和这三种正文各拉开 3:1，luminance 窗口是空集。
+     * 把整条蓝色阶都试过：无品牌深色最好是「底 5.79 / 正文 1.43」，Weey 深色是
+     * 「底 3.43 / 正文 1.92」——没有一个点两项都过。
+     *
+     * 取舍是**底色可读性优先**：先保证链接本身看得见，再尽量和正文分开。剩下的缺口只有
+     * 两条真出路：深色下给链接补一个非颜色提示（下划线），或者自己气泡别整块铺品牌色。
+     * 两条都是产品决定，不是调色能解决的。
+     */
+    /**
+     * 全局只有一个链接色：同一屏上系统消息里的人名和气泡里的链接必须同色。
+     *
+     * 这条挡的是「为了各自的底色把链接色拆成两个值」——那样每一处单看都更清楚，
+     * 但用户同时看到两种蓝，而它们表达的是同一件事。
      */
     @Test
-    fun linkColorIsDistinguishableFromBodyText() {
+    fun oneLinkColourAcrossEverySurface() {
         listOf(Themes.Light.colors, Themes.Dark.colors).forEach { colors ->
-            assertTrue(
-                contrast(colors.messageLinkOther, colors.chatColors.onBubbleOther) >= 3.0,
-                "对方气泡：链接色与正文色对比不足 3:1，去掉下划线后认不出哪段可点",
-            )
+            // 系统消息底(muted)、对方气泡、自己气泡——同一个值必须在三处都还看得见。
+            listOf(colors.muted, colors.chatColors.bubbleOther, colors.chatColors.bubbleSelf)
+                .forEach { bg ->
+                    assertTrue(
+                        contrast(colors.messageLink, bg) >= 3.0,
+                        "链接色在某个底色上对比不足 3:1（底=$bg）",
+                    )
+                }
         }
     }
 
@@ -82,7 +99,7 @@ class ChatColorsTest {
     @Test
     fun linkColorContrastsWithSystemMessageBackground() {
         listOf(Themes.Light.colors, Themes.Dark.colors).forEach { colors ->
-            val delta = luminance(colors.messageLinkOther) - luminance(colors.muted)
+            val delta = luminance(colors.messageLink) - luminance(colors.muted)
             assertTrue(
                 delta * delta > 0.04f,
                 "链接色与系统消息底色亮度过近（差 $delta），人名会糊在背景里",

@@ -20,8 +20,7 @@ import com.netonstream.privchat.ui.platform.ClipboardBridge
 import com.netonstream.privchat.ui.platform.ExternalLinkBridge
 import com.netonstream.privchat.ui.utils.Formatter
 import com.netonstream.privchat.ui.voice.VoicePlayback
-import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageLinkOther
-import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageLinkSelf
+import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageLink
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageTextOther
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageTextSelf
 import com.gearui.components.actionsheet.ActionSheet
@@ -151,7 +150,7 @@ fun MessageContent(
             MessageType.FILE -> FileContent(parsed, message, textColor, secondaryTextColor)
             MessageType.STICKER -> StickerContent(parsed)
             MessageType.LOCATION -> LocationContent(parsed, textColor, secondaryTextColor)
-            MessageType.LINK -> LinkContent(parsed, linkColorFor(isSelf), secondaryTextColor)
+            MessageType.LINK -> LinkContent(parsed, Theme.colors.messageLink, secondaryTextColor)
             MessageType.CONTACT -> ContactContent(parsed, textColor, secondaryTextColor, onContactClick)
             MessageType.RED_PACKET -> RedPacketMessageView(parsed, redPacketStatusOf, onRedPacketClick)
             MessageType.MONEY_TRANSFER -> MoneyTransferMessageView(parsed, isSelf, channelDisplayName, onMoneyTransferClick)
@@ -243,13 +242,10 @@ private fun TextContent(
     }
 
     val bodyStyle = Theme.typography.bodyMedium
-    // 可点击的一律用 link 蓝，不加下划线。
-    //
-    // 自己气泡曾经用正文色 + 下划线（下划线是唯一提示）。现在两种气泡都靠颜色表达
-    // 「这是可点的」，所以链接色要同时满足：与所在气泡底 ≥4.5（看得清）、与同段正文
-    // ≥3:1（认得出）。自己/对方气泡的底色完全不同，必须分别取值，见
-    // PrivChatThemeExtension.messageLinkSelf / messageLinkOther 的注释与实测数字。
-    val linkColor = linkColorFor(isSelf)
+    // 可点击的一律用 link 蓝、不加下划线，而且**全局同一个蓝**——自己气泡、对方气泡、
+    // 系统消息里的人名都是它。曾经按气泡分成两个值，结果同一屏上出现两种蓝；
+    // 链接色是语义，不该是背景的函数。取值依据见 PrivChatThemeExtension.messageLink。
+    val linkColor = Theme.colors.messageLink
     val linkStyle = TextLinkStyles(style = SpanStyle(color = linkColor))
 
     val annotated = buildAnnotatedString {
@@ -1054,11 +1050,6 @@ private fun fmtCoord(v: Double): String = ((v * 100000).toLong() / 100000.0).toS
  * 缩略图由发送端 SDK 预览钩子生成（server 不爬，接收端不爬）。Phase 1 只渲染：
  * 缩略图可用 → 图 + 标题 + 描述 + url；不可用 → 纯文本卡片。点击 → 外部浏览器。
  */
-/** 可点击文本/卡片的颜色：自己与对方气泡底色不同，取值也不同。 */
-@Composable
-private fun linkColorFor(isSelf: Boolean): Color =
-    if (isSelf) Theme.colors.messageLinkSelf else Theme.colors.messageLinkOther
-
 @Composable
 private fun LinkContent(
     parsed: ParsedContent,
