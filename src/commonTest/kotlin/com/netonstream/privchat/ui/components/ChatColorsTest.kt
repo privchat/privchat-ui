@@ -42,6 +42,38 @@ class ChatColorsTest {
     }
 
     /**
+     * 链接**不再有下划线**，颜色是「这是可点的」唯一提示，所以还要跟同一段正文分得开。
+     *
+     * WCAG 1.4.1：仅靠颜色传递信息时，需与周围文字有 ≥3:1 的对比（手机上没有 hover
+     * 可以补第二个提示）。这条挡的是「把链接调成好看的浅蓝，结果跟白正文糊成一片」。
+     */
+    @Test
+    fun linkColorIsDistinguishableFromBodyText() {
+        listOf(Themes.Light.colors, Themes.Dark.colors).forEach { colors ->
+            assertTrue(
+                contrast(colors.messageLinkOther, colors.chatColors.onBubbleOther) >= 3.0,
+                "对方气泡：链接色与正文色对比不足 3:1，去掉下划线后认不出哪段可点",
+            )
+        }
+    }
+
+    /** WCAG 相对亮度对比度。luminance() 那个平均值只够比"谁更亮"，判阈值要用这个。 */
+    private fun contrast(
+        a: com.tencent.kuikly.compose.ui.graphics.Color,
+        b: com.tencent.kuikly.compose.ui.graphics.Color,
+    ): Double {
+        fun ch(v: Float): Double {
+            val d = v.toDouble()
+            return if (d <= 0.04045) d / 12.92 else Math.pow((d + 0.055) / 1.055, 2.4)
+        }
+        fun rel(c: com.tencent.kuikly.compose.ui.graphics.Color) =
+            0.2126 * ch(c.red) + 0.7152 * ch(c.green) + 0.0722 * ch(c.blue)
+        val la = rel(a)
+        val lb = rel(b)
+        return (maxOf(la, lb) + 0.05) / (minOf(la, lb) + 0.05)
+    }
+
+    /**
      * 系统消息（"X 邀请 Y 加入了群聊"）里的人名也是链接，底色是 `muted` 而不是气泡色。
      *
      * 这行曾经用 `primary`：Weey 的品牌主色是黄色，浅色主题下人名在浅灰底上几乎看不清。

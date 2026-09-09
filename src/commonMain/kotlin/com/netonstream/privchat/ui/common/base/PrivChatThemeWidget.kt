@@ -110,13 +110,39 @@ object PrivChatThemeExtension {
         get() = chatColors.onBubbleOther
 
     /**
-     * 对方气泡里的链接/手机号/@提及色。
+     * 可点击文本（链接/手机号/@提及）在**对方气泡与系统消息**上的颜色。
      *
      * 不能用 `primary`：那是「主按钮底色」，暗色主题下是近白，跟气泡文字色撞在一起。
-     * `info` 是链接语义色，亮暗两套值都是照着可读性调的。
+     *
+     * 也不再直接等于 `info`。去掉下划线之后颜色成了唯一的「这是可点的」提示，判据就从
+     * 「链接 vs 背景」变成了还要加一条「链接 vs 同段正文 ≥ 3:1」——`info` 的暗色值
+     * `#60A5FA` 对白正文只有 2.44，压深到 `#3B82F6` 才够（4.62 / 3.52）。亮色的
+     * `#2563EB` 两条都过（4.70 / 3.85），沿用。
+     *
+     * 之所以在这里定值而不是去改 gearui 的 `info`：`info` 是冻结 token，还被状态提示等
+     * 处消费，为聊天气泡的判据去动它会波及无关组件。
      */
     val Colors.messageLinkOther: Color
-        get() = info
+        get() = if (isDarkTheme) Color(0xFF3B82F6) else Color(0xFF2563EB)
+
+    /**
+     * 可点击文本在**自己气泡**上的颜色。
+     *
+     * 自己气泡是品牌主色铺满的（Weey 黄 `#FFD238` / PrivChat 蓝 `#0046BE`），
+     * 所以这里不能用固定的一个蓝：深蓝落在 PrivChat 蓝底上对比度 1.20（看不见），
+     * 浅蓝落在 Weey 黄底上 1.25（同样看不见）。按气泡自身亮度选深/浅。
+     *
+     * 🔴 已知残留：品牌色饱和度太高时蓝没有余量，两条判据无法同时满足——
+     * Weey 黄底 4.64/2.97，PrivChat 蓝底 4.45/1.73（后者链接跟白正文几乎分不开）。
+     * 微信/Telegram 在自己气泡上都保留了下划线正是因为这个。要彻底解决只有两条路：
+     * 自己气泡上保留一个非颜色提示，或者别让自己气泡整块铺品牌色。
+     */
+    val Colors.messageLinkSelf: Color
+        get() {
+            val b = chatColors.bubbleSelf
+            val lum = 0.2126f * b.red + 0.7152f * b.green + 0.0722f * b.blue
+            return if (lum > 0.5f) Color(0xFF1D4ED8) else Color(0xFF93C5FD)
+        }
 
     /**
      * 未读消息数量徽章

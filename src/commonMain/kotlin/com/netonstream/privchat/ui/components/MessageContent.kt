@@ -21,6 +21,7 @@ import com.netonstream.privchat.ui.platform.ExternalLinkBridge
 import com.netonstream.privchat.ui.utils.Formatter
 import com.netonstream.privchat.ui.voice.VoicePlayback
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageLinkOther
+import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageLinkSelf
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageTextOther
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageTextSelf
 import com.gearui.components.actionsheet.ActionSheet
@@ -62,7 +63,6 @@ import com.tencent.kuikly.compose.ui.text.LinkInteractionListener
 import com.tencent.kuikly.compose.ui.text.SpanStyle
 import com.tencent.kuikly.compose.ui.text.TextLinkStyles
 import com.tencent.kuikly.compose.ui.text.buildAnnotatedString
-import com.tencent.kuikly.compose.ui.text.style.TextDecoration
 import com.tencent.kuikly.compose.ui.text.withLink
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.material3.Text as KuiklyText
@@ -242,17 +242,14 @@ private fun TextContent(
     }
 
     val bodyStyle = Theme.typography.bodyMedium
-    // 链接色必须跟所在气泡背景有对比：
-    // - 自己的气泡是 primary 同色的深底，用白色正文色；
-    // - 对方的气泡用 info（链接蓝）。这里原本用 primary，而 primary 在暗色主题下是近白，
-    //   跟对方气泡文字色撞色，手机号/网址/@提及会整段看不见。
-    val linkColor = if (isSelf) textColor else Theme.colors.messageLinkOther
-    val linkStyle = TextLinkStyles(
-        style = SpanStyle(
-            color = linkColor,
-            textDecoration = TextDecoration.Underline,
-        ),
-    )
+    // 可点击的一律用 link 蓝，不加下划线。
+    //
+    // 自己气泡曾经用正文色 + 下划线（下划线是唯一提示）。现在两种气泡都靠颜色表达
+    // 「这是可点的」，所以链接色要同时满足：与所在气泡底 ≥4.5（看得清）、与同段正文
+    // ≥3:1（认得出）。自己/对方气泡的底色完全不同，必须分别取值，见
+    // PrivChatThemeExtension.messageLinkSelf / messageLinkOther 的注释与实测数字。
+    val linkColor = if (isSelf) Theme.colors.messageLinkSelf else Theme.colors.messageLinkOther
+    val linkStyle = TextLinkStyles(style = SpanStyle(color = linkColor))
 
     val annotated = buildAnnotatedString {
         var cursor = 0
