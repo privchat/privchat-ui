@@ -913,4 +913,5 @@ internal val viWallet = PrivChatWalletStrings(
     previewContactWithUid = "[Danh thiếp] Người dùng #%s",
     connectingShort = "Đang kết nối…",
     initializingShort = "Đang khởi động…",
+    avatarNotAnImage = "Hãy chọn ảnh (JPG, PNG hoặc WebP)",
 )

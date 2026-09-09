@@ -913,4 +913,5 @@ internal val hantWallet = PrivChatWalletStrings(
     previewContactWithUid = "[名片] 用戶 #%s",
     connectingShort = "連線中...",
     initializingShort = "正在初始化...",
+    avatarNotAnImage = "只能選圖片（JPG / PNG / WebP）",
 )

@@ -3093,6 +3093,7 @@ data class PrivChatWalletStrings(
     val previewContactWithUid: String,
     val connectingShort: String,
     val initializingShort: String,
+    val avatarNotAnImage: String,
 )
 
 data class PrivChatWalletStringsPatch(
@@ -3266,6 +3267,7 @@ data class PrivChatWalletStringsPatch(
     val previewContactWithUid: String? = null,
     val connectingShort: String? = null,
     val initializingShort: String? = null,
+    val avatarNotAnImage: String? = null,
 ) {
     companion object
 }
@@ -3440,7 +3442,8 @@ val PrivChatWalletStringsPatch.isEmpty: Boolean
         previewLocationWithName == null &&
         previewContactWithUid == null &&
         connectingShort == null &&
-        initializingShort == null
+        initializingShort == null &&
+        avatarNotAnImage == null
 
 fun PrivChatWalletStrings.merge(patch: PrivChatWalletStringsPatch?): PrivChatWalletStrings {
     if (patch == null || patch.isEmpty) return this
@@ -3615,5 +3618,6 @@ fun PrivChatWalletStrings.merge(patch: PrivChatWalletStringsPatch?): PrivChatWal
         previewContactWithUid = patch.previewContactWithUid ?: previewContactWithUid,
         connectingShort = patch.connectingShort ?: connectingShort,
         initializingShort = patch.initializingShort ?: initializingShort,
+        avatarNotAnImage = patch.avatarNotAnImage ?: avatarNotAnImage,
     )
 }

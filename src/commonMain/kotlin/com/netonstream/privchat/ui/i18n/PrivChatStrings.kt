@@ -874,6 +874,7 @@ data class PrivChatStrings(
     val previewContactWithUid: String get() = dWallet.previewContactWithUid
     val connectingShort: String get() = dWallet.connectingShort
     val initializingShort: String get() = dWallet.initializingShort
+    val avatarNotAnImage: String get() = dWallet.avatarNotAnImage
 }
 
 data class PrivChatStringsPatch(

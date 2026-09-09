@@ -913,4 +913,5 @@ internal val enWallet = PrivChatWalletStrings(
     previewContactWithUid = "[Contact] User #%s",
     connectingShort = "Connecting…",
     initializingShort = "Starting up…",
+    avatarNotAnImage = "Pick an image (JPG, PNG or WebP)",
 )

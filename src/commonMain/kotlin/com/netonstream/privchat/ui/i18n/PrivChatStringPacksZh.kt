@@ -915,4 +915,5 @@ internal val zhWallet = PrivChatWalletStrings(
     previewContactWithUid = "[名片] 用户 #%s",
     connectingShort = "连接中...",
     initializingShort = "正在初始化...",
+    avatarNotAnImage = "只能选图片（JPG / PNG / WebP）",
 )
