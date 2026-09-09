@@ -31,7 +31,6 @@ import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
-private const val GROUP_INVITE_MAX_BATCH = 49
 
 /**
  * 群邀请页（多选）：选好友打勾，点右上"邀请"批量提交。
@@ -116,7 +115,7 @@ fun GroupInvitePage(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = strings.groupPickerSelectedCount.withArgs(selected.size, GROUP_INVITE_MAX_BATCH),
+                text = strings.groupPickerSelectedCount.withArgs(selected.size, GROUP_INVITE_BATCH_LIMIT),
                 style = Theme.typography.bodySmall,
                 color = colors.mutedForeground,
             )
@@ -134,7 +133,7 @@ fun GroupInvitePage(
                 items(filtered.size) { idx ->
                     val friend = filtered[idx]
                     val isSelected = selected.containsKey(friend.userId)
-                    val atLimit = selected.size >= GROUP_INVITE_MAX_BATCH && !isSelected
+                    val atLimit = selected.size >= GROUP_INVITE_BATCH_LIMIT && !isSelected
                     Cell(
                         title = friend.displayName,
                         description = friend.username,
@@ -166,7 +165,7 @@ fun GroupInvitePage(
                             } else if (!atLimit) {
                                 selected[friend.userId] = friend
                             } else {
-                                onError(strings.groupPickerMaxReached.withArgs(GROUP_INVITE_MAX_BATCH))
+                                onError(strings.groupPickerMaxReached.withArgs(GROUP_INVITE_BATCH_LIMIT))
                             }
                         },
                     )

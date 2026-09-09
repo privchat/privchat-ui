@@ -26,15 +26,13 @@ import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
-/** 群成员上限（含自己）。微信/Telegram 普通群一般 200/500，这里按客户端选择阶段限 50。 */
-private const val GROUP_CREATE_MAX_MEMBERS = 49
 
 /**
  * 群创建页：多选好友 + 可选群名输入 + "创建"按钮。
  *
  * - 不输群名时调用方应基于成员昵称自动拼一个（"张三、李四、王五"）
  * - [onCreate] 返回成功后由调用方导航到新会话；失败时显示 [onError]
- * - 列表头部固定一条搜索栏 + "已选 N/[GROUP_CREATE_MAX_MEMBERS]" 计数
+ * - 列表头部固定一条搜索栏 + "已选 N/[GROUP_INVITE_BATCH_LIMIT]" 计数
  */
 @Composable
 fun GroupCreatePage(
@@ -129,7 +127,7 @@ fun GroupCreatePage(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = strings.groupPickerSelectedCount.withArgs(selected.size, GROUP_CREATE_MAX_MEMBERS),
+                text = strings.groupPickerSelectedCount.withArgs(selected.size, GROUP_INVITE_BATCH_LIMIT),
                 style = Theme.typography.bodySmall,
                 color = colors.mutedForeground,
             )
@@ -147,7 +145,7 @@ fun GroupCreatePage(
                 items(filtered.size) { idx ->
                     val friend = filtered[idx]
                     val isSelected = selected.containsKey(friend.userId)
-                    val atLimit = selected.size >= GROUP_CREATE_MAX_MEMBERS && !isSelected
+                    val atLimit = selected.size >= GROUP_INVITE_BATCH_LIMIT && !isSelected
                     Cell(
                         title = friend.displayName,
                         description = friend.username,
@@ -179,7 +177,7 @@ fun GroupCreatePage(
                             } else if (!atLimit) {
                                 selected[friend.userId] = friend
                             } else {
-                                onError(strings.groupPickerMaxReached.withArgs(GROUP_CREATE_MAX_MEMBERS))
+                                onError(strings.groupPickerMaxReached.withArgs(GROUP_INVITE_BATCH_LIMIT))
                             }
                         },
                     )
