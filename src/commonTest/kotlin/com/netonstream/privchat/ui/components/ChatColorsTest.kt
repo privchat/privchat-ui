@@ -41,6 +41,23 @@ class ChatColorsTest {
         }
     }
 
+    /**
+     * 系统消息（"X 邀请 Y 加入了群聊"）里的人名也是链接，底色是 `muted` 而不是气泡色。
+     *
+     * 这行曾经用 `primary`：Weey 的品牌主色是黄色，浅色主题下人名在浅灰底上几乎看不清。
+     * 链接色必须与所在容器背景拉开对比，跟气泡那条判据同源。
+     */
+    @Test
+    fun linkColorContrastsWithSystemMessageBackground() {
+        listOf(Themes.Light.colors, Themes.Dark.colors).forEach { colors ->
+            val delta = luminance(colors.messageLinkOther) - luminance(colors.muted)
+            assertTrue(
+                delta * delta > 0.04f,
+                "链接色与系统消息底色亮度过近（差 $delta），人名会糊在背景里",
+            )
+        }
+    }
+
     private fun luminance(c: com.tencent.kuikly.compose.ui.graphics.Color): Float =
         (c.red + c.green + c.blue) / 3f
 }

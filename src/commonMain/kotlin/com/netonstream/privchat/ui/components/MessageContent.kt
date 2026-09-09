@@ -95,6 +95,12 @@ fun MessageContent(
     channelDisplayName: String = "",
     // 红包卡片实时状态解析（由会话页据领取/抢完系统消息推导）：0/未知=可领取，1=我已领取，2=已抢完/过期。
     redPacketStatusOf: ((String) -> Int)? = null,
+    /**
+     * 点击 @ 提及。**不要复用 [onContactClick]**：那个在自己发的消息上会被置空
+     * （「不能点自己的头像」），@ 却是指向别人的，跟着一起失效就变成了复制。
+     * 第一个参数是 SDK 解析出的 userId，可能为 null，此时由上层按名字兜底。
+     */
+    onMentionClick: ((ULong?, String) -> Unit)? = null,
 ) {
     val colors = Theme.colors
     val textColor = if (isSelf) colors.messageTextSelf else colors.messageTextOther
@@ -136,7 +142,7 @@ fun MessageContent(
                 entities = message.body.entities,
                 textColor = textColor,
                 isSelf = isSelf,
-                onMentionClick = onContactClick,
+                onMentionClick = onMentionClick,
             )
             MessageType.IMAGE -> ImageContent(parsed, message, imageBubbleSize!!, onImagePreview)
             MessageType.VIDEO -> VideoContent(parsed, message, onVideoPreview)
@@ -223,7 +229,7 @@ private fun TextContent(
     entities: List<MessageTextEntity>,
     textColor: Color,
     isSelf: Boolean,
-    onMentionClick: ((ULong) -> Unit)?,
+    onMentionClick: ((ULong?, String) -> Unit)?,
 ) {
     val safeEntities = remember(text, entities) { validTextEntities(text, entities) }
     if (safeEntities.isEmpty()) {
@@ -288,7 +294,7 @@ private fun TextContent(
  */
 private fun showEntityActionSheet(
     entity: MessageTextEntity,
-    onMentionClick: ((ULong) -> Unit)?,
+    onMentionClick: ((ULong?, String) -> Unit)?,
 ) {
     when (entity.type) {
         MessageTextEntityType.Url -> {
@@ -366,9 +372,14 @@ private fun showEntityActionSheet(
         }
 
         MessageTextEntityType.Mention -> {
-            val userId = entity.userId
-            if (userId != null && onMentionClick != null) {
-                onMentionClick(userId)
+            // 🔴 点 @ 要打开这个人的资料，复制只是没人接手时的兜底。
+            //
+            // 这里原来还要求 `entity.userId != null` 才跳转，可 userId 是 SDK 按「第 N 个 @
+            // 对应 mentioned_user_ids 的第 N 项」位置匹配出来的：发送端没带这个数组（例如
+            // 手打的 @、或别的客户端没填）时它就是 null，于是所有 @ 一律变成"复制"。
+            // 现在把 userId 和名字一起交给上层，由会话页拿群成员按名字兜底解析。
+            if (onMentionClick != null) {
+                onMentionClick(entity.userId, entity.value)
             } else {
                 ClipboardBridge.setText(entity.text)
                 Toast.success(PrivChatI18n.current.messageCopied)

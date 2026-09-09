@@ -29,6 +29,7 @@ import com.tencent.kuikly.compose.foundation.gestures.detectTapGestures
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.offlineStatus
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.onlineStatus
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageBubbleOther
+import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageLinkOther
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageBubbleSelf
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageTextOther
 import com.netonstream.privchat.ui.utils.Formatter
@@ -1146,6 +1147,25 @@ fun MessagePage(
                                     },
                                     redPacketStatusOf = { redPacketStatusMap[it] ?: 0 },
                                     onAvatarClick = if (!isSelf) onAvatarClick else null,
+                                    onMentionClick = onAvatarClick?.let { open ->
+                                        { userId, name ->
+                                            // 名字优先，SDK 给的 userId 兜底——顺序是刻意的。
+                                            //
+                                            // SDK 把第 N 个 @ 配给 mentioned_user_ids 的第 N 项
+                                            // （privchat-sdk message_content.rs 的 scan_entities）。
+                                            // 文本里只要多一个不是提及的 `@xxx`，后面每一个 @ 都会
+                                            // 错位配到别人身上——点 @张三 打开李四的资料，比复制更糟，
+                                            // 因为它看起来是对的。名字是用户实际点到的那串字符，
+                                            // 群成员里唯一匹配时它比位置更可信。
+                                            // 同名多人 / 成员改过名 → 匹配不到，退回 userId。
+                                            val byName = groupMembersForChannel
+                                                .filter { it.displayName == name }
+                                                .singleOrNull()
+                                                ?.userId
+                                            val resolved = byName ?: userId
+                                            if (resolved != null) open(resolved)
+                                        }
+                                    },
                                     onAvatarLongPress = if (!channel.isDm && !isSelf) { userId, name ->
                                         val ins = appendMention(inputText, name, userId)
                                         inputText = ins.text
@@ -1805,6 +1825,8 @@ private fun MessageRow(
     /** 发送者头像 URL(群聊来自 roster hydrate;DM 来自 channel peer 头像)。 */
     senderAvatarUrl: String? = null,
     onAvatarClick: ((ULong) -> Unit)? = null,
+    /** 点击消息里的 @ 提及。与 [onAvatarClick] 分开：自己发的消息不给点头像，但 @ 要能点。 */
+    onMentionClick: ((ULong?, String) -> Unit)? = null,
     onAvatarLongPress: ((ULong, String) -> Unit)? = null,
     peerReadPts: ULong? = null,
     reactions: List<com.netonstream.privchat.sdk.dto.ReactionChip> = emptyList(),
@@ -2009,6 +2031,7 @@ private fun MessageRow(
                             onVideoPreview = onVideoPreview,
                             onImagePreview = onImagePreview,
                             onContactClick = onAvatarClick,
+                            onMentionClick = onMentionClick,
                             onRedPacketClick = onRedPacketClick,
                             onMoneyTransferClick = onMoneyTransferClick,
                             channelDisplayName = channelDisplayName,
@@ -2092,7 +2115,10 @@ private fun SystemMessageRow(
                     templateDict = strings.systemTemplates,
                     listSeparator = strings.systemListSeparator,
                     textColor = colors.mutedForeground,
-                    linkColor = colors.primary,
+                    // 人名是可点的链接，用链接语义色 info，不能用品牌主色：Weey 的 primary
+                    // 是黄色，浅色背景上一片糊；气泡里的链接早就改成 messageLinkOther 了
+                    // （见 PrivChatThemeWidget 的注释），系统消息这行当时漏改。
+                    linkColor = colors.messageLinkOther,
                     onUserClick = onUserClick,
                     onRedPacketClick = onRedPacketClick,
                 )
