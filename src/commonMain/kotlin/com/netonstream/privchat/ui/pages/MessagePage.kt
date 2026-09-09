@@ -954,7 +954,7 @@ fun MessagePage(
                             add(
                                 ContextMenuItem(
                                     label = strings.globalSearchPlaceholder,
-                                    icon = Icons.search,
+                                    icon = Icons.magnifying_glass,
                                     onClick = { onSearchMessages() },
                                 )
                             )
@@ -973,7 +973,7 @@ fun MessagePage(
                             .padding(horizontal = 12.dp, vertical = 8.dp)
                             .clickable(onClick = onOpen),
                     ) {
-                        Icon(name = Icons.more_horiz, size = 24.dp, tint = Theme.colors.foreground)
+                        Icon(name = Icons.dots_three, size = 24.dp, tint = Theme.colors.foreground)
                     }
                 }
             },
@@ -1647,7 +1647,7 @@ private fun PinnedMessagesBar(
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(name = Icons.bookmark, size = IconSizes.Default.sm, tint = colors.primary)
+        Icon(name = Icons.bookmark_simple_fill, size = IconSizes.Default.sm, tint = colors.primary)
         HorizontalSpacer(8.dp)
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -1665,7 +1665,7 @@ private fun PinnedMessagesBar(
         if (canManage) {
             HorizontalSpacer(8.dp)
             Box(modifier = Modifier.clickable(onClick = onUnpin)) {
-                Icon(name = Icons.close, size = IconSizes.Default.sm, tint = colors.mutedForeground)
+                Icon(name = Icons.x, size = IconSizes.Default.sm, tint = colors.mutedForeground)
             }
         }
     }
@@ -2491,7 +2491,7 @@ private fun NewMessagesBubble(count: Int, onClick: () -> Unit) {
         )
         HorizontalSpacer(6.dp)
         Icon(
-            name = Icons.keyboard_arrow_down,
+            name = Icons.caret_down,
             tint = colors.primary,
             size = IconSizes.Default.lg,
         )
@@ -2554,7 +2554,7 @@ private fun MessageInputBar(
     val plusActions = remember(moneyEnabled, strings) {
         buildList {
             add(PlusAction(Icons.image, strings.plusAlbum, onPickImage))
-            add(PlusAction(Icons.camera_alt, strings.plusCamera, onPickCamera))
+            add(PlusAction(Icons.camera, strings.plusCamera, onPickCamera))
             // 位置入口暂时下线（LOCATION_ENTRY_ENABLED=false）。
             //
             // 发送侧还没接定位：Info.plist 里没有 NSLocationWhenInUseUsageDescription，
@@ -2568,11 +2568,11 @@ private fun MessageInputBar(
             }
             // 红包/转账 PLATFORM-only：moneyEnabled 才显示（BUILTIN 隐藏入口）。
             if (moneyEnabled) {
-                add(PlusAction(Icons.mail, strings.plusRedPacket, onRedPacket))
-                add(PlusAction(Icons.mail, strings.plusMoneyTransfer, onMoneyTransfer))
+                add(PlusAction(Icons.envelope_simple, strings.plusRedPacket, onRedPacket))
+                add(PlusAction(Icons.envelope_simple, strings.plusMoneyTransfer, onMoneyTransfer))
             }
-            add(PlusAction(Icons.attach_file, strings.plusFile, onPickFile))
-            add(PlusAction(Icons.contacts, strings.plusContact, onContact))
+            add(PlusAction(Icons.paperclip, strings.plusFile, onPickFile))
+            add(PlusAction(Icons.address_book, strings.plusContact, onContact))
         }
     }
     val plusPages = remember(plusActions) { plusActions.chunked(8) }
@@ -2747,7 +2747,7 @@ private fun MessageInputBar(
             // 最左：bot/system/official 会话的菜单按钮（BOT_INTERACTION_SPEC §3.1）
             if (showMenuButton) {
                 CircleIconButton(
-                    icon = Icons.menu,
+                    icon = Icons.list,
                     onClick = {
                         closeAllPanels()
                         onMenuClick()
@@ -2758,7 +2758,7 @@ private fun MessageInputBar(
 
             // 左侧：语音/键盘切换
                 CircleIconButton(
-                    icon = if (voiceMode) Icons.chat else Icons.mic,
+                    icon = if (voiceMode) Icons.chat_circle else Icons.microphone,
                     onClick = {
                         val enteringVoice = !voiceMode
                         voiceMode = enteringVoice
@@ -2868,7 +2868,7 @@ private fun MessageInputBar(
 
                 // 右侧：表情
                 CircleIconButton(
-                    icon = Icons.favorite_border,
+                    icon = Icons.heart,
                     onClick = {
                     if (panelMode == InputPanelMode.EMOJI || displayedPanelMode == InputPanelMode.EMOJI) {
                         closeAllPanels()
@@ -2893,7 +2893,7 @@ private fun MessageInputBar(
                     )
                 } else {
                 CircleIconButton(
-                    icon = Icons.add,
+                    icon = Icons.plus,
                     onClick = {
                     if (panelMode == InputPanelMode.PLUS || displayedPanelMode == InputPanelMode.PLUS) {
                         closeAllPanels()
@@ -3095,7 +3095,7 @@ private fun VoiceRecordingOverlay(
         ) {
             // 左：麦克风图标
             Icon(
-                name = if (isCancel) Icons.delete else Icons.mic,
+                name = if (isCancel) Icons.trash else Icons.microphone,
                 size = 56.dp,
                 tint = Color.White,
             )
@@ -3343,28 +3343,28 @@ private fun MessageActionKind.toMessageAction(
     onClick: () -> Unit,
 ): MessageAction = when (this) {
     MessageActionKind.Reply ->
-        MessageAction(label = PrivChatI18n.current.actionReply, icon = Icons.reply, onClick = onClick)
+        MessageAction(label = PrivChatI18n.current.actionReply, icon = Icons.arrow_bend_up_left, onClick = onClick)
     MessageActionKind.Copy ->
-        MessageAction(label = PrivChatI18n.current.actionCopyText, icon = Icons.content_copy, onClick = onClick)
+        MessageAction(label = PrivChatI18n.current.actionCopyText, icon = Icons.copy, onClick = onClick)
     MessageActionKind.SaveImage ->
-        MessageAction(label = PrivChatI18n.current.actionSaveImage, icon = Icons.download, onClick = onClick)
+        MessageAction(label = PrivChatI18n.current.actionSaveImage, icon = Icons.download_simple, onClick = onClick)
     MessageActionKind.Recall ->
-        MessageAction(label = PrivChatI18n.current.actionRecall, icon = Icons.autorenew, onClick = onClick)
+        MessageAction(label = PrivChatI18n.current.actionRecall, icon = Icons.arrows_clockwise, onClick = onClick)
     MessageActionKind.Forward ->
-        MessageAction(label = PrivChatI18n.current.actionForward, icon = Icons.forward, onClick = onClick)
+        MessageAction(label = PrivChatI18n.current.actionForward, icon = Icons.arrow_bend_up_right, onClick = onClick)
     MessageActionKind.Pin ->
-        MessageAction(label = strings.messagePin, icon = Icons.bookmark, onClick = onClick)
+        MessageAction(label = strings.messagePin, icon = Icons.bookmark_simple_fill, onClick = onClick)
     MessageActionKind.Unpin ->
-        MessageAction(label = strings.messageUnpin, icon = Icons.bookmark_border, onClick = onClick)
+        MessageAction(label = strings.messageUnpin, icon = Icons.bookmark_simple, onClick = onClick)
     MessageActionKind.DeleteLocal -> {
         val label = when (message.status) {
             MessageStatus.Pending, MessageStatus.Sending -> PrivChatI18n.current.actionCancelSend
             else -> PrivChatI18n.current.actionDeleteLocal
         }
-        MessageAction(label = label, icon = Icons.delete, danger = true, onClick = onClick)
+        MessageAction(label = label, icon = Icons.trash, danger = true, onClick = onClick)
     }
     MessageActionKind.Select ->
-        MessageAction(label = PrivChatI18n.current.actionSelect, icon = Icons.check_box_outline_blank, onClick = onClick)
+        MessageAction(label = PrivChatI18n.current.actionSelect, icon = Icons.square, onClick = onClick)
     MessageActionKind.Report ->
         MessageAction(label = PrivChatI18n.current.actionReport, icon = Icons.flag, danger = true, onClick = onClick)
 }
@@ -3471,7 +3471,7 @@ private fun ReplyBar(
                 .clickable { onDismiss() },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(name = Icons.close, size = 16.dp, tint = colors.mutedForeground)
+            Icon(name = Icons.x, size = 16.dp, tint = colors.mutedForeground)
         }
     }
 }

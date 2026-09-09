@@ -138,7 +138,7 @@ fun GroupMembersPage(
             useDefaultBack = true,
             onBackClick = onBack,
             rightItems = listOf(
-                NavBarItem(icon = Icons.add, onClick = onInviteClick),
+                NavBarItem(icon = Icons.plus, onClick = onInviteClick),
             ),
         )
 

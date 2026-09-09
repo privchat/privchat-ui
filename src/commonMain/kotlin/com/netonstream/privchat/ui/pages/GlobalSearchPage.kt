@@ -169,7 +169,7 @@ fun GlobalSearchPage(
                 contentAlignment = Alignment.Center,
             ) {
                 com.gearui.foundation.primitives.Icon(
-                    name = com.gearui.components.icon.Icons.chevron_left,
+                    name = com.gearui.components.icon.Icons.caret_left,
                     size = 24.dp,
                     tint = colors.foreground,
                 )

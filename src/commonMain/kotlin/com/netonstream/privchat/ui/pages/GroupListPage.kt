@@ -38,7 +38,7 @@ fun GroupListPage(
             useDefaultBack = true,
             onBackClick = onBack,
             rightItems = listOf(
-                NavBarItem(icon = Icons.add, onClick = onCreateGroup)
+                NavBarItem(icon = Icons.plus, onClick = onCreateGroup)
             ),
         )
 

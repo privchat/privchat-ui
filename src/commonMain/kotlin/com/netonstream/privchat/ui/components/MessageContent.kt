@@ -700,7 +700,7 @@ private fun VideoContent(
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                name = Icons.play_arrow,
+                name = Icons.play_fill,
                 size = 26.dp,
                 tint = Color.White,
             )

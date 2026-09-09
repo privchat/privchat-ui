@@ -87,11 +87,11 @@ fun ContactPage(
             title = strings.contactTitle,
             rightItems = listOf(
                 com.gearui.components.navbar.NavBarItem(
-                    icon = com.gearui.components.icon.Icons.search,
+                    icon = com.gearui.components.icon.Icons.magnifying_glass,
                     onClick = onGlobalSearch,
                 ),
                 com.gearui.components.navbar.NavBarItem(
-                    icon = com.gearui.components.icon.Icons.person_add,
+                    icon = com.gearui.components.icon.Icons.user_plus,
                     onClick = onAddFriend,
                 ),
             ),
@@ -254,7 +254,7 @@ private fun FriendRequestEntry(
     Cell(
         onClick = onClick,
         compact = true,
-        leading = { ContactEntryIcon(Icons.person_add) },
+        leading = { ContactEntryIcon(Icons.user_plus) },
         title = strings.contactFriendRequest,
         arrow = true,
         trailing = if (requestCount > 0) {

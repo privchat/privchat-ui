@@ -190,7 +190,7 @@ fun ConversationPage(
                         // 全局搜索(聊天记录)入口
                         NavBarActionSlot(onClick = onGlobalSearch) {
                             Icon(
-                                name = Icons.search,
+                                name = Icons.magnifying_glass,
                                 size = NavBarDefaults.actionIconSize,
                                 tint = Theme.colors.foreground,
                             )
@@ -201,29 +201,29 @@ fun ConversationPage(
                             items = listOf(
                                 ContextMenuItem(
                                     label = strings.menuCreateGroup,
-                                    icon = Icons.groups,
+                                    icon = Icons.users_three,
                                     onClick = onCreateGroup,
                                 ),
                                 ContextMenuItem(
                                     label = strings.menuAddFriend,
-                                    icon = Icons.person_add,
+                                    icon = Icons.user_plus,
                                     onClick = onAddFriend,
                                 ),
                                 ContextMenuItem(
                                     label = strings.menuScan,
-                                    icon = Icons.camera_alt,
+                                    icon = Icons.camera,
                                     onClick = onScan,
                                 ),
                                 ContextMenuItem(
                                     label = strings.menuMyQrCode,
-                                    icon = Icons.open_in_new,
+                                    icon = Icons.arrow_square_out,
                                     onClick = onMyQrCode,
                                 ),
                             ),
                         ) { onOpen ->
                             NavBarActionSlot(onClick = onOpen) {
                                 Icon(
-                                    name = Icons.add,
+                                    name = Icons.plus,
                                     size = NavBarDefaults.actionIconSize,
                                     tint = Theme.colors.foreground,
                                 )
@@ -414,7 +414,7 @@ private fun ChannelItem(
                     // 未读消息气泡或勿扰标识
                     if (item.isMuted) {
                         Icon(
-                            name = Icons.notifications_off,
+                            name = Icons.bell_slash,
                             size = 14.dp,
                             tint = colors.mutedForeground
                         )

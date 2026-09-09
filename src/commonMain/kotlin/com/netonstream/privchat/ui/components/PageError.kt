@@ -42,7 +42,7 @@ fun PageError(
         verticalArrangement = Arrangement.Center,
     ) {
         Icon(
-            name = Icons.error,
+            name = Icons.warning_circle,
             size = 40.dp,
             tint = colors.mutedForeground,
         )
@@ -56,7 +56,7 @@ fun PageError(
             Column(modifier = Modifier.height(20.dp)) {}
             Button(
                 text = PrivChatI18n.strings.retry,
-                icon = Icons.refresh,
+                icon = Icons.arrow_clockwise,
                 type = ButtonType.FILL,
                 theme = ButtonTheme.PRIMARY,
                 size = ButtonSize.MEDIUM,
