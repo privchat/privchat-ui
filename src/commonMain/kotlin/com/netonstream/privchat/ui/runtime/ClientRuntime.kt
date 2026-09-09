@@ -80,6 +80,14 @@ data class ConnectivityState(
     val lastConnectedAt: Long? = null,
     val lastDisconnectedAt: Long? = null,
     val lastError: ClientRuntimeError? = null,
+    /**
+     * 这次掉线是 App 退到后台被系统掐掉的，用户没看见。
+     *
+     * 技术上它确实是重连（本会话连过），但状态条是说给用户听的：他只是把 App 切回来，
+     * 期间什么都没发生过。显示「重连中」会凭空制造"出故障了"的印象。置位后状态条按
+     * 「连接中」呈现，认证成功即清除。会话中途真掉线（隧道、切网）不置位，仍是「重连中」。
+     */
+    val resumedFromBackground: Boolean = false,
 )
 
 // ========== Sync（§17.1） ==========
@@ -254,6 +262,7 @@ object ClientRuntime {
                     reconnecting = false,
                     reconnectAttempt = 0,
                     serverBusy = false, // 成功信号清 busy
+                    resumedFromBackground = false,
                     lastConnectedAt = now,
                     lastError = null,
                 )
@@ -277,6 +286,16 @@ object ClientRuntime {
                 lastError = if (cur.networkReachable) ClientRuntimeError.GatewayDisconnected else ClientRuntimeError.NetworkUnavailable,
             )
         }
+    }
+
+    /**
+     * App 退到后台、由宿主主动断开连接前调用。
+     *
+     * 必须在 [onConnectionStateChanged]("disconnected") **之前**调，让这次掉线带上
+     * 「用户没看见」的标记；否则回前台时状态条会显示「重连中」。
+     */
+    fun onBackgroundDisconnect() {
+        _connectivity.value = _connectivity.value.copy(resumedFromBackground = true)
     }
 
     /** `network_hint_changed`（SDK 侧探测）+ 系统网络监听：设备可达性。 */
@@ -429,6 +448,9 @@ enum class RuntimeBannerKind { AUTH_EXPIRED, OFFLINE, RECONNECTING, CONNECTING, 
  *   > NetworkUnavailable(设备断网) > Reconnecting(曾有会话掉线/握手) > Connecting(首次连接)
  *   > Offline(无会话) > Hidden
  *
+ * Reconnecting 仅用于**用户看得见的**掉线（会话中途断网/握手失败）。App 退到后台被系统
+ * 掐掉的连接带 [ConnectivityState.resumedFromBackground] 标记，回前台按 Connecting 呈现。
+ *
  * 说明：
  * - AuthExpired 最高：被踢下线绝不能显示「连接中/同步中」。
  * - **已认证优先于宿主 reachability 镜像**：镜像会永久卡 unreachable，认证态才是「连接活着」
@@ -456,7 +478,10 @@ fun resolveRuntimeBanner(
         else -> RuntimeBannerKind.HIDDEN
     }
     !connectivity.networkReachable && hasStartedConnectionFlow -> RuntimeBannerKind.OFFLINE
-    connectivity.reconnecting && hasStartedConnectionFlow -> RuntimeBannerKind.RECONNECTING
+    // 后台被系统掐掉的连接：用户没看见断开，回前台就是「连接中」，不是「重连中」。
+    connectivity.reconnecting && hasStartedConnectionFlow ->
+        if (connectivity.resumedFromBackground) RuntimeBannerKind.CONNECTING
+        else RuntimeBannerKind.RECONNECTING
     connectivity.gatewayConnected -> RuntimeBannerKind.CONNECTING
     // 首次连接尚未成功（本会话从未认证过 → lastConnectedAt==null）：显示「连接中」而非
     // 「网络已断开」。用户刚打开 app、连接流程仍在进行，还没连过就提示断网是误导。

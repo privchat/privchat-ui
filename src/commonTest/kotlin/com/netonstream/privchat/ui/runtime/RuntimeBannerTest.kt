@@ -62,11 +62,54 @@ class RuntimeBannerTest {
     }
 
     @Test
-    fun background_disconnect_then_foreground_shows_reconnecting() {
-        // 后台超时主动断开后回到前台：我们**连过**，所以这是重连，不是首连。
-        // app 主动 disconnect 时若不喂给运行时层，connectivity 会停在 authenticated=true，
-        // 状态条落到「服务器连接中」——语义错了。
+    fun background_disconnect_then_foreground_shows_connecting() {
+        // 后台超时主动断开后回到前台：技术上是重连（我们连过），但**用户没看见那次断开**——
+        // 它发生在 App 不可见的时候。他只是把 App 切回来，显示「重连中」凭空制造故障感。
+        // 所以带 onBackgroundDisconnect 标记的这次掉线按「连接中」呈现，与首连一致。
+        //
+        // 这条测试原来断言的是 RECONNECTING，那是之前"语义更准"的取向；按用户反馈改判：
+        // 状态条是说给用户听的，不是描述传输层事实的。
         ClientRuntime.reset()
+        ClientRuntime.onConnectionStateChanged("authenticated")
+        ClientRuntime.onBackgroundDisconnect()
+        ClientRuntime.onConnectionStateChanged("disconnected")
+
+        val kind = resolveRuntimeBanner(
+            connectivity = ClientRuntime.connectivity.value,
+            sync = SyncState(),
+            hasStartedConnectionFlow = true,
+            showConnectedBanner = false,
+        )
+        assertEquals(RuntimeBannerKind.CONNECTING, kind)
+        ClientRuntime.reset()
+    }
+
+    @Test
+    fun visible_mid_session_drop_still_shows_reconnecting() {
+        // 对照组：会话中途真掉线（隧道、切网），用户是看得见的，仍然是「重连中」。
+        // 少了这条，上面那条一改就等于把 RECONNECTING 整个废掉了。
+        ClientRuntime.reset()
+        ClientRuntime.onConnectionStateChanged("authenticated")
+        ClientRuntime.onConnectionStateChanged("disconnected")
+
+        val kind = resolveRuntimeBanner(
+            connectivity = ClientRuntime.connectivity.value,
+            sync = SyncState(),
+            hasStartedConnectionFlow = true,
+            showConnectedBanner = false,
+        )
+        assertEquals(RuntimeBannerKind.RECONNECTING, kind)
+        ClientRuntime.reset()
+    }
+
+    @Test
+    fun reauthentication_clears_the_background_flag() {
+        // 标记必须在认证成功时清掉：否则这一整个会话里之后任何一次真掉线都会被误显示成
+        // 「连接中」。
+        ClientRuntime.reset()
+        ClientRuntime.onConnectionStateChanged("authenticated")
+        ClientRuntime.onBackgroundDisconnect()
+        ClientRuntime.onConnectionStateChanged("disconnected")
         ClientRuntime.onConnectionStateChanged("authenticated")
         ClientRuntime.onConnectionStateChanged("disconnected")
 
