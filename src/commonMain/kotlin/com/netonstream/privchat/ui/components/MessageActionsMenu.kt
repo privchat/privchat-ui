@@ -137,6 +137,15 @@ fun MessageActionsMenu(
     val bounds = anchorBounds
     val showReactionBar = reactions.isNotEmpty() || onMoreReactions != null
 
+    // 🔴 重新锚定 ≠ 用户关掉了菜单。
+    //
+    // 下面的 DisposableEffect 以 bounds 为 key：气泡位置一变就 dispose 旧 overlay、
+    // 按新位置再 show 一个。但 dispose 里的 overlay.dismiss() 会回调 onDismiss，
+    // 而 onDismiss 是 `visible = false`——菜单被自己的重新锚定关掉，而且再也不出来。
+    //
+    // 触发场景：弹 overlay 前先收系统键盘（gearui OverlayHost 的 dismissKeyboardOnShow）。
+    // 键盘一收，消息列表重排，气泡 bounds 立刻变化。
+    val reanchoring = remember { mutableStateOf(false) }
     if (visible && bounds != null) {
         DisposableEffect(bounds) {
             val id = overlay.show(
@@ -157,7 +166,7 @@ fun MessageActionsMenu(
                     safeAreaTop = false,
                     safeAreaBottom = false,
                 ),
-                onDismiss = { visible = false },
+                onDismiss = { if (!reanchoring.value) visible = false },
             ) {
                 MessageActionsOverlayContent(
                     anchor = bounds,
@@ -187,7 +196,9 @@ fun MessageActionsMenu(
             }
             onDispose {
                 pressedActionIndex = null
+                reanchoring.value = true
                 overlay.dismiss(id)
+                reanchoring.value = false
             }
         }
     }
