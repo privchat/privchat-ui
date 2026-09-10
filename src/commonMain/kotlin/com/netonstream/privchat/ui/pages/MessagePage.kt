@@ -8,6 +8,7 @@ import com.netonstream.privchat.sdk.dto.ChannelListEntry
 import com.netonstream.privchat.ui.error.UserFacingError
 import com.netonstream.privchat.sdk.dto.ContentMessageType
 import com.netonstream.privchat.sdk.dto.GroupMemberEntry
+import com.netonstream.privchat.sdk.dto.MessageReadStatsView
 import com.netonstream.privchat.sdk.dto.MessageEntry
 import com.netonstream.privchat.sdk.dto.MessageStatus
 import com.netonstream.privchat.sdk.dto.PresenceEntry
@@ -21,6 +22,7 @@ import com.netonstream.privchat.ui.components.MessageActionKind
 import com.netonstream.privchat.ui.components.MessageActionPolicy
 import com.netonstream.privchat.ui.components.MessageActionsMenu
 import com.netonstream.privchat.ui.components.MessageContent
+import com.netonstream.privchat.ui.components.ReadReceiptsSheet
 import com.netonstream.privchat.ui.media.MediaDownloadManager
 import com.netonstream.privchat.ui.media.MediaDownloadState
 import com.netonstream.privchat.ui.media.MediaSaver
@@ -143,6 +145,9 @@ private enum class VoiceRecordingState {
 }
 
 /** 录制时长不足此时长（ms）静默丢弃 */
+/** 客户端 channel_type：1=私聊，2=群。 */
+private const val GROUP_CHANNEL_TYPE = 2
+
 private const val VOICE_MIN_DURATION_MS = 1000L
 
 /** 最长录制时长（ms），超过自动发送 */
@@ -3269,6 +3274,18 @@ private fun MessageActionsWrapper(
 ) {
     val strings = PrivChatI18n.strings
     val scope = rememberCoroutineScope()
+
+    // 群已读明细（READ_STATUS_SPEC §6.5）：只有自己发的、未撤回的**群**消息才有
+    // 「N 人已读」这一项，且只有服务端认得的 server_message_id 才查得动。
+    // 私聊不进这条路径：一对一的已读就是气泡上那个状态，再列一个"1 人已读"没有信息量。
+    val serverMessageId = message.serverMessageId
+    val canQueryReadDetail = isSelf &&
+        message.channelType == GROUP_CHANNEL_TYPE &&
+        !message.isRevoked &&
+        serverMessageId != null
+    var readStats by remember(message.id) { mutableStateOf<MessageReadStatsView?>(null) }
+    var showReadReceipts by remember(message.id) { mutableStateOf(false) }
+
     val ctx = MessageActionPolicy.Context(
         message = message,
         isSelf = isSelf,
@@ -3389,13 +3406,48 @@ private fun MessageActionsWrapper(
         null
     }
 
+    // 已读入口排在最前，与 Telegram 一致：它是状态，不是动作。
+    // 人数为 0 时不显示——"0 人已读"只会让人以为功能坏了。
+    // 过期的消息服务端会拒，stats 拿不到，这一项自然不出现。
+    val readEntryAction = readStats
+        ?.takeIf { it.readCount > 0u }
+        ?.let { stats ->
+            MessageAction(
+                label = strings.readByMenuEntry.withArgs(stats.readCount.toInt()),
+                icon = Icons.eye,
+                onClick = { showReadReceipts = true },
+            )
+        }
+
+    if (showReadReceipts && serverMessageId != null) {
+        ReadReceiptsSheet(
+            visible = true,
+            serverMessageId = serverMessageId,
+            channelId = message.channelId,
+            onDismiss = { showReadReceipts = false },
+        )
+    }
+
     MessageActionsMenu(
-        actions = menuActions,
+        actions = listOfNotNull(readEntryAction) + menuActions,
         modifier = Modifier.widthIn(max = 260.dp),
         reactions = reactions,
         onReaction = onReaction,
         isSelf = isSelf,
         pointerInputKey = message.id,
+        onMenuOpen = if (canQueryReadDetail && serverMessageId != null) {
+            {
+                scope.launch {
+                    withContext(Dispatchers.Default) {
+                        PrivChat.client.messageReadStats(serverMessageId, message.channelId)
+                        // 失败（含窗口过期）就是"没有这一项"，不弹错误：
+                        // 用户只是长按了一条消息，不是主动去查名单。
+                    }.onSuccess { readStats = it }
+                }
+            }
+        } else {
+            null
+        },
         bubble = content,
     )
 }

@@ -163,6 +163,11 @@ internal val hantMessage = PrivChatMessageStrings(
     statusRead = "已讀",
     statusDelivered = "已送達",
     statusSent = "已發送",
+    readByMenuEntry = "%d 人已讀",
+    readBySheetTitle = "已讀",
+    readBySheetSubtitle = "%d/%d 人已讀",
+    readByExpired = "已讀詳情只保留 %d 天，這則訊息的名單已過期",
+    readByUnknownUser = "用戶",
 )
 
 internal val hantContact = PrivChatContactStrings(

@@ -163,6 +163,11 @@ internal val zhMessage = PrivChatMessageStrings(
     statusRead = "已读",
     statusDelivered = "已送达",
     statusSent = "已发送",
+    readByMenuEntry = "%d 人已读",
+    readBySheetTitle = "已读",
+    readBySheetSubtitle = "%d/%d 人已读",
+    readByExpired = "已读详情只保留 %d 天，这条消息的名单已过期",
+    readByUnknownUser = "用户",
 )
 
 internal val zhContact = PrivChatContactStrings(

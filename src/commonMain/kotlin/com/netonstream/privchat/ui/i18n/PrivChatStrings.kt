@@ -179,6 +179,11 @@ data class PrivChatStrings(
     val statusRead: String get() = dMessage.statusRead
     val statusDelivered: String get() = dMessage.statusDelivered
     val statusSent: String get() = dMessage.statusSent
+    val readByMenuEntry: String get() = dMessage.readByMenuEntry
+    val readBySheetTitle: String get() = dMessage.readBySheetTitle
+    val readBySheetSubtitle: String get() = dMessage.readBySheetSubtitle
+    val readByExpired: String get() = dMessage.readByExpired
+    val readByUnknownUser: String get() = dMessage.readByUnknownUser
     val contactTitle: String get() = dContact.contactTitle
     val contactFriends: String get() = dContact.contactFriends
     val contactGroups: String get() = dContact.contactGroups

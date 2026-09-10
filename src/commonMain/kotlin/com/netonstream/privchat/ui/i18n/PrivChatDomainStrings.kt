@@ -296,6 +296,16 @@ data class PrivChatMessageStrings(
     val statusRead: String,
     val statusDelivered: String,
     val statusSent: String,
+    /** 长按菜单里的已读入口，占位符=已读人数。 */
+    val readByMenuEntry: String,
+    /** 已读名单弹层标题。 */
+    val readBySheetTitle: String,
+    /** 名单副标题：占位符依次是已读人数、发送时的收件人数。 */
+    val readBySheetSubtitle: String,
+    /** 明细窗口过期后的说明，占位符=保留天数。 */
+    val readByExpired: String,
+    /** 资料没取到时的占位名，不显示 uid。 */
+    val readByUnknownUser: String,
 )
 
 data class PrivChatMessageStringsPatch(
@@ -422,6 +432,11 @@ data class PrivChatMessageStringsPatch(
     val statusRead: String? = null,
     val statusDelivered: String? = null,
     val statusSent: String? = null,
+    val readByMenuEntry: String? = null,
+    val readBySheetTitle: String? = null,
+    val readBySheetSubtitle: String? = null,
+    val readByExpired: String? = null,
+    val readByUnknownUser: String? = null,
 )
 
 val PrivChatMessageStringsPatch.isEmpty: Boolean
@@ -547,7 +562,12 @@ val PrivChatMessageStringsPatch.isEmpty: Boolean
         statusSendingShort == null &&
         statusRead == null &&
         statusDelivered == null &&
-        statusSent == null
+        statusSent == null &&
+        readByMenuEntry == null &&
+        readBySheetTitle == null &&
+        readBySheetSubtitle == null &&
+        readByExpired == null &&
+        readByUnknownUser == null
 
 fun PrivChatMessageStrings.merge(patch: PrivChatMessageStringsPatch?): PrivChatMessageStrings {
     if (patch == null || patch.isEmpty) return this
@@ -675,6 +695,11 @@ fun PrivChatMessageStrings.merge(patch: PrivChatMessageStringsPatch?): PrivChatM
         statusRead = patch.statusRead ?: statusRead,
         statusDelivered = patch.statusDelivered ?: statusDelivered,
         statusSent = patch.statusSent ?: statusSent,
+        readByMenuEntry = patch.readByMenuEntry ?: readByMenuEntry,
+        readBySheetTitle = patch.readBySheetTitle ?: readBySheetTitle,
+        readBySheetSubtitle = patch.readBySheetSubtitle ?: readBySheetSubtitle,
+        readByExpired = patch.readByExpired ?: readByExpired,
+        readByUnknownUser = patch.readByUnknownUser ?: readByUnknownUser,
     )
 }
 

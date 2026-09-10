@@ -163,6 +163,11 @@ internal val viMessage = PrivChatMessageStrings(
     statusRead = "Đã đọc",
     statusDelivered = "Đã nhận",
     statusSent = "Đã gửi",
+    readByMenuEntry = "%d người đã đọc",
+    readBySheetTitle = "Đã đọc",
+    readBySheetSubtitle = "%d/%d người đã đọc",
+    readByExpired = "Chi tiết đã đọc chỉ giữ %d ngày; danh sách này đã hết hạn",
+    readByUnknownUser = "Người dùng",
 )
 
 internal val viContact = PrivChatContactStrings(

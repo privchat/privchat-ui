@@ -126,6 +126,13 @@ fun MessageActionsMenu(
      * 滚动后再长按可能拿不到 down 事件。调用方应传入稳定的 message 标识（如 message.id）。
      */
     pointerInputKey: Any = Unit,
+    /**
+     * 菜单打开时回调一次。
+     *
+     * 有些菜单项的内容只有打开时才值得去查（例如群消息的已读人数要发一次 RPC）。
+     * 在气泡组合时查会让一屏消息各发一个请求，而用户可能一个菜单都不会打开。
+     */
+    onMenuOpen: (() -> Unit)? = null,
     bubble: @Composable () -> Unit,
 ) {
     val overlay = rememberOverlay()
@@ -203,7 +210,14 @@ fun MessageActionsMenu(
         }
     }
 
-    val openMenu: () -> Unit = remember { { if (!visible) visible = true } }
+    val openMenu: () -> Unit = remember(onMenuOpen) {
+        {
+            if (!visible) {
+                visible = true
+                onMenuOpen?.invoke()
+            }
+        }
+    }
 
     Box(
         modifier = modifier

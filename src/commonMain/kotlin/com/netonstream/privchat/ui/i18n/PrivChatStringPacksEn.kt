@@ -163,6 +163,11 @@ internal val enMessage = PrivChatMessageStrings(
     statusRead = "Read",
     statusDelivered = "Delivered",
     statusSent = "Sent",
+    readByMenuEntry = "Read by %d",
+    readBySheetTitle = "Read by",
+    readBySheetSubtitle = "%d of %d read",
+    readByExpired = "Read details are kept for %d days; this list has expired",
+    readByUnknownUser = "User",
 )
 
 internal val enContact = PrivChatContactStrings(
