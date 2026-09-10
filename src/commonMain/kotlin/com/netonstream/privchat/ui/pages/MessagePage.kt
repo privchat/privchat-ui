@@ -29,7 +29,7 @@ import com.tencent.kuikly.compose.foundation.gestures.detectTapGestures
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.offlineStatus
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.onlineStatus
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageBubbleOther
-import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageLink
+import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.systemMessageStyle
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageBubbleSelf
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageTextOther
 import com.netonstream.privchat.ui.utils.Formatter
@@ -2127,27 +2127,32 @@ private fun SystemMessageRow(
                 .background(colors.muted)
                 .padding(horizontal = 12.dp, vertical = 4.dp),
         ) {
+            // 系统消息是独立表面：正文与链接都从它自己的底色解析，不继承品牌气泡。
+            //
+            // 正文原来用全局 mutedForeground：浅色下 #8A8A8E 对 #F4F4F5 只有 3.13，
+            // 达不到普通正文的 4.5——而系统消息是要读的内容。弱化交给字号/居中/底纹，
+            // 不靠把字调灰。全局 mutedForeground 本身不动。
+            val sys = colors.systemMessageStyle
             when {
                 message.isRevoked -> Text(
                     text = strings.messageRevoked,
                     style = Theme.typography.label,
-                    color = colors.mutedForeground,
+                    color = sys.text,
                 )
                 parsed.systemTemplate != null -> SystemTemplateText(
                     template = parsed.systemTemplate,
                     refs = parsed.systemRefs ?: emptyList(),
                     templateDict = strings.systemTemplates,
                     listSeparator = strings.systemListSeparator,
-                    textColor = colors.mutedForeground,
-                    // 人名是可点的链接，用全局唯一的链接色——和气泡里的链接必须同色。
-                    linkColor = colors.messageLink,
+                    textColor = sys.text,
+                    linkColor = sys.link,
                     onUserClick = onUserClick,
                     onRedPacketClick = onRedPacketClick,
                 )
                 else -> Text(
                     text = parsed.text ?: "",
                     style = Theme.typography.label,
-                    color = colors.mutedForeground,
+                    color = sys.text,
                 )
             }
         }

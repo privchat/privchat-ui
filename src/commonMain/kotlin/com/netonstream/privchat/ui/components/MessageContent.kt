@@ -20,7 +20,8 @@ import com.netonstream.privchat.ui.platform.ClipboardBridge
 import com.netonstream.privchat.ui.platform.ExternalLinkBridge
 import com.netonstream.privchat.ui.utils.Formatter
 import com.netonstream.privchat.ui.voice.VoicePlayback
-import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageLink
+import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.otherBubbleStyle
+import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.selfBubbleStyle
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageTextOther
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageTextSelf
 import com.gearui.components.actionsheet.ActionSheet
@@ -150,7 +151,7 @@ fun MessageContent(
             MessageType.FILE -> FileContent(parsed, message, textColor, secondaryTextColor)
             MessageType.STICKER -> StickerContent(parsed)
             MessageType.LOCATION -> LocationContent(parsed, textColor, secondaryTextColor)
-            MessageType.LINK -> LinkContent(parsed, Theme.colors.messageLink, secondaryTextColor)
+            MessageType.LINK -> LinkContent(parsed, (if (isSelf) Theme.colors.selfBubbleStyle else Theme.colors.otherBubbleStyle).link, secondaryTextColor)
             MessageType.CONTACT -> ContactContent(parsed, textColor, secondaryTextColor, onContactClick)
             MessageType.RED_PACKET -> RedPacketMessageView(parsed, redPacketStatusOf, onRedPacketClick)
             MessageType.MONEY_TRANSFER -> MoneyTransferMessageView(parsed, isSelf, channelDisplayName, onMoneyTransferClick)
@@ -242,10 +243,9 @@ private fun TextContent(
     }
 
     val bodyStyle = Theme.typography.bodyMedium
-    // 可点击的一律用 link 蓝、不加下划线，而且**全局同一个蓝**——自己气泡、对方气泡、
-    // 系统消息里的人名都是它。曾经按气泡分成两个值，结果同一屏上出现两种蓝；
-    // 链接色是语义，不该是背景的函数。取值依据见 PrivChatThemeExtension.messageLink。
-    val linkColor = Theme.colors.messageLink
+    // 链接色由**所在气泡的实际底色**解析（见 PrivChatThemeExtension 的注释）：
+    // 品牌底色不动，浅底取深蓝、深底取浅蓝，且都保证对底色 ≥4.5。
+    val linkColor = (if (isSelf) Theme.colors.selfBubbleStyle else Theme.colors.otherBubbleStyle).link
     val linkStyle = TextLinkStyles(style = SpanStyle(color = linkColor))
 
     val annotated = buildAnnotatedString {
