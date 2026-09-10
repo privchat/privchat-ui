@@ -36,6 +36,7 @@ import com.netonstream.privchat.ui.utils.Formatter
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.netonstream.privchat.ui.i18n.PrivChatStrings
 import com.netonstream.privchat.ui.i18n.withArgs
+import com.gearui.foundation.keyboard.keyboardDismissExempt
 import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
@@ -2779,6 +2780,10 @@ private fun MessageInputBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            // 整条输入栏都算"输入区域"，不只是那个文本框。
+            // 发送/表情/加号在框外面，但它们属于输入这件事——发一条就把键盘收掉不是
+            // 用户要的。规则是「点在输入区域内不收键盘」，区域由这里划定。
+            .keyboardDismissExempt()
             .background(colors.surface),
     ) {
         // 顶部分隔线（与 BottomNavBar 一致）
