@@ -8,6 +8,13 @@ import com.netonstream.privchat.ui.components.ChatAvatar
 import com.netonstream.privchat.ui.models.displayName
 import com.netonstream.privchat.ui.models.isAdmin
 import com.netonstream.privchat.ui.models.isOwner
+import com.netonstream.privchat.ui.search.PeopleSearch
+import com.netonstream.privchat.ui.search.SearchField
+import com.netonstream.privchat.ui.components.HighlightedText
+import com.gearui.components.searchbar.SearchBar
+import com.gearui.components.searchbar.SearchBarCancel
+import com.tencent.kuikly.compose.foundation.layout.fillMaxWidth
+import com.tencent.kuikly.compose.foundation.layout.padding
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.gearui.foundation.primitives.Text
 import com.tencent.kuikly.compose.ui.graphics.Color
@@ -73,6 +80,21 @@ fun GroupMembersPage(
     val sorted = members
         .sortedWith(compareByDescending<GroupMemberEntry> { it.role }.thenBy { it.displayName })
     val scope = rememberCoroutineScope()
+
+    // 成员搜索。几十人还能翻，几百人的群靠翻是找不到人的。
+    //
+    // 不做 A–Z 索引条：这份列表按角色排（群主、管理员在前），那是管理这个群时要用的
+    // 顺序，字母分组会把它打散。搜索能解决「找某个人」，不必为此换掉整份排序。
+    var query by remember { mutableStateOf("") }
+    val results = remember(sorted, query) {
+        PeopleSearch.search(
+            items = sorted,
+            query = query.trim(),
+            fieldsOf = { PeopleSearch.fieldsOf(it) },
+            nameOf = { it.displayName },
+            tieBreaker = { it.userId },
+        )
+    }
 
     // 禁言：选时长 → groupMuteMember(groupId, userId, seconds)。群聊 channelId == groupId。
     // 时长预设（秒）：10 分钟 / 1 小时 / 1 天 / 永久（null=永久）。
@@ -142,17 +164,29 @@ fun GroupMembersPage(
             ),
         )
 
-        if (sorted.isEmpty()) {
+        if (sorted.isNotEmpty()) {
+            SearchBar(
+                value = query,
+                onValueChange = { query = it },
+                placeholder = strings.search,
+                cancel = SearchBarCancel.Never,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
+
+        if (results.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
-                EmptyState(message = strings.noData)
+                EmptyState(
+                    message = if (query.isBlank()) strings.noData else strings.mentionPickerNoResult,
+                )
             }
         } else {
             GearLazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(sorted.size) { index ->
-                    val member = sorted[index]
+                items(results.size) { index ->
+                    val (member, hit) = results[index]
                     val swipeState = rememberSwipeCellState()
                     // 管理员/群主可对「普通成员」禁言；不对群主/管理员显示禁言操作。
                     val canMuteThis = canManage && !member.isOwner && !member.isAdmin
@@ -207,12 +241,33 @@ fun GroupMembersPage(
                     ) {
                         Cell(
                             title = member.displayName,
+                            titleContent = {
+                                HighlightedText(
+                                    text = member.displayName,
+                                    match = hit?.match?.takeIf { hit.field == SearchField.DisplayName },
+                                    style = Theme.typography.bodyLarge,
+                                )
+                            },
                             // 用户 ID 是底层协议标识，不在任何 UI 展示；副标题只显示角色
                             // (走语言包,不再用硬编码 roleName)。
                             description = when {
                                 member.isOwner -> strings.groupOwner
                                 member.isAdmin -> strings.groupAdmin
                                 else -> strings.groupMember
+                            },
+                            // 命中在群昵称或账号名上时，把命中的那一行顶上来代替角色：
+                            // 否则用户看到一个跟自己输入无关的名字，不知道为什么搜到了它。
+                            descriptionContent = if (hit != null && hit.field != SearchField.DisplayName) {
+                                {
+                                    HighlightedText(
+                                        text = hit.text,
+                                        match = hit.match,
+                                        style = Theme.typography.label,
+                                        color = Theme.colors.mutedForeground,
+                                    )
+                                }
+                            } else {
+                                null
                             },
                             onClick = { onMemberClick(member) },
                             leading = {
