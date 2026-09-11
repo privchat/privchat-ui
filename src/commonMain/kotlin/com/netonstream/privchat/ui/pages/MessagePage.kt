@@ -21,6 +21,7 @@ import com.netonstream.privchat.ui.components.MessageAction
 import com.netonstream.privchat.ui.components.MessageActionKind
 import com.netonstream.privchat.ui.components.MessageActionPolicy
 import com.netonstream.privchat.ui.components.MessageActionsMenu
+import com.netonstream.privchat.ui.components.MentionPickerSheet
 import com.netonstream.privchat.ui.components.MessageContent
 import com.netonstream.privchat.ui.components.ReadReceiptsSheet
 import com.netonstream.privchat.ui.media.MediaDownloadManager
@@ -474,6 +475,9 @@ fun MessagePage(
     // UX-10：@ 提及选择器（仅群聊）。mentionQuery=null 时隐藏 picker；
     // mentionSpans 记录每段 `@name ` 的区间（含尾随空格），用于原子删除与回填 userId。
     var mentionQuery by remember(channel.channelId) { mutableStateOf<String?>(null) }
+    // @ 面板弹出时要主动收键盘：输入框此刻是聚焦态，不收的话面板只剩一条缝。
+    val pageFocusManager = LocalFocusManager.current
+    val pageKeyboardController = LocalSoftwareKeyboardController.current
     val mentionSpans = remember(channel.channelId) { mutableStateListOf<MentionSpan>() }
     // REPLY_SPEC：长按【回复】后进入回复态；onSend 发送时把 serverMessageId 透传给 SDK。
     var pendingReply by remember(channel.channelId) { mutableStateOf<MessageEntry?>(null) }
@@ -1320,29 +1324,42 @@ fun MessagePage(
             )
         }
 
-        // UX-10：@ 提及选择器（仅群聊），锚定在输入栏上方。
+        // UX-10：@ 提及选择器（仅群聊）。
+        //
+        // 从"输入栏上方一块 220dp 的内联列表"改成微信式底部面板：面板自带搜索与分组，
+        // 打开时先收键盘——键盘不收的话，面板与键盘会一起占掉整屏，列表只剩一条缝。
         if (!channel.isDm) {
             val query = mentionQuery
-            val filteredMembers = remember(query, groupMembersForChannel, currentUserId) {
-                if (query == null) emptyList()
-                else groupMembersForChannel
-                    .asSequence()
-                    .filter { it.userId != currentUserId }
-                    .filter { query.isEmpty() || matchMemberQuery(it, query) }
-                    .toList()
+            val mentionCandidates = remember(groupMembersForChannel, currentUserId) {
+                groupMembersForChannel.filter { it.userId != currentUserId }
             }
-            if (query != null && filteredMembers.isNotEmpty()) {
-                MentionPicker(
-                    members = filteredMembers,
-                    onPick = { member ->
-                        val displayName = member.displayName
-                        val ins = replaceMentionQuery(inputText, displayName, member.userId)
-                        inputText = ins.text
+            LaunchedEffect(query != null) {
+                if (query != null) {
+                    pageFocusManager.clearFocus(force = true)
+                    pageKeyboardController?.hide()
+                }
+            }
+            MentionPickerSheet(
+                visible = query != null && mentionCandidates.isNotEmpty(),
+                members = mentionCandidates,
+                initialQuery = query.orEmpty(),
+                onDismiss = { mentionQuery = null },
+                onPick = { picked ->
+                    // 第一个替换掉输入框里已经敲下的 `@查询串`，其余追加在后面。
+                    var text = inputText
+                    picked.forEachIndexed { index, member ->
+                        val ins = if (index == 0) {
+                            replaceMentionQuery(text, member.displayName, member.userId)
+                        } else {
+                            appendMention(text, member.displayName, member.userId)
+                        }
+                        text = ins.text
                         mentionSpans.add(ins.span)
-                        mentionQuery = null
-                    },
-                )
-            }
+                    }
+                    inputText = text
+                    mentionQuery = null
+                },
+            )
         }
 
         // 输入框
@@ -3730,66 +3747,6 @@ private fun resolveMentionEdit(
             MentionSpan(span.start - removedBefore, span.end - removedBefore, span.userId)
         }
     return output to survivors
-}
-
-/** 在 SDK canonical display name 上做前缀匹配（忽略大小写）。 */
-private fun matchMemberQuery(member: GroupMemberEntry, query: String): Boolean {
-    val q = query.lowercase()
-    return member.displayName.lowercase().contains(q)
-}
-
-/**
- * @ 提及选择器：垂直列表锚定在输入栏上方。
- *
- * 列表高度受限，支持滚动；每项点击后由父级替换输入文本并关闭 picker。
- */
-@Composable
-private fun MentionPicker(
-    members: List<GroupMemberEntry>,
-    onPick: (GroupMemberEntry) -> Unit,
-) {
-    val colors = Theme.colors
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(max = 220.dp)
-            .background(colors.surface)
-            .border(width = 1.dp, color = colors.border, shape = RoundedCornerShape(0.dp)),
-    ) {
-        ScrollView(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                members.forEach { member ->
-                    val displayName = member.displayName
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onPick(member) }
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        ChatAvatar(
-                            url = member.avatar.takeIf { it.isNotBlank() },
-                            name = displayName,
-                            size = AvatarSizeTokens.Small.size,
-                            userId = member.userId.toLong(),
-                        )
-                        HorizontalSpacer(10.dp)
-                        Text(
-                            text = displayName,
-                            style = Theme.typography.bodyMedium,
-                            color = colors.foreground,
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(colors.border),
-                    )
-                }
-            }
-        }
-    }
 }
 
 /**

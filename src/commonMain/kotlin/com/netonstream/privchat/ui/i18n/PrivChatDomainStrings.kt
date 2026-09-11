@@ -3097,6 +3097,14 @@ data class PrivChatWalletStrings(
     val previewLoadFailedRetrying: String,
     /** 自动重试用尽后的终态：必须能点，且不能再说"正在重试"。 */
     val previewLoadFailedTapToRetry: String,
+    /** 群聊 @ 选人面板标题。 */
+    val mentionPickerTitle: String,
+    /** 切到多选。 */
+    val mentionPickerMultiple: String,
+    /** 多选确认，占位符=已选人数。 */
+    val mentionPickerDone: String,
+    /** 搜索没有匹配到成员。 */
+    val mentionPickerNoResult: String,
     val reportReasonSpam: String,
     val reportReasonHarassment: String,
     val reportReasonSexual: String,
@@ -3277,6 +3285,10 @@ data class PrivChatWalletStringsPatch(
     val previewPausedWithPercent: String? = null,
     val previewLoadFailedRetrying: String? = null,
     val previewLoadFailedTapToRetry: String? = null,
+    val mentionPickerTitle: String? = null,
+    val mentionPickerMultiple: String? = null,
+    val mentionPickerDone: String? = null,
+    val mentionPickerNoResult: String? = null,
     val reportReasonSpam: String? = null,
     val reportReasonHarassment: String? = null,
     val reportReasonSexual: String? = null,
@@ -3454,6 +3466,10 @@ val PrivChatWalletStringsPatch.isEmpty: Boolean
         previewPausedWithPercent == null &&
         previewLoadFailedRetrying == null &&
         previewLoadFailedTapToRetry == null &&
+        mentionPickerTitle == null &&
+        mentionPickerMultiple == null &&
+        mentionPickerDone == null &&
+        mentionPickerNoResult == null &&
         reportReasonSpam == null &&
         reportReasonHarassment == null &&
         reportReasonSexual == null &&
@@ -3630,6 +3646,10 @@ fun PrivChatWalletStrings.merge(patch: PrivChatWalletStringsPatch?): PrivChatWal
         previewPausedWithPercent = patch.previewPausedWithPercent ?: previewPausedWithPercent,
         previewLoadFailedRetrying = patch.previewLoadFailedRetrying ?: previewLoadFailedRetrying,
         previewLoadFailedTapToRetry = patch.previewLoadFailedTapToRetry ?: previewLoadFailedTapToRetry,
+        mentionPickerTitle = patch.mentionPickerTitle ?: mentionPickerTitle,
+        mentionPickerMultiple = patch.mentionPickerMultiple ?: mentionPickerMultiple,
+        mentionPickerDone = patch.mentionPickerDone ?: mentionPickerDone,
+        mentionPickerNoResult = patch.mentionPickerNoResult ?: mentionPickerNoResult,
         reportReasonSpam = patch.reportReasonSpam ?: reportReasonSpam,
         reportReasonHarassment = patch.reportReasonHarassment ?: reportReasonHarassment,
         reportReasonSexual = patch.reportReasonSexual ?: reportReasonSexual,

@@ -862,6 +862,10 @@ data class PrivChatStrings(
     val previewPausedWithPercent: String get() = dWallet.previewPausedWithPercent
     val previewLoadFailedRetrying: String get() = dWallet.previewLoadFailedRetrying
     val previewLoadFailedTapToRetry: String get() = dWallet.previewLoadFailedTapToRetry
+    val mentionPickerTitle: String get() = dWallet.mentionPickerTitle
+    val mentionPickerMultiple: String get() = dWallet.mentionPickerMultiple
+    val mentionPickerDone: String get() = dWallet.mentionPickerDone
+    val mentionPickerNoResult: String get() = dWallet.mentionPickerNoResult
     val reportReasonSpam: String get() = dWallet.reportReasonSpam
     val reportReasonHarassment: String get() = dWallet.reportReasonHarassment
     val reportReasonSexual: String get() = dWallet.reportReasonSexual
