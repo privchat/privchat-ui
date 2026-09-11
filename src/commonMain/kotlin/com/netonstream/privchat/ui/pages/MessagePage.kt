@@ -22,6 +22,8 @@ import com.netonstream.privchat.ui.components.MessageActionKind
 import com.netonstream.privchat.ui.components.MessageActionPolicy
 import com.netonstream.privchat.ui.components.MessageActionsMenu
 import com.netonstream.privchat.ui.components.MentionPickerSheet
+import com.netonstream.privchat.ui.search.MentionQuery
+import com.netonstream.privchat.ui.search.PeopleSearch
 import com.netonstream.privchat.ui.components.MessageContent
 import com.netonstream.privchat.ui.components.ReadReceiptsSheet
 import com.netonstream.privchat.ui.media.MediaDownloadManager
@@ -1333,6 +1335,23 @@ fun MessagePage(
             val mentionCandidates = remember(groupMembersForChannel, currentUserId) {
                 groupMembersForChannel.filter { it.userId != currentUserId }
             }
+            // 🔴 片段匹配不到任何人就收起面板。
+            //
+            // 「@张三的消息」这种——提及已经选完、用户继续在末尾打字——光靠光标判不掉，
+            // 但它匹配不到任何成员。没有这一条，面板会顶着一句「没有匹配的成员」一直开着。
+            val mentionMatches = remember(mentionCandidates, query) {
+                when {
+                    query == null -> emptyList()
+                    query.isEmpty() -> mentionCandidates
+                    else -> PeopleSearch.search(
+                        items = mentionCandidates,
+                        query = query,
+                        fieldsOf = { PeopleSearch.fieldsOf(it) },
+                        nameOf = { it.displayName },
+                        tieBreaker = { it.userId },
+                    ).map { it.first }
+                }
+            }
             LaunchedEffect(query != null) {
                 if (query != null) {
                     pageFocusManager.clearFocus(force = true)
@@ -1340,7 +1359,7 @@ fun MessagePage(
                 }
             }
             MentionPickerSheet(
-                visible = query != null && mentionCandidates.isNotEmpty(),
+                visible = query != null && mentionMatches.isNotEmpty(),
                 members = mentionCandidates,
                 initialQuery = query.orEmpty(),
                 onDismiss = { mentionQuery = null },
@@ -1374,7 +1393,7 @@ fun MessagePage(
                     mentionSpans.clear()
                     mentionSpans.addAll(newSpans)
                 }
-                mentionQuery = computeMentionQuery(newText, channel.isDm)
+                mentionQuery = MentionQuery.of(inputText, newText, channel.isDm)
                 // 节流发送 typing：文本非空且距离上次发送超过 1 秒（与接收侧 5s 过期窗口对齐，
                 // 确保用户持续输入时对端始终能收到心跳，不会因中间某次发送被延迟而误判停止）
                 if (newText.isNotBlank()) {
@@ -3673,20 +3692,6 @@ private data class MentionSpan(val start: Int, val end: Int, val userId: ULong)
 
 /** 一次插入操作的产出：更新后的文本与新增 span。*/
 private data class MentionInsertion(val text: String, val span: MentionSpan)
-
-/**
- * 从当前输入文本末尾推断 @ 提及查询串：最后一个 `@` 必须位于行首或紧邻空白后，
- * 且其后的子串中不含空白；否则视作非提及上下文（例如邮箱 `a@b`）。
- */
-private fun computeMentionQuery(text: String, isDm: Boolean): String? {
-    if (isDm) return null
-    val atIdx = text.lastIndexOf('@')
-    if (atIdx < 0) return null
-    if (atIdx > 0 && !text[atIdx - 1].isWhitespace()) return null
-    val query = text.substring(atIdx + 1)
-    if (query.any { it.isWhitespace() }) return null
-    return query
-}
 
 /** 把输入尾部的 `@query` 片段替换为 `@<name> `（保留触发符，便于对方阅读）。*/
 private fun replaceMentionQuery(text: String, name: String, userId: ULong): MentionInsertion {
