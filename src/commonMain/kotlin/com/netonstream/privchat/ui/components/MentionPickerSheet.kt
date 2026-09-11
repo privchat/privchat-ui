@@ -267,34 +267,6 @@ private fun Header(
     }
 }
 
-/**
- * 右侧 A–Z 索引条。
- *
- * 只列**当前有人的**字母：列满 26 个字母而多数点不动，点上去没反应会让人以为卡了。
- */
-@Composable
-private fun IndexBar(
-    letters: List<Char>,
-    modifier: Modifier = Modifier,
-    onPick: (Char) -> Unit,
-) {
-    Column(
-        modifier = modifier.padding(end = Spacing.xs),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        letters.forEach { letter ->
-            Text(
-                text = letter.toString(),
-                style = Theme.typography.label,
-                color = Theme.colors.mutedForeground,
-                modifier = Modifier
-                    .clickable { onPick(letter) }
-                    .padding(horizontal = Spacing.xs, vertical = 1.dp),
-            )
-        }
-    }
-}
-
 @Composable
 private fun LetterHeader(letter: String) {
     Text(
