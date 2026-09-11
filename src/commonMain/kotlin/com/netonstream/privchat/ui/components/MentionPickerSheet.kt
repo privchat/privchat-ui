@@ -115,10 +115,10 @@ fun MentionPickerSheet(
         onDismiss = onDismiss,
         // 标题栏自绘：微信那一行是「关闭 / 标题 / 多选」，不是 gearui 默认的居中标题 + 取消。
         showCancel = false,
-    ) {
-        // 高度取屏幕的 80%：写死 dp 会在小屏上顶满、在大屏上只占半截。
-        val sheetHeight = (LocalConfiguration.current.pageViewHeight * SHEET_HEIGHT_RATIO).dp
-        Column(modifier = Modifier.fillMaxWidth().height(sheetHeight)) {
+        // 走 header 槽而不是塞进 body：面板的下滑关闭手势只挂在 chrome 上（body 里是列表，
+        // 往下滑是滚动）。自绘标题留在 body 里的话，能拖的就只剩那条十几 dp 的抓手，
+        // 而人下意识会从看得见的标题往下拖。
+        header = {
             Header(
                 multiSelect = multiSelect,
                 selectedCount = selected.size,
@@ -133,7 +133,13 @@ fun MentionPickerSheet(
                     if (picked.isNotEmpty()) onPick(picked)
                 },
             )
-
+        },
+    ) {
+        // 高度取屏幕的 80%：写死 dp 会在小屏上顶满、在大屏上只占半截。
+        // 标题栏已经移到 chrome 里，这里减掉它的高度，整块面板仍是 80%。
+        val sheetHeight =
+            (LocalConfiguration.current.pageViewHeight * SHEET_HEIGHT_RATIO).dp - HEADER_HEIGHT
+        Column(modifier = Modifier.fillMaxWidth().height(sheetHeight)) {
             Box(modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.lg)) {
                 SearchBar(
                     value = query,
@@ -209,6 +215,9 @@ fun MentionPickerSheet(
 
 /** 面板占屏高比例：露出上面一小条会话，其余给列表——与微信一致。 */
 private const val SHEET_HEIGHT_RATIO = 0.8f
+
+/** [Header] 的固定高度：32dp 的按钮 + 上下各 Spacing.md。 */
+private val HEADER_HEIGHT = 32.dp + Spacing.md * 2
 
 @Composable
 private fun Header(
