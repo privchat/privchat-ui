@@ -7,6 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.gearui.foundation.layout.Spacing
@@ -55,6 +56,7 @@ import com.tencent.kuikly.compose.ui.unit.IntOffset
 import com.tencent.kuikly.compose.ui.unit.IntSize
 import com.tencent.kuikly.compose.ui.unit.dp
 import kotlinx.coroutines.delay
+import kotlin.math.abs
 
 /** 默认快捷 reactions（调用方可自定义） */
 val DefaultMessageReactions: List<String> = listOf("👍", "❤️", "😂", "🎉", "🔥", "👀")
@@ -144,17 +146,59 @@ fun MessageActionsMenu(
     val bounds = anchorBounds
     val showReactionBar = reactions.isNotEmpty() || onMoreReactions != null
 
-    // 🔴 重新锚定 ≠ 用户关掉了菜单。
+    // 🔴 菜单项必须能在**菜单已经打开之后**变化。
     //
-    // 下面的 DisposableEffect 以 bounds 为 key：气泡位置一变就 dispose 旧 overlay、
-    // 按新位置再 show 一个。但 dispose 里的 overlay.dismiss() 会回调 onDismiss，
-    // 而 onDismiss 是 `visible = false`——菜单被自己的重新锚定关掉，而且再也不出来。
+    // 下面的 DisposableEffect 只以 bounds 为 key，它捕获的是那一刻的 actions 列表；
+    // 之后父级再怎么重组，overlay 里都还是旧的那份。于是「N 人已读」这种打开菜单
+    // 才去查、查回来才有的条目，第一次长按永远不显示，要长按第二次（那时上一次的
+    // 结果已经缓存）才看得到——真机上就是这个症状。
+    // rememberUpdatedState 给的是稳定的 State 对象：overlay 的 content 在 host 的
+    // composition 里读它，值一变就重组 overlay 自己，不必重新 show。
+    val currentActions by rememberUpdatedState(actions)
+
+    // 锚点：**先等它稳定，定下来之后就冻结**。
     //
-    // 触发场景：弹 overlay 前先收系统键盘（gearui OverlayHost 的 dismissKeyboardOnShow）。
-    // 键盘一收，消息列表重排，气泡 bounds 立刻变化。
-    val reanchoring = remember { mutableStateOf(false) }
-    if (visible && bounds != null) {
-        DisposableEffect(bounds) {
+    // 打开菜单会先收起系统键盘（gearui OverlayHost 的 dismissKeyboardOnShow），列表
+    // 随之重排一次，气泡 bounds 立刻变化——所以不能一拿到 bounds 就定位。
+    //
+    // 但也不能"一直跟着 bounds 走"：那是这一版之前的做法（DisposableEffect(bounds)
+    // 每次变化 dispose 再 show），滚动时每帧都触发一次，真机 logcat 上是 60ms 内
+    // show/dismiss 五轮，菜单和气泡副本各自贴到屏幕上某个位置，与背景完全对不上，
+    // 看起来就是「界面乱了」。
+    //
+    // 冻结之后锚点再动，只可能是列表滚了 → 关闭菜单。
+    // 🔴 不能指望 OverlayDismissPolicy.scroll：它由 GearLazyColumn 的 Compose 手势
+    // 回调触发，而菜单是模态 overlay，手指落在遮罩上，列表那层根本收不到指针事件；
+    // Kuikly 的列表滚动又是原生滚动视图在做，绕过了 Compose 的手势仲裁。真机实测
+    // notifyScroll 一次都没发出来。能观察到滚动的是布局本身——也就是这里的 bounds。
+    var anchoredBounds by remember { mutableStateOf<Rect?>(null) }
+    LaunchedEffect(visible) {
+        if (!visible) {
+            anchoredBounds = null
+            return@LaunchedEffect
+        }
+        var previous: Rect? = null
+        while (anchoredBounds == null) {
+            val current = anchorBounds
+            if (current != null && current == previous) {
+                anchoredBounds = current
+            } else {
+                previous = current
+                delay(16)
+            }
+        }
+    }
+    LaunchedEffect(anchoredBounds, bounds) {
+        val anchored = anchoredBounds ?: return@LaunchedEffect
+        val now = bounds ?: return@LaunchedEffect
+        if (abs(now.top - anchored.top) > 2f || abs(now.left - anchored.left) > 2f) {
+            visible = false
+        }
+    }
+
+    val anchored = anchoredBounds
+    if (visible && anchored != null) {
+        DisposableEffect(anchored) {
             val id = overlay.show(
                 anchorBounds = null, // Fullscreen 不依赖 anchor
                 options = OverlayOptions(
@@ -165,6 +209,11 @@ fun MessageActionsMenu(
                     dismissPolicy = OverlayDismissPolicy(
                         outsideClick = true,
                         backPress = true,
+                        // 兜底而已，别指望它：这条由 GearLazyColumn 的 Compose 手势
+                        // 回调触发，而菜单是模态 overlay，手指落在遮罩上，列表那层收不到
+                        // 指针事件——真机实测 notifyScroll 一次都没发出来。真正防错位的是
+                        // 上面"锚点冻结 + 一动就关"，这里留着是万一将来有非模态的用法。
+                        scroll = true,
                     ),
                     // safeArea=false：让 Fullscreen 内容盒子与 boundsInRoot() 坐标系对齐
                     // （content 盒子 = overlay host 根 = compose 根），
@@ -173,10 +222,10 @@ fun MessageActionsMenu(
                     safeAreaTop = false,
                     safeAreaBottom = false,
                 ),
-                onDismiss = { if (!reanchoring.value) visible = false },
+                onDismiss = { visible = false },
             ) {
                 MessageActionsOverlayContent(
-                    anchor = bounds,
+                    anchor = anchored,
                     isSelf = isSelf,
                     showReactionBar = showReactionBar,
                     reactions = reactions,
@@ -190,7 +239,7 @@ fun MessageActionsMenu(
                             visible = false
                         }
                     },
-                    actions = actions,
+                    actions = currentActions,
                     pressedActionIndex = pressedActionIndex,
                     onPressChange = { pressedActionIndex = it },
                     onActionClick = { item ->
@@ -203,9 +252,7 @@ fun MessageActionsMenu(
             }
             onDispose {
                 pressedActionIndex = null
-                reanchoring.value = true
                 overlay.dismiss(id)
-                reanchoring.value = false
             }
         }
     }
