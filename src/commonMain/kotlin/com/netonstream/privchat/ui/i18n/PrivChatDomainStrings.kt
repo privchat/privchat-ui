@@ -3095,6 +3095,8 @@ data class PrivChatWalletStrings(
     /** 占位符=进度百分比。 */
     val previewPausedWithPercent: String,
     val previewLoadFailedRetrying: String,
+    /** 自动重试用尽后的终态：必须能点，且不能再说"正在重试"。 */
+    val previewLoadFailedTapToRetry: String,
     val reportReasonSpam: String,
     val reportReasonHarassment: String,
     val reportReasonSexual: String,
@@ -3274,6 +3276,7 @@ data class PrivChatWalletStringsPatch(
     val previewLoadingWithPercent: String? = null,
     val previewPausedWithPercent: String? = null,
     val previewLoadFailedRetrying: String? = null,
+    val previewLoadFailedTapToRetry: String? = null,
     val reportReasonSpam: String? = null,
     val reportReasonHarassment: String? = null,
     val reportReasonSexual: String? = null,
@@ -3450,6 +3453,7 @@ val PrivChatWalletStringsPatch.isEmpty: Boolean
         previewLoadingWithPercent == null &&
         previewPausedWithPercent == null &&
         previewLoadFailedRetrying == null &&
+        previewLoadFailedTapToRetry == null &&
         reportReasonSpam == null &&
         reportReasonHarassment == null &&
         reportReasonSexual == null &&
@@ -3625,6 +3629,7 @@ fun PrivChatWalletStrings.merge(patch: PrivChatWalletStringsPatch?): PrivChatWal
         previewLoadingWithPercent = patch.previewLoadingWithPercent ?: previewLoadingWithPercent,
         previewPausedWithPercent = patch.previewPausedWithPercent ?: previewPausedWithPercent,
         previewLoadFailedRetrying = patch.previewLoadFailedRetrying ?: previewLoadFailedRetrying,
+        previewLoadFailedTapToRetry = patch.previewLoadFailedTapToRetry ?: previewLoadFailedTapToRetry,
         reportReasonSpam = patch.reportReasonSpam ?: reportReasonSpam,
         reportReasonHarassment = patch.reportReasonHarassment ?: reportReasonHarassment,
         reportReasonSexual = patch.reportReasonSexual ?: reportReasonSexual,

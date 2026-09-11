@@ -900,6 +900,7 @@ internal val enWallet = PrivChatWalletStrings(
     previewLoadingWithPercent = "Loading %s",
     previewPausedWithPercent = "Paused at %s",
     previewLoadFailedRetrying = "Load failed — retrying…",
+    previewLoadFailedTapToRetry = "Load failed — tap to retry",
     reportReasonSpam = "Spam",
     reportReasonHarassment = "Harassment",
     reportReasonSexual = "Sexual content",

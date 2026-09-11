@@ -900,6 +900,7 @@ internal val viWallet = PrivChatWalletStrings(
     previewLoadingWithPercent = "Đang tải %s",
     previewPausedWithPercent = "Tạm dừng ở %s",
     previewLoadFailedRetrying = "Tải lỗi — đang thử lại…",
+    previewLoadFailedTapToRetry = "Tải thất bại — chạm để thử lại",
     reportReasonSpam = "Spam",
     reportReasonHarassment = "Quấy rối",
     reportReasonSexual = "Nội dung khiêu dâm",

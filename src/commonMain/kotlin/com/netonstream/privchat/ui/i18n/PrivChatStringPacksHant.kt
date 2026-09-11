@@ -900,6 +900,7 @@ internal val hantWallet = PrivChatWalletStrings(
     previewLoadingWithPercent = "載入中 %s",
     previewPausedWithPercent = "已暫停 %s",
     previewLoadFailedRetrying = "載入失敗，正在重試…",
+    previewLoadFailedTapToRetry = "載入失敗，點擊重試",
     reportReasonSpam = "垃圾廣告",
     reportReasonHarassment = "騷擾辱罵",
     reportReasonSexual = "色情低俗",

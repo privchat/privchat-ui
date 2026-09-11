@@ -902,6 +902,7 @@ internal val zhWallet = PrivChatWalletStrings(
     previewLoadingWithPercent = "加载中 %s",
     previewPausedWithPercent = "已暂停 %s",
     previewLoadFailedRetrying = "加载失败，正在重试…",
+    previewLoadFailedTapToRetry = "加载失败，点击重试",
     reportReasonSpam = "垃圾广告",
     reportReasonHarassment = "骚扰辱骂",
     reportReasonSexual = "色情低俗",
