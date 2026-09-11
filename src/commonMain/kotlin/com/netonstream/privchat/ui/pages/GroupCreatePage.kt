@@ -7,8 +7,14 @@ import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.netonstream.privchat.ui.i18n.withArgs
 import com.netonstream.privchat.ui.models.displayName
 import com.gearui.theme.Theme
+import com.netonstream.privchat.ui.search.SearchField
+import com.netonstream.privchat.ui.search.PeopleSearch
+import com.netonstream.privchat.ui.components.SelectionDot
+import com.netonstream.privchat.ui.components.HighlightedText
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.foundation.primitives.Text
+import com.tencent.kuikly.compose.foundation.layout.Row
+import com.gearui.primitives.HorizontalSpacer
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.cell.Cell
@@ -49,14 +55,20 @@ fun GroupCreatePage(
     val selected = remember { mutableStateMapOf<ULong, FriendEntry>() }
     var isCreating by remember { mutableStateOf(false) }
 
-    val filtered = remember(friends, searchQuery) {
-        val q = searchQuery.trim()
-        if (q.isEmpty()) friends
-        else friends.filter {
-            (it.remark?.contains(q, ignoreCase = true) == true) ||
-                (it.nickname?.contains(q, ignoreCase = true) == true) ||
-                it.username.contains(q, ignoreCase = true)
-        }
+    // 搜索走 PeopleSearch：拼音 + 多字段 + 命中信息，与联系人页、@ 选人面板同一套规则。
+    // 这里过去是三个字段各做一次 contains，搜不了拼音，也说不清命中在哪个字段。
+    val results = remember(friends, searchQuery) {
+        PeopleSearch.search(
+            items = friends,
+            query = searchQuery,
+            fieldsOf = { PeopleSearch.fieldsOf(it) },
+            nameOf = { it.displayName },
+            tieBreaker = { it.userId },
+        )
+    }
+    val filtered = remember(results) { results.map { it.first } }
+    val hitByUser = remember(results) {
+        results.mapNotNull { (f, h) -> h?.let { f.userId to it } }.toMap()
     }
 
     val strings = PrivChatI18n.strings
@@ -146,30 +158,41 @@ fun GroupCreatePage(
                     val friend = filtered[idx]
                     val isSelected = selected.containsKey(friend.userId)
                     val atLimit = selected.size >= GROUP_INVITE_BATCH_LIMIT && !isSelected
+                    val hit = hitByUser[friend.userId]
                     Cell(
                         title = friend.displayName,
-                        description = friend.username,
-                        leading = {
-                            ChatAvatar(
-                                url = friend.avatarUrl,
-                                name = friend.displayName,
-                                size = AvatarSizeTokens.Small.size,
-                                userId = friend.userId.toLong(),
+                        titleContent = {
+                            HighlightedText(
+                                text = friend.displayName,
+                                match = hit?.match?.takeIf { hit.field == SearchField.DisplayName },
+                                style = Theme.typography.bodyLarge,
                             )
                         },
-                        trailing = {
-                            Checkbox(
-                                checked = isSelected,
-                                size = CheckboxSize.MEDIUM,
-                                enabled = !atLimit,
-                                onCheckedChange = { checked ->
-                                    if (checked) {
-                                        if (!atLimit) selected[friend.userId] = friend
-                                    } else {
-                                        selected.remove(friend.userId)
-                                    }
-                                },
+                        description = friend.username,
+                        descriptionContent = {
+                            // 命中备注/账号名时显示并高亮那一行；没命中就照旧显示账号名。
+                            val sub = hit?.takeIf { it.field != SearchField.DisplayName }
+                            HighlightedText(
+                                text = sub?.text ?: friend.username,
+                                match = sub?.match,
+                                style = Theme.typography.label,
+                                color = colors.mutedForeground,
                             )
+                        },
+                        // 选择标记在**左侧**、整行可点（微信式）。原来是行尾一个方形复选框：
+                        // 选择状态属于这一行的人，标记跟在头像前面才读得顺；行尾那个还会让
+                        // 视线在名字和行尾之间来回跑，多选时尤其明显。
+                        leading = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                SelectionDot(selected = isSelected, enabled = !atLimit)
+                                HorizontalSpacer(10.dp)
+                                ChatAvatar(
+                                    url = friend.avatarUrl,
+                                    name = friend.displayName,
+                                    size = AvatarSizeTokens.Small.size,
+                                    userId = friend.userId.toLong(),
+                                )
+                            }
                         },
                         onClick = {
                             if (isSelected) {

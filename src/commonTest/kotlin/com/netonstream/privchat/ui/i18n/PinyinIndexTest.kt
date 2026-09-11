@@ -70,3 +70,18 @@ class PinyinIndexTest {
         assertTrue(CJK_PINYIN_INITIALS.all { it in 'A'..'Z' || it == '#' })
     }
 }
+
+class PinyinSortTest {
+    /** 🔴 组内必须按全拼排：按码点排会把「刘」排到「李」前面。 */
+    @Test
+    fun chineseSortsByFullPinyinNotCodePoint() {
+        val grouped = PinyinIndex.group(listOf("刘一", "李四", "兰花")) { it }
+        assertEquals(listOf("兰花", "李四", "刘一"), grouped.first { it.first == 'L' }.second)
+    }
+
+    @Test
+    fun asciiStillSortsCaseInsensitively() {
+        val grouped = PinyinIndex.group(listOf("bls", "BarNick", "Beta3Tester")) { it }
+        assertEquals(listOf("BarNick", "Beta3Tester", "bls"), grouped.first { it.first == 'B' }.second)
+    }
+}

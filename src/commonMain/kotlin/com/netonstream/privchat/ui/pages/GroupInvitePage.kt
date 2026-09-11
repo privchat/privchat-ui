@@ -7,6 +7,11 @@ import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.netonstream.privchat.ui.i18n.withArgs
 import com.netonstream.privchat.ui.models.displayName
 import com.gearui.theme.Theme
+import com.gearui.primitives.HorizontalSpacer
+import com.netonstream.privchat.ui.search.SearchField
+import com.netonstream.privchat.ui.search.PeopleSearch
+import com.netonstream.privchat.ui.components.SelectionDot
+import com.netonstream.privchat.ui.components.HighlightedText
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
@@ -53,19 +58,25 @@ fun GroupInvitePage(
     var isSubmitting by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
-    val filtered = remember(friends, searchQuery) {
+    val results = remember(friends, searchQuery) {
         val q = searchQuery.trim()
         // 系统类型账号(user_type==1)绝不允许被拉进群——按 user_type(非 uid)过滤;
         // 服务端 add/create 也已硬拒,这里是客户端侧的等价限制。
         val invitable = friends.filterNot {
             com.netonstream.privchat.ui.models.SystemUser.isSystemType(it.userType.toInt())
         }
-        if (q.isEmpty()) invitable
-        else invitable.filter {
-            (it.remark?.contains(q, ignoreCase = true) == true) ||
-                (it.nickname?.contains(q, ignoreCase = true) == true) ||
-                it.username.contains(q, ignoreCase = true)
-        }
+        // 搜索走 PeopleSearch：拼音 + 多字段 + 命中信息，与联系人页、创建群、@ 选人面板同一套规则。
+        PeopleSearch.search(
+            items = invitable,
+            query = q,
+            fieldsOf = { PeopleSearch.fieldsOf(it) },
+            nameOf = { it.displayName },
+            tieBreaker = { it.userId },
+        )
+    }
+    val filtered = remember(results) { results.map { it.first } }
+    val hitByUser = remember(results) {
+        results.mapNotNull { (f, h) -> h?.let { f.userId to it } }.toMap()
     }
 
     val canSubmit = selected.isNotEmpty() && !isSubmitting
@@ -134,30 +145,38 @@ fun GroupInvitePage(
                     val friend = filtered[idx]
                     val isSelected = selected.containsKey(friend.userId)
                     val atLimit = selected.size >= GROUP_INVITE_BATCH_LIMIT && !isSelected
+                    val hit = hitByUser[friend.userId]
                     Cell(
                         title = friend.displayName,
-                        description = friend.username,
-                        leading = {
-                            ChatAvatar(
-                                url = friend.avatarUrl,
-                                name = friend.displayName,
-                                size = AvatarSizeTokens.Small.size,
-                                userId = friend.userId.toLong(),
+                        titleContent = {
+                            HighlightedText(
+                                text = friend.displayName,
+                                match = hit?.match?.takeIf { hit.field == SearchField.DisplayName },
+                                style = Theme.typography.bodyLarge,
                             )
                         },
-                        trailing = {
-                            Checkbox(
-                                checked = isSelected,
-                                size = CheckboxSize.MEDIUM,
-                                enabled = !atLimit,
-                                onCheckedChange = { checked ->
-                                    if (checked) {
-                                        if (!atLimit) selected[friend.userId] = friend
-                                    } else {
-                                        selected.remove(friend.userId)
-                                    }
-                                },
+                        description = friend.username,
+                        descriptionContent = {
+                            val sub = hit?.takeIf { it.field != SearchField.DisplayName }
+                            HighlightedText(
+                                text = sub?.text ?: friend.username,
+                                match = sub?.match,
+                                style = Theme.typography.label,
+                                color = colors.mutedForeground,
                             )
+                        },
+                        // 与创建群同一形态：选择标记在左、整行可点。
+                        leading = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                SelectionDot(selected = isSelected, enabled = !atLimit)
+                                HorizontalSpacer(10.dp)
+                                ChatAvatar(
+                                    url = friend.avatarUrl,
+                                    name = friend.displayName,
+                                    size = AvatarSizeTokens.Small.size,
+                                    userId = friend.userId.toLong(),
+                                )
+                            }
                         },
                         onClick = {
                             if (isSelected) {

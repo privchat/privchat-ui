@@ -7,6 +7,10 @@ import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.models.displayName
 import com.netonstream.privchat.ui.components.ChatAvatar
 import com.netonstream.privchat.ui.i18n.PinyinIndex
+import com.netonstream.privchat.ui.search.SearchField
+import com.netonstream.privchat.ui.search.PeopleSearch
+import com.netonstream.privchat.ui.search.FieldHit
+import com.netonstream.privchat.ui.components.HighlightedText
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
@@ -149,15 +153,30 @@ private fun FriendsTabContent(
     // filter + groupBy + sortedBy。而 presences 是 online 小绿点的来源、变化频繁，每来一次
     // presence 推送就重算整张好友表——好友一多，切到联系人页的卡顿就是从这里长出来的。
     // 会话页那边（ConversationPage 的 filteredChannels）一直是 remember 的，这里是漏了。
-    val sections = remember(friends, searchQuery) {
-        val filtered = if (searchQuery.isBlank()) friends else friends.filter { f ->
-            f.displayName.contains(searchQuery, ignoreCase = true) ||
-                f.username.contains(searchQuery, ignoreCase = true)
-        }
+    // 搜索走 PeopleSearch（拼音 + 多字段 + 命中信息），与 @ 选人面板同一套规则。
+    // 过去这里是 displayName/username 的 contains，搜不了拼音、也漏了备注。
+    val hits = remember(friends, searchQuery) {
+        PeopleSearch.search(
+            items = friends,
+            query = searchQuery,
+            fieldsOf = { PeopleSearch.fieldsOf(it) },
+            nameOf = { it.displayName },
+            tieBreaker = { it.userId },
+        )
+    }
+    val hitByUser = remember(hits) { hits.mapNotNull { (f, h) -> h?.let { f.userId to it } }.toMap() }
+
+    val sections = remember(hits, searchQuery) {
+        val filtered = hits.map { it.first }
         // 分组走 PinyinIndex：中文按拼音首字母归到 A–Z，符号/数字/emoji 落 `#` 并排在最后。
         // 过去是按"显示名首字符"分，于是每个中文名各自成一组，索引根本不是字母表。
         // @ 选人面板用的是同一个实现，两处的分组口径必须一致。
-        filtered to PinyinIndex.group(filtered) { it.displayName }
+        // 有搜索词时按相关性给一整段，不分字母组——字母分组会把最准的结果压到下面。
+        filtered to if (searchQuery.isBlank()) {
+            PinyinIndex.group(filtered) { it.displayName }
+        } else {
+            listOf(null to filtered)
+        }
     }
     val filtered = sections.first
 
@@ -176,11 +195,12 @@ private fun FriendsTabContent(
             }
 
             sections.second.forEach { (letter, list) ->
-                item { LetterHeader(letter = letter.toString()) }
+                if (letter != null) item { LetterHeader(letter = letter.toString()) }
                 items(list.size) { idx ->
                     val friend = list[idx]
                     FriendItem(
                         friend = friend,
+                        hit = hitByUser[friend.userId],
                         isOnline = presences[friend.userId]?.isOnline == true,
                         onClick = { onFriendClick(friend) },
                     )
@@ -314,6 +334,7 @@ private fun LetterHeader(letter: String) {
 @Composable
 private fun FriendItem(
     friend: FriendEntry,
+    hit: FieldHit?,
     isOnline: Boolean,
     onClick: () -> Unit,
 ) {
@@ -330,6 +351,27 @@ private fun FriendItem(
             )
         },
         title = friend.displayName,
+        titleContent = {
+            HighlightedText(
+                text = friend.displayName,
+                match = hit?.match?.takeIf { hit.field == SearchField.DisplayName },
+                style = Theme.typography.bodyLarge,
+            )
+        },
+        // 命中在备注/账号名时把那一行显示出来：否则用户看到一个与查询词无关的名字，
+        // 不知道自己为什么搜到了它。
+        descriptionContent = if (hit != null && hit.field != SearchField.DisplayName) {
+            {
+                HighlightedText(
+                    text = hit.text,
+                    match = hit.match,
+                    style = Theme.typography.label,
+                    color = Theme.colors.mutedForeground,
+                )
+            }
+        } else {
+            null
+        },
         arrow = true,
     )
 }

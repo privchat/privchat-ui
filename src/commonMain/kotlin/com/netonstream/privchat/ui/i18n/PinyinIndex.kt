@@ -47,15 +47,17 @@ object PinyinIndex {
      * BarNick / Beta3Tester / bls —— 同一个字母下先出现所有大写开头的，再出现小写的。
      * 不排序则更糟：顺序取决于成员列表的到达顺序，同一个群每次打开都可能不一样。
      *
-     * 🔴 **组内的中文顺序目前是按码点排的，不是按全拼**。同在 L 组的「兰」应排在「李」
-     * 之前（lan < li），按码点却是「兰(U+5170)」在「李(U+674E)」之前——这次恰好对，
-     * 但「刘(U+5218) / 李(U+674E)」就排错了（liu 应在 li 之后）。
-     * 要排对必须有**全拼**，而这张表只有首字母。全拼表落地时一并修，届时这段注释删掉。
+     * 组内按**全拼**排：同在 L 组的「刘(liu)」要排在「李(li)」之后，按码点排出来是反的
+     * （刘 U+5218 < 李 U+674E）。全拼相同时再按原文兜底，保证顺序稳定。
      */
     fun <T> group(items: List<T>, nameOf: (T) -> String): List<Pair<Char, List<T>>> =
         items
             .groupBy { initialOf(nameOf(it)) }
             .entries
             .sortedBy { sortKey(it.key) }
-            .map { (letter, list) -> letter to list.sortedBy { nameOf(it).lowercase() } }
+            .map { (letter, list) ->
+                letter to list.sortedWith(
+                    compareBy({ Pinyin.sortKeyOf(nameOf(it)) }, { nameOf(it).lowercase() }),
+                )
+            }
 }
