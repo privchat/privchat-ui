@@ -477,6 +477,8 @@ fun MessagePage(
     // 选中成员后要把这个 @ 原地换成 `@name `，所以记下标而不是记一个 Boolean。
     // mentionSpans 记录每段 `@name ` 的区间（含尾随空格），用于原子删除与回填 userId。
     var mentionAtIndex by remember(channel.channelId) { mutableStateOf<Int?>(null) }
+    // 每选完一次人 +1：输入栏据此把焦点和键盘要回来。
+    var composerFocusNonce by remember(channel.channelId) { mutableStateOf(0) }
     // @ 面板弹出时要主动收键盘：输入框此刻是聚焦态，不收的话面板只剩一条缝。
     val pageFocusManager = LocalFocusManager.current
     val pageKeyboardController = LocalSoftwareKeyboardController.current
@@ -1344,6 +1346,22 @@ fun MessagePage(
             MentionPickerSheet(
                 visible = atIndex != null && mentionCandidates.isNotEmpty(),
                 members = mentionCandidates,
+                // 与置顶同一个判据：群主/管理员。服务端对 @全体成员 也是这么判的。
+                allowMentionAll = canPinMessages,
+                onPickAll = {
+                    val idx = atIndex
+                    if (idx != null) {
+                        // 没有 userId，所以不记 MentionSpan：这条提及的载体就是文本本身
+                        // （服务端按 `@全体成员` / `@all` / `@everyone` 认它）。
+                        inputText = replaceMentionTriggerWithText(
+                            inputText,
+                            idx,
+                            "@" + strings.mentionPickerAll + " ",
+                        )
+                    }
+                    mentionAtIndex = null
+                    composerFocusNonce += 1
+                },
                 onDismiss = { mentionAtIndex = null },
                 onPick = { picked ->
                     // 第一个替换掉输入框里已经敲下的 `@查询串`，其余追加在后面。
@@ -1359,6 +1377,7 @@ fun MessagePage(
                     }
                     inputText = text
                     mentionAtIndex = null
+                    composerFocusNonce += 1
                 },
             )
         }
@@ -1625,6 +1644,7 @@ fun MessagePage(
                 }
             },
             replyPending = pendingReply != null,
+            focusRequestNonce = composerFocusNonce,
             // BOT_INTERACTION_SPEC §3.1：DM 对端 user_type ∈ {1=System, 2=Bot} 时显示菜单按钮。
             showMenuButton = channel.isDm
                 && peerUserType?.let { it == 1.toShort() || it == 2.toShort() } == true,
@@ -2610,6 +2630,13 @@ private fun MessageInputBar(
     onContact: () -> Unit = {},
     onSend: () -> Unit,
     replyPending: Boolean = false,
+    /**
+     * 计数器：每加一次，把焦点要回输入框并唤起键盘。
+     *
+     * 用计数器而不是 Boolean：连续两次「选完人回到输入框」之间没有 false 可归零，
+     * 用 Boolean 的话第二次不会触发。
+     */
+    focusRequestNonce: Int = 0,
     // BOT_INTERACTION_SPEC §3.1：bot/system/official 会话在输入栏最前面显示菜单按钮。
     showMenuButton: Boolean = false,
     onMenuClick: () -> Unit = {},
@@ -2629,6 +2656,15 @@ private fun MessageInputBar(
     // REPLY_SPEC §4.3：进入回复态后自动聚焦文本输入并弹键盘；语音模式不触发，避免打断录音体验。
     LaunchedEffect(replyPending) {
         if (replyPending && !voiceMode) {
+            pendingAutoFocus = true
+        }
+    }
+    // 🔴 @ 面板选完人之后要把键盘还回来。
+    //
+    // 面板弹出时收了键盘（不收的话面板只剩一条缝），选完人如果不还，用户面对的是
+    // 一个刚插进 `@张三 ` 的输入框和一个没有键盘的屏幕，还得再点一次输入框才能接着打字。
+    LaunchedEffect(focusRequestNonce) {
+        if (focusRequestNonce > 0 && !voiceMode) {
             pendingAutoFocus = true
         }
     }
@@ -3686,6 +3722,12 @@ private data class MentionInsertion(val text: String, val span: MentionSpan)
  *
  * 按下标替换而不是找最后一个 `@`：在句子中间敲 @ 时，"最后一个 @ 到末尾"会把后半句一起吃掉。
  */
+/** 把 [atIdx] 处的触发符 `@` 换成一段现成的文本（用于没有 userId 的「所有人」）。 */
+private fun replaceMentionTriggerWithText(text: String, atIdx: Int, inserted: String): String {
+    if (atIdx !in text.indices || text[atIdx] != '@') return text
+    return text.substring(0, atIdx) + inserted + text.substring(atIdx + 1)
+}
+
 private fun replaceMentionTrigger(
     text: String,
     atIdx: Int,

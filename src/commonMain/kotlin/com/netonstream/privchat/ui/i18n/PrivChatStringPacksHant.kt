@@ -905,6 +905,7 @@ internal val hantWallet = PrivChatWalletStrings(
     mentionPickerMultiple = "多選",
     mentionPickerDone = "完成(%d)",
     mentionPickerNoResult = "沒有符合的成員",
+    mentionPickerAll = "全体成员",
     reportReasonSpam = "垃圾廣告",
     reportReasonHarassment = "騷擾辱罵",
     reportReasonSexual = "色情低俗",

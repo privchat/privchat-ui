@@ -907,6 +907,7 @@ internal val zhWallet = PrivChatWalletStrings(
     mentionPickerMultiple = "多选",
     mentionPickerDone = "完成(%d)",
     mentionPickerNoResult = "没有匹配的成员",
+    mentionPickerAll = "全体成员",
     reportReasonSpam = "垃圾广告",
     reportReasonHarassment = "骚扰辱骂",
     reportReasonSexual = "色情低俗",

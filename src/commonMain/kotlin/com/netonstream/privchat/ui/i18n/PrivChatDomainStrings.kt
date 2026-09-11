@@ -3105,6 +3105,13 @@ data class PrivChatWalletStrings(
     val mentionPickerDone: String,
     /** 搜索没有匹配到成员。 */
     val mentionPickerNoResult: String,
+    /**
+     * @ 面板里「所有人」那一行的名字，也是插进输入框的那个词（前面加 @）。
+     *
+     * 必须是服务端认得的那几个词之一（send_message_handler 按 `@全体成员` / `@all` /
+     * `@everyone` 判定 is_mention_all）：这条提及没有用户 id，文本就是唯一的载体。
+     */
+    val mentionPickerAll: String,
     val reportReasonSpam: String,
     val reportReasonHarassment: String,
     val reportReasonSexual: String,
@@ -3289,6 +3296,7 @@ data class PrivChatWalletStringsPatch(
     val mentionPickerMultiple: String? = null,
     val mentionPickerDone: String? = null,
     val mentionPickerNoResult: String? = null,
+    val mentionPickerAll: String? = null,
     val reportReasonSpam: String? = null,
     val reportReasonHarassment: String? = null,
     val reportReasonSexual: String? = null,
@@ -3470,6 +3478,7 @@ val PrivChatWalletStringsPatch.isEmpty: Boolean
         mentionPickerMultiple == null &&
         mentionPickerDone == null &&
         mentionPickerNoResult == null &&
+        mentionPickerAll == null &&
         reportReasonSpam == null &&
         reportReasonHarassment == null &&
         reportReasonSexual == null &&
@@ -3650,6 +3659,7 @@ fun PrivChatWalletStrings.merge(patch: PrivChatWalletStringsPatch?): PrivChatWal
         mentionPickerMultiple = patch.mentionPickerMultiple ?: mentionPickerMultiple,
         mentionPickerDone = patch.mentionPickerDone ?: mentionPickerDone,
         mentionPickerNoResult = patch.mentionPickerNoResult ?: mentionPickerNoResult,
+        mentionPickerAll = patch.mentionPickerAll ?: mentionPickerAll,
         reportReasonSpam = patch.reportReasonSpam ?: reportReasonSpam,
         reportReasonHarassment = patch.reportReasonHarassment ?: reportReasonHarassment,
         reportReasonSexual = patch.reportReasonSexual ?: reportReasonSexual,

@@ -866,6 +866,7 @@ data class PrivChatStrings(
     val mentionPickerMultiple: String get() = dWallet.mentionPickerMultiple
     val mentionPickerDone: String get() = dWallet.mentionPickerDone
     val mentionPickerNoResult: String get() = dWallet.mentionPickerNoResult
+    val mentionPickerAll: String get() = dWallet.mentionPickerAll
     val reportReasonSpam: String get() = dWallet.reportReasonSpam
     val reportReasonHarassment: String get() = dWallet.reportReasonHarassment
     val reportReasonSexual: String get() = dWallet.reportReasonSexual

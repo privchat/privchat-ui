@@ -62,6 +62,15 @@ fun MentionPickerSheet(
     visible: Boolean,
     members: List<GroupMemberEntry>,
     onDismiss: () -> Unit,
+    /**
+     * 是否显示「所有人」。
+     *
+     * 只有群主和管理员看得到：服务端也是这么判的（无权时整条消息被拒），
+     * 让普通成员点一个必然失败的选项，等于把服务端的拒绝包装成客户端的 bug。
+     */
+    allowMentionAll: Boolean = false,
+    /** 选了「所有人」。没有 userId，调用方按文本插入。 */
+    onPickAll: () -> Unit = {},
     /** 单选直接回调一个；多选按勾选顺序回调多个。 */
     onPick: (List<GroupMemberEntry>) -> Unit,
 ) {
@@ -164,8 +173,11 @@ fun MentionPickerSheet(
                 }
             } else {
                 // 每个分组的首行在列表里的下标，索引条点字母就滚到这里。
-                val sectionStarts = remember(sections) {
-                    var row = 0
+                val hasAllRow = allowMentionAll && query.isBlank() && !multiSelect
+                val sectionStarts = remember(sections, hasAllRow) {
+                    // 「所有人」占掉第 0 行，后面每个分组的起点都要顺延，否则点字母会
+                    // 滚到差一行的位置。
+                    var row = if (hasAllRow) 1 else 0
                     sections.map { (letter, list) ->
                         val start = row
                         row += list.size + if (letter != null) 1 else 0 // +1 = 分组头本身
@@ -177,6 +189,12 @@ fun MentionPickerSheet(
 
                 Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     GearLazyColumn(modifier = Modifier.fillMaxWidth(), state = listState) {
+                        // 「所有人」置顶，且只在没有搜索词时出现：它不参与拼音匹配，
+                        // 搜索态里留着它会挤掉真正匹配到的人。多选态也不给——一条
+                        // 「@全体成员」已经覆盖了所有人，再加几个人名没有意义。
+                        if (allowMentionAll && query.isBlank() && !multiSelect) {
+                            item { MentionAllRow(onClick = onPickAll) }
+                        }
                         sections.forEach { (letter, list) ->
                             if (letter != null) item { LetterHeader(letter.toString()) }
                             items(list.size) { index ->
@@ -285,6 +303,41 @@ private fun LetterHeader(letter: String) {
             .fillMaxWidth()
             .padding(horizontal = Spacing.lg, vertical = Spacing.xs),
     )
+}
+
+/**
+ * 「所有人」那一行。
+ *
+ * 用主色的图标代替头像：它不是一个人，画一个首字母圆圈会让人以为群里有个叫「全体成员」
+ * 的成员。
+ */
+@Composable
+private fun MentionAllRow(onClick: () -> Unit) {
+    val strings = PrivChatI18n.strings
+    val colors = Theme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(AvatarSizeTokens.Small.size)
+                .clip(CircleShape)
+                .background(colors.primary),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(name = Icons.users, size = 18.dp, tint = colors.primaryForeground)
+        }
+        Spacer(modifier = Modifier.width(Spacing.md))
+        Text(
+            text = strings.mentionPickerAll,
+            style = Theme.typography.bodyMedium,
+            color = colors.foreground,
+        )
+    }
 }
 
 @Composable
