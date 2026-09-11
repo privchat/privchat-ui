@@ -3406,7 +3406,8 @@ private fun MessageActionsWrapper(
         null
     }
 
-    // 已读入口排在最前，与 Telegram 一致：它是状态，不是动作。
+    // 已读入口排在**最后一项**。它是状态不是动作，放在动作之间会被误点；
+    // 而且它是异步查回来才出现的，排在前面会让已经瞄准某一项的手指位移。
     // 人数为 0 时不显示——"0 人已读"只会让人以为功能坏了。
     // 过期的消息服务端会拒，stats 拿不到，这一项自然不出现。
     val readEntryAction = readStats
@@ -3429,7 +3430,7 @@ private fun MessageActionsWrapper(
     }
 
     MessageActionsMenu(
-        actions = listOfNotNull(readEntryAction) + menuActions,
+        actions = menuActions + listOfNotNull(readEntryAction),
         modifier = Modifier.widthIn(max = 260.dp),
         reactions = reactions,
         onReaction = onReaction,
