@@ -906,6 +906,7 @@ internal val viWallet = PrivChatWalletStrings(
     mentionPickerDone = "Xong(%d)",
     mentionPickerNoResult = "Không có thành viên phù hợp",
     mentionPickerAll = "everyone",
+    messageRevokedReEdit = "Sửa lại",
     reportReasonSpam = "Spam",
     reportReasonHarassment = "Quấy rối",
     reportReasonSexual = "Nội dung khiêu dâm",

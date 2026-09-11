@@ -906,6 +906,7 @@ internal val enWallet = PrivChatWalletStrings(
     mentionPickerDone = "Done(%d)",
     mentionPickerNoResult = "No matching member",
     mentionPickerAll = "everyone",
+    messageRevokedReEdit = "Edit again",
     reportReasonSpam = "Spam",
     reportReasonHarassment = "Harassment",
     reportReasonSexual = "Sexual content",

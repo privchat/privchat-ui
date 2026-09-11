@@ -105,6 +105,7 @@ import com.tencent.kuikly.compose.ui.draw.alpha
 import com.tencent.kuikly.compose.ui.zIndex
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.unit.sp
+import com.netonstream.privchat.ui.RecallDrafts
 import com.netonstream.privchat.ui.common.base.currentTimeMillis
 import com.tencent.kuikly.compose.ui.graphics.Color
 import com.tencent.kuikly.compose.ui.text.LinkAnnotation
@@ -1167,6 +1168,26 @@ fun MessagePage(
                                         else -> senderMember?.avatar?.takeIf { it.isNotBlank() }
                                     },
                                     redPacketStatusOf = { redPacketStatusMap[it] ?: 0 },
+                                    // 只有自己撤回的文本、且还在时限内，才给「重新编辑」。
+                                    onReEdit = if (isSelf && message.isRevoked) {
+                                        RecallDrafts.peek(message.id)?.let { original ->
+                                            {
+                                                val consumed = RecallDrafts.consume(message.id)
+                                                if (consumed != null) {
+                                                    // 输入框里已经有字就接在后面，不要把用户
+                                                    // 正在写的东西冲掉。
+                                                    inputText = if (inputText.isBlank()) {
+                                                        consumed
+                                                    } else {
+                                                        inputText.trimEnd() + " " + consumed
+                                                    }
+                                                    composerFocusNonce += 1
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        null
+                                    },
                                     onAvatarClick = if (!isSelf) onAvatarClick else null,
                                     onMentionClick = onAvatarClick?.let { open ->
                                         { userId, name ->
@@ -1896,6 +1917,8 @@ private fun MessageRow(
     onVideoPreview: ((MessageEntry) -> Unit)? = null,
     onImagePreview: ((MessageEntry) -> Unit)? = null,
     onRedPacketClick: ((String) -> Unit)? = null,
+    /** 撤回提示上的「重新编辑」。仅自己撤回的文本、且在时限内时非 null。 */
+    onReEdit: (() -> Unit)? = null,
     onMoneyTransferClick: ((String) -> Unit)? = null,
     redPacketStatusOf: ((String) -> Int)? = null,
     onReply: ((MessageEntry) -> Unit)? = null,
@@ -1963,11 +1986,11 @@ private fun MessageRow(
                 contentAlignment = Alignment.Center,
             ) {
                 MessageActionsWrapper(message = message, isSelf = isSelf, onRequestForward = onRequestForward, onReply = onReply, onReportMessage = onReportMessage) {
-                    SystemMessageRow(message = message, onUserClick = onAvatarClick, onRedPacketClick = onRedPacketClick)
+                    SystemMessageRow(message = message, onUserClick = onAvatarClick, onRedPacketClick = onRedPacketClick, onReEdit = onReEdit)
                 }
             }
         } else {
-            SystemMessageRow(message = message, onUserClick = onAvatarClick, onRedPacketClick = onRedPacketClick)
+            SystemMessageRow(message = message, onUserClick = onAvatarClick, onRedPacketClick = onRedPacketClick, onReEdit = onReEdit)
         }
         return
     }
@@ -2160,6 +2183,8 @@ private fun SystemMessageRow(
     message: MessageEntry,
     onUserClick: ((ULong) -> Unit)? = null,
     onRedPacketClick: ((String) -> Unit)? = null,
+    /** 自己刚撤回的文本消息：点「重新编辑」把原文放回输入框。null=不显示。 */
+    onReEdit: (() -> Unit)? = null,
 ) {
     val strings = PrivChatI18n.strings
     val colors = Theme.colors
@@ -2184,11 +2209,22 @@ private fun SystemMessageRow(
             // 不靠把字调灰。全局 mutedForeground 本身不动。
             val sys = colors.systemMessageStyle
             when {
-                message.isRevoked -> Text(
-                    text = strings.messageRevoked,
-                    style = Theme.typography.label,
-                    color = sys.text,
-                )
+                message.isRevoked -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = strings.messageRevoked,
+                        style = Theme.typography.label,
+                        color = sys.text,
+                    )
+                    if (onReEdit != null) {
+                        HorizontalSpacer(6.dp)
+                        Text(
+                            text = strings.messageRevokedReEdit,
+                            style = Theme.typography.label,
+                            color = sys.link,
+                            modifier = Modifier.clickable(onClick = onReEdit),
+                        )
+                    }
+                }
                 parsed.systemTemplate != null -> SystemTemplateText(
                     template = parsed.systemTemplate,
                     refs = parsed.systemRefs ?: emptyList(),
@@ -3403,6 +3439,13 @@ private fun MessageActionsWrapper(
                                     Toast.error(UserFacingError.message(error, strings.networkError))
                                 }
                         } else {
+                            // 撤回之前把正文留下来：撤回之后本地只剩一条提示，正文就没了，
+                            // 而撤回最常见的原因就是打错一个字。
+                            if (message.messageType == 0) {
+                                message.parsedContent.text?.let {
+                                    RecallDrafts.remember(message.id, it)
+                                }
+                            }
                             withContext(Dispatchers.Default) {
                                 PrivChat.client.revokeMessage(message.id)
                             }.onFailure { error ->

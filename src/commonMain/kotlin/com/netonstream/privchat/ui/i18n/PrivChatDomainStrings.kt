@@ -3112,6 +3112,8 @@ data class PrivChatWalletStrings(
      * `@everyone` 判定 is_mention_all）：这条提及没有用户 id，文本就是唯一的载体。
      */
     val mentionPickerAll: String,
+    /** 自己撤回后，提示旁边那个「重新编辑」。 */
+    val messageRevokedReEdit: String,
     val reportReasonSpam: String,
     val reportReasonHarassment: String,
     val reportReasonSexual: String,
@@ -3297,6 +3299,7 @@ data class PrivChatWalletStringsPatch(
     val mentionPickerDone: String? = null,
     val mentionPickerNoResult: String? = null,
     val mentionPickerAll: String? = null,
+    val messageRevokedReEdit: String? = null,
     val reportReasonSpam: String? = null,
     val reportReasonHarassment: String? = null,
     val reportReasonSexual: String? = null,
@@ -3479,6 +3482,7 @@ val PrivChatWalletStringsPatch.isEmpty: Boolean
         mentionPickerDone == null &&
         mentionPickerNoResult == null &&
         mentionPickerAll == null &&
+        messageRevokedReEdit == null &&
         reportReasonSpam == null &&
         reportReasonHarassment == null &&
         reportReasonSexual == null &&
@@ -3660,6 +3664,7 @@ fun PrivChatWalletStrings.merge(patch: PrivChatWalletStringsPatch?): PrivChatWal
         mentionPickerDone = patch.mentionPickerDone ?: mentionPickerDone,
         mentionPickerNoResult = patch.mentionPickerNoResult ?: mentionPickerNoResult,
         mentionPickerAll = patch.mentionPickerAll ?: mentionPickerAll,
+        messageRevokedReEdit = patch.messageRevokedReEdit ?: messageRevokedReEdit,
         reportReasonSpam = patch.reportReasonSpam ?: reportReasonSpam,
         reportReasonHarassment = patch.reportReasonHarassment ?: reportReasonHarassment,
         reportReasonSexual = patch.reportReasonSexual ?: reportReasonSexual,
