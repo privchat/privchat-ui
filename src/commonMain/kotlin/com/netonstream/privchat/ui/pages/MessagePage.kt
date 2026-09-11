@@ -23,7 +23,6 @@ import com.netonstream.privchat.ui.components.MessageActionPolicy
 import com.netonstream.privchat.ui.components.MessageActionsMenu
 import com.netonstream.privchat.ui.components.MentionPickerSheet
 import com.netonstream.privchat.ui.search.MentionQuery
-import com.netonstream.privchat.ui.search.PeopleSearch
 import com.netonstream.privchat.ui.components.MessageContent
 import com.netonstream.privchat.ui.components.ReadReceiptsSheet
 import com.netonstream.privchat.ui.media.MediaDownloadManager
@@ -474,9 +473,10 @@ fun MessagePage(
     var hasInitialLoadCompleted by remember(channel.channelId) { mutableStateOf(false) }
     // 输入文本
     var inputText by remember { mutableStateOf(PrivChat.getDraft(channel.channelId) ?: "") }
-    // UX-10：@ 提及选择器（仅群聊）。mentionQuery=null 时隐藏 picker；
+    // UX-10：@ 提及选择器（仅群聊）。存的是触发符 @ 在输入文本中的下标，null 表示面板关闭；
+    // 选中成员后要把这个 @ 原地换成 `@name `，所以记下标而不是记一个 Boolean。
     // mentionSpans 记录每段 `@name ` 的区间（含尾随空格），用于原子删除与回填 userId。
-    var mentionQuery by remember(channel.channelId) { mutableStateOf<String?>(null) }
+    var mentionAtIndex by remember(channel.channelId) { mutableStateOf<Int?>(null) }
     // @ 面板弹出时要主动收键盘：输入框此刻是聚焦态，不收的话面板只剩一条缝。
     val pageFocusManager = LocalFocusManager.current
     val pageKeyboardController = LocalSoftwareKeyboardController.current
@@ -1189,7 +1189,7 @@ fun MessagePage(
                                         val ins = appendMention(inputText, name, userId)
                                         inputText = ins.text
                                         mentionSpans.add(ins.span)
-                                        mentionQuery = null
+                                        mentionAtIndex = null
                                     } else null,
                                     peerReadPts = peerReadPts,
                                     reactions = messageReactions[message.id].orEmpty(),
@@ -1331,44 +1331,26 @@ fun MessagePage(
         // 从"输入栏上方一块 220dp 的内联列表"改成微信式底部面板：面板自带搜索与分组，
         // 打开时先收键盘——键盘不收的话，面板与键盘会一起占掉整屏，列表只剩一条缝。
         if (!channel.isDm) {
-            val query = mentionQuery
+            val atIndex = mentionAtIndex
             val mentionCandidates = remember(groupMembersForChannel, currentUserId) {
                 groupMembersForChannel.filter { it.userId != currentUserId }
             }
-            // 🔴 片段匹配不到任何人就收起面板。
-            //
-            // 「@张三的消息」这种——提及已经选完、用户继续在末尾打字——光靠光标判不掉，
-            // 但它匹配不到任何成员。没有这一条，面板会顶着一句「没有匹配的成员」一直开着。
-            val mentionMatches = remember(mentionCandidates, query) {
-                when {
-                    query == null -> emptyList()
-                    query.isEmpty() -> mentionCandidates
-                    else -> PeopleSearch.search(
-                        items = mentionCandidates,
-                        query = query,
-                        fieldsOf = { PeopleSearch.fieldsOf(it) },
-                        nameOf = { it.displayName },
-                        tieBreaker = { it.userId },
-                    ).map { it.first }
-                }
-            }
-            LaunchedEffect(query != null) {
-                if (query != null) {
+            LaunchedEffect(atIndex != null) {
+                if (atIndex != null) {
                     pageFocusManager.clearFocus(force = true)
                     pageKeyboardController?.hide()
                 }
             }
             MentionPickerSheet(
-                visible = query != null && mentionMatches.isNotEmpty(),
+                visible = atIndex != null && mentionCandidates.isNotEmpty(),
                 members = mentionCandidates,
-                initialQuery = query.orEmpty(),
-                onDismiss = { mentionQuery = null },
+                onDismiss = { mentionAtIndex = null },
                 onPick = { picked ->
                     // 第一个替换掉输入框里已经敲下的 `@查询串`，其余追加在后面。
                     var text = inputText
                     picked.forEachIndexed { index, member ->
-                        val ins = if (index == 0) {
-                            replaceMentionQuery(text, member.displayName, member.userId)
+                        val ins = if (index == 0 && atIndex != null) {
+                            replaceMentionTrigger(text, atIndex, member.displayName, member.userId)
                         } else {
                             appendMention(text, member.displayName, member.userId)
                         }
@@ -1376,7 +1358,7 @@ fun MessagePage(
                         mentionSpans.add(ins.span)
                     }
                     inputText = text
-                    mentionQuery = null
+                    mentionAtIndex = null
                 },
             )
         }
@@ -1387,13 +1369,19 @@ fun MessagePage(
             onTextChange = { rawNewText ->
                 // UX-10：把用户编辑与已有 mention 区间做 diff 合并——触碰到任一 span 时整段抹除，
                 // 其它编辑保持不变；等价于 WeChat 的"pill 原子删除"但不需要富文本输入。
-                val (newText, newSpans) = resolveMentionEdit(inputText, rawNewText, mentionSpans.toList())
+                // 🔴 先把旧文本抓在手里：inputText 是 state，赋值之后再读就是新值，
+                // 拿它跟 newText 比等于自己跟自己比，"这次改了什么"就永远算不出来。
+                val previousText = inputText
+                val (newText, newSpans) = resolveMentionEdit(previousText, rawNewText, mentionSpans.toList())
                 inputText = newText
                 if (newSpans != mentionSpans.toList()) {
                     mentionSpans.clear()
                     mentionSpans.addAll(newSpans)
                 }
-                mentionQuery = MentionQuery.of(inputText, newText, channel.isDm)
+                // 面板只由"刚敲下的那个 @"打开；已经开着时不重算，编辑交给面板自己的搜索框。
+                if (mentionAtIndex == null) {
+                    mentionAtIndex = MentionQuery.triggerIndex(previousText, newText, channel.isDm)
+                }
                 // 节流发送 typing：文本非空且距离上次发送超过 1 秒（与接收侧 5s 过期窗口对齐，
                 // 确保用户持续输入时对端始终能收到心跳，不会因中间某次发送被延迟而误判停止）
                 if (newText.isNotBlank()) {
@@ -1571,7 +1559,7 @@ fun MessagePage(
                     val mentionUserIds = mentionSpans.map { it.userId }.distinct()
                     val needOptions = replyTargetServerId != null || mentionUserIds.isNotEmpty()
                     inputText = ""
-                    mentionQuery = null
+                    mentionAtIndex = null
                     mentionSpans.clear()
                     pendingReply = null
                     // UX-9：成功调用发送路径后立刻清掉持久草稿；onDispose 只在退出会话时兜底。
@@ -3693,13 +3681,21 @@ private data class MentionSpan(val start: Int, val end: Int, val userId: ULong)
 /** 一次插入操作的产出：更新后的文本与新增 span。*/
 private data class MentionInsertion(val text: String, val span: MentionSpan)
 
-/** 把输入尾部的 `@query` 片段替换为 `@<name> `（保留触发符，便于对方阅读）。*/
-private fun replaceMentionQuery(text: String, name: String, userId: ULong): MentionInsertion {
-    val atIdx = text.lastIndexOf('@')
-    val prefix = if (atIdx < 0) text else text.substring(0, atIdx)
-    val newText = "$prefix@$name "
-    val spanStart = prefix.length
-    return MentionInsertion(newText, MentionSpan(spanStart, newText.length, userId))
+/**
+ * 把 [atIdx] 处的触发符 `@` 原地换成 `@<name> `（保留触发符，便于对方阅读）。
+ *
+ * 按下标替换而不是找最后一个 `@`：在句子中间敲 @ 时，"最后一个 @ 到末尾"会把后半句一起吃掉。
+ */
+private fun replaceMentionTrigger(
+    text: String,
+    atIdx: Int,
+    name: String,
+    userId: ULong,
+): MentionInsertion {
+    if (atIdx !in text.indices || text[atIdx] != '@') return appendMention(text, name, userId)
+    val inserted = "@$name "
+    val newText = text.substring(0, atIdx) + inserted + text.substring(atIdx + 1)
+    return MentionInsertion(newText, MentionSpan(atIdx, atIdx + inserted.length, userId))
 }
 
 /** 头像长按直接追加 `@name `；若输入框末尾非空白，先补一个空格。*/

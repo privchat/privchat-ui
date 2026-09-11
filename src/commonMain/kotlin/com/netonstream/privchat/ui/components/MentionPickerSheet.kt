@@ -61,14 +61,13 @@ import com.tencent.kuikly.compose.ui.unit.dp
 fun MentionPickerSheet(
     visible: Boolean,
     members: List<GroupMemberEntry>,
-    /** 初始搜索词：用户在输入框里 `@` 后面已经敲了的那几个字。 */
-    initialQuery: String,
     onDismiss: () -> Unit,
     /** 单选直接回调一个；多选按勾选顺序回调多个。 */
     onPick: (List<GroupMemberEntry>) -> Unit,
 ) {
     val strings = PrivChatI18n.strings
-    var query by remember(visible) { mutableStateOf(initialQuery) }
+    // 面板只由"刚敲下的 @"打开，输入框里不存在已经敲好的片段，所以每次都从空搜索开始。
+    var query by remember(visible) { mutableStateOf("") }
     var multiSelect by remember(visible) { mutableStateOf(false) }
     val selected = remember(visible) { mutableStateListOf<ULong>() }
 

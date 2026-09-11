@@ -6,56 +6,63 @@ import kotlin.test.assertNull
 
 class MentionQueryTest {
 
-    private fun typed(old: String, new: String) = MentionQuery.of(old, new, isDm = false)
+    private fun trigger(old: String, new: String) = MentionQuery.triggerIndex(old, new, isDm = false)
 
-    /** 刚敲下 @：片段为空，面板该弹。 */
-    @Test fun typingAtOpensWithEmptyQuery() {
-        assertEquals("", typed("hi ", "hi @"))
-        assertEquals("", typed("", "@"))
+    @Test
+    fun opensWhenAtIsTyped() {
+        assertEquals(0, trigger("", "@"))
+        assertEquals(6, trigger("hello ", "hello @"))
     }
 
-    @Test fun typingAfterAtBuildsTheQuery() {
-        assertEquals("bl", typed("hi @b", "hi @bl"))
+    @Test
+    fun opensWhenAtIsInsertedMidSentence() {
+        // 面板要认得这个 @ 的位置：选中成员后只能替换它本身，不能把后半句吃掉。
+        assertEquals(3, trigger("hi world", "hi @world"))
     }
 
-    /** 🔴 在句子中间插 @：查询串是 @ 与**光标**之间，不是到文本末尾。 */
-    @Test fun insertingAtInTheMiddleDoesNotSwallowTheRest() {
-        assertEquals("", typed("hello world", "hello @world"))
+    @Test
+    fun doesNotOpenWhileTypingAfterTheAt() {
+        // 用户报的 bug：@ 后面每敲一个字都重开面板，等于打字打到一半键盘被收走。
+        assertNull(trigger("@", "@b"))
+        assertNull(trigger("@b", "@bl"))
+        assertNull(trigger("hi @bls", "hi @blsh"))
     }
 
-    /** 🔴 提及选完之后继续在末尾打字，不该再被当成提及片段。 */
-    @Test fun typingAfterACompletedMentionIsNotAQuery() {
-        // "@张三 " 之后打「的消息」——@ 与光标之间有空白
-        assertNull(typed("@张三 ", "@张三 的"))
-        // 没有空格的情况：@ 与光标之间是「张三的」，但那是在**末尾**继续打字，
-        // 面板由调用方按"片段匹配不到人"再关一次（见 MessagePage 的可见条件）。
-        assertEquals("张三的", typed("@张三", "@张三的"))
+    @Test
+    fun doesNotOpenWhileDeleting() {
+        // 往回退格，删到只剩 @ 或剩下的片段恰好能匹配上，都不该把面板重新弹出来。
+        assertNull(trigger("@bls", "@bl"))
+        assertNull(trigger("hi @b", "hi @"))
+        assertNull(trigger("hi @", "hi "))
     }
 
-    /** 邮箱不是提及。 */
-    @Test fun emailIsNotAMention() {
-        assertNull(typed("a@b.co", "a@b.com"))
+    @Test
+    fun doesNotOpenForEmailLikeAt() {
+        assertNull(trigger("mail me at a", "mail me at a@"))
     }
 
-    /** 片段里不能有空白。 */
-    @Test fun whitespaceEndsTheFragment() {
-        assertNull(typed("hi @bls", "hi @bls "))
+    @Test
+    fun doesNotOpenOnMultiCharacterImeCommit() {
+        // 输入法一次上屏多字（含 @）不是"敲下 @"，不开面板。
+        assertNull(trigger("", "@ab"))
+        assertNull(trigger("hi", "hi @x"))
     }
 
-    /** 私聊没有提及。 */
-    @Test fun directChannelsNeverMention() {
-        assertNull(MentionQuery.of("hi ", "hi @", isDm = true))
+    @Test
+    fun doesNotOpenOnReplacement() {
+        // 选中一段再输入：长度虽然 +1，但不是单纯插入。
+        assertNull(trigger("abc", "@xyz"))
     }
 
-    /** 删字也要跟着收：从 `@ab` 删到 `@a`，片段是 `a`。 */
-    @Test fun deletingShrinksTheFragment() {
-        assertEquals("a", typed("hi @ab", "hi @a"))
-        assertEquals("", typed("hi @a", "hi @"))
-        assertNull(typed("hi @", "hi "))
+    @Test
+    fun neverOpensInDm() {
+        assertNull(MentionQuery.triggerIndex("", "@", isDm = true))
     }
 
-    /** 输入法一次上屏多个字。 */
-    @Test fun imeCommitsSeveralCharsAtOnce() {
-        assertEquals("张三", typed("@", "@张三"))
+    @Test
+    fun singleInsertIndexRejectsNonInserts() {
+        assertNull(MentionQuery.singleInsertIndex("ab", "ab"))
+        assertNull(MentionQuery.singleInsertIndex("abc", "ab"))
+        assertEquals(1, MentionQuery.singleInsertIndex("ac", "abc"))
     }
 }

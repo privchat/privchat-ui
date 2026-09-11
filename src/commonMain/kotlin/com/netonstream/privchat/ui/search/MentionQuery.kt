@@ -1,53 +1,50 @@
 package com.netonstream.privchat.ui.search
 
 /**
- * 从输入框的一次编辑里推断"用户正在输入的 @ 提及片段"。
+ * 判断输入框的一次编辑是不是"用户刚敲下了一个 @"——面板只由这一下打开。
  *
- * 🔴 判据是**光标位置**，不是"文本里最后一个 @"。
+ * 🔴 面板**只在敲下 @ 的那一刻**弹一次，之后输入框里再怎么编辑都不再弹。
  *
- * 输入组件只给字符串、不给 selection，所以光标由"这次编辑改了哪一段"反推：
- * 掐掉首尾的公共部分，剩下那段的末尾就是光标。打字和输入法上屏都是一次连续修改，
- * 这个反推是准的。
+ * 曾经的做法是"取最后一个 @ 到光标之间的串当查询词，能匹配到人就开面板"，于是面板会在
+ * 用户根本没在提及谁的时候自己冒出来：
+ * - 句中插一个 @，后面那串被当成查询词；
+ * - 提及选完又接着打字（`@张三的消息`），整串被当成查询词；
+ * - 往回退格，删着删着剩下的片段恰好又匹配上了，面板重新弹出来。
  *
- * 只看"最后一个 @ 到末尾"会在两种常见输入上误弹面板：
- * - 在句子中间插一个 @（`hello world` → `hello @world`），后面那串被当成查询词；
- * - 提及已经选好之后又在末尾继续打字（`@张三的消息`），整串也被当成查询词。
+ * 而且面板一开就会收键盘，"自己冒出来"就等于"打字打到一半键盘没了"。
+ *
+ * 敲下 @ 之后的筛选交给面板自己的搜索框：那里有分组和索引条，比在输入框里盲敲片段好用，
+ * 也不需要把输入框的光标状态和面板的查询状态两头同步。
  */
 internal object MentionQuery {
 
     /**
-     * 一次编辑之后的光标位置。
+     * 这次编辑新插入的字符在新文本中的位置；不是"单纯插入"则返回 null。
      *
-     * 前缀 + 后缀都相同的部分不算改动；新文本去掉公共后缀的位置就是光标。
+     * 输入组件只给字符串、不给 selection，所以改动区间由新旧文本的公共前后缀反推。
+     * 删除、替换、输入法一次上屏多字都不算——它们都不该开面板。
      */
-    fun caretAfterEdit(old: String, new: String): Int {
+    fun singleInsertIndex(old: String, new: String): Int? {
+        if (new.length != old.length + 1) return null
         var prefix = 0
-        while (prefix < old.length && prefix < new.length && old[prefix] == new[prefix]) prefix++
-        var suffix = 0
-        while (
-            suffix < old.length - prefix &&
-            suffix < new.length - prefix &&
-            old[old.length - 1 - suffix] == new[new.length - 1 - suffix]
-        ) {
-            suffix++
+        while (prefix < old.length && old[prefix] == new[prefix]) prefix++
+        // 前缀之后的部分必须原样右移一位，否则就是"删一段又插一段"的替换。
+        for (i in prefix until old.length) {
+            if (old[i] != new[i + 1]) return null
         }
-        return new.length - suffix
+        return prefix
     }
 
     /**
-     * 返回 `@` 与光标之间的查询串；不在提及上下文里返回 null。
+     * 是否应当弹出 @ 选人面板，以及触发符 @ 在新文本中的下标。
      *
-     * 规则：`@` 必须在行首或紧跟空白（`a@b.com` 这种邮箱不算），且 `@` 与光标之间不含空白。
+     * @ 必须在行首或紧跟空白：`a@b.com` 这种邮箱不是提及。
      */
-    fun of(oldText: String, newText: String, isDm: Boolean): String? {
+    fun triggerIndex(oldText: String, newText: String, isDm: Boolean): Int? {
         if (isDm) return null
-        val caret = caretAfterEdit(oldText, newText).coerceIn(0, newText.length)
-        if (caret == 0) return null
-        val atIdx = newText.lastIndexOf('@', startIndex = caret - 1)
-        if (atIdx < 0) return null
-        if (atIdx > 0 && !newText[atIdx - 1].isWhitespace()) return null
-        val query = newText.substring(atIdx + 1, caret)
-        if (query.any { it.isWhitespace() }) return null
-        return query
+        val at = singleInsertIndex(oldText, newText) ?: return null
+        if (newText[at] != '@') return null
+        if (at > 0 && !newText[at - 1].isWhitespace()) return null
+        return at
     }
 }
