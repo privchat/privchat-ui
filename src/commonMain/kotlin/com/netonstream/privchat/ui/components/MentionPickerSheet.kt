@@ -25,6 +25,9 @@ import kotlinx.coroutines.launch
 import com.tencent.kuikly.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.rememberCoroutineScope
 import com.netonstream.privchat.ui.i18n.PinyinIndex
+import com.netonstream.privchat.ui.search.SearchField
+import com.netonstream.privchat.ui.search.FieldHit
+import com.netonstream.privchat.ui.search.ContactSearch
 import com.netonstream.privchat.ui.i18n.withArgs
 import com.netonstream.privchat.ui.models.displayName
 import com.tencent.kuikly.compose.foundation.background
@@ -69,13 +72,43 @@ fun MentionPickerSheet(
     var multiSelect by remember(visible) { mutableStateOf(false) }
     val selected = remember(visible) { mutableStateListOf<ULong>() }
 
-    val sections = remember(members, query) {
-        val filtered = if (query.isBlank()) {
-            members
+    // 搜索：多字段 + 拼音。每条结果带着"命中了哪个字段、哪几个字"，UI 据此高亮并说明原因。
+    //
+    // 🔴 字段分开匹配，不拼成一个长串——拼起来会造出跨字段的假命中，也说不清命中在哪。
+    // username 只在 SDK 投影里有值时才参与（PROFILE_VISIBILITY：无权看到就不会下发）。
+    val hits: Map<ULong, FieldHit> = remember(members, query) {
+        if (query.isBlank()) {
+            emptyMap()
         } else {
-            members.filter { it.displayName.contains(query, ignoreCase = true) }
+            buildMap {
+                members.forEach { member ->
+                    val fields = listOfNotNull(
+                        SearchField.DisplayName to member.displayName,
+                        member.remark.takeIf { it.isNotBlank() }?.let { SearchField.Alias to it },
+                        member.username?.takeIf { it.isNotBlank() }?.let { SearchField.Username to it },
+                    )
+                    ContactSearch.bestHit(fields, query)?.let { put(member.userId, it) }
+                }
+            }
         }
-        PinyinIndex.group(filtered) { it.displayName }
+    }
+
+    val sections = remember(members, query, hits) {
+        if (query.isBlank()) {
+            PinyinIndex.group(members) { it.displayName }
+        } else {
+            // 有搜索词时按相关性排，不再分字母组：字母分组会把最准的结果压到下面。
+            val ranked = members
+                .filter { hits.containsKey(it.userId) }
+                .sortedWith(
+                    compareBy(
+                        { ContactSearch.rankOf(hits.getValue(it.userId)) },
+                        { it.displayName.lowercase() },
+                        { it.userId },
+                    ),
+                )
+            if (ranked.isEmpty()) emptyList() else listOf(null to ranked)
+        }
     }
 
     BottomSheet(
@@ -130,7 +163,7 @@ fun MentionPickerSheet(
                     var row = 0
                     sections.map { (letter, list) ->
                         val start = row
-                        row += list.size + 1 // +1 = 分组头本身
+                        row += list.size + if (letter != null) 1 else 0 // +1 = 分组头本身
                         letter to start
                     }
                 }
@@ -140,11 +173,12 @@ fun MentionPickerSheet(
                 Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     GearLazyColumn(modifier = Modifier.fillMaxWidth(), state = listState) {
                         sections.forEach { (letter, list) ->
-                            item { LetterHeader(letter.toString()) }
+                            if (letter != null) item { LetterHeader(letter.toString()) }
                             items(list.size) { index ->
                                 val member = list[index]
                                 MemberRow(
                                     member = member,
+                                    hit = hits[member.userId],
                                     multiSelect = multiSelect,
                                     checked = selected.contains(member.userId),
                                     onClick = {
@@ -158,8 +192,9 @@ fun MentionPickerSheet(
                             }
                         }
                     }
+                    // 搜索态没有字母分组，索引条自然为空——列一条点不动的字母条只会误导。
                     IndexBar(
-                        letters = sectionStarts.map { it.first },
+                        letters = sectionStarts.mapNotNull { it.first },
                         modifier = Modifier.align(Alignment.CenterEnd),
                         onPick = { letter ->
                             sectionStarts.firstOrNull { it.first == letter }?.let { (_, row) ->
@@ -275,6 +310,7 @@ private fun LetterHeader(letter: String) {
 @Composable
 private fun MemberRow(
     member: GroupMemberEntry,
+    hit: FieldHit?,
     multiSelect: Boolean,
     checked: Boolean,
     onClick: () -> Unit,
@@ -299,10 +335,21 @@ private fun MemberRow(
             userId = member.userId.toLong(),
         )
         Spacer(modifier = Modifier.width(Spacing.md))
-        Text(
-            text = name,
-            style = Theme.typography.bodyMedium,
-            color = Theme.colors.foreground,
-        )
+        Column {
+            HighlightedText(
+                text = name,
+                match = hit?.match?.takeIf { hit.field == SearchField.DisplayName },
+            )
+            // 命中的是备注/账号名时，把那一行也显示出来并高亮——否则用户只看到一个
+            // 与查询词毫无关系的名字，不知道自己为什么搜到了它。
+            if (hit != null && hit.field != SearchField.DisplayName) {
+                HighlightedText(
+                    text = hit.text,
+                    match = hit.match,
+                    style = Theme.typography.label,
+                    color = Theme.colors.mutedForeground,
+                )
+            }
+        }
     }
 }
