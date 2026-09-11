@@ -16,10 +16,15 @@ import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.foundation.layout.Spacing
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.primitives.Icon
+import com.tencent.kuikly.compose.ui.platform.LocalConfiguration
 import com.gearui.foundation.primitives.Text
 import com.gearui.theme.Theme
 import com.netonstream.privchat.sdk.dto.GroupMemberEntry
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
+import kotlinx.coroutines.launch
+import com.tencent.kuikly.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.rememberCoroutineScope
+import com.netonstream.privchat.ui.i18n.PinyinIndex
 import com.netonstream.privchat.ui.i18n.withArgs
 import com.netonstream.privchat.ui.models.displayName
 import com.tencent.kuikly.compose.foundation.background
@@ -46,9 +51,8 @@ import com.tencent.kuikly.compose.ui.unit.dp
  * 名字多了只能在一小条里滚，而且键盘一直占着半屏——所以"弹窗效果不对"。
  * 现在改成底部面板：自带标题栏与搜索框，打开时收起键盘，与微信一致。
  *
- * 分组用**显示名首字符**，与联系人页同一套口径（[com.netonstream.privchat.ui.pages.ContactPage]）。
- * 没有引入拼音：中文名会各自成组，看起来不像微信那样归到 A–Z，但这是全 app 一致的
- * 现状，在这里单独发明一套排序只会让两个页面的索引对不上。真要做拼音，是一次独立的改动。
+ * 分组走 [PinyinIndex]：中文按拼音首字母、英文按首字母、符号数字 emoji 归 `#` 并排在最后，
+ * 与联系人页同一套口径——两处共用一个实现，索引才不会各说各话。
  */
 @Composable
 fun MentionPickerSheet(
@@ -71,11 +75,7 @@ fun MentionPickerSheet(
         } else {
             members.filter { it.displayName.contains(query, ignoreCase = true) }
         }
-        filtered
-            .groupBy { it.displayName.firstOrNull()?.uppercaseChar() ?: '#' }
-            .entries
-            .sortedBy { it.key }
-            .map { it.key to it.value }
+        PinyinIndex.group(filtered) { it.displayName }
     }
 
     BottomSheet(
@@ -84,7 +84,9 @@ fun MentionPickerSheet(
         // 标题栏自绘：微信那一行是「关闭 / 标题 / 多选」，不是 gearui 默认的居中标题 + 取消。
         showCancel = false,
     ) {
-        Column(modifier = Modifier.fillMaxWidth().height(SHEET_HEIGHT)) {
+        // 高度取屏幕的 80%：写死 dp 会在小屏上顶满、在大屏上只占半截。
+        val sheetHeight = (LocalConfiguration.current.pageViewHeight * SHEET_HEIGHT_RATIO).dp
+        Column(modifier = Modifier.fillMaxWidth().height(sheetHeight)) {
             Header(
                 multiSelect = multiSelect,
                 selectedCount = selected.size,
@@ -123,33 +125,56 @@ fun MentionPickerSheet(
                     )
                 }
             } else {
-                GearLazyColumn(modifier = Modifier.fillMaxWidth()) {
-                    sections.forEach { (letter, list) ->
-                        item { LetterHeader(letter.toString()) }
-                        items(list.size) { index ->
-                            val member = list[index]
-                            MemberRow(
-                                member = member,
-                                multiSelect = multiSelect,
-                                checked = selected.contains(member.userId),
-                                onClick = {
-                                    if (multiSelect) {
-                                        if (!selected.remove(member.userId)) selected.add(member.userId)
-                                    } else {
-                                        onPick(listOf(member))
-                                    }
-                                },
-                            )
+                // 每个分组的首行在列表里的下标，索引条点字母就滚到这里。
+                val sectionStarts = remember(sections) {
+                    var row = 0
+                    sections.map { (letter, list) ->
+                        val start = row
+                        row += list.size + 1 // +1 = 分组头本身
+                        letter to start
+                    }
+                }
+                val listState = rememberLazyListState()
+                val scope = rememberCoroutineScope()
+
+                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                    GearLazyColumn(modifier = Modifier.fillMaxWidth(), state = listState) {
+                        sections.forEach { (letter, list) ->
+                            item { LetterHeader(letter.toString()) }
+                            items(list.size) { index ->
+                                val member = list[index]
+                                MemberRow(
+                                    member = member,
+                                    multiSelect = multiSelect,
+                                    checked = selected.contains(member.userId),
+                                    onClick = {
+                                        if (multiSelect) {
+                                            if (!selected.remove(member.userId)) selected.add(member.userId)
+                                        } else {
+                                            onPick(listOf(member))
+                                        }
+                                    },
+                                )
+                            }
                         }
                     }
+                    IndexBar(
+                        letters = sectionStarts.map { it.first },
+                        modifier = Modifier.align(Alignment.CenterEnd),
+                        onPick = { letter ->
+                            sectionStarts.firstOrNull { it.first == letter }?.let { (_, row) ->
+                                scope.launch { listState.scrollToItem(row) }
+                            }
+                        },
+                    )
                 }
             }
         }
     }
 }
 
-/** 面板高度：占屏幕下方大部分，但露出上面的会话——微信也是这个比例。 */
-private val SHEET_HEIGHT = 520.dp
+/** 面板占屏高比例：露出上面一小条会话，其余给列表——与微信一致。 */
+private const val SHEET_HEIGHT_RATIO = 0.8f
 
 @Composable
 private fun Header(
@@ -207,6 +232,34 @@ private fun Header(
     }
 }
 
+/**
+ * 右侧 A–Z 索引条。
+ *
+ * 只列**当前有人的**字母：列满 26 个字母而多数点不动，点上去没反应会让人以为卡了。
+ */
+@Composable
+private fun IndexBar(
+    letters: List<Char>,
+    modifier: Modifier = Modifier,
+    onPick: (Char) -> Unit,
+) {
+    Column(
+        modifier = modifier.padding(end = Spacing.xs),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        letters.forEach { letter ->
+            Text(
+                text = letter.toString(),
+                style = Theme.typography.label,
+                color = Theme.colors.mutedForeground,
+                modifier = Modifier
+                    .clickable { onPick(letter) }
+                    .padding(horizontal = Spacing.xs, vertical = 1.dp),
+            )
+        }
+    }
+}
+
 @Composable
 private fun LetterHeader(letter: String) {
     Text(
@@ -242,7 +295,7 @@ private fun MemberRow(
         ChatAvatar(
             url = member.avatar.takeIf { it.isNotBlank() },
             name = name,
-            size = AvatarSizeTokens.Medium.size,
+            size = AvatarSizeTokens.Small.size,
             userId = member.userId.toLong(),
         )
         Spacer(modifier = Modifier.width(Spacing.md))

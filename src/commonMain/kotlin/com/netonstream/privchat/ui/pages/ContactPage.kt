@@ -6,6 +6,7 @@ import com.netonstream.privchat.sdk.dto.GroupEntry
 import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.models.displayName
 import com.netonstream.privchat.ui.components.ChatAvatar
+import com.netonstream.privchat.ui.i18n.PinyinIndex
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
@@ -153,11 +154,10 @@ private fun FriendsTabContent(
             f.displayName.contains(searchQuery, ignoreCase = true) ||
                 f.username.contains(searchQuery, ignoreCase = true)
         }
-        filtered to filtered
-            .groupBy { it.displayName.firstOrNull()?.uppercaseChar() ?: '#' }
-            .entries
-            .sortedBy { it.key }
-            .map { it.key to it.value }
+        // 分组走 PinyinIndex：中文按拼音首字母归到 A–Z，符号/数字/emoji 落 `#` 并排在最后。
+        // 过去是按"显示名首字符"分，于是每个中文名各自成一组，索引根本不是字母表。
+        // @ 选人面板用的是同一个实现，两处的分组口径必须一致。
+        filtered to PinyinIndex.group(filtered) { it.displayName }
     }
     val filtered = sections.first
 
