@@ -57,6 +57,14 @@ import com.gearui.components.contextmenu.ContextMenu
 import com.gearui.components.contextmenu.ContextMenuItem
 import com.gearui.components.icon.Icons
 import com.gearui.components.popover.PopoverPlacement
+import com.gearui.gestures.swipeDismiss
+import com.gearui.gestures.DismissDirection
+import com.gearui.gestures.SwipeDismissConfig
+import com.netonstream.privchat.ui.platform.HapticBridge
+import com.tencent.kuikly.compose.animation.core.Animatable
+import com.tencent.kuikly.compose.animation.core.spring
+import com.tencent.kuikly.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import com.gearui.foundation.primitives.Icon
 import com.gearui.components.input.Input
 import com.gearui.components.input.InputSize
@@ -1995,9 +2003,67 @@ private fun MessageRow(
         return
     }
 
+    // Telegram 式侧滑引用：把消息往左拖一下就是「回复它」。
+    //
+    // 长按菜单里也有回复，但那是三步（长按、等菜单、选一项）；回复是聊天里最频繁的动作，
+    // 值得有一个一步的手势。
+    //
+    // 手势用 swipeDismiss(Left)：它先等水平方向的 touch slop、并要求水平意图压过垂直漂移
+    // 才接管事件，所以纵向滚动列表不会被它抢走——这也是为什么不能简单用 detectDragGestures。
+    val replyDrag = remember(message.id) { Animatable(0f) }
+    val replyDragScope = rememberCoroutineScope()
+    // 撤回的消息没有可引用的正文；失败的消息还没有 server id，引用它没有意义。
+    val canSwipeReply = onReply != null && !message.isRevoked &&
+        message.status != MessageStatus.Failed
+    val density = LocalDensity.current
+    // 触发距离比默认的 96dp 短：这是一个轻动作，不是「划掉」。
+    val replyCommitPx = with(density) { 64.dp.toPx() }
+    // 手指再往左，气泡也不再跟着走：位移是反馈，不是拖拽距离的映射。
+    val replyMaxTravelPx = with(density) { 72.dp.toPx() }
+    val replyProgress = (replyDrag.value / replyCommitPx).coerceIn(0f, 1f)
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        if (canSwipeReply && replyProgress > 0f) {
+            // 箭头随位移浮现，告诉用户这一下会发生什么；松手到不了阈值就跟着消失。
+            Box(
+                modifier = Modifier.matchParentSize(),
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+                Icon(
+                    name = Icons.arrow_bend_up_left,
+                    size = 20.dp,
+                    tint = colors.mutedForeground,
+                    modifier = Modifier.padding(end = 12.dp).alpha(replyProgress),
+                )
+            }
+        }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .offset { IntOffset(-replyDrag.value.roundToInt(), 0) }
+            .then(
+                if (!canSwipeReply) {
+                    Modifier
+                } else {
+                    Modifier.swipeDismiss(
+                        direction = DismissDirection.Left,
+                        config = SwipeDismissConfig(commitDistanceDp = 64f),
+                        onProgress = { _, drag ->
+                            replyDragScope.launch {
+                                replyDrag.snapTo(drag.coerceAtMost(replyMaxTravelPx))
+                            }
+                        },
+                        onCancel = { replyDragScope.launch { replyDrag.animateTo(0f, spring()) } },
+                        onCommit = {
+                            // 震一下：手指还压在屏幕上，气泡的位移不足以说明「已经触发了」。
+                            HapticBridge.selectionChanged()
+                            onReply?.invoke(message)
+                            replyDragScope.launch { replyDrag.animateTo(0f, spring()) }
+                        },
+                    )
+                }
+            )
             .padding(horizontal = 12.dp, vertical = 4.dp),
         horizontalArrangement = if (isSelf) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.Top,
@@ -2167,6 +2233,7 @@ private fun MessageRow(
                 )
             }
         }
+    }
     }
 }
 
