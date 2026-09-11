@@ -1237,6 +1237,14 @@ fun MessagePage(
                                             Toast.error(strings.messageOriginalNotSentYet)
                                         } else {
                                             pendingReply = target
+                                            // 🔴 每次都要焦点，不能只在"进入回复态"时要。
+                                            //
+                                            // 长按菜单本身会收键盘（弹层默认如此），所以从菜单里
+                                            // 点回复，键盘必须由这里还回来。而如果只看
+                                            // pendingReply 从 null 变成非 null，第二次回复就没
+                                            // 有变化可言——已经在回复态里再回复另一条，键盘就
+                                            // 再也不回来了。
+                                            composerFocusNonce += 1
                                         }
                                     },
                                     replyLookup = { serverId -> messagesByServerId[serverId] },
@@ -2820,7 +2828,10 @@ private fun MessageInputBar(
 
     // 语音→文字：只把焦点请求交给 textarea 的 autoFocus 不足以在 iOS 上唤起键盘，
     // 必须显式 show()；delay 一帧等 textarea 完成组合，否则 requestFocus 落空。
-    LaunchedEffect(voiceMode, pendingAutoFocus) {
+    // 也跟着 focusRequestNonce 重跑：pendingAutoFocus 只在文本框真的拿到焦点时才归零，
+    // 上一次没落地就还是 true——再置一次 true 不是变化，这个 effect 就不会重跑，
+    // 于是"第二次请求焦点"悄悄丢掉了。
+    LaunchedEffect(voiceMode, pendingAutoFocus, focusRequestNonce) {
         if (!voiceMode && pendingAutoFocus) {
             // 等 textarea 完成组合并挂上原生输入视图，再请求焦点。焦点先到位、
             // 随后 show() 才能把软键盘唤起（先 show 后 focus 会被忽略）。
