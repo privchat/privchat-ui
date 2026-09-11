@@ -2057,6 +2057,10 @@ private fun MessageRow(
                     Modifier.swipeDismiss(
                         direction = DismissDirection.Left,
                         config = SwipeDismissConfig(commitDistanceDp = 64f),
+                        // 🔴 列表回收行时手势块会连同它捕获的 message 一起被复用：
+                        // 不给 key 的话，滑到的是这一条、回复的却是这一行上一次承载的
+                        // 那条消息，而且那个陈旧的手势块还会吃掉本行长按菜单要等的按压。
+                        key = message.id,
                         onProgress = { _, drag ->
                             replyDragScope.launch {
                                 replyDrag.snapTo(drag.coerceAtMost(replyMaxTravelPx))
