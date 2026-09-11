@@ -3,7 +3,8 @@ package com.netonstream.privchat.ui.i18n
 /**
  * 汉字 → 拼音首字母表，覆盖 CJK 基本区 U+4E00–U+9FFF（20992 字）。
  *
- * 由 `scripts/gen-pinyin-initials.py` 用 pypinyin 生成，不是手写的。查不到读音的字落在 `#`。
+ * 由 `scripts/gen-pinyin-initials.py` 用 pypinyin 0.55.0（MIT，数据源自 Unihan）生成，
+ * 不是手写的。查不到读音的 68 个字落在 `#`。改表请改脚本后重跑，不要手改这个文件。
  *
  * 为什么是"按字"而不是"按词"：索引条只需要**首字**的首字母。按词表能把多音姓氏
  * （单/仇/曾/朴…）判对，但那需要把整个词库搬进来。代价是这类姓氏会按常用读音归组——
