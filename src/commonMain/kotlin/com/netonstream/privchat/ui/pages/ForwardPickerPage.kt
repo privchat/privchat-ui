@@ -15,8 +15,6 @@ import com.gearui.runtime.LocalRuntimeEnvironment
 import com.gearui.runtime.LocalRuntimeFlags
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.cell.Cell
-import com.gearui.components.checkbox.Checkbox
-import com.gearui.components.checkbox.CheckboxSize
 import com.gearui.components.empty.EmptyState
 import com.gearui.components.searchbar.SearchBar
 import com.gearui.components.button.Button
@@ -31,6 +29,11 @@ import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.*
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
 import com.tencent.kuikly.compose.ui.Alignment
+import com.netonstream.privchat.ui.search.PeopleSearch
+import com.netonstream.privchat.ui.search.SearchField
+import com.netonstream.privchat.ui.search.FieldHit
+import com.netonstream.privchat.ui.components.HighlightedText
+import com.netonstream.privchat.ui.components.SelectionDot
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.netonstream.privchat.ui.i18n.withArgs
 import com.tencent.kuikly.compose.ui.Modifier
@@ -134,14 +137,23 @@ fun ForwardPickerPage(
             .filter { it.key !in recentKeys }
     }
 
-    fun matchesQuery(target: ForwardTarget): Boolean {
-        if (searchQuery.isBlank()) return true
-        return target.displayName.contains(searchQuery.trim(), ignoreCase = true)
-    }
+    // 搜索走 PeopleSearch，和联系人页、选人面板、全局搜索同一套规则：
+    // 原来是 `contains`，搜不了拼音，也说不清为什么命中。转发目标只有一个可搜字段
+    // （会话/好友/群的显示名），备注和成员名不在这份数据里。
+    fun search(targets: List<ForwardTarget>): List<Pair<ForwardTarget, FieldHit?>> =
+        PeopleSearch.search(
+            items = targets,
+            query = searchQuery.trim(),
+            fieldsOf = { listOf(SearchField.DisplayName to it.displayName) },
+            nameOf = { it.displayName },
+            // 目标没有数值 id（DM 和群共用一个 key 空间），用 key 的哈希收尾即可：
+            // 只要同分时定序稳定，列表就不会每次刷新互换位置。
+            tieBreaker = { it.key.hashCode().toULong() },
+        )
 
-    val filteredRecent = recentTargets.filter(::matchesQuery)
-    val filteredFriends = friendTargets.filter(::matchesQuery)
-    val filteredGroups = groupTargets.filter(::matchesQuery)
+    val filteredRecent = search(recentTargets)
+    val filteredFriends = search(friendTargets)
+    val filteredGroups = search(groupTargets)
 
     fun toggle(target: ForwardTarget) {
         if (selected.containsKey(target.key)) {
@@ -191,9 +203,10 @@ fun ForwardPickerPage(
                     if (filteredRecent.isNotEmpty()) {
                         item { ForwardSectionHeader(strings.forwardSectionRecent) }
                         items(filteredRecent.size) { i ->
-                            val target = filteredRecent[i]
+                            val (target, hit) = filteredRecent[i]
                             ForwardTargetRow(
                                 target = target,
+                                hit = hit,
                                 checked = selected.containsKey(target.key),
                                 onToggle = { toggle(target) },
                             )
@@ -202,9 +215,10 @@ fun ForwardPickerPage(
                     if (filteredFriends.isNotEmpty()) {
                         item { ForwardSectionHeader(strings.forwardSectionFriends) }
                         items(filteredFriends.size) { i ->
-                            val target = filteredFriends[i]
+                            val (target, hit) = filteredFriends[i]
                             ForwardTargetRow(
                                 target = target,
+                                hit = hit,
                                 checked = selected.containsKey(target.key),
                                 onToggle = { toggle(target) },
                             )
@@ -213,9 +227,10 @@ fun ForwardPickerPage(
                     if (filteredGroups.isNotEmpty()) {
                         item { ForwardSectionHeader(strings.forwardSectionGroups) }
                         items(filteredGroups.size) { i ->
-                            val target = filteredGroups[i]
+                            val (target, hit) = filteredGroups[i]
                             ForwardTargetRow(
                                 target = target,
+                                hit = hit,
                                 checked = selected.containsKey(target.key),
                                 onToggle = { toggle(target) },
                             )
@@ -292,26 +307,33 @@ private fun ForwardSectionHeader(title: String) {
 @Composable
 private fun ForwardTargetRow(
     target: ForwardTarget,
+    hit: FieldHit?,
     checked: Boolean,
     onToggle: () -> Unit,
 ) {
     Cell(
         onClick = onToggle,
         compact = true,
+        // 选择标记在左侧、整行可点，与创建群聊、邀请进群一致；行尾的方形复选框会让
+        // 视线在名字和行尾之间来回跑。
         leading = {
-            ChatAvatar(
-                url = target.avatarUrl,
-                name = target.displayName,
-                size = AvatarSizeTokens.Small.size,
-                userId = (target as? ForwardTarget.DirectMessage)?.peerUserId?.toLong(),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                SelectionDot(selected = checked)
+                HorizontalSpacer(10.dp)
+                ChatAvatar(
+                    url = target.avatarUrl,
+                    name = target.displayName,
+                    size = AvatarSizeTokens.Small.size,
+                    userId = (target as? ForwardTarget.DirectMessage)?.peerUserId?.toLong(),
+                )
+            }
         },
         title = target.displayName,
-        trailing = {
-            Checkbox(
-                checked = checked,
-                onCheckedChange = { onToggle() },
-                size = CheckboxSize.SMALL,
+        titleContent = {
+            HighlightedText(
+                text = target.displayName,
+                match = hit?.match,
+                style = Theme.typography.bodyLarge,
             )
         },
     )
