@@ -405,6 +405,8 @@ private fun FriendItem(
         } else {
             null
         },
-        arrow = true,
+        // 不画箭头：联系人整行就是"进资料页"，一行一个箭头只是把 28 行右侧排满了
+        // 同一个符号，不提供任何信息（微信联系人列表也没有）。
+        arrow = false,
     )
 }
