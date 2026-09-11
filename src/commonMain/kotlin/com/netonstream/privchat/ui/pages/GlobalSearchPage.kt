@@ -11,6 +11,9 @@ import com.gearui.theme.Theme
 import com.netonstream.privchat.sdk.dto.ChannelListEntry
 import com.netonstream.privchat.sdk.dto.SearchHistoryHit
 import com.netonstream.privchat.ui.PrivChat
+import com.netonstream.privchat.ui.search.PeopleSearch
+import com.netonstream.privchat.ui.search.SearchField
+import com.netonstream.privchat.ui.components.HighlightedText
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.netonstream.privchat.ui.models.displayName
 import com.netonstream.privchat.ui.runtime.ClientRuntime
@@ -82,19 +85,33 @@ fun GlobalSearchPage(
     val friends by PrivChat.friends.collectAsState()
 
     // 本地组即时过滤（无 debounce，纯内存；spec §7.1）。会话内搜索不展示。
+    //
+    // 🔴 走 PeopleSearch，和联系人页、选人面板同一套规则。
+    //
+    // 这里原来是 `contains`：搜不了拼音，命中了也不说明为什么命中。而联系人页右上角的
+    // 放大镜就路由到这一页，等于整个应用最主要的搜索入口是唯一一个不认拼音的地方。
     val contactHits = remember(query, friends, scopeId) {
         val q = query.trim()
         if (q.isEmpty() || scopeId != null) emptyList()
-        else friends.filter { f ->
-            (f.remark?.contains(q, ignoreCase = true) == true) ||
-                (f.nickname?.contains(q, ignoreCase = true) == true) ||
-                f.username.contains(q, ignoreCase = true)
-        }
+        else PeopleSearch.search(
+            items = friends,
+            query = q,
+            fieldsOf = { PeopleSearch.fieldsOf(it) },
+            nameOf = { it.displayName },
+            tieBreaker = { it.userId },
+        )
     }
     val groupHits = remember(query, channels, scopeId) {
         val q = query.trim()
         if (q.isEmpty() || scopeId != null) emptyList()
-        else channels.filter { !it.isDm && it.displayName.contains(q, ignoreCase = true) }
+        else PeopleSearch.search(
+            items = channels.filter { !it.isDm },
+            query = q,
+            // 群只有一个可搜字段：群名。备注、成员名都不在这条列表的数据里。
+            fieldsOf = { listOf(SearchField.DisplayName to it.displayName) },
+            nameOf = { it.displayName },
+            tieBreaker = { it.channelId },
+        )
     }
 
     // 远程搜索：debounce 400ms；query 变化自动取消 in-flight（过期结果天然丢弃）
@@ -218,12 +235,33 @@ fun GlobalSearchPage(
                 if (showContacts) {
                     item { SearchSectionHeader(strings.globalSearchSectionContacts) }
                     items(visibleContacts.size) { i ->
-                        val f = visibleContacts[i]
+                        val (f, hit) = visibleContacts[i]
                         val display = f.remark?.takeIf { it.isNotBlank() }
                             ?: f.nickname?.takeIf { it.isNotBlank() }
                             ?: f.username
                         Cell(
                             title = display,
+                            titleContent = {
+                                HighlightedText(
+                                    text = display,
+                                    match = hit?.match?.takeIf { hit.field == SearchField.DisplayName },
+                                    style = Theme.typography.bodyLarge,
+                                )
+                            },
+                            // 命中在备注或账号名上时把那一行显示出来，否则用户看到的是一个
+                            // 与自己输入毫无关系的名字，不知道为什么搜到了它。
+                            descriptionContent = if (hit != null && hit.field != SearchField.DisplayName) {
+                                {
+                                    HighlightedText(
+                                        text = hit.text,
+                                        match = hit.match,
+                                        style = Theme.typography.label,
+                                        color = colors.mutedForeground,
+                                    )
+                                }
+                            } else {
+                                null
+                            },
                             leading = {
                                 com.netonstream.privchat.ui.avatar.PrivChatAvatar(
                                     model = com.netonstream.privchat.ui.avatar.AvatarModel(
@@ -247,9 +285,16 @@ fun GlobalSearchPage(
                 if (showGroups) {
                     item { SearchSectionHeader(strings.globalSearchSectionGroups) }
                     items(visibleGroups.size) { i ->
-                        val ch = visibleGroups[i]
+                        val (ch, hit) = visibleGroups[i]
                         Cell(
                             title = ch.displayName,
+                            titleContent = {
+                                HighlightedText(
+                                    text = ch.displayName,
+                                    match = hit?.match,
+                                    style = Theme.typography.bodyLarge,
+                                )
+                            },
                             arrow = true,
                             onClick = { onOpenChannel(ch) },
                         )
