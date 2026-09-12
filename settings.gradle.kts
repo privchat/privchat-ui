@@ -12,7 +12,7 @@ pluginManagement {
     plugins {
         kotlin("multiplatform") version "2.1.21"
         kotlin("plugin.compose") version "2.1.21"
-        id("com.android.library") version "8.7.2"
+        id("com.android.library") version "8.13.2"
         id("org.jetbrains.compose") version "1.7.3"
     }
 }
