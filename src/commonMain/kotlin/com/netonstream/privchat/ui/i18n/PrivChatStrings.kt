@@ -69,7 +69,6 @@ data class PrivChatStrings(
     val messageSendFailed: String get() = dMessage.messageSendFailed
     val messageAttachmentSourceMissing: String get() = dMessage.messageAttachmentSourceMissing
     val messageAttachmentTooLarge: String get() = dMessage.messageAttachmentTooLarge
-    val messageInputHint: String get() = dMessage.messageInputHint
     val messageVoiceHint: String get() = dMessage.messageVoiceHint
     val presenceOnline: String get() = dMessage.presenceOnline
     val presenceOffline: String get() = dMessage.presenceOffline

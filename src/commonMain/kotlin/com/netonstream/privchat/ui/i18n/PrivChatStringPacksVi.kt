@@ -53,7 +53,6 @@ internal val viMessage = PrivChatMessageStrings(
     messageSendFailed = "Gửi thất bại",
     messageAttachmentSourceMissing = "Tệp gốc không còn tồn tại, vui lòng chọn lại để gửi.",
     messageAttachmentTooLarge = "Tệp vượt quá giới hạn dung lượng, không thể gửi.",
-    messageInputHint = "Nhập tin nhắn...",
     messageVoiceHint = "Giữ để nói",
     presenceOnline = "Trực tuyến",
     presenceOffline = "Ngoại tuyến",

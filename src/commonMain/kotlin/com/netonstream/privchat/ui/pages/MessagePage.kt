@@ -3080,7 +3080,14 @@ private fun MessageInputBar(
                     AutoResizeTextarea(
                         value = text,
                         onValueChange = onTextChange,
-                        placeholder = strings.messageInputHint,
+                        // 不给占位文案。聊天页的输入框摆在会话下方、两侧是语音和表情按钮，
+                        // 它是什么已经无需再说一遍；一句「输入消息...」只是让空框里永远挂着
+                        // 一行灰字。微信和 Telegram 的输入框也都是空的。
+                        // 「这里能打字」改由边框传达，见下面的 outlined。
+                        placeholder = "",
+                        // 没有边框时，muted 底色和输入栏背景太接近，整条看起来是一片背景
+                        // 而不是一个可点的输入框。
+                        outlined = true,
                         modifier = Modifier.weight(1f),
                         maxLines = 8,
                         // 单行压到与两侧按钮齐平的 32dp，且文字在框内垂直居中：
