@@ -569,6 +569,20 @@ fun MessagePage(
 
     // UX-8 新消息浮动气泡：用户滚到历史区时累计新消息数，点击胶囊回到底部。
     var newMsgBubbleCount by remember(channel.channelId) { mutableStateOf(0) }
+
+    /**
+     * 本机刚发出、还没在列表里露面的消息数。它们不该算进「x 条新消息」。
+     *
+     * 为什么要单独记一个数，而不是在消息到达时看它是谁发的：`PrivChat.messages` 是由
+     * `loadMessages` 从本地库**整体重载**喂进来的，等这次重载落到 UI，自己那条消息的
+     * 状态早就越过 Pending/Sending 了（真机实测：点发送后 1 秒内就已经「已送达」），
+     * 按状态判会漏。按「是不是我发的」判也不行——我在另一台设备上发的消息同样是我发的，
+     * 但这台设备的用户看不见它，那条**应该**提示。
+     *
+     * 发送这个动作只有 composer 自己知道，所以在这里记账最准：发一条加一，消息露面时
+     * 抵掉一条。
+     */
+    var selfSendsAwaitingRender by remember(channel.channelId) { mutableStateOf(0) }
     var lastSeenLastId by remember(channel.channelId) { mutableStateOf<ULong?>(null) }
 
     // 60秒自动停止
@@ -578,6 +592,7 @@ fun MessagePage(
             if (voiceRecordingState != VoiceRecordingState.IDLE) {
                 val durationMs = currentTimeMillis() - recordingStartMs
                 voiceRecordingState = VoiceRecordingState.IDLE
+                selfSendsAwaitingRender += 1
                 scope.launch {
                     onSendVoice?.invoke(channel.channelId, channel.channelType, durationMs)
                     delay(50)
@@ -860,6 +875,10 @@ fun MessagePage(
             val total = PrivChat.messages.value.size
             if (lastVisible != null && total > 0 && lastVisible >= total - 1) {
                 newMsgBubbleCount = 0
+                // 顺带把欠账清掉：已经在底部，没有「还没露面」的自己人了。
+                // 没有这一下，一次没能落地的发送（抛在 optimistic 插入之前）会留下
+                // 一笔永久欠账，把之后某条真实新消息悄悄吞掉。
+                selfSendsAwaitingRender = 0
             }
         }
     }
@@ -894,25 +913,17 @@ fun MessagePage(
             // nearBottom 判 false 就加了一格；onSend 的滚底要等 50ms 之后才发生。
             // 结果是列表已经到底、自己发的消息就在眼前，右下角还挂着「1 条新消息」。
             //
-            // 判据是**状态**，不是「是不是我发的」，也不是 localMessageId。
-            // 我在另一台设备上发的消息同步过来时，用户同样看不见它，和别人发来的没有
-            // 区别，那条应该计数。而 localMessageId 区分不出这两者：服务端会把它随
-            // ServerCommit 一起回传（`local_message_id（如果来自客户端）`），于是另一台
-            // 设备收到时它也是非空的。
-            //
-            // 只有这台设备正在发的消息才会是 Pending/Sending：远端同步进来的一律是
-            // 已确认态。这是真正设备本地的信号。
+            // 本机刚发的那几条先抵掉，剩下的才是「用户没看见的新消息」。
+            // 见 [selfSendsAwaitingRender] 的说明：状态和「是不是我发的」都判不准。
             val lastSeenIdx = sortedMessages.indexOfFirst { it.id == lastSeenLastId }
-            val fresh = if (lastSeenIdx >= 0) {
-                sortedMessages.subList(lastSeenIdx + 1, sortedMessages.size)
+            val freshCount = if (lastSeenIdx >= 0) {
+                sortedMessages.size - 1 - lastSeenIdx
             } else {
-                listOf(sortedMessages[lastIndex])
+                1
             }
-            val countable = fresh.count { entry ->
-                val sendingFromHere = entry.status == MessageStatus.Pending ||
-                    entry.status == MessageStatus.Sending
-                !sendingFromHere
-            }
+            val consumed = minOf(selfSendsAwaitingRender, freshCount)
+            if (consumed > 0) selfSendsAwaitingRender -= consumed
+            val countable = freshCount - consumed
             if (countable > 0) newMsgBubbleCount += countable
         }
         lastSeenLastId = newLastId
@@ -1532,6 +1543,7 @@ fun MessagePage(
                 val durationMs = currentTimeMillis() - recordingStartMs
                 voiceRecordingState = VoiceRecordingState.IDLE
                 if (durationMs >= VOICE_MIN_DURATION_MS) {
+                    selfSendsAwaitingRender += 1
                     scope.launch {
                         onSendVoice?.invoke(channel.channelId, channel.channelType, durationMs)
                         delay(50)
@@ -1550,6 +1562,7 @@ fun MessagePage(
             keyboardHeight = runtimeEnv.keyboard.height,
             onPickImage = {
                 panelMode = InputPanelMode.NONE
+                selfSendsAwaitingRender += 1
                 scope.launch {
                     try {
                         val result = onSendImage?.invoke(channel.channelId, channel.channelType) { label ->
@@ -1615,6 +1628,7 @@ fun MessagePage(
             },
             onPickFile = {
                 panelMode = InputPanelMode.NONE
+                selfSendsAwaitingRender += 1
                 scope.launch {
                     try {
                         val result = onSendFile?.invoke(channel.channelId, channel.channelType) { label ->
@@ -1656,6 +1670,8 @@ fun MessagePage(
             },
             onSend = {
                 if (inputText.isNotBlank()) {
+                    // 记一笔：这条马上会出现在列表末尾，别把它算成「新消息」。
+                    selfSendsAwaitingRender += 1
                     val text = inputText
                     val replyTargetServerId = pendingReply?.serverMessageId
                     val mentionUserIds = mentionSpans.map { it.userId }.distinct()
