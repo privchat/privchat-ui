@@ -842,6 +842,28 @@ fun MessagePage(
             }
     }
 
+    // 不变量：最后一条消息已经在屏幕上时，绝不显示「x 条新消息」。
+    //
+    // 计数那处按「新消息到达的那一刻在不在底部」判断，而滚动往往发生在判断之后
+    // （发送后的滚底要等一帧布局）。光靠那一处的前置判断，气泡总会有机会残留在
+    // 一个已经滚到底的列表上——用户盯着自己刚发的消息，右下角却说还有新消息没看。
+    // 这里按**当前**可见区兜底：位置是权威，计数只是推测。
+    LaunchedEffect(channel.channelId) {
+        snapshotFlow {
+            listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+        }.collect { lastVisible ->
+            // 条数在发射时刻现读。这个 effect 只以 channelId 为 key，会跨越许多次
+            // 重组存活下去，而 `sortedMessages` 是启动那次重组捕获的那份——在协程里
+            // 读它拿到的是旧长度，新消息一到就会把气泡误清。
+            // 也不用 layoutInfo.totalItemsCount：它在新消息刚插入时可能还没更新
+            // （同 nearBottom 那处的注释）。
+            val total = PrivChat.messages.value.size
+            if (lastVisible != null && total > 0 && lastVisible >= total - 1) {
+                newMsgBubbleCount = 0
+            }
+        }
+    }
+
     // 首次进入直接定位到底部，并在定位完成前隐藏列表，避免看到"从上滚到下"。
     LaunchedEffect(channel.channelId, sortedMessages.lastOrNull()?.id, sortedMessages.size) {
         if (sortedMessages.isEmpty()) return@LaunchedEffect
@@ -864,10 +886,34 @@ fun MessagePage(
             listState.animateScrollToItem(lastIndex)
             newMsgBubbleCount = 0
         } else if (newLastId != lastSeenLastId && lastSeenLastId != null) {
-            // UX-8：历史区有新消息时累加计数。仅统计对方消息（自己发送的会随 onSend 自动滚底）。
+            // UX-8：历史区有新消息时累加计数。
+            //
+            // 🔴 不统计**本机刚发出去的**那条。这里原来写着「自己发送的会随 onSend 自动
+            // 滚底」，但那个假设只在已经贴着底部时成立：从历史区往上滚远之后发一条，
+            // optimistic 消息插入的瞬间这个 effect 就跑了，那时列表还停在上面，
+            // nearBottom 判 false 就加了一格；onSend 的滚底要等 50ms 之后才发生。
+            // 结果是列表已经到底、自己发的消息就在眼前，右下角还挂着「1 条新消息」。
+            //
+            // 判据是**状态**，不是「是不是我发的」，也不是 localMessageId。
+            // 我在另一台设备上发的消息同步过来时，用户同样看不见它，和别人发来的没有
+            // 区别，那条应该计数。而 localMessageId 区分不出这两者：服务端会把它随
+            // ServerCommit 一起回传（`local_message_id（如果来自客户端）`），于是另一台
+            // 设备收到时它也是非空的。
+            //
+            // 只有这台设备正在发的消息才会是 Pending/Sending：远端同步进来的一律是
+            // 已确认态。这是真正设备本地的信号。
             val lastSeenIdx = sortedMessages.indexOfFirst { it.id == lastSeenLastId }
-            val delta = if (lastSeenIdx >= 0) sortedMessages.size - 1 - lastSeenIdx else 1
-            newMsgBubbleCount += delta.coerceAtLeast(1)
+            val fresh = if (lastSeenIdx >= 0) {
+                sortedMessages.subList(lastSeenIdx + 1, sortedMessages.size)
+            } else {
+                listOf(sortedMessages[lastIndex])
+            }
+            val countable = fresh.count { entry ->
+                val sendingFromHere = entry.status == MessageStatus.Pending ||
+                    entry.status == MessageStatus.Sending
+                !sendingFromHere
+            }
+            if (countable > 0) newMsgBubbleCount += countable
         }
         lastSeenLastId = newLastId
         // 用户在会话中收到新消息时，即时上报已读
