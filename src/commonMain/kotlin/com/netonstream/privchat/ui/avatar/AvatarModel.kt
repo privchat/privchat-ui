@@ -10,7 +10,7 @@ enum class AvatarFreshness { FRESH_LOCAL, STALE_LOCAL, REMOTE_ONLY, FALLBACK }
  * 头像统一模型（CLIENT_GLOBAL_STATE_AND_IDENTITY_STORE_SPEC §4.1）。
  *
  * 由 AvatarStore 产出：`localPath` 是已判存在/新鲜的本地缓存文件（AvatarStore 唯一产出，
- * UI 不得自己推导 `avatars/users/{uid}.img`）。UI 只 `PrivChatAvatar(model = ...)`，不再各自
+ * UI 不得自己推导文件路径，见 [AvatarCacheLayout]）。UI 只 `PrivChatAvatar(model = ...)`，不再各自
  * 拼 `remoteUrl` / `preferLocalCache` / initials。
  */
 data class AvatarModel(

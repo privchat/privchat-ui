@@ -97,7 +97,7 @@ fun GroupCollageAvatar(
         val root = AvatarLocalCache.userRoot ?: return@LaunchedEffect
         val missing = members.take(9).filter { m ->
             m.avatar.isNotBlank() &&
-                !AvatarBitmapRenderer.fileExists("$root/avatars/users/${m.userId}.img")
+                AvatarCacheLayout.userAvatarFile(root, m.userId.toLong()) == null
         }
         if (missing.isEmpty()) return@LaunchedEffect
         var anyDownloaded = false

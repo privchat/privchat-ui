@@ -66,6 +66,19 @@ actual object AvatarBitmapRenderer {
     actual fun fileExists(path: String): Boolean =
         NSFileManager.defaultManager.fileExistsAtPath(path)
 
+    @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+    actual fun listFilesNewestFirst(dir: String): List<String> {
+        val fm = NSFileManager.defaultManager
+        val names = fm.contentsOfDirectoryAtPath(dir, null)
+            ?.filterIsInstance<String>()
+            ?: return emptyList()
+        return names.sortedByDescending { name ->
+            val attrs = fm.attributesOfItemAtPath("$dir/$name", null)
+            (attrs?.get(platform.Foundation.NSFileModificationDate) as? platform.Foundation.NSDate)
+                ?.timeIntervalSince1970 ?: 0.0
+        }
+    }
+
     /** 建 image context → 绘制 → 取 PNG → 落盘。writeToFile(atomically) 内部即临时文件
      *  + rename 原子换入；但**不建父目录**，需先 createDirectory，且 **必须以 writeToFile
      *  的返回值为准**（否则父目录缺失时静默失败却被当成成功，UI 会加载到不存在的文件而空白）。 */

@@ -43,7 +43,7 @@ object GeneratedAvatarCache {
      *
      * 文件名带 initials 内容指纹(`{uid}.gen-{hash}.img`):名字变化(资料 hydrate/改昵称)
      * 自然生成新文件,旧字母不会因「文件已存在」短路而永久固化;新路径也让图片加载器
-     * 不会命中旧内容的内存缓存。与 SDK 下载的真实头像槽位(`{uid}.img`)物理分离,
+     * 不会命中旧内容的内存缓存。与 SDK 下载的真实头像(`{uid}-{指纹}.img`)物理分离,
      * 互不覆盖。旧文件是孤儿小文件,随 users/{selfUid} 目录整体回收。
      */
     suspend fun ensureInitials(uid: String, displayName: String?, username: String?): String? {
@@ -83,9 +83,9 @@ object GeneratedAvatarCache {
         if (gid.isBlank() || members.isEmpty()) return null
         val path = "$root/avatars/groups/$gid.img"
         val cells: List<CollageCell> = members.take(9).map { m ->
-            // 真实头像槽位存在就用真实图(该槽位只由 SDK 下载真实头像写入,字母走 .gen-*)。
-            val memberImg = "$root/avatars/users/${m.uid}.img"
-            if (AvatarBitmapRenderer.fileExists(memberImg)) {
+            // 真实头像文件存在就用真实图(那些文件只由 SDK 下载真实头像写入,字母走 .gen-*)。
+            val memberImg = AvatarCacheLayout.userAvatarFile(root, m.uid)
+            if (memberImg != null) {
                 CollageCell.Image(memberImg)
             } else {
                 CollageCell.Initials(

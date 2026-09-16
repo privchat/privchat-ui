@@ -46,7 +46,7 @@ import com.gearui.theme.Theme
  * @param isMuted 免打扰时不显示数字、只显示小红点（旧 [ChatAvatar] 用法保留）
  * @param isOnline 在线小绿点（旧 [ChatAvatar] 用法保留）
  * @param seed hash 色种子（`"u:<uid>"` / `"g:<channelId>"`）；不传时由 resolver 按 userId/名字兜底
- * @param preferLocalCache 已缓存头像（如自己头像，SDK 已下载到 `avatars/users/{uid}.img`）优先
+ * @param preferLocalCache 已缓存头像（如自己头像，SDK 已下载到本地，见 [AvatarCacheLayout]）优先
  *   直接读本地文件、跳过远程网络加载，消除 initials→网络图的闪烁；本地无缓存时自动回落远程/initials
  */
 /**
@@ -125,10 +125,10 @@ fun PrivChatAvatar(
         // 且 Icon 渲染是 ContentScale.Fit；这里自己 Image + Crop + clip 保证「加载中 /
         // 失败露色块、成功盖满方圆角」）。
         // local-first（CLIENT_GLOBAL_STATE §4 全局统一）：**任意用户头像**（自己/好友/群成员/会话 peer/
-        // 搜索结果）都优先读本地缓存文件 `avatars/users/{uid}.img`（SDK 已下载/落盘，同一 active userRoot、
+        // 搜索结果）都优先读本地缓存文件（SDK 已下载/落盘，同一 active userRoot、
         // 按 targetUid），near-instant、跳过远程网络加载 → 不再先 initials 后网络图闪一下。本地无则回落远程。
         // `preferLocalCache` 参数保留为兼容项，现已对所有用户头像默认生效。
-        // 盲探真实头像槽位({uid}.img)仅当数据上该用户确有头像(avatarUrl 非空)——
+        // 探本地真实头像文件仅当数据上该用户确有头像(avatarUrl 非空)——
         // 否则槽位里可能是历史版本生成的 initials PNG(旧命名,无内容指纹),名字变了
         // 也会被当成"已缓存头像"永久展示旧字母;无头像用户统一走下方生成分支
         // (带指纹文件名,名字变化自动重生成)。
@@ -136,10 +136,23 @@ fun PrivChatAvatar(
         if (userId != null && !isGroup) {
             LaunchedEffect(userId, resolved.avatarUrl) {
                 val root = AvatarLocalCache.userRoot
-                localCacheUrl = if (root != null && resolved.avatarUrl != null) {
-                    val p = "$root/avatars/users/$userId.img"
-                    if (AvatarBitmapRenderer.fileExists(p)) "file://$p" else null
-                } else null
+                val given = resolved.avatarUrl
+                localCacheUrl = when {
+                    // 🔴 调用方已经给了本地文件（model.localPath → "file://…"）就直接用，
+                    // 不要再自己盲探 `{uid}.img`。
+                    //
+                    // 盲探那条路推导出的文件名只由 uid 决定，而换头像是**原地覆盖同一个
+                    // 文件**；加载器按 URL 缓存，URL 不变就永远给旧图——换完头像页面纹丝
+                    // 不动，要杀进程重进才看得到。数据里的 localPath 带内容指纹（SDK 侧
+                    // 按远端 URL 命名），换头像它就变，重新加载是自然发生的。
+                    //
+                    // 别想用 `?v=` 或 `#v=` 去骗缓存：两者都会被当成文件路径的一部分，
+                    // 文件打不开，头像直接掉回字母占位（实测过）。
+                    given?.startsWith("file://") == true -> given
+                    root != null && given != null ->
+                        AvatarCacheLayout.userAvatarFile(root, userId)?.let { "file://$it" }
+                    else -> null
+                }
             }
         }
         val remoteUrl = resolved.avatarUrl?.trim()?.takeIf { it.isNotEmpty() }

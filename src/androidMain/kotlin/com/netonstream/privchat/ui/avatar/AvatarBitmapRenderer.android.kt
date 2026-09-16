@@ -57,6 +57,12 @@ actual object AvatarBitmapRenderer {
 
     actual fun fileExists(path: String): Boolean = File(path).exists()
 
+    actual fun listFilesNewestFirst(dir: String): List<String> =
+        File(dir).listFiles()
+            ?.sortedByDescending { it.lastModified() }
+            ?.map { it.name }
+            ?: emptyList()
+
     private fun drawCell(canvas: Canvas, spec: CollageCell, left: Float, top: Float, size: Float) {
         when (spec) {
             is CollageCell.Image -> {
