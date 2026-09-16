@@ -24,7 +24,7 @@ class AvatarCropRectTest {
     /** 没缩放没位移 = 整张图（图片本来就以 Crop 铺满取景框）。 */
     @Test
     fun untouched_selects_the_whole_framed_image() {
-        val r = computeCropRect(scale = 1f, offsetX = 0f, offsetY = 0f, viewportPx = 1000f)
+        val r = computeCropRect(scale = 1f, offsetX = 0f, offsetY = 0f, framePx = 1000f)
         assertClose(0f, r.x, "x")
         assertClose(0f, r.y, "y")
         assertClose(1f, r.size, "size")
@@ -33,7 +33,7 @@ class AvatarCropRectTest {
     /** 放大 2 倍 = 只取中间一半，且仍然居中。 */
     @Test
     fun zooming_in_takes_a_centred_half() {
-        val r = computeCropRect(scale = 2f, offsetX = 0f, offsetY = 0f, viewportPx = 1000f)
+        val r = computeCropRect(scale = 2f, offsetX = 0f, offsetY = 0f, framePx = 1000f)
         assertClose(0.5f, r.size, "size")
         assertClose(0.25f, r.x, "x")
         assertClose(0.25f, r.y, "y")
@@ -46,8 +46,8 @@ class AvatarCropRectTest {
      */
     @Test
     fun panning_the_image_right_moves_the_crop_left() {
-        val centred = computeCropRect(2f, offsetX = 0f, offsetY = 0f, viewportPx = 1000f)
-        val panned = computeCropRect(2f, offsetX = 200f, offsetY = 0f, viewportPx = 1000f)
+        val centred = computeCropRect(2f, offsetX = 0f, offsetY = 0f, framePx = 1000f)
+        val panned = computeCropRect(2f, offsetX = 200f, offsetY = 0f, framePx = 1000f)
         assertTrue(
             panned.x < centred.x,
             "图片右移后裁剪区没有左移: ${centred.x} -> ${panned.x}",
@@ -60,7 +60,7 @@ class AvatarCropRectTest {
     @Test
     fun the_crop_never_leaves_the_image() {
         for (off in listOf(-99_999f, -1000f, 1000f, 99_999f)) {
-            val r = computeCropRect(3f, offsetX = off, offsetY = off, viewportPx = 800f)
+            val r = computeCropRect(3f, offsetX = off, offsetY = off, framePx = 800f)
             assertTrue(r.x >= 0f && r.x + r.size <= 1f + 1e-4f, "x 越界: $r")
             assertTrue(r.y >= 0f && r.y + r.size <= 1f + 1e-4f, "y 越界: $r")
         }
@@ -74,7 +74,7 @@ class AvatarCropRectTest {
      */
     @Test
     fun confirming_before_layout_falls_back_to_the_whole_image() {
-        val r = computeCropRect(scale = 2f, offsetX = 50f, offsetY = 50f, viewportPx = 0f)
+        val r = computeCropRect(scale = 2f, offsetX = 50f, offsetY = 50f, framePx = 0f)
         assertEquals(0f, r.x)
         assertEquals(0f, r.y)
         assertEquals(1f, r.size)
