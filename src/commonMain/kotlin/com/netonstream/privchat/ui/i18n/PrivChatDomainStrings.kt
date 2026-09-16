@@ -1533,6 +1533,9 @@ data class PrivChatSettingsStrings(
     val profileAvatarChange: String,
     val profileAvatarTitle: String,
     val profileAvatarPickFromAlbum: String,
+    val avatarCropTitle: String,
+    val avatarCropConfirm: String,
+    val avatarCropUploading: String,
     val profileAvatarSaveImage: String,
     val profileAvatarSaved: String,
     val settingsFriendPermission: String,
@@ -1613,6 +1616,9 @@ data class PrivChatSettingsStringsPatch(
     val profileAvatarChange: String? = null,
     val profileAvatarTitle: String? = null,
     val profileAvatarPickFromAlbum: String? = null,
+    val avatarCropTitle: String? = null,
+    val avatarCropConfirm: String? = null,
+    val avatarCropUploading: String? = null,
     val profileAvatarSaveImage: String? = null,
     val profileAvatarSaved: String? = null,
     val settingsFriendPermission: String? = null,
@@ -1689,6 +1695,9 @@ val PrivChatSettingsStringsPatch.isEmpty: Boolean
         profileAvatarChange == null &&
         profileAvatarTitle == null &&
         profileAvatarPickFromAlbum == null &&
+        avatarCropTitle == null &&
+        avatarCropConfirm == null &&
+        avatarCropUploading == null &&
         profileAvatarSaveImage == null &&
         profileAvatarSaved == null &&
         settingsFriendPermission == null &&
@@ -1766,6 +1775,9 @@ fun PrivChatSettingsStrings.merge(patch: PrivChatSettingsStringsPatch?): PrivCha
         profileAvatarChange = patch.profileAvatarChange ?: profileAvatarChange,
         profileAvatarTitle = patch.profileAvatarTitle ?: profileAvatarTitle,
         profileAvatarPickFromAlbum = patch.profileAvatarPickFromAlbum ?: profileAvatarPickFromAlbum,
+        avatarCropTitle = patch.avatarCropTitle ?: avatarCropTitle,
+        avatarCropConfirm = patch.avatarCropConfirm ?: avatarCropConfirm,
+        avatarCropUploading = patch.avatarCropUploading ?: avatarCropUploading,
         profileAvatarSaveImage = patch.profileAvatarSaveImage ?: profileAvatarSaveImage,
         profileAvatarSaved = patch.profileAvatarSaved ?: profileAvatarSaved,
         settingsFriendPermission = patch.settingsFriendPermission ?: settingsFriendPermission,

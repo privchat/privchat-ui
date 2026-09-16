@@ -378,6 +378,9 @@ data class PrivChatStrings(
     val profileAvatarChange: String get() = dSettings.profileAvatarChange
     val profileAvatarTitle: String get() = dSettings.profileAvatarTitle
     val profileAvatarPickFromAlbum: String get() = dSettings.profileAvatarPickFromAlbum
+    val avatarCropTitle: String get() = dSettings.avatarCropTitle
+    val avatarCropConfirm: String get() = dSettings.avatarCropConfirm
+    val avatarCropUploading: String get() = dSettings.avatarCropUploading
     val profileAvatarSaveImage: String get() = dSettings.profileAvatarSaveImage
     val profileAvatarSaved: String get() = dSettings.profileAvatarSaved
     val settingsFriendPermission: String get() = dSettings.settingsFriendPermission
