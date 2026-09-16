@@ -60,6 +60,9 @@ fun AvatarCropPage(
     // 源图的展示方向尺寸（已 applyExif）。用来算"图片铺满取景框"那一档的基准缩放。
     // 不走 painter.intrinsicSize：Kuikly 下那是 native 调用，图未加载会抛。
     val sourceSize = rememberPendingImageSize(imagePath)
+    // 源图像素尺寸：裁剪换算的分母（x 按宽、y 按高），确认按钮在取景区之外，所以在页面级取。
+    val srcPxW = (sourceSize?.first ?: 0).toFloat()
+    val srcPxH = (sourceSize?.second ?: 0).toFloat()
 
     var scale by remember(imagePath) { mutableStateOf(1f) }
     var offsetX by remember(imagePath) { mutableStateOf(0f) }
@@ -94,14 +97,15 @@ fun AvatarCropPage(
             val frameDp = with(density) { frameSide.toDp() }
             LaunchedEffect(frameSide) { framePx = frameSide }
 
-            // 图片按"刚好铺满取景框"为基准（= Crop 到框），再叠加用户的缩放。
-            // 铺满框需要的显示尺寸：短边对齐框边长。
-            val srcW = (sourceSize?.first ?: 1).toFloat()
-            val srcH = (sourceSize?.second ?: 1).toFloat()
-            val coverScale = frameSide / minOf(srcW, srcH)
-            val shownW = with(density) { (srcW * coverScale).toDp() }
-            val shownH = with(density) { (srcH * coverScale).toDp() }
-
+            // 图片按"刚好铺满取景框"为基准（fillMaxSize + ContentScale.Crop = cover），
+            // 再叠加用户的缩放/位移。
+            //
+            // 🔴 不要自己算显示尺寸再套 `size()`/`requiredSize()`，也不要再乘一个 cover 系数。
+            // 前者会被父约束（取景框）夹回去，后者会让预览比实际裁剪多放大一倍多。
+            // 判断"有没有铺满"别只看截图里的黑边——源图本身就可能是带黑色区域的截图，
+            // 我就是这么误判了一轮。要量就量图片边界，或者直接和最终产物对比。
+            val srcW = srcPxW.coerceAtLeast(1f)
+            val srcH = srcPxH.coerceAtLeast(1f)
             // 取景框：**裁剪**到方框，图片只在框内绘制。
             //
             // 🔴 必须 clip。图片经 graphicsLayer 放大后会画到布局边界之外——溢出到上面的
@@ -114,24 +118,25 @@ fun AvatarCropPage(
                     .clip(com.tencent.kuikly.compose.ui.graphics.RectangleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                if (sourceSize != null) {
-                    com.tencent.kuikly.compose.foundation.Image(
-                        painter = com.tencent.kuikly.compose.coil3.rememberAsyncImagePainter(
-                            model = if (imagePath.startsWith("/")) "file://$imagePath" else imagePath,
+                com.tencent.kuikly.compose.foundation.Image(
+                    painter = com.tencent.kuikly.compose.coil3.rememberAsyncImagePainter(
+                        model = if (imagePath.startsWith("/")) "file://$imagePath" else imagePath,
+                    ),
+                    contentDescription = "",
+                    modifier = Modifier
+                        // fillMaxSize 而不是 size(frameDp)：父 Box 就是取景框，填满它即可，
+                        // 不要再走一遍 px→dp 换算（实测同样的 frameDp 给 Image，画出来只有
+                        // 框的 0.82 倍，四周留黑边）。
+                        .fillMaxSize()
+                        .graphicsLayer(
+                            scaleX = scale,
+                            scaleY = scale,
+                            translationX = offsetX,
+                            translationY = offsetY,
                         ),
-                        contentDescription = "",
-                        modifier = Modifier
-                            .size(shownW, shownH)
-                            .graphicsLayer(
-                                scaleX = scale,
-                                scaleY = scale,
-                                translationX = offsetX,
-                                translationY = offsetY,
-                            ),
-                        // 尺寸已按真实宽高比给定，Fit 即原样显示、不再二次裁切。
-                        contentScale = ContentScale.Fit,
-                    )
-                }
+                    // Crop = cover：短边铺满取景框、长边溢出被上面的 clip 裁掉，正是所见即所得。
+                    contentScale = ContentScale.Crop,
+                )
             }
 
             // 边框四线：画在 clip 之外，否则会被一起裁掉。
@@ -158,8 +163,12 @@ fun AvatarCropPage(
                             offsetX += pan.x
                             offsetY += pan.y
                             // 位移钳在"取景框不越出图片"的范围里，同样是为了不露黑边。
-                            val maxX = (srcW * coverScale * scale - frameSide).coerceAtLeast(0f) / 2f
-                            val maxY = (srcH * coverScale * scale - frameSide).coerceAtLeast(0f) / 2f
+                            // Crop 之后短边正好 = frameSide，长边按原始宽高比溢出。
+                            val shortEdge = minOf(srcW, srcH).coerceAtLeast(1f)
+                            val maxX = (frameSide * scale * (srcW / shortEdge) - frameSide)
+                                .coerceAtLeast(0f) / 2f
+                            val maxY = (frameSide * scale * (srcH / shortEdge) - frameSide)
+                                .coerceAtLeast(0f) / 2f
                             offsetX = offsetX.coerceIn(-maxX, maxX)
                             offsetY = offsetY.coerceIn(-maxY, maxY)
                         }
@@ -185,7 +194,7 @@ fun AvatarCropPage(
                 color = if (uploading) Color.Gray else Theme.colors.primary,
                 style = Theme.typography.bodyMedium,
                 modifier = Modifier.clickable(enabled = !uploading) {
-                    onConfirm(computeCropRect(scale, offsetX, offsetY, framePx))
+                    onConfirm(computeCropRect(scale, offsetX, offsetY, framePx, srcPxW, srcPxH))
                 },
             )
         }
@@ -197,30 +206,50 @@ fun AvatarCropPage(
 /**
  * 把手势状态换算成归一化裁剪矩形。
  *
- * 图片以"短边铺满取景框"为基准显示，再整体放大 [scale] 倍、位移
- * ([offsetX], [offsetY]) 像素。所以取景框在图片短边上占的比例就是 `1/scale`，
- * 而位移换算成比例要除以「放大后的短边长度」= `framePx * scale`。
+ * 契约（AVATAR_CACHE_SPEC §8.1 / FFI `AvatarCrop`）：`x` 是**占宽度**的比例、`y` 是
+ * **占高度**的比例、`size` 是占**短边**的比例。三个值的分母不一样。
  *
- * 结果相对的是源图短边——与 FFI 契约里「size 相对短边」一致。
+ * 🔴 分母搞混会让裁剪区跑到别处。最初 x/y 都按短边归一化，一张 1440x3200 的竖图不缩放
+ * 直接确认，裁出来的是**图片顶部**那块正方形，而取景框里明明是正中间——预览和结果对不上，
+ * 而且只有长宽比越悬殊才越明显，方图完全看不出来。
+ *
+ * 几何：图片以"短边铺满取景框"为基准显示（cover），再整体放大 [scale] 倍、位移
+ * ([offsetX], [offsetY]) 像素。于是取景框对应的图内正方形边长 = 短边 / scale，
+ * 屏幕位移换算回图内像素要除以总缩放系数 `framePx * scale / 短边`。
  */
 internal fun computeCropRect(
     scale: Float,
     offsetX: Float,
     offsetY: Float,
     framePx: Float,
+    srcWidth: Float,
+    srcHeight: Float,
 ): AvatarCropRect {
-    if (framePx <= 0f || scale <= 0f) {
-        // 还没布局完就确认：退回整图中心（等价于不传裁剪矩形）。
-        return AvatarCropRect(x = 0f, y = 0f, size = 1f)
+    val shortEdge = minOf(srcWidth, srcHeight)
+    if (framePx <= 0f || scale <= 0f || shortEdge <= 0f) {
+        // 还没布局完 / 源图尺寸未知就点确认：退回"整图居中正方形"，与不传裁剪矩形等价。
+        return centeredSquare(srcWidth, srcHeight)
     }
-    val size = (1f / scale).coerceIn(0f, 1f)
-    val scaledShortEdge = framePx * scale
+    val sidePx = shortEdge / scale
+    // 屏幕像素 → 图内像素的换算系数。
+    val k = framePx * scale / shortEdge
     // offset 为正 = 图片右移 = 取景框相对图片左移，所以取负。
-    val left = (1f - size) / 2f - offsetX / scaledShortEdge
-    val top = (1f - size) / 2f - offsetY / scaledShortEdge
+    val leftPx = (srcWidth - sidePx) / 2f - offsetX / k
+    val topPx = (srcHeight - sidePx) / 2f - offsetY / k
     return AvatarCropRect(
-        x = left.coerceIn(0f, 1f - size),
-        y = top.coerceIn(0f, 1f - size),
-        size = size,
+        x = (leftPx.coerceIn(0f, (srcWidth - sidePx).coerceAtLeast(0f))) / srcWidth,
+        y = (topPx.coerceIn(0f, (srcHeight - sidePx).coerceAtLeast(0f))) / srcHeight,
+        size = (sidePx / shortEdge).coerceIn(0f, 1f),
+    )
+}
+
+/** 整图居中的正方形（等价于不裁剪）。 */
+private fun centeredSquare(srcWidth: Float, srcHeight: Float): AvatarCropRect {
+    if (srcWidth <= 0f || srcHeight <= 0f) return AvatarCropRect(0f, 0f, 1f)
+    val shortEdge = minOf(srcWidth, srcHeight)
+    return AvatarCropRect(
+        x = (srcWidth - shortEdge) / 2f / srcWidth,
+        y = (srcHeight - shortEdge) / 2f / srcHeight,
+        size = 1f,
     )
 }

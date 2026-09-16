@@ -2,7 +2,6 @@ package com.netonstream.privchat.ui.media
 
 import kotlin.math.abs
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -21,19 +20,34 @@ class AvatarCropRectTest {
         )
     }
 
-    /** 没缩放没位移 = 整张图（图片本来就以 Crop 铺满取景框）。 */
+    /** 方图不动 = 整张图。 */
     @Test
-    fun untouched_selects_the_whole_framed_image() {
-        val r = computeCropRect(scale = 1f, offsetX = 0f, offsetY = 0f, framePx = 1000f)
+    fun untouched_square_selects_the_whole_image() {
+        val r = computeCropRect(1f, 0f, 0f, framePx = 1000f, srcWidth = 800f, srcHeight = 800f)
         assertClose(0f, r.x, "x")
         assertClose(0f, r.y, "y")
         assertClose(1f, r.size, "size")
     }
 
+    /**
+     * 🔴 竖图不动 = **正中间**那块正方形，不是顶部。
+     *
+     * x 按宽度归一、y 按高度归一（FFI 契约），两者分母不同。曾经 y 也按短边算，
+     * 1440x3200 的截图确认后裁的是图片顶部，跟取景框里看到的完全不是一块。
+     */
+    @Test
+    fun untouched_portrait_selects_the_centre_not_the_top() {
+        val r = computeCropRect(1f, 0f, 0f, framePx = 1000f, srcWidth = 1440f, srcHeight = 3200f)
+        assertClose(0f, r.x, "x")
+        assertClose(1f, r.size, "size")
+        // 居中：(3200-1440)/2 / 3200
+        assertClose(0.275f, r.y, "y")
+    }
+
     /** 放大 2 倍 = 只取中间一半，且仍然居中。 */
     @Test
     fun zooming_in_takes_a_centred_half() {
-        val r = computeCropRect(scale = 2f, offsetX = 0f, offsetY = 0f, framePx = 1000f)
+        val r = computeCropRect(2f, 0f, 0f, framePx = 1000f, srcWidth = 800f, srcHeight = 800f)
         assertClose(0.5f, r.size, "size")
         assertClose(0.25f, r.x, "x")
         assertClose(0.25f, r.y, "y")
@@ -46,13 +60,13 @@ class AvatarCropRectTest {
      */
     @Test
     fun panning_the_image_right_moves_the_crop_left() {
-        val centred = computeCropRect(2f, offsetX = 0f, offsetY = 0f, framePx = 1000f)
-        val panned = computeCropRect(2f, offsetX = 200f, offsetY = 0f, framePx = 1000f)
+        val centred = computeCropRect(2f, 0f, 0f, 1000f, 800f, 800f)
+        val panned = computeCropRect(2f, 200f, 0f, 1000f, 800f, 800f)
         assertTrue(
             panned.x < centred.x,
             "图片右移后裁剪区没有左移: ${centred.x} -> ${panned.x}",
         )
-        // 放大后的图边长 = 1000*2 = 2000，位移 200px = 0.1 比例。
+        // 屏幕位移 200px ÷ 总缩放系数(1000*2/800=2.5) = 图内 80px = 0.1 宽度比例。
         assertClose(0.25f - 0.1f, panned.x, "x")
     }
 
@@ -60,23 +74,25 @@ class AvatarCropRectTest {
     @Test
     fun the_crop_never_leaves_the_image() {
         for (off in listOf(-99_999f, -1000f, 1000f, 99_999f)) {
-            val r = computeCropRect(3f, offsetX = off, offsetY = off, framePx = 800f)
-            assertTrue(r.x >= 0f && r.x + r.size <= 1f + 1e-4f, "x 越界: $r")
-            assertTrue(r.y >= 0f && r.y + r.size <= 1f + 1e-4f, "y 越界: $r")
+            val r = computeCropRect(3f, off, off, framePx = 800f, srcWidth = 1440f, srcHeight = 3200f)
+            val wFrac = 1440f / 1440f * r.size // size 相对短边(=宽)，换成宽度比例
+            val hFrac = 1440f * r.size / 3200f
+            assertTrue(r.x >= 0f && r.x + wFrac <= 1f + 1e-4f, "x 越界: $r")
+            assertTrue(r.y >= 0f && r.y + hFrac <= 1f + 1e-4f, "y 越界: $r")
         }
     }
 
     /**
-     * 还没布局完就点确认，退回整图而不是算出一个垃圾值。
+     * 还没布局完就点确认，退回"整图居中正方形"而不是算出一个垃圾值。
      *
-     * viewportPx=0 会让换算除以 0；这条保证那一刻点确认得到的是"等价于不裁剪"，
+     * framePx=0 会让换算除以 0；这条保证那一刻点确认得到的是"等价于不裁剪"，
      * 而不是 NaN 一路传到 FFI。
      */
     @Test
-    fun confirming_before_layout_falls_back_to_the_whole_image() {
-        val r = computeCropRect(scale = 2f, offsetX = 50f, offsetY = 50f, framePx = 0f)
-        assertEquals(0f, r.x)
-        assertEquals(0f, r.y)
-        assertEquals(1f, r.size)
+    fun confirming_before_layout_falls_back_to_the_centred_square() {
+        val r = computeCropRect(2f, 50f, 50f, framePx = 0f, srcWidth = 1440f, srcHeight = 3200f)
+        assertClose(0f, r.x, "x")
+        assertClose(0.275f, r.y, "y")
+        assertClose(1f, r.size, "size")
     }
 }
