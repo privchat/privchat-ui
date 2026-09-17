@@ -12,6 +12,7 @@ import platform.CoreGraphics.CGSizeMake
 import platform.Foundation.NSDictionary
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSString
+import platform.Foundation.timeIntervalSince1970
 import platform.Foundation.writeToFile
 import platform.UIKit.NSFontAttributeName
 import platform.UIKit.NSForegroundColorAttributeName

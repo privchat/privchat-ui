@@ -54,7 +54,7 @@ kotlin {
 
             // BOT_INTERACTION_SPEC §4：菜单 action 解析与 metadata 序列化用 kotlinx.serialization。
             // sdk 那边是 implementation 依赖，不会传递；此处显式声明保证 Android target 也能解析。
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
         }
 
         commonTest.dependencies {
@@ -64,7 +64,7 @@ kotlin {
         // Android-specific dependencies
         androidMain.dependencies {
             implementation("androidx.annotation:annotation:1.9.1")
-            implementation("androidx.core:core-ktx:1.13.1")
+            implementation("androidx.core:core-ktx:1.16.0")
         }
 
         // iOS-specific dependencies
@@ -82,7 +82,7 @@ kotlin {
 
 android {
     namespace = "com.netonstream.privchat.ui"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 21
