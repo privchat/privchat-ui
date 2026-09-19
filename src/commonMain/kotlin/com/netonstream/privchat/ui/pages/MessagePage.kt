@@ -3201,7 +3201,12 @@ private fun MessageInputBar(
                 // 右侧：表情
                 CircleIconButton(
                     // 笑脸，不是桃心：这个按钮开的是表情面板，桃心表达的是"喜欢/收藏"。
-                    icon = Icons.smiley,
+                    //
+                    // 用 App 自带的 emoji_face 而不是 Phosphor 的 smiley：后者自带一圈脸廓，
+                    // 而按钮本身已经是个圆底，两个圆套在一起，在 20dp 上糊成一团。这个只画
+                    // 两只眼睛和一张嘴（就是竖过来的 `:)`），小尺寸下才看得清。
+                    // 自有图标的落地方式见 DESIGN_SYSTEM_SPEC 11.4。
+                    icon = "emoji_face",
                     onClick = {
                     if (panelMode == InputPanelMode.EMOJI || displayedPanelMode == InputPanelMode.EMOJI) {
                         closeAllPanels()
