@@ -2894,7 +2894,10 @@ private fun MessageInputBar(
         )
     }
     // 输入栏一行里所有控件同高：单行输入框、圆形按钮、语音条、发送按钮。
-    val inputControlHeight = 32.dp
+    //
+    // 36dp = 微信输入框的高度，也正好是 gearui `ButtonSize.SMALL`。之前这里是 32dp 而
+    // 发送按钮用的是 SMALL，于是发送按钮比输入框高 4dp——整条栏子看着既矮又没对齐。
+    val inputControlHeight = 36.dp
     val panelHostHeight = 228.dp
     val panelTopSpacing = 8.dp
     val rawKeyboardVisible = keyboardHeight > 0.dp
@@ -3050,7 +3053,7 @@ private fun MessageInputBar(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 8.dp, top = 8.dp),
+                .padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -3161,10 +3164,10 @@ private fun MessageInputBar(
                         outlined = true,
                         modifier = Modifier.weight(1f),
                         maxLines = 8,
-                        // 单行压到与两侧按钮齐平的 32dp，且文字在框内垂直居中：
-                        // 行高取接近字体自然行高的 20sp（多出来的行距全被加在基线下方，
-                        // 24sp 会让单行明显偏上），再配 6dp 内边距凑满 32dp。
-                        verticalPadding = 6.dp,
+                        // 单行压到与两侧按钮齐平的 36dp（= 2*verticalPadding + lineHeight），
+                        // 且文字在框内垂直居中：行高取接近字体自然行高的 19sp（多出来的行距
+                        // 全被加在基线下方，24sp 会让单行明显偏上），剩下的用内边距凑。
+                        verticalPadding = 8.5.dp,
                         lineHeight = 19.sp,
                         autoFocus = pendingAutoFocus,
                         focusRequester = inputFocusRequester,
@@ -3209,6 +3212,9 @@ private fun MessageInputBar(
                         disabled = loading,
                         loading = loading,
                         onClick = { onSend() },
+                        // 显式绑定到同一个高度：光靠 SMALL 恰好等于 inputControlHeight 是
+                        // 巧合，token 一调整这里就又高出一截。
+                        modifier = Modifier.height(inputControlHeight),
                     )
                 } else {
                 CircleIconButton(
@@ -3468,7 +3474,8 @@ private const val SAMPLE_MS = 80L
 private fun CircleIconButton(
     icon: String,
     onClick: () -> Unit,
-    size: Dp = 32.dp,
+    // 与 inputControlHeight 同值：这几个按钮都住在输入栏那一行里。
+    size: Dp = 36.dp,
 ) {
     val colors = Theme.colors
     Box(
