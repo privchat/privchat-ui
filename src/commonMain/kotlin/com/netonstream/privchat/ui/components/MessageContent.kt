@@ -79,6 +79,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
+import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageBubbleOther
+import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.messageBubbleSelf
 
 /**
  * 消息内容渲染组件
@@ -122,7 +124,10 @@ fun MessageContent(
     // 深色气泡里的浅色 `messageTextSelf`，时间/发送中/进度就是白字白底——什么都看不见。
     // 媒体气泡一律用 mutedForeground，与对方消息一致。
     val secondaryTextColor = if (
-        isSelf && parsed.type != MessageType.IMAGE && parsed.type != MessageType.VIDEO
+        isSelf &&
+        parsed.type != MessageType.IMAGE &&
+        parsed.type != MessageType.VIDEO &&
+        parsed.type != MessageType.VOICE
     ) colors.messageTextSelf.copy(alpha = 0.7f) else colors.mutedForeground
     // [TRACE] 排查 Bug2：气泡右下角时间+状态不显示。footer 只在 parsed.type == SYSTEM 时
     // 被跳过——但走到这里说明已经按 BUBBLE 渲染（RenderType.BUBBLE）。如果 parsed.type 是
@@ -144,7 +149,10 @@ fun MessageContent(
     // 媒体（图片/视频）气泡背景透明、内容自带圆角铺满，不能再套 10dp 内边距 —— 否则透明的
     // 顶部 padding 会把图片往下推，使图片顶部比发送者头像低、不对齐（文字气泡有深色背景，
     // 10dp 是气泡内边距、气泡顶仍对齐头像）。媒体用 0 padding，图片顶与头像对齐。
-    val isMediaBubble = parsed.type == MessageType.IMAGE || parsed.type == MessageType.VIDEO
+    // 语音与图片/视频一样自带气泡（见 MessagePage 同名变量的说明），外层不加内边距。
+    val isMediaBubble = parsed.type == MessageType.IMAGE ||
+        parsed.type == MessageType.VIDEO ||
+        parsed.type == MessageType.VOICE
     // 资金卡片（红包/转账）是独立卡片，自带底色/圆角/内边距，外层不再套气泡内边距。
     val isMoneyCard = parsed.type == MessageType.RED_PACKET || parsed.type == MessageType.MONEY_TRANSFER
     Column(modifier = modifier.padding(if (isMediaBubble || isMoneyCard) 0.dp else 10.dp)) {
@@ -761,10 +769,12 @@ private fun voiceBubbleWidthDp(durationSeconds: Int): Int {
 /**
  * 语音消息（微信式）
  *
- * - 喇叭朝外：自己的气泡在右、开口向右；对方的在左、开口向左；
- * - 播放中三道弧 1→2→3 循环点亮，停止时全亮；
- * - 宽度随时长增长（[voiceBubbleWidthDp]），底部时间戳同宽，气泡才不会被撑满；
- * - 远程文件先下载再播——AVAudioPlayer 不能播 http(s)，直接喂给它在 iOS 上是闪退。
+ * 自带气泡：底色、圆角、内边距都在这里，外层公共气泡对语音是透明的。这样整块都能点，
+ * 而时间/发送状态/上传进度留在气泡外面——它们和"播放"是两回事，挤在同一块里既点不动
+ * 又读不清。
+ *
+ * 喇叭朝向：波纹朝气泡**内侧**——自己的气泡在右，喇叭开口朝左；对方的在左，开口朝右。
+ * 朝外看着像声音要从屏幕边上漏出去。
  */
 @Composable
 private fun VoiceContent(
@@ -773,6 +783,7 @@ private fun VoiceContent(
     isSelf: Boolean,
     textColor: Color,
 ) {
+    val colors = Theme.colors
     val duration = parsed.duration ?: 0
     val width = voiceBubbleWidthDp(duration).dp
 
@@ -781,9 +792,17 @@ private fun VoiceContent(
     val scope = rememberCoroutineScope()
     var preparing by remember(message.id) { mutableStateOf(false) }
 
+    val bubbleShape = RoundedCornerShape(
+        topStart = if (isSelf) 16.dp else 4.dp,
+        topEnd = 16.dp,
+        bottomStart = 16.dp,
+        bottomEnd = if (isSelf) 4.dp else 16.dp,
+    )
     Row(
         modifier = Modifier
             .width(width)
+            .clip(bubbleShape)
+            .background(if (isSelf) colors.messageBubbleSelf else colors.messageBubbleOther)
             .clickable {
                 if (isPlaying) {
                     VoicePlayback.stop()
@@ -802,7 +821,8 @@ private fun VoiceContent(
                     preparing = false
                     if (path != null) VoicePlayback.toggle(message.id, path)
                 }
-            },
+            }
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = if (isSelf) Arrangement.End else Arrangement.Start,
     ) {
@@ -813,9 +833,9 @@ private fun VoiceContent(
                 color = textColor,
             )
             HorizontalSpacer(8.dp)
-            VoiceSpeakerIcon(isPlaying, preparing, textColor, facing = WaveFacing.RIGHT)
-        } else {
             VoiceSpeakerIcon(isPlaying, preparing, textColor, facing = WaveFacing.LEFT)
+        } else {
+            VoiceSpeakerIcon(isPlaying, preparing, textColor, facing = WaveFacing.RIGHT)
             HorizontalSpacer(8.dp)
             Text(
                 text = Formatter.voiceDuration(duration),

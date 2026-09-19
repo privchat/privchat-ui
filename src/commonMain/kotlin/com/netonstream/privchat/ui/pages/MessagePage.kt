@@ -2218,7 +2218,13 @@ private fun MessageRow(
             )
             // 图片/视频是「全幅媒体」气泡：内容本身带圆角铺满，不应再套 self/other 气泡底色，
             // 否则深色主题下 outgoing 黑底会在图片四周露出黑边。媒体气泡背景透明。
-            val isMediaBubble = parsed.type == MessageType.IMAGE || parsed.type == MessageType.VIDEO
+            //
+            // 语音也走这条：它要的是**一个只属于语音的气泡**。挂在公共气泡里的话，时间、
+            // 发送状态、上传进度和语音条共处一格——用户点气泡里那些地方不会播放，只有压中
+            // 喇叭那一小块才行，看着就像点不动。自带气泡之后整块都可点，footer 落在气泡外。
+            val isMediaBubble = parsed.type == MessageType.IMAGE ||
+                parsed.type == MessageType.VIDEO ||
+                parsed.type == MessageType.VOICE
             // 资金卡片（红包/转账）是独立卡片，自带底色/圆角，不套黑色文本气泡。
             val isMoneyCard = parsed.type == MessageType.RED_PACKET || parsed.type == MessageType.MONEY_TRANSFER
             val bubbleBackground = when {
