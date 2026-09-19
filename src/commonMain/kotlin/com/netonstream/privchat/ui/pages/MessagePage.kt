@@ -3079,7 +3079,9 @@ private fun MessageInputBar(
 
             // 左侧：语音/键盘切换
                 CircleIconButton(
-                    icon = if (voiceMode) Icons.chat_circle else Icons.microphone,
+                    // 语音模式下这个按钮是"回到打字"，图标就该是键盘。之前用的是聊天气泡
+                    // （chat_circle），它表达的是"会话"，看着像另开一个聊天。
+                    icon = if (voiceMode) Icons.keyboard else Icons.microphone,
                     onClick = {
                         val enteringVoice = !voiceMode
                         voiceMode = enteringVoice
@@ -3170,10 +3172,12 @@ private fun MessageInputBar(
                         outlined = true,
                         modifier = Modifier.weight(1f),
                         maxLines = 8,
-                        // 单行压到与两侧按钮齐平的 36dp（= 2*verticalPadding + lineHeight），
-                        // 且文字在框内垂直居中：行高取接近字体自然行高的 19sp（多出来的行距
-                        // 全被加在基线下方，24sp 会让单行明显偏上），剩下的用内边距凑。
-                        verticalPadding = 8.5.dp,
+                        // 单行要和两侧按钮**一样高 36dp**，否则语音/键盘切换时整条栏子会跳。
+                        //
+                        // 🔴 这里的总高不是 2*verticalPadding + lineHeight 就完事：outlined 的
+                        // 那圈描边还要再占约 1.4dp（真机量过：padding 8.5 时总高 37.4dp，而
+                        // 圆形按钮和「按住 说话」都是 36.0dp）。所以内边距按 7.8 取，凑够 36。
+                        verticalPadding = 7.8.dp,
                         lineHeight = 19.sp,
                         autoFocus = pendingAutoFocus,
                         focusRequester = inputFocusRequester,
