@@ -210,6 +210,7 @@ fun MessageContent(
             val uploadBytes = uploads.inFlight[message.id.toString()]
                 ?.let { (sent, total) -> "${humanBytes(sent)} / ${humanBytes(total)}" }
             MessageFooter(
+                modifier = Modifier.align(Alignment.End),
                 timestamp = message.timestamp,
                 status = message.status,
                 isSelf = isSelf,
@@ -1393,14 +1394,19 @@ private fun MessageFooter(
     peerReadPts: ULong? = null,
     delivered: Boolean = false,
     onFailedClick: (() -> Unit)? = null,
-    // 媒体（图片/视频）气泡：footer 宽度对齐图片外框宽度（dp），时间/状态右对齐到图片右边缘，
-    // 不再 fillMaxWidth 把整列撑到屏幕边。null = 文本等普通气泡，沿用 fillMaxWidth。
+    // 媒体（图片/视频/语音）气泡：footer 宽度对齐内容外框宽度（dp），时间/状态右对齐到
+    // 内容右边缘。null = 文本等普通气泡，宽度随内容。
     mediaWidthDp: Int? = null,
+    modifier: Modifier = Modifier,
     uploadPercent: Int? = null,
     uploadBytes: String? = null,
 ) {
     Row(
-        modifier = if (mediaWidthDp != null) Modifier.width(mediaWidthDp.dp) else Modifier.fillMaxWidth(),
+        // 🔴 不要 fillMaxWidth。它会把气泡撑到可用的最大宽度——一个表情的气泡和一条长文
+        // 一样宽，时间戳孤零零地挂在右边老远。右对齐交给调用方的 `Modifier.align(End)`，
+        // 气泡宽度则回到「由内容决定」。
+        modifier = (if (mediaWidthDp != null) Modifier.width(mediaWidthDp.dp) else Modifier)
+            .then(modifier),
         horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {

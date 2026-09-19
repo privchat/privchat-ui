@@ -82,7 +82,11 @@ object PrivChatThemeExtension {
                 ChatColors(
                     bubbleSelf = primary,
                     onBubbleSelf = contentColorOn(primary),
-                    bubbleOther = Color(0xFFF4F4F5),
+                    // 🔴 对方气泡必须**比页面亮**，不是比页面暗一点点。
+                    // 这里曾经是 #F4F4F5，而浅色页面底是 #F5F5F5——两者差 1，气泡等于没画：
+                    // 对方的文字、表情、语音条全都直接浮在背景上，看着像掉了样式。
+                    // 微信的关系是「页面浅灰 + 气泡纯白」，照这个来。
+                    bubbleOther = Color(0xFFFFFFFF),
                     onBubbleOther = Color(0xFF09090B),
                 )
             }
