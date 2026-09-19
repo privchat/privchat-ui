@@ -155,7 +155,12 @@ fun MessageContent(
         parsed.type == MessageType.VOICE
     // 资金卡片（红包/转账）是独立卡片，自带底色/圆角/内边距，外层不再套气泡内边距。
     val isMoneyCard = parsed.type == MessageType.RED_PACKET || parsed.type == MessageType.MONEY_TRANSFER
-    Column(modifier = modifier.padding(if (isMediaBubble || isMoneyCard) 0.dp else 10.dp)) {
+    // footer 比内容宽时（短语音 + 「已发送」），自己的消息要**右边缘**对齐，否则气泡
+    // 会被推到 footer 的左端，看着像错位。
+    Column(
+        modifier = modifier.padding(if (isMediaBubble || isMoneyCard) 0.dp else 10.dp),
+        horizontalAlignment = if (isSelf) Alignment.End else Alignment.Start,
+    ) {
         // 根据消息类型渲染内容
         when (parsed.type) {
             MessageType.TEXT -> TextContent(
@@ -1405,7 +1410,10 @@ private fun MessageFooter(
         // 🔴 不要 fillMaxWidth。它会把气泡撑到可用的最大宽度——一个表情的气泡和一条长文
         // 一样宽，时间戳孤零零地挂在右边老远。右对齐交给调用方的 `Modifier.align(End)`，
         // 气泡宽度则回到「由内容决定」。
-        modifier = (if (mediaWidthDp != null) Modifier.width(mediaWidthDp.dp) else Modifier)
+        // 🔴 是 widthIn(min=)，不是 width()。固定宽度对图片够用（图片总比时间戳宽），
+        // 对语音不够：一条 1" 的语音气泡只有 70dp 出头，而「21:19 ✓✓ 已发送」放不下，
+        // 于是状态文字被挤得换行。这里只保证**不窄于**内容外框，右边缘仍然对齐。
+        modifier = (if (mediaWidthDp != null) Modifier.widthIn(min = mediaWidthDp.dp) else Modifier)
             .then(modifier),
         horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
