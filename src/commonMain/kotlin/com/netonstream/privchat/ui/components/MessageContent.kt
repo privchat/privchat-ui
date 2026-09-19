@@ -67,6 +67,18 @@ import com.tencent.kuikly.compose.ui.text.buildAnnotatedString
 import com.tencent.kuikly.compose.ui.text.withLink
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.material3.Text as KuiklyText
+import com.netonstream.privchat.ui.media.awaitLocalMediaPath
+import com.tencent.kuikly.compose.foundation.Canvas
+import com.tencent.kuikly.compose.ui.geometry.CornerRadius
+import com.tencent.kuikly.compose.ui.geometry.Offset
+import com.tencent.kuikly.compose.ui.geometry.Size
+import com.tencent.kuikly.compose.ui.graphics.Path
+import com.tencent.kuikly.compose.ui.graphics.StrokeCap
+import com.tencent.kuikly.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 
 /**
  * 消息内容渲染组件
@@ -174,6 +186,9 @@ fun MessageContent(
                 MessageType.IMAGE -> imageBubbleSize?.first
                 MessageType.VIDEO ->
                     attachmentBubbleSize(parsed.width, parsed.height).first
+                // 🔴 语音也要给定宽。footer 默认 fillMaxWidth，会把气泡撑到可用最大宽度——
+                // 于是 1" 和 5" 的语音条一样长，改气泡里那点内容宽度根本看不出来。
+                MessageType.VOICE -> voiceBubbleWidthDp(parsed.duration ?: 0)
                 else -> null
             }
             // 上传进度按**本地消息 id** 取：SDK 发进度时带的就是它。
@@ -732,13 +747,24 @@ private fun VideoContent(
 }
 
 /**
- * 语音消息（微信风格）
+ * 语音条宽度（dp）：随时长增长，一分钟封顶。
  *
- * - 点击切换播放/停止，单路播放（新点击会停掉旧的）
- * - 自己发送：波纹图标在右，气泡整体右对齐
- * - 对方发送：波纹图标在左
- * - 播放中：三根竖条做 1s 的循环动画
- * - 气泡宽度按时长动态调整：最短 72dp，每秒 +4dp，最长 200dp
+ * 用 sqrt 而不是线性：线性的话 1" 和 5" 差几个像素、看不出区别，而 60" 会横穿屏幕。
+ * 开方让短语音之间的差距明显，长语音那头收敛。footer 与气泡内容共用这个值，两者必须一致。
+ */
+private fun voiceBubbleWidthDp(durationSeconds: Int): Int {
+    val d = durationSeconds.coerceIn(1, 60)
+    val extra = 96f * kotlin.math.sqrt(d / 60f)
+    return (64f + extra).toInt()
+}
+
+/**
+ * 语音消息（微信式）
+ *
+ * - 喇叭朝外：自己的气泡在右、开口向右；对方的在左、开口向左；
+ * - 播放中三道弧 1→2→3 循环点亮，停止时全亮；
+ * - 宽度随时长增长（[voiceBubbleWidthDp]），底部时间戳同宽，气泡才不会被撑满；
+ * - 远程文件先下载再播——AVAudioPlayer 不能播 http(s)，直接喂给它在 iOS 上是闪退。
  */
 @Composable
 private fun VoiceContent(
@@ -748,18 +774,35 @@ private fun VoiceContent(
     textColor: Color,
 ) {
     val duration = parsed.duration ?: 0
-    val width = (72 + (duration.coerceAtLeast(1) * 4).coerceAtMost(128)).dp
+    val width = voiceBubbleWidthDp(duration).dp
 
     val playing by VoicePlayback.playingMessageId.collectAsState()
     val isPlaying = playing == message.id
-
-    val source = message.localMediaPath?.let { "file://$it" }
-        ?: parsed.attachmentUrl
+    val scope = rememberCoroutineScope()
+    var preparing by remember(message.id) { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
             .width(width)
-            .clickable { VoicePlayback.toggle(message.id, source) },
+            .clickable {
+                if (isPlaying) {
+                    VoicePlayback.stop()
+                    return@clickable
+                }
+                val local = message.localMediaPath?.takeIf { it.isNotBlank() }
+                if (local != null) {
+                    VoicePlayback.toggle(message.id, local)
+                    return@clickable
+                }
+                // 还没下过：先下载再播。期间喇叭显示"准备中"，而不是点了没反应。
+                if (preparing) return@clickable
+                preparing = true
+                scope.launch {
+                    val path = awaitLocalMediaPath(message)
+                    preparing = false
+                    if (path != null) VoicePlayback.toggle(message.id, path)
+                }
+            },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = if (isSelf) Arrangement.End else Arrangement.Start,
     ) {
@@ -770,9 +813,9 @@ private fun VoiceContent(
                 color = textColor,
             )
             HorizontalSpacer(8.dp)
-            VoiceWaveIcon(isPlaying = isPlaying, tint = textColor, facing = WaveFacing.LEFT)
+            VoiceSpeakerIcon(isPlaying, preparing, textColor, facing = WaveFacing.RIGHT)
         } else {
-            VoiceWaveIcon(isPlaying = isPlaying, tint = textColor, facing = WaveFacing.RIGHT)
+            VoiceSpeakerIcon(isPlaying, preparing, textColor, facing = WaveFacing.LEFT)
             HorizontalSpacer(8.dp)
             Text(
                 text = Formatter.voiceDuration(duration),
@@ -786,48 +829,75 @@ private fun VoiceContent(
 private enum class WaveFacing { LEFT, RIGHT }
 
 /**
- * 微信语音的三根竖条波纹。播放中循环动画，静止时显示中等高度。
- * facing=RIGHT 时高度从左到右递增（喇叭开口向右，用于对方气泡）；
- * facing=LEFT 时反向（用于自己气泡）。
+ * 微信那个喇叭：一个小喇叭体 + 三道同心弧。
+ *
+ * 🔴 弧的半径必须留在画布里。第一版按画布宽度的 0.34/0.54/0.74 取半径、圆心又在偏右，
+ * 最外两道直接画到画布外被裁掉，屏幕上只剩一个点——UI 走查时看着像个残缺的月牙。
+ * 这里所有坐标都按固定的 18dp 画布写死，圆心固定在左侧 6dp 处，最大半径 9.5dp，
+ * 6+9.5 < 18 才画得下。
  */
 @Composable
-private fun VoiceWaveIcon(
+private fun VoiceSpeakerIcon(
     isPlaying: Boolean,
+    preparing: Boolean,
     tint: Color,
     facing: WaveFacing,
 ) {
-    val baseHeights = listOf(6.dp, 10.dp, 14.dp)
-    val heights = if (facing == WaveFacing.RIGHT) baseHeights else baseHeights.asReversed()
-
-    // rememberInfiniteTransition 必须在顶层稳定调用；仅在 isPlaying 为 true 时读取 phase
-    val transition = rememberInfiniteTransition(label = "voice-wave")
-    val animatedPhase by transition.animateFloat(
+    val transition = rememberInfiniteTransition(label = "voice-speaker")
+    val step by transition.animateFloat(
         initialValue = 0f,
         targetValue = 3f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 900, easing = LinearEasing),
+            animation = tween(durationMillis = 1200, easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
-        label = "voice-wave-phase",
+        label = "voice-speaker-step",
     )
-    val phase: Float = if (isPlaying) animatedPhase else 1.5f
+    val litArcs = when {
+        preparing -> 1
+        isPlaying -> step.toInt().coerceIn(0, 2) + 1
+        // 停止态三道全亮：静止的喇叭也要看得出是"声音"，缺格子像是画坏了。
+        else -> 3
+    }
 
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        heights.forEachIndexed { index, h ->
-            val scale: Float = if (isPlaying) {
-                val local = (phase - index + 3f) % 3f
-                0.4f + 0.6f * (1f - kotlin.math.abs(local - 1.5f) / 1.5f)
-            } else {
-                1f
-            }
-            Box(
-                modifier = Modifier
-                    .width(3.dp)
-                    .height((h.value * scale).dp)
-                    .clip(RoundedCornerShape(1.5.dp))
-                    .background(tint),
+    Canvas(modifier = Modifier.size(18.dp)) {
+        val unit = size.width / 18f          // 画布按 18dp 设计，这里换算成像素
+        val mirror = facing == WaveFacing.LEFT
+        fun x(v: Float) = if (mirror) size.width - v * unit else v * unit
+        val cy = size.height / 2f
+
+        // 喇叭体：竖条 + 向开口方向张开的梯形
+        val bodyLeft = if (mirror) x(3.5f) else x(1f)
+        drawRoundRect(
+            color = tint,
+            topLeft = Offset(bodyLeft, cy - 3.5f * unit),
+            size = Size(2.5f * unit, 7f * unit),
+            cornerRadius = CornerRadius(0.8f * unit, 0.8f * unit),
+        )
+        val horn = Path().apply {
+            moveTo(x(3f), cy - 3.5f * unit)
+            lineTo(x(6f), cy - 6f * unit)
+            lineTo(x(6f), cy + 6f * unit)
+            lineTo(x(3f), cy + 3.5f * unit)
+            close()
+        }
+        drawPath(horn, tint)
+
+        // 三道弧：圆心贴着喇叭口，半径 4/6.75/9.5，最外一道正好落在画布内。
+        val centerX = x(6f)
+        repeat(3) { index ->
+            val radius = (4f + 2.75f * index) * unit
+            val alpha = if (index < litArcs) 1f else 0.22f
+            drawArc(
+                color = tint.copy(alpha = alpha),
+                // 0° 指向右；开口向右画 -48°..48°，向左时整体转到 132°..228°。
+                startAngle = if (mirror) 132f else -48f,
+                sweepAngle = 96f,
+                useCenter = false,
+                topLeft = Offset(centerX - radius, cy - radius),
+                size = Size(radius * 2, radius * 2),
+                style = Stroke(width = 1.3f * unit, cap = StrokeCap.Round),
             )
-            if (index != heights.lastIndex) HorizontalSpacer(2.dp)
         }
     }
 }

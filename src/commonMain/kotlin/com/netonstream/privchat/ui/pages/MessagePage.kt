@@ -26,6 +26,7 @@ import com.netonstream.privchat.ui.search.MentionQuery
 import com.netonstream.privchat.ui.components.MessageContent
 import com.netonstream.privchat.ui.components.ReadReceiptsSheet
 import com.netonstream.privchat.ui.media.MediaDownloadManager
+import com.netonstream.privchat.ui.media.awaitLocalMediaPath
 import com.netonstream.privchat.ui.media.MediaDownloadState
 import com.netonstream.privchat.ui.media.MediaSaver
 import com.netonstream.privchat.ui.platform.ClipboardBridge
@@ -396,6 +397,13 @@ fun MessagePage(
     onSendFile: (suspend (ULong, Int, onPrepStart: (String) -> Unit) -> Result<ULong>)? = null,
     onVoiceStart: (() -> Boolean)? = null,
     onVoiceCancel: (() -> Unit)? = null,
+    /**
+     * 当前输入音量 0..1，录音浮层的波形靠它。
+     *
+     * 由宿主传进来而不是这里直接读录音器：录音器住在 app 层（平台实现），privchat-ui
+     * 不依赖它，反过来才对。
+     */
+    voiceAmplitude: (() -> Float)? = null,
     onSendVoice: (suspend (ULong, Int, durationMs: Long) -> Result<ULong>)? = null,
     onRequestForward: ((MessageEntry) -> Unit)? = null,
     onReportMessage: ((MessageEntry) -> Unit)? = null,
@@ -1408,6 +1416,7 @@ fun MessagePage(
             if (voiceRecordingState != VoiceRecordingState.IDLE) {
                 VoiceRecordingOverlay(
                     recordingState = voiceRecordingState,
+                    amplitude = voiceAmplitude,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -3371,27 +3380,37 @@ private fun MessageInputBar(
 }
 
 /**
- * 录音浮层
+ * 录音浮层（微信式）
+ *
+ * 🔴 波形必须由**真实音量**驱动。上一版是 `sin(t)` 画的：说不说话、捂住麦克风，动画
+ * 一模一样——那不是波形，是个装饰。这里每 [SAMPLE_MS] 取一次 [amplitude] 推进队列，
+ * 柱子从右往左走，跟着说话起伏；拿不到 provider 时退化成静止的低幅，而不是假装在动。
+ *
+ * 配色也换掉了那块绿：微信是深灰半透明气泡，取消态才转成红色并显示垃圾桶。绿色在
+ * 这里既不是品牌色，也不表达任何状态。
  */
 @Composable
 private fun VoiceRecordingOverlay(
     recordingState: VoiceRecordingState,
+    amplitude: (() -> Float)? = null,
     modifier: Modifier = Modifier,
 ) {
     val isCancel = recordingState == VoiceRecordingState.CANCEL_ZONE
-    val cardColor = if (isCancel) Color(0xFFE53935) else Color(0xFF4CAF50)
+    val cardColor = if (isCancel) Color(0xF2E0453C) else Color(0xF22B2B2E)
+    val strings = PrivChatI18n.current
 
-    // 波形动画
-    val infiniteTransition = rememberInfiniteTransition(label = "waveform")
-    val wavePhase by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = (2 * PI).toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 800),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "wavePhase",
-    )
+    // 最近若干次采样，右侧是最新的一帧。
+    val levels = remember { mutableStateListOf<Float>().apply { repeat(BAR_COUNT) { add(0f) } } }
+
+    LaunchedEffect(recordingState, amplitude) {
+        if (recordingState == VoiceRecordingState.IDLE || amplitude == null) return@LaunchedEffect
+        while (true) {
+            val level = amplitude().coerceIn(0f, 1f)
+            levels.removeAt(0)
+            levels.add(level)
+            delay(SAMPLE_MS)
+        }
+    }
 
     Box(
         modifier = modifier,
@@ -3400,50 +3419,50 @@ private fun VoiceRecordingOverlay(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0x99000000)),
+                .background(Color(0x66000000)),
         )
 
-        // 卡片：左侧麦克风，右侧波形
-        Row(
+        Column(
             modifier = Modifier
-                .width(320.dp)
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(cardColor)
-                .padding(horizontal = 28.dp, vertical = 24.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(horizontal = 24.dp, vertical = 18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // 左：麦克风图标
-            Icon(
-                name = if (isCancel) Icons.trash else Icons.microphone,
-                size = 56.dp,
-                tint = Color.White,
-            )
-            HorizontalSpacer(24.dp)
-            // 右：9 根波形柱
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.height(48.dp),
-            ) {
-                val barCount = 9
-                val phaseStep = (2 * PI / barCount).toFloat()
-                repeat(barCount) { i ->
-                    val height = if (isCancel) 8f else {
-                        ((sin((wavePhase + i * phaseStep).toDouble()) * 0.45 + 0.55) * 44).toFloat()
-                            .coerceAtLeast(6f)
+            if (isCancel) {
+                Icon(name = Icons.trash, size = 34.dp, tint = Color.White)
+            } else {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.height(44.dp),
+                ) {
+                    levels.forEach { level ->
+                        // 上下对称的一根柱子：最矮 4dp（静音时是一条线，不是消失）。
+                        val h = (4f + level * 38f).coerceIn(4f, 42f)
+                        Box(
+                            modifier = Modifier
+                                .width(3.dp)
+                                .height(h.dp)
+                                .clip(RoundedCornerShape(1.5.dp))
+                                .background(Color.White.copy(alpha = 0.92f)),
+                        )
                     }
-                    Box(
-                        modifier = Modifier
-                            .width(5.dp)
-                            .height(height.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(Color(0xCCFFFFFF)),
-                    )
                 }
             }
+            VerticalSpacer(12.dp)
+            Text(
+                text = if (isCancel) strings.voiceReleaseToCancel else strings.voiceReleaseToSend,
+                style = Theme.typography.label,
+                color = Color.White.copy(alpha = 0.9f),
+            )
         }
     }
 }
+
+/** 波形柱子数量，和采样间隔一起决定"一屏"覆盖多长时间（约 1.7s）。 */
+private const val BAR_COUNT = 21
+private const val SAMPLE_MS = 80L
 
 @Composable
 private fun CircleIconButton(
@@ -3746,38 +3765,12 @@ private fun MessageActionKind.toMessageAction(
 }
 
 /**
- * 解析消息对应的本地原图绝对路径：
- * - 已有 [MessageEntry.localMediaPath] 直接返回；
- * - 否则尝试拉一次最新的 PrivChat.messages 缓存（覆盖刚下载完未刷的场景）；
- * - 仍没有则 trigger MediaDownloadManager.start，并最多等 30s 直到 Done。
+ * 解析消息对应的本地原图绝对路径（等待逻辑在 [awaitLocalMediaPath]，图片/视频/语音共用）。
  *
  * 不阻塞 UI；失败返回 null，调用方负责 Toast 提示。
  */
-private suspend fun resolveLocalImagePath(message: MessageEntry): String? {
-    message.localMediaPath?.takeIf { it.isNotBlank() }?.let { return it }
-
-    PrivChat.messages.value.firstOrNull { it.id == message.id }
-        ?.localMediaPath?.takeIf { it.isNotBlank() }
-        ?.let { return it }
-
-    MediaDownloadManager.start(message)
-    val timeoutMs = 30_000L
-    val pollMs = 250L
-    var waited = 0L
-    while (waited < timeoutMs) {
-        val state = MediaDownloadManager.states.value[message.id]
-        if (state is MediaDownloadState.Done) {
-            return state.path.takeIf { it.isNotBlank() }
-        }
-        if (state is MediaDownloadState.Failed) return null
-        PrivChat.messages.value.firstOrNull { it.id == message.id }
-            ?.localMediaPath?.takeIf { it.isNotBlank() }
-            ?.let { return it }
-        delay(pollMs)
-        waited += pollMs
-    }
-    return null
-}
+private suspend fun resolveLocalImagePath(message: MessageEntry): String? =
+    awaitLocalMediaPath(message)
 
 // ==================== REPLY_SPEC 辅助 ====================
 
