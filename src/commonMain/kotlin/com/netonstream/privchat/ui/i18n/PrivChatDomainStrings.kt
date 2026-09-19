@@ -2628,8 +2628,16 @@ data class PrivChatAuthStrings(
     val forwardFailed: String,
     val pushEnableTitle: String,
     val pushEnableMessage: String,
+    /** 引导弹窗的退出口，两份弹窗共用。 */
+    val pushEnableLater: String,
+    /** 未决态：点它弹系统授权框。 */
+    val pushEnableNow: String,
+    /** 通用「提示」标题，非推送专用。 */
     val pushEnableFailedTitle: String,
-    val pushEnableFailedMessage: String,
+    /** 已拒绝态的标题与正文（与未决态是两份文案，见 REMOTE_PUSH_SPEC §3.3）。 */
+    val pushBlockedTitle: String,
+    val pushBlockedMessage: String,
+    /** 已拒绝态：点它跳系统设置。 */
     val pushGoToSettings: String,
     val dialogGotIt: String,
     val sdkInitFailedShort: String,
@@ -2726,8 +2734,11 @@ data class PrivChatAuthStringsPatch(
     val forwardFailed: String? = null,
     val pushEnableTitle: String? = null,
     val pushEnableMessage: String? = null,
+    val pushEnableLater: String? = null,
+    val pushEnableNow: String? = null,
     val pushEnableFailedTitle: String? = null,
-    val pushEnableFailedMessage: String? = null,
+    val pushBlockedTitle: String? = null,
+    val pushBlockedMessage: String? = null,
     val pushGoToSettings: String? = null,
     val dialogGotIt: String? = null,
     val sdkInitFailedShort: String? = null,
@@ -2827,7 +2838,10 @@ val PrivChatAuthStringsPatch.isEmpty: Boolean
         pushEnableTitle == null &&
         pushEnableMessage == null &&
         pushEnableFailedTitle == null &&
-        pushEnableFailedMessage == null &&
+        pushEnableLater == null &&
+        pushEnableNow == null &&
+        pushBlockedTitle == null &&
+        pushBlockedMessage == null &&
         pushGoToSettings == null &&
         dialogGotIt == null &&
         sdkInitFailedShort == null
@@ -2926,7 +2940,10 @@ fun PrivChatAuthStrings.merge(patch: PrivChatAuthStringsPatch?): PrivChatAuthStr
         pushEnableTitle = patch.pushEnableTitle ?: pushEnableTitle,
         pushEnableMessage = patch.pushEnableMessage ?: pushEnableMessage,
         pushEnableFailedTitle = patch.pushEnableFailedTitle ?: pushEnableFailedTitle,
-        pushEnableFailedMessage = patch.pushEnableFailedMessage ?: pushEnableFailedMessage,
+        pushEnableLater = patch.pushEnableLater ?: pushEnableLater,
+        pushEnableNow = patch.pushEnableNow ?: pushEnableNow,
+        pushBlockedTitle = patch.pushBlockedTitle ?: pushBlockedTitle,
+        pushBlockedMessage = patch.pushBlockedMessage ?: pushBlockedMessage,
         pushGoToSettings = patch.pushGoToSettings ?: pushGoToSettings,
         dialogGotIt = patch.dialogGotIt ?: dialogGotIt,
         sdkInitFailedShort = patch.sdkInitFailedShort ?: sdkInitFailedShort,

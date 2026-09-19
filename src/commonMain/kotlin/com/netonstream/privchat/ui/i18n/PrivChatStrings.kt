@@ -707,7 +707,10 @@ data class PrivChatStrings(
     val pushEnableTitle: String get() = dAuth.pushEnableTitle
     val pushEnableMessage: String get() = dAuth.pushEnableMessage
     val pushEnableFailedTitle: String get() = dAuth.pushEnableFailedTitle
-    val pushEnableFailedMessage: String get() = dAuth.pushEnableFailedMessage
+    val pushEnableLater: String get() = dAuth.pushEnableLater
+    val pushEnableNow: String get() = dAuth.pushEnableNow
+    val pushBlockedTitle: String get() = dAuth.pushBlockedTitle
+    val pushBlockedMessage: String get() = dAuth.pushBlockedMessage
     val pushGoToSettings: String get() = dAuth.pushGoToSettings
     val dialogGotIt: String get() = dAuth.dialogGotIt
     val sdkInitFailedShort: String get() = dAuth.sdkInitFailedShort
