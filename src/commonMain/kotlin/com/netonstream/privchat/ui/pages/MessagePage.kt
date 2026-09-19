@@ -3200,7 +3200,8 @@ private fun MessageInputBar(
 
                 // 右侧：表情
                 CircleIconButton(
-                    icon = Icons.heart,
+                    // 笑脸，不是桃心：这个按钮开的是表情面板，桃心表达的是"喜欢/收藏"。
+                    icon = Icons.smiley,
                     onClick = {
                     if (panelMode == InputPanelMode.EMOJI || displayedPanelMode == InputPanelMode.EMOJI) {
                         closeAllPanels()
