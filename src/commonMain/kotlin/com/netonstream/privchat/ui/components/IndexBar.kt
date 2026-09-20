@@ -48,7 +48,9 @@ fun IndexBar(
     modifier: Modifier = Modifier,
     onPick: (Char) -> Unit,
 ) {
-    if (letters.isEmpty()) return
+    // 一个字母索引不了任何东西——你已经在那儿了。列一条只有一个字母的索引条
+    // 是噪音，而且它竖直居中浮在空白里，看着像渲染错了。
+    if (letters.size < 2) return
 
     // 手指按住期间的当前字母；抬手后清空（高亮和气泡都只在交互中出现）。
     var active by remember(letters) { mutableStateOf<Char?>(null) }

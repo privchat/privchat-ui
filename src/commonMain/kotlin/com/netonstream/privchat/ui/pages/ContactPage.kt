@@ -1,5 +1,9 @@
 package com.netonstream.privchat.ui.pages
 
+import com.gearui.foundation.list.CellDefaults
+import com.gearui.primitives.Divider
+import com.gearui.foundation.layout.Spacing
+import com.gearui.components.cellgroup.CellGroup
 import com.gearui.primitives.SectionHeader
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.dto.FriendEntry
@@ -188,41 +192,52 @@ private fun FriendsTabContent(
     // 索引条要滚到某个字母，就得知道那个分组的首行在列表里的第几个 item。
     // 前面固定有两项：好友申请入口、以及「好友 (n)」这个分组标题。
     val sectionStarts = remember(sections) {
-        var row = LEADING_ROWS
-        sections.second.map { (letter, list) ->
-            val start = row
-            row += list.size + if (letter != null) 1 else 0 // +1 = 字母头本身
-            letter to start
-        }
+        // 一个字母段 = 列表里的一个 item（整张 CellGroup 卡片）。
+        sections.second.mapIndexed { index, (letter, _) -> letter to LEADING_ROWS + index }
     }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
     GearLazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
-        // 好友申请入口（始终顶置；搜索时也保留，便于直接进入）
+        // 好友申请入口（始终顶置；搜索时也保留，便于直接进入）。
+        // 它是一个动作，不是通讯录里的一个人——所以给它自己的卡片，和下面的名单分开。
         item {
-            FriendRequestEntry(
-                requestCount = friendRequestCount,
-                onClick = onFriendRequestClick,
-            )
+            CellGroup(
+                items = listOf(Unit),
+                modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.md),
+            ) {
+                FriendRequestEntry(
+                    requestCount = friendRequestCount,
+                    onClick = onFriendRequestClick,
+                )
+            }
         }
 
         if (filtered.isNotEmpty()) {
-            item {
-                SectionHeader(title = "${strings.contactFriends} (${filtered.size})")
-            }
-
+            // 「好友 (n)」这个标题去掉了：数量 Tab 上已经写着（"好友 1"），
+            // 而它紧挨着字母头，两个标题叠在一起反而看不出层次。
+            // 每个字母段是一张卡片，字母就是卡片标题。裸 Cell 自己不画底色，
+            // 之前整列人名是直接浮在页面灰底上的；CellGroup 把底色、分隔线、
+            // 圆角和按压反馈一并管起来，和上面的申请卡片是同一种东西。
             sections.second.forEach { (letter, list) ->
-                if (letter != null) item { LetterHeader(letter = letter.toString()) }
-                items(list.size) { idx ->
-                    val friend = list[idx]
-                    FriendItem(
-                        friend = friend,
-                        hit = hitByUser[friend.userId],
-                        isOnline = presences[friend.userId]?.isOnline == true,
-                        onClick = { onFriendClick(friend) },
-                    )
+                item {
+                    CellGroup(
+                        items = list,
+                        title = letter?.toString(),
+                        modifier = Modifier.padding(
+                            horizontal = Spacing.lg,
+                            vertical = Spacing.sm,
+                        ),
+                        separatorInset = FRIEND_SEPARATOR_INSET,
+                    ) { friend ->
+                        FriendItem(
+                            friend = friend,
+                            hit = hitByUser[friend.userId],
+                            isOnline = presences[friend.userId]?.isOnline == true,
+                            onClick = { onFriendClick(friend) },
+                        )
+                    }
                 }
             }
         } else {
@@ -253,8 +268,12 @@ private fun FriendsTabContent(
     }
 }
 
-/** 好友列表在字母分组之前固定有两项：好友申请入口 + 「好友 (n)」分组标题。 */
-private const val LEADING_ROWS = 2
+/** 好友列表在字母分组之前固定只有一项：好友申请入口。 */
+private const val LEADING_ROWS = 1
+
+/** 好友行的分隔线缩进：让线从名字起点开始，而不是从头像起点。 */
+private val FRIEND_SEPARATOR_INSET =
+    CellDefaults.Default.paddingHorizontal + AvatarSizeTokens.Small.size + Spacing.md
 
 @Composable
 private fun GroupsTabContent(
@@ -278,22 +297,28 @@ private fun GroupsTabContent(
         return
     }
 
+    // 和好友页同一种东西：一张卡片，而不是一列浮在页面底色上的裸 Cell。
     GearLazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(filtered.size) { idx ->
-            val group = filtered[idx]
-            Cell(
-                onClick = { onGroupClick(group) },
-                compact = true,
-                leading = {
-                    ChatAvatar(
-                        url = group.avatar.ifBlank { null },
-                        name = group.displayName,
-                        size = AvatarSizeTokens.Small.size,
-                    )
-                },
-                title = group.displayName,
-                arrow = true,
-            )
+        item {
+            CellGroup(
+                items = filtered,
+                modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.md),
+                separatorInset = FRIEND_SEPARATOR_INSET,
+            ) { group ->
+                Cell(
+                    onClick = { onGroupClick(group) },
+                    compact = true,
+                    leading = {
+                        ChatAvatar(
+                            url = group.avatar.ifBlank { null },
+                            name = group.displayName,
+                            size = AvatarSizeTokens.Small.size,
+                        )
+                    },
+                    title = group.displayName,
+                    arrow = true,
+                )
+            }
         }
     }
 }
@@ -331,22 +356,6 @@ private fun ContactEntryIcon(icon: String) {
     }
 }
 
-@Composable
-private fun LetterHeader(letter: String) {
-    val colors = Theme.colors
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.muted)
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-    ) {
-        Text(
-            text = letter,
-            style = Theme.typography.label,
-            color = colors.mutedForeground,
-        )
-    }
-}
 
 @Composable
 private fun FriendItem(
