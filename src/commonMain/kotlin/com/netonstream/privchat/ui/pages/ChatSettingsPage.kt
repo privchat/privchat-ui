@@ -1,5 +1,7 @@
 package com.netonstream.privchat.ui.pages
 
+import com.gearui.foundation.layout.Spacing
+import com.gearui.components.cellgroup.CellGroup
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import com.tencent.kuikly.compose.foundation.interaction.collectIsPressedAsState
@@ -145,71 +147,57 @@ fun ChatSettingsPage(
 
         // 设置列表
         GearLazyColumn(modifier = Modifier.fillMaxSize()) {
-            // 群聊特有设置
+            // 群聊特有设置：一张卡片，不是一条条通栏白带。
             if (isGroup) {
-                // 群名称
                 item {
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-
-                item {
-                    Cell(
-                        title = strings.chatSettingsGroupName,
-                        // P6-1：收口到 GroupDisplay.titleOf（此前裸 channel.name 无 fallback，空群名显示空白）。
-                        description = com.netonstream.privchat.ui.models.GroupDisplay.titleOf(channel.name),
-                        // P6-3 上线要求：群改名尚未持久化（GROUP_SETTINGS_PERSISTENCE 未完成）→ 暂隐藏编辑入口，
-                        // 只读展示群名，避免用户改了 resync 后丢失的假成功。
-                        arrow = false,
-                    )
-                }
-
-                // 群二维码
-                item {
-                    Cell(
-                        title = strings.chatSettingsGroupQrCode,
-                        arrow = true,
-                        onClick = onGroupQrCodeClick,
-                    )
-                }
-
-                // 群成员
-                item {
-                    Cell(
-                        title = strings.chatSettingsGroupMembers,
-                        description = "($groupMemberCount)",
-                        arrow = true,
-                        onClick = onGroupMembersClick,
-                    )
-                }
-
-                // 邀请成员
-                item {
-                    Cell(
-                        title = strings.groupInviteMembers,
-                        arrow = true,
-                        onClick = onGroupInviteClick,
-                    )
-                }
-
-                // 群管理（仅管理员可见）
-                if (isAdmin) {
-                    item {
-                        Cell(
-                            title = strings.chatSettingsGroupManage,
-                            arrow = true,
-                            onClick = onGroupManageClick,
-                        )
+                    val groupRows = buildList {
+                        add(GroupRow.Name)
+                        add(GroupRow.QrCode)
+                        add(GroupRow.Members)
+                        add(GroupRow.Invite)
+                        if (isAdmin) add(GroupRow.Manage)
+                        if (isManager) add(GroupRow.Approval)
                     }
-                }
-
-                // 入群申请审批（P6-3；仅群主/管理员；服务端鉴权）
-                if (isManager) {
-                    item {
-                        Cell(
-                            title = strings.groupApprovalTitle,
-                            arrow = true,
-                            onClick = onGroupApprovalClick,
-                        )
+                    CellGroup(
+                        items = groupRows,
+                        modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.md),
+                    ) { row ->
+                        when (row) {
+                            GroupRow.Name -> Cell(
+                                title = strings.chatSettingsGroupName,
+                                // P6-1：收口到 GroupDisplay.titleOf（此前裸 channel.name 无 fallback，空群名显示空白）。
+                                description = com.netonstream.privchat.ui.models.GroupDisplay.titleOf(channel.name),
+                                // P6-3 上线要求：群改名尚未持久化（GROUP_SETTINGS_PERSISTENCE 未完成）→ 暂隐藏编辑入口，
+                                // 只读展示群名，避免用户改了 resync 后丢失的假成功。
+                                arrow = false,
+                            )
+                            GroupRow.QrCode -> Cell(
+                                title = strings.chatSettingsGroupQrCode,
+                                arrow = true,
+                                onClick = onGroupQrCodeClick,
+                            )
+                            GroupRow.Members -> Cell(
+                                title = strings.chatSettingsGroupMembers,
+                                description = "($groupMemberCount)",
+                                arrow = true,
+                                onClick = onGroupMembersClick,
+                            )
+                            GroupRow.Invite -> Cell(
+                                title = strings.groupInviteMembers,
+                                arrow = true,
+                                onClick = onGroupInviteClick,
+                            )
+                            GroupRow.Manage -> Cell(
+                                title = strings.chatSettingsGroupManage,
+                                arrow = true,
+                                onClick = onGroupManageClick,
+                            )
+                            GroupRow.Approval -> Cell(
+                                title = strings.groupApprovalTitle,
+                                arrow = true,
+                                onClick = onGroupApprovalClick,
+                            )
+                        }
                     }
                 }
 
@@ -306,49 +294,46 @@ fun ChatSettingsPage(
                 }
             }
 
-            // 通用设置
+            // 通用设置：一张卡片，开关行之间有分隔线。裸 Cell 在分组背景上是
+            // 一条条没有容器的白带，行与行之间只剩空白。
             item {
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-
-            // 消息免打扰
-            if (showMute) {
-                item {
-                    Cell(
-                        title = strings.chatSettingsMute,
-                        trailing = {
-                            Switch(
-                                checked = isMuted,
-                                onCheckedChange = { newValue ->
-                                    scope.launch {
-                                        onMuteChange(newValue).onSuccess {
-                                            isMuted = newValue
+                val generalRows = buildList {
+                    if (showMute) add(ChatSettingRow.Mute)
+                    add(ChatSettingRow.Pin)
+                }
+                CellGroup(
+                    items = generalRows,
+                    modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.md),
+                ) { row ->
+                    when (row) {
+                        ChatSettingRow.Mute -> Cell(
+                            title = strings.chatSettingsMute,
+                            trailing = {
+                                Switch(
+                                    checked = isMuted,
+                                    onCheckedChange = { newValue ->
+                                        scope.launch {
+                                            onMuteChange(newValue).onSuccess { isMuted = newValue }
                                         }
                                     }
-                                }
-                            )
-                        },
-                    )
-                }
-            }
-
-            // 置顶聊天
-            item {
-                Cell(
-                    title = strings.chatSettingsPin,
-                    trailing = {
-                        Switch(
-                            checked = isPinned,
-                            onCheckedChange = { newValue ->
-                                scope.launch {
-                                    onPinChange(newValue).onSuccess {
-                                        isPinned = newValue
-                                    }
-                                }
-                            }
+                                )
+                            },
                         )
-                    },
-                )
+                        ChatSettingRow.Pin -> Cell(
+                            title = strings.chatSettingsPin,
+                            trailing = {
+                                Switch(
+                                    checked = isPinned,
+                                    onCheckedChange = { newValue ->
+                                        scope.launch {
+                                            onPinChange(newValue).onSuccess { isPinned = newValue }
+                                        }
+                                    }
+                                )
+                            },
+                        )
+                    }
+                }
             }
 
             // 群聊特有操作
@@ -465,3 +450,9 @@ private fun SettingSwitchCell(
         },
     )
 }
+
+/** 通用设置卡片里的行，用来把开关行喂给 CellGroup。 */
+private enum class ChatSettingRow { Mute, Pin }
+
+/** 群设置卡片里的行。条件显隐先算成一个列表，再交给 CellGroup。 */
+private enum class GroupRow { Name, QrCode, Members, Invite, Manage, Approval }
