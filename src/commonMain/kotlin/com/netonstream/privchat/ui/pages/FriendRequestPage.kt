@@ -1,5 +1,11 @@
 package com.netonstream.privchat.ui.pages
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import com.tencent.kuikly.compose.foundation.interaction.collectIsPressedAsState
+import com.tencent.kuikly.compose.foundation.interaction.MutableInteractionSource
+import com.gearui.foundation.interaction.pressedSurfaceColor
+import com.gearui.primitives.SectionHeader
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.dto.FriendRequestEntry
 import com.netonstream.privchat.ui.PrivChat
@@ -134,7 +140,7 @@ private fun ReceivedTabContent(
 
     GearLazyColumn(modifier = Modifier.fillMaxSize()) {
         if (current.isNotEmpty()) {
-            item { SectionHeaderRow(title = Formatter.currentLocalMonthLabel()) }
+            item { SectionHeader(title = Formatter.currentLocalMonthLabel()) }
             items(current.size) { idx ->
                 val r = current[idx]
                 ReceivedRow(
@@ -147,7 +153,7 @@ private fun ReceivedTabContent(
             }
         }
         if (older.isNotEmpty()) {
-            item { SectionHeaderRow(title = strings.friendRequestSectionOlder) }
+            item { SectionHeader(title = strings.friendRequestSectionOlder) }
             items(older.size) { idx ->
                 val r = older[idx]
                 ReceivedRow(
@@ -187,11 +193,14 @@ private fun ReceivedRow(
 
     val isPending = request.status == STATUS_PENDING
 
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(colors.surface)
-            .clickable(onClick = onRowClick)
+            .background(pressedSurfaceColor(colors.surface, pressed))
+            .clickable(interactionSource = interaction, indication = null, onClick = onRowClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -304,11 +313,14 @@ private fun SentRow(
         " · ${Formatter.friendRequestRelativeShort(request.updatedAt)}"
     val isPending = request.status == STATUS_PENDING
 
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(colors.surface)
-            .clickable(onClick = onRowClick)
+            .background(pressedSurfaceColor(colors.surface, pressed))
+            .clickable(interactionSource = interaction, indication = null, onClick = onRowClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -354,23 +366,6 @@ private fun SentRow(
 // ---------------------------------------------------------------------------
 // Shared components & helpers
 // ---------------------------------------------------------------------------
-
-@Composable
-private fun SectionHeaderRow(title: String) {
-    val colors = Theme.colors
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.background)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-    ) {
-        Text(
-            text = title,
-            style = Theme.typography.label,
-            color = colors.mutedForeground,
-        )
-    }
-}
 
 private fun sourceLabel(source: String?, strings: PrivChatStrings): String {
     val key = source ?: return strings.friendRequestSourceUnknown

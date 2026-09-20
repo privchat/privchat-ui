@@ -6,6 +6,8 @@ import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.searchbar.SearchBar
 import com.gearui.components.cell.Cell
+import com.gearui.components.cellgroup.CellGroup
+import com.gearui.foundation.layout.Spacing
 import com.gearui.components.empty.EmptyState
 import com.gearui.components.dialog.DialogAction
 import com.gearui.components.dialog.DialogActionRole
@@ -142,39 +144,25 @@ fun SearchUserPage(
                 }
             }
         } else {
-            // 功能入口列表
+            // 功能入口：一张 CellGroup 卡片，分隔线、圆角、按压反馈都归它管。
+            // 之前是两个裸 Cell 用 Spacer 隔开，没有容器，看起来不像控件。
             GearLazyColumn(modifier = Modifier.fillMaxSize()) {
-                // 功能入口
                 item {
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-
-                // 扫一扫
-                item {
-                    Cell(
-                        title = strings.searchUserScan,
-                        arrow = true,
-                        onClick = onScanQrCode,
-                    )
-                }
-
-                // 分隔
-                item {
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-
-                // 我的二维码
-                item {
-                    Cell(
-                        title = strings.searchUserMyQrCode,
-                        arrow = true,
-                        onClick = onMyQrCode,
-                    )
-                }
-
-                // 底部间距
-                item {
-                    Spacer(modifier = Modifier.height(32.dp))
+                    CellGroup(
+                        items = listOf(
+                            strings.searchUserScan to onScanQrCode,
+                            strings.searchUserMyQrCode to onMyQrCode,
+                        ),
+                        // A grouped card is inset from the page edges; flush to them
+                        // its rounded corners have nothing to round against.
+                        modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.md),
+                    ) { (label, onClick) ->
+                        Cell(
+                            title = label,
+                            arrow = true,
+                            onClick = onClick,
+                        )
+                    }
                 }
             }
         }

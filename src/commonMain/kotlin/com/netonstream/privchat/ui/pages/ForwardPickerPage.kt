@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.pages
 
+import com.gearui.primitives.SectionHeader
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.dto.ChannelListEntry
 import com.netonstream.privchat.sdk.dto.FriendEntry
@@ -201,7 +202,7 @@ fun ForwardPickerPage(
             } else {
                 GearLazyColumn(modifier = Modifier.fillMaxSize()) {
                     if (filteredRecent.isNotEmpty()) {
-                        item { ForwardSectionHeader(strings.forwardSectionRecent) }
+                        item { SectionHeader(strings.forwardSectionRecent) }
                         items(filteredRecent.size) { i ->
                             val (target, hit) = filteredRecent[i]
                             ForwardTargetRow(
@@ -213,7 +214,7 @@ fun ForwardPickerPage(
                         }
                     }
                     if (filteredFriends.isNotEmpty()) {
-                        item { ForwardSectionHeader(strings.forwardSectionFriends) }
+                        item { SectionHeader(strings.forwardSectionFriends) }
                         items(filteredFriends.size) { i ->
                             val (target, hit) = filteredFriends[i]
                             ForwardTargetRow(
@@ -225,7 +226,7 @@ fun ForwardPickerPage(
                         }
                     }
                     if (filteredGroups.isNotEmpty()) {
-                        item { ForwardSectionHeader(strings.forwardSectionGroups) }
+                        item { SectionHeader(strings.forwardSectionGroups) }
                         items(filteredGroups.size) { i ->
                             val (target, hit) = filteredGroups[i]
                             ForwardTargetRow(
@@ -284,23 +285,6 @@ fun ForwardPickerPage(
             // 底部安全区占位（home indicator 等），与底栏同色，由 GearUI runtime 提供
             Spacer(modifier = Modifier.height(safeAreaBottom))
         }
-    }
-}
-
-@Composable
-private fun ForwardSectionHeader(title: String) {
-    val colors = Theme.colors
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.background)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-    ) {
-        Text(
-            text = title,
-            style = Theme.typography.titleSmall,
-            color = colors.foreground,
-        )
     }
 }
 

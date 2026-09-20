@@ -1,5 +1,9 @@
 package com.netonstream.privchat.ui.components
 
+import com.gearui.components.closebutton.CloseButton
+import com.tencent.kuikly.compose.foundation.interaction.collectIsPressedAsState
+import com.tencent.kuikly.compose.foundation.interaction.MutableInteractionSource
+import com.gearui.foundation.interaction.pressedSurfaceColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -253,16 +257,7 @@ private fun Header(
             .padding(horizontal = Spacing.lg, vertical = Spacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(colors.muted)
-                .clickable(onClick = onClose),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(name = Icons.caret_down, size = 18.dp, tint = colors.foreground)
-        }
+        CloseButton(onClick = onClose, icon = Icons.caret_down)
 
         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
             Text(
@@ -315,10 +310,13 @@ private fun LetterHeader(letter: String) {
 private fun MentionAllRow(onClick: () -> Unit) {
     val strings = PrivChatI18n.strings
     val colors = Theme.colors
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .background(pressedSurfaceColor(colors.surface, pressed))
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -349,10 +347,13 @@ private fun MemberRow(
     onClick: () -> Unit,
 ) {
     val name = member.displayName
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .background(pressedSurfaceColor(Theme.colors.surface, pressed))
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {

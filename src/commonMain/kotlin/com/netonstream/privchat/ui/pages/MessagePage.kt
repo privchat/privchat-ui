@@ -1,5 +1,8 @@
 package com.netonstream.privchat.ui.pages
 
+import com.gearui.foundation.interaction.PressableFeedback
+import com.gearui.components.link.LinkSize
+import com.gearui.components.link.LinkButton
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.ConnectionState
@@ -1850,7 +1853,7 @@ private fun PinnedMessagesBar(
         }
         if (canManage) {
             HorizontalSpacer(8.dp)
-            Box(modifier = Modifier.clickable(onClick = onUnpin)) {
+            PressableFeedback(onClick = onUnpin) {
                 Icon(name = Icons.x, size = IconSizes.Default.sm, tint = colors.mutedForeground)
             }
         }
@@ -2373,11 +2376,11 @@ private fun SystemMessageRow(
                     )
                     if (onReEdit != null) {
                         HorizontalSpacer(6.dp)
-                        Text(
+                        LinkButton(
                             text = strings.messageRevokedReEdit,
-                            style = Theme.typography.label,
+                            onClick = onReEdit,
+                            size = LinkSize.SMALL,
                             color = sys.link,
-                            modifier = Modifier.clickable(onClick = onReEdit),
                         )
                     }
                 }

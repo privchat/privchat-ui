@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.media
 
+import com.gearui.components.link.LinkButton
 import androidx.compose.runtime.*
 import com.gearui.components.navbar.NavBar
 import com.gearui.foundation.primitives.Text
@@ -183,19 +184,19 @@ fun AvatarCropPage(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
+            LinkButton(
                 text = strings.cancel,
+                onClick = onCancel,
+                enabled = !uploading,
                 color = Color.White,
-                style = Theme.typography.bodyMedium,
-                modifier = Modifier.clickable(enabled = !uploading) { onCancel() },
             )
-            Text(
+            LinkButton(
                 text = if (uploading) strings.avatarCropUploading else strings.avatarCropConfirm,
-                color = if (uploading) Color.Gray else Theme.colors.primary,
-                style = Theme.typography.bodyMedium,
-                modifier = Modifier.clickable(enabled = !uploading) {
+                onClick = {
                     onConfirm(computeCropRect(scale, offsetX, offsetY, framePx, srcPxW, srcPxH))
                 },
+                enabled = !uploading,
+                color = if (uploading) Color.Gray else Theme.colors.primary,
             )
         }
         Spacer(modifier = Modifier.height(safeArea.bottom))

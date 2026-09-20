@@ -1,5 +1,10 @@
 package com.netonstream.privchat.ui.pages
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import com.tencent.kuikly.compose.foundation.interaction.collectIsPressedAsState
+import com.tencent.kuikly.compose.foundation.interaction.MutableInteractionSource
+import com.gearui.foundation.interaction.pressedSurfaceColor
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.dto.ChannelListEntry
 import com.netonstream.privchat.sdk.dto.GroupSettingsUpdateInput
@@ -356,11 +361,17 @@ fun ChatSettingsPage(
                 // 退出群聊：群主不可直接退出（须先转让群主或解散群——后续 Phase B 实现）
                 item {
                     val leaveEnabled = !isOwner
+                    val leaveInteraction = remember { MutableInteractionSource() }
+                    val leavePressed by leaveInteraction.collectIsPressedAsState()
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(colors.surface)
-                            .clickable(enabled = leaveEnabled) { showLeaveConfirmDialog = true }
+                            .background(pressedSurfaceColor(colors.surface, leavePressed))
+                            .clickable(
+                                enabled = leaveEnabled,
+                                interactionSource = leaveInteraction,
+                                indication = null,
+                            ) { showLeaveConfirmDialog = true }
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.Center
                     ) {

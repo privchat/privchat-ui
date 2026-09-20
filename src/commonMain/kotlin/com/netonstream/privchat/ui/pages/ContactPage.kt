@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.pages
 
+import com.gearui.primitives.SectionHeader
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.dto.FriendEntry
 import com.netonstream.privchat.sdk.dto.GroupEntry
@@ -327,23 +328,6 @@ private fun ContactEntryIcon(icon: String) {
         contentAlignment = Alignment.Center,
     ) {
         Icon(name = icon, size = 18.dp, tint = colors.primaryForeground)
-    }
-}
-
-@Composable
-private fun SectionHeader(title: String) {
-    val colors = Theme.colors
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.background)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-    ) {
-        Text(
-            text = title,
-            style = Theme.typography.titleSmall,
-            color = colors.foreground,
-        )
     }
 }
 

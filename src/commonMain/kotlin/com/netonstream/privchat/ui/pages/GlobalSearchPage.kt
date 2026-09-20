@@ -1,5 +1,12 @@
 package com.netonstream.privchat.ui.pages
 
+import com.gearui.components.link.LinkButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import com.tencent.kuikly.compose.foundation.interaction.collectIsPressedAsState
+import com.tencent.kuikly.compose.foundation.interaction.MutableInteractionSource
+import com.gearui.foundation.interaction.pressedSurfaceColor
+import com.gearui.primitives.SectionHeader
 import androidx.compose.runtime.*
 import com.gearui.components.cell.Cell
 import com.gearui.components.empty.EmptyState
@@ -233,7 +240,7 @@ fun GlobalSearchPage(
 
             GearLazyColumn(modifier = Modifier.fillMaxSize()) {
                 if (showContacts) {
-                    item { SearchSectionHeader(strings.globalSearchSectionContacts) }
+                    item { SectionHeader(strings.globalSearchSectionContacts) }
                     items(visibleContacts.size) { i ->
                         val (f, hit) = visibleContacts[i]
                         val display = f.remark?.takeIf { it.isNotBlank() }
@@ -283,7 +290,7 @@ fun GlobalSearchPage(
                     }
                 }
                 if (showGroups) {
-                    item { SearchSectionHeader(strings.globalSearchSectionGroups) }
+                    item { SectionHeader(strings.globalSearchSectionGroups) }
                     items(visibleGroups.size) { i ->
                         val (ch, hit) = visibleGroups[i]
                         Cell(
@@ -304,7 +311,7 @@ fun GlobalSearchPage(
                     }
                 }
                 if (showMessages) {
-                    item { SearchSectionHeader(strings.globalSearchSectionMessages) }
+                    item { SectionHeader(strings.globalSearchSectionMessages) }
                     if (effectiveScopeId == null) {
                         // 全局态：按会话聚合（微信式）——会话头像 + 名称 + N条相关的聊天记录。
                         // 计数基于已拉取页；还有下一页时用「N+」表示下界，不冒充精确值。
@@ -377,12 +384,13 @@ fun GlobalSearchPage(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 12.dp)
-                                    .clickable(onClick = { loadMore() }),
+                                    .padding(vertical = 12.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Text(
+                                LinkButton(
                                     text = if (isLoadingMore) strings.loading else strings.globalSearchLoadMore,
+                                    onClick = { loadMore() },
+                                    enabled = !isLoadingMore,
                                     color = colors.mutedForeground,
                                 )
                             }
@@ -395,15 +403,6 @@ fun GlobalSearchPage(
     }
 }
 
-@Composable
-private fun SearchSectionHeader(title: String) {
-    Text(
-        text = title,
-        color = Theme.colors.mutedForeground,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-    )
-}
-
 /** 消息命中行：会话名 + snippet（第一段命中用主题色，三段拆分，单行省略） */
 @Composable
 private fun MessageHitRow(
@@ -412,10 +411,13 @@ private fun MessageHitRow(
     onClick: () -> Unit,
 ) {
     val colors = Theme.colors
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .background(pressedSurfaceColor(colors.background, pressed))
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp),
     ) {
         Text(text = channelName, color = colors.foreground)
@@ -463,10 +465,13 @@ private fun ScopedMessageHitRow(
     onClick: () -> Unit,
 ) {
     val colors = Theme.colors
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .background(pressedSurfaceColor(colors.background, pressed))
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
