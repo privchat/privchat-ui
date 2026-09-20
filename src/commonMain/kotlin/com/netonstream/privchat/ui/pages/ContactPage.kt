@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.pages
 
+import com.gearui.components.tabs.TabPager
 import com.gearui.foundation.list.CellDefaults
 import com.gearui.primitives.Divider
 import com.gearui.foundation.layout.Spacing
@@ -33,7 +34,6 @@ import com.gearui.components.empty.EmptyState
 import com.gearui.components.searchbar.SearchBar
 import com.gearui.components.tabs.Tab
 import com.gearui.components.tabs.Tabs
-import com.gearui.components.tabs.TabsOutlineType
 import com.gearui.components.tabs.TabsSize
 import com.gearui.foundation.primitives.Icon
 import com.tencent.kuikly.compose.foundation.background
@@ -123,24 +123,35 @@ fun ContactPage(
                 searchQuery = ""
             },
             size = TabsSize.MEDIUM,
-            outlineType = TabsOutlineType.UNDERLINE,
-            showDivider = true,
+            modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm),
         )
 
-        when (selectedTab) {
-            CONTACT_TAB_FRIENDS -> FriendsTabContent(
-                friends = friends,
-                presences = presences,
-                friendRequestCount = pendingReceivedCount,
-                searchQuery = searchQuery,
-                onFriendClick = onFriendClick,
-                onFriendRequestClick = onFriendRequestClick,
-            )
-            CONTACT_TAB_GROUPS -> GroupsTabContent(
-                groups = groups,
-                searchQuery = searchQuery,
-                onGroupClick = onGroupClick,
-            )
+        // 两个 tab 是两页，手指可以直接横扫过去；点 tab 和滑动共用同一个选中态。
+        val tabIds = listOf(CONTACT_TAB_FRIENDS, CONTACT_TAB_GROUPS)
+        TabPager(
+            count = tabIds.size,
+            selectedIndex = tabIds.indexOf(selectedTab).coerceAtLeast(0),
+            onSelectedIndexChange = { index ->
+                selectedTab = tabIds[index]
+                searchQuery = ""
+            },
+            modifier = Modifier.weight(1f),
+        ) { page ->
+            when (tabIds[page]) {
+                CONTACT_TAB_FRIENDS -> FriendsTabContent(
+                    friends = friends,
+                    presences = presences,
+                    friendRequestCount = pendingReceivedCount,
+                    searchQuery = searchQuery,
+                    onFriendClick = onFriendClick,
+                    onFriendRequestClick = onFriendRequestClick,
+                )
+                CONTACT_TAB_GROUPS -> GroupsTabContent(
+                    groups = groups,
+                    searchQuery = searchQuery,
+                    onGroupClick = onGroupClick,
+                )
+            }
         }
     }
 }
