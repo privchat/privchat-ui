@@ -1,5 +1,9 @@
 package com.netonstream.privchat.ui.pages
 
+import com.gearui.primitives.SectionHeader
+import com.gearui.foundation.list.CellDefaults
+import com.gearui.foundation.layout.Spacing
+import com.gearui.components.cellgroup.CellGroup
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.dto.FriendEntry
 import com.netonstream.privchat.ui.components.ChatAvatar
@@ -108,20 +112,15 @@ fun GroupCreatePage(
         )
 
         // 群名输入 + 搜索栏 + 计数提示，三段固定在列表上方
-        Column(
+        Input(
+            value = groupName,
+            onValueChange = { groupName = it },
+            placeholder = strings.groupCreateNamePlaceholder,
+            size = InputSize.LARGE,
             modifier = Modifier
                 .fillMaxWidth()
-                .background(colors.surface)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-        ) {
-            Input(
-                value = groupName,
-                onValueChange = { groupName = it },
-                placeholder = strings.groupCreateNamePlaceholder,
-                size = InputSize.LARGE,
-            )
-        }
-        Spacer(modifier = Modifier.height(8.dp))
+                .padding(horizontal = Spacing.lg, vertical = Spacing.md),
+        )
         SearchBar(
             value = searchQuery,
             onValueChange = { searchQuery = it },
@@ -132,18 +131,9 @@ fun GroupCreatePage(
                 .padding(horizontal = 16.dp, vertical = 4.dp),
         )
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = strings.groupPickerSelectedCount.withArgs(selected.size, GROUP_INVITE_BATCH_LIMIT),
-                style = Theme.typography.bodySmall,
-                color = colors.mutedForeground,
-            )
-        }
+        SectionHeader(
+            title = strings.groupPickerSelectedCount.withArgs(selected.size, GROUP_INVITE_BATCH_LIMIT),
+        )
 
         if (filtered.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -154,8 +144,12 @@ fun GroupCreatePage(
             }
         } else {
             GearLazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(filtered.size) { idx ->
-                    val friend = filtered[idx]
+                item {
+                CellGroup(
+                    items = filtered,
+                    modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm),
+                    separatorInset = FRIEND_PICKER_SEPARATOR_INSET,
+                ) { friend ->
                     val isSelected = selected.containsKey(friend.userId)
                     val atLimit = selected.size >= GROUP_INVITE_BATCH_LIMIT && !isSelected
                     val hit = hitByUser[friend.userId]
@@ -205,7 +199,13 @@ fun GroupCreatePage(
                         },
                     )
                 }
+                }
             }
         }
     }
 }
+
+/** 选人行的分隔线缩进：跳过选择点和头像，从名字起点开始。 */
+private val FRIEND_PICKER_SEPARATOR_INSET =
+    CellDefaults.Default.paddingHorizontal + 22.dp + 10.dp +
+        AvatarSizeTokens.Small.size + Spacing.md

@@ -307,6 +307,26 @@ object ClientRuntime {
         )
     }
 
+    /**
+     * 一次 RPC 报告会话不可用（`SdkError.SessionNotReady`）。
+     *
+     * 存在的理由：横幅的判定表里 `authenticated` 为真就直接隐藏，而 `authenticated`
+     * 只由 SDK 的 `connection_state_changed` 翻面。设备断网时 socket 收不到 FIN，
+     * SDK 要等心跳超时才判定断开——在那之前 app 自认为「已认证」，横幅什么都不显示，
+     * 可同一时刻发出去的每个请求都以 SessionNotReady 失败。用户看到的就是「顶上没有
+     * 任何提示，点创建群却说连接尚未就绪」。
+     *
+     * 一次失败的 RPC 是**正向证据**：这条会话此刻发不出东西。它和宿主 reachability
+     * 镜像不是一回事——镜像会永久卡在 unreachable 而导致「一边收消息一边提示断网」，
+     * 那个反向 bug 正是 `authenticated` 优先级前置要防的。这里只在真有请求失败时置位，
+     * 之后任何一次 `connection_state_changed → authenticated` 都会把它重新翻回来。
+     */
+    fun onSessionNotReady() {
+        val cur = _connectivity.value
+        if (!cur.authenticated) return
+        _connectivity.value = cur.copy(authenticated = false)
+    }
+
     /** `forced_logout` / token 终态失效。 */
     fun onAuthExpired() {
         _connectivity.value = _connectivity.value.copy(

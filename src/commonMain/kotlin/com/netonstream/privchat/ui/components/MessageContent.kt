@@ -189,46 +189,13 @@ fun MessageContent(
             MessageType.UNKNOWN -> UnknownContent(textColor)
         }
 
-        // 消息时间和状态（系统消息 + 资金卡片除外）。资金卡片由服务端注入天然是 Sent 态，
-        // 不显示「发送中/发送失败」，也不在卡片下压时间/状态行——保持独立卡片的干净视觉。
-        if (parsed.type != MessageType.SYSTEM && !isMoneyCard) {
-            VerticalSpacer(4.dp)
-            // 图片/视频：footer 宽度对齐图片外框（与 ImageContent/VideoContent 同一 attachmentBubbleSize），
-            // 时间/状态贴着图片右下角，不再被 fillMaxWidth 推到屏幕边。
-            val mediaWidthDp = when (parsed.type) {
-                MessageType.IMAGE -> imageBubbleSize?.first
-                MessageType.VIDEO ->
-                    attachmentBubbleSize(parsed.width, parsed.height).first
-                // 🔴 语音也要给定宽。footer 默认 fillMaxWidth，会把气泡撑到可用最大宽度——
-                // 于是 1" 和 5" 的语音条一样长，改气泡里那点内容宽度根本看不出来。
-                MessageType.VOICE -> voiceBubbleWidthDp(parsed.duration ?: 0)
-                else -> null
-            }
-            // 上传进度按**本地消息 id** 取：SDK 发进度时带的就是它。
-            val uploads = com.netonstream.privchat.ui.runtime.ClientRuntime.uploads
-                .collectAsState().value
-            val uploadPercent = uploads
-                .fractionOf(message.id.toString())
-                ?.let { (it * 100).toInt().coerceIn(0, 100) }
-            // 百分比之外再给字节量：光看 "37%" 判断不了是卡住了还是文件本来就大，
-            // "2.1MB / 5.6MB" 一眼能看出还剩多少、走没走动。
-            val uploadBytes = uploads.inFlight[message.id.toString()]
-                ?.let { (sent, total) -> "${humanBytes(sent)} / ${humanBytes(total)}" }
-            MessageFooter(
-                modifier = Modifier.align(Alignment.End),
-                timestamp = message.timestamp,
-                status = message.status,
-                isSelf = isSelf,
-                secondaryTextColor = secondaryTextColor,
-                messagePts = message.pts,
-                peerReadPts = peerReadPts,
-                delivered = message.delivered,
-                onFailedClick = onFailedClick,
-                mediaWidthDp = mediaWidthDp,
-                uploadPercent = uploadPercent,
-                uploadBytes = uploadBytes,
-            )
-        } else if (isMoneyCard) {
+        // 时间和发送状态不在气泡里。
+        //
+        // 时间归日期分隔行管（微信式），气泡里再压一行「21:19」是同一件事说两遍，
+        // 而且它把每个气泡都撑宽到至少放得下时间戳。发送状态挪到气泡外侧，由
+        // MessageRow 摆在气泡旁边——语音气泡早就是这么做的，现在文字气泡一致。
+        if (isMoneyCard) {
+
             // 资金卡片：只显示时间，不显示发送中/发送失败/已读状态（服务端注入天然 Sent）。
             VerticalSpacer(4.dp)
             Row(
@@ -1387,60 +1354,43 @@ private fun MoneyCardScaffold(
 }
 
 /**
- * 消息底部（时间 + 状态）
+ * 一条自己发的消息的发送状态，摆在气泡**外面**。
+ *
+ * 气泡里放不下它：状态和正文共处一格时，气泡的宽度要同时迁就两者，一个表情的气泡
+ * 会被「✓✓ 已读」撑成一条；而媒体气泡整块可点，点在状态上不播放，看着像点不动。
+ * 语音气泡一直是把它放在外面的，现在所有气泡一致。
+ *
+ * 上传进度也在这里：大文件在弱网下「发送中」会停留几分钟，没有数字在动，用户会
+ * 长按重发，把已经传上去的部分全丢掉。
  */
 @Composable
-private fun MessageFooter(
-    timestamp: ULong,
-    status: MessageStatus,
-    isSelf: Boolean,
-    secondaryTextColor: Color,
-    messagePts: ULong? = null,
-    peerReadPts: ULong? = null,
-    delivered: Boolean = false,
+internal fun MessageSendStatus(
+    message: MessageEntry,
+    peerReadPts: ULong?,
+    color: Color,
     onFailedClick: (() -> Unit)? = null,
-    // 媒体（图片/视频/语音）气泡：footer 宽度对齐内容外框宽度（dp），时间/状态右对齐到
-    // 内容右边缘。null = 文本等普通气泡，宽度随内容。
-    mediaWidthDp: Int? = null,
-    modifier: Modifier = Modifier,
-    uploadPercent: Int? = null,
-    uploadBytes: String? = null,
 ) {
-    Row(
-        // 🔴 不要 fillMaxWidth。它会把气泡撑到可用的最大宽度——一个表情的气泡和一条长文
-        // 一样宽，时间戳孤零零地挂在右边老远。右对齐交给调用方的 `Modifier.align(End)`，
-        // 气泡宽度则回到「由内容决定」。
-        // 🔴 是 widthIn(min=)，不是 width()。固定宽度对图片够用（图片总比时间戳宽），
-        // 对语音不够：一条 1" 的语音气泡只有 70dp 出头，而「21:19 ✓✓ 已发送」放不下，
-        // 于是状态文字被挤得换行。这里只保证**不窄于**内容外框，右边缘仍然对齐。
-        modifier = (if (mediaWidthDp != null) Modifier.widthIn(min = mediaWidthDp.dp) else Modifier)
-            .then(modifier),
-        horizontalArrangement = Arrangement.End,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // 时间
-        Text(
-            text = Formatter.messageTime(timestamp),
-            style = Theme.typography.label,
-            color = secondaryTextColor,
-        )
-
-        // 发送状态（仅自己的消息显示）
-        if (isSelf) {
-            HorizontalSpacer(4.dp)
-            // 已读投影：message.pts <= peerReadPts 时视为已读（优先级最高）
-            val isReadByPts = messagePts != null && peerReadPts != null && messagePts <= peerReadPts
-            MessageStatusIcon(
-                status = status,
-                color = secondaryTextColor,
-                isReadByPts = isReadByPts,
-                delivered = delivered,
-                onFailedClick = onFailedClick,
-                uploadPercent = uploadPercent,
-                uploadBytes = uploadBytes,
-            )
-        }
-    }
+    // 上传进度按**本地消息 id** 取：SDK 发进度时带的就是它。
+    val uploads = com.netonstream.privchat.ui.runtime.ClientRuntime.uploads
+        .collectAsState().value
+    val uploadPercent = uploads
+        .fractionOf(message.id.toString())
+        ?.let { (it * 100).toInt().coerceIn(0, 100) }
+    // 百分比之外再给字节量："37%" 判断不了是卡住了还是文件本来就大。
+    val uploadBytes = uploads.inFlight[message.id.toString()]
+        ?.let { (sent, total) -> "${humanBytes(sent)} / ${humanBytes(total)}" }
+    // 已读投影：message.pts <= peerReadPts 时视为已读（优先级最高）
+    val messagePts = message.pts
+    val isReadByPts = messagePts != null && peerReadPts != null && messagePts <= peerReadPts
+    MessageStatusIcon(
+        status = message.status,
+        color = color,
+        isReadByPts = isReadByPts,
+        delivered = message.delivered,
+        onFailedClick = onFailedClick,
+        uploadPercent = uploadPercent,
+        uploadBytes = uploadBytes,
+    )
 }
 
 /**

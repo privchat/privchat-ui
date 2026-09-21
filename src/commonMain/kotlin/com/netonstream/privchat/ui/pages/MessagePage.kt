@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.pages
 
+import com.netonstream.privchat.ui.components.MessageSendStatus
 import com.gearui.foundation.interaction.PressableFeedback
 import com.gearui.components.link.LinkSize
 import com.gearui.components.link.LinkButton
@@ -2235,6 +2236,18 @@ private fun MessageRow(
                 isSelf -> colors.messageBubbleSelf
                 else -> colors.messageBubbleOther
             }
+            // 发送状态摆在气泡**外面**，贴着气泡底边。气泡里只剩内容，宽度回到由内容
+            // 决定；状态在左侧（自己发的消息靠右，状态自然落在气泡和屏幕中间那侧）。
+            Row(verticalAlignment = Alignment.Bottom) {
+            if (isSelf && !isMoneyCard) {
+                MessageSendStatus(
+                    message = message,
+                    peerReadPts = peerReadPts,
+                    color = colors.mutedForeground,
+                    onFailedClick = onFailedClick,
+                )
+                HorizontalSpacer(4.dp)
+            }
             MessageActionsWrapper(
                 message = message,
                 isSelf = isSelf,
@@ -2289,6 +2302,7 @@ private fun MessageRow(
                         )
                     }
                 }
+            }
             }
             if (reactions.isNotEmpty()) {
                 VerticalSpacer(4.dp)

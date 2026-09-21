@@ -44,7 +44,13 @@ object UserFacingError {
      * 只进日志，绝不上屏。
      */
     private fun typedMessage(throwable: Throwable?): String? = when (throwable) {
-        is SdkError.SessionNotReady -> PrivChatI18n.current.connectionNotReady
+        is SdkError.SessionNotReady -> {
+            // 每个要上屏的 SDK 失败都经过这里，所以这是唯一一处能看见「会话此刻不可用」
+            // 的地方。见 ClientRuntime.onSessionNotReady：不通知的话，顶部横幅会在
+            // SDK 心跳超时之前一直认为连接还活着，什么都不提示。
+            com.netonstream.privchat.ui.runtime.ClientRuntime.onSessionNotReady()
+            PrivChatI18n.current.connectionNotReady
+        }
         is SdkError.AttachmentSourceMissing -> PrivChatI18n.current.messageAttachmentSourceMissing
         else -> null
     }
