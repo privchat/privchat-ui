@@ -14,7 +14,7 @@ import com.gearui.components.button.ButtonType
 import com.gearui.components.button.ButtonTheme
 import com.gearui.components.button.ButtonSize
 import com.gearui.components.cell.Cell
-import com.gearui.components.input.Input
+import com.gearui.components.textarea.Textarea
 import com.gearui.components.dialog.DialogAction
 import com.gearui.components.dialog.DialogActionRole
 import com.gearui.components.dialog.Dialog
@@ -44,6 +44,9 @@ import kotlinx.coroutines.launch
  * @param onAddFriend 添加好友回调，接收申请理由
  * @param modifier Modifier
  */
+/** 好友申请附言的长度上限；与个人签名一致，避免各处各定一套。 */
+private const val FRIEND_REQUEST_MESSAGE_MAX_LENGTH = 200
+
 @Composable
 fun UserProfilePage(
     user: UserEntry,
@@ -284,14 +287,17 @@ fun UserProfilePage(
         DialogContent(
             title = strings.friendRequestInputTitle,
             content = {
-                Input(
+                // 多行输入用 Textarea，不是把单行 Input 撑高：撑高的单行框会把占位符
+                // 和正文垂直居中在框的正中间（Android 真机截图已复现）。高度交给
+                // minLines，不写死 dp；长度上限与签名页一致，并显示计数。
+                Textarea(
                     value = remarkInput,
                     onValueChange = { remarkInput = it },
                     placeholder = strings.friendRequestInputPlaceholder,
-                    maxLines = 3,
-                    // 🔴 多行 Input 的高度由调用方给（组件有意不自己定，见 Input.kt）。
-                    // 不给的话它会占满可用高度，把整个弹窗撑成全屏、按钮挤出屏幕外。
-                    modifier = Modifier.fillMaxWidth().height(88.dp)
+                    minLines = 3,
+                    maxLength = FRIEND_REQUEST_MESSAGE_MAX_LENGTH,
+                    indicator = true,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             },
             actions = listOf(
