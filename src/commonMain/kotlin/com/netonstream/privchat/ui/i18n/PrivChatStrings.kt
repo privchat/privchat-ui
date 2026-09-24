@@ -586,6 +586,8 @@ data class PrivChatStrings(
     val loginRegisterButton: String get() = dAuxiliary.loginRegisterButton
     val loginToRegister: String get() = dAuxiliary.loginToRegister
     val loginToLogin: String get() = dAuxiliary.loginToLogin
+    val loginAgreementPrefix: String get() = dAuxiliary.loginAgreementPrefix
+    val loginAgreementAnd: String get() = dAuxiliary.loginAgreementAnd
     // P4 运行时状态条（CLIENT_GLOBAL_STATE §17）
     val bannerConnecting: String get() = dAuxiliary.bannerConnecting
     val bannerDisconnected: String get() = dAuxiliary.bannerDisconnected

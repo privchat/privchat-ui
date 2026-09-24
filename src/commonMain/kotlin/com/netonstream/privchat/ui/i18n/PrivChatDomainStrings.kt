@@ -2039,6 +2039,8 @@ data class PrivChatAuxiliaryStrings(
     val loginRegisterButton: String,
     val loginToRegister: String,
     val loginToLogin: String,
+    val loginAgreementPrefix: String,
+    val loginAgreementAnd: String,
     // P4 运行时状态条（CLIENT_GLOBAL_STATE §17）
     val bannerConnecting: String,
     val bannerDisconnected: String,
@@ -2210,6 +2212,8 @@ data class PrivChatAuxiliaryStringsPatch(
     val loginRegisterButton: String? = null,
     val loginToRegister: String? = null,
     val loginToLogin: String? = null,
+    val loginAgreementPrefix: String? = null,
+    val loginAgreementAnd: String? = null,
     val bannerConnecting: String? = null,
     val bannerDisconnected: String? = null,
     val bannerConnected: String? = null,
@@ -2344,6 +2348,8 @@ val PrivChatAuxiliaryStringsPatch.isEmpty: Boolean
         loginRegisterButton == null &&
         loginToRegister == null &&
         loginToLogin == null &&
+        loginAgreementPrefix == null &&
+        loginAgreementAnd == null &&
         bannerConnecting == null &&
         bannerDisconnected == null &&
         bannerConnected == null &&
@@ -2494,6 +2500,8 @@ fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivC
         loginRegisterButton = patch.loginRegisterButton ?: loginRegisterButton,
         loginToRegister = patch.loginToRegister ?: loginToRegister,
         loginToLogin = patch.loginToLogin ?: loginToLogin,
+        loginAgreementPrefix = patch.loginAgreementPrefix ?: loginAgreementPrefix,
+        loginAgreementAnd = patch.loginAgreementAnd ?: loginAgreementAnd,
         bannerConnecting = patch.bannerConnecting ?: bannerConnecting,
         bannerDisconnected = patch.bannerDisconnected ?: bannerDisconnected,
         bannerConnected = patch.bannerConnected ?: bannerConnected,
