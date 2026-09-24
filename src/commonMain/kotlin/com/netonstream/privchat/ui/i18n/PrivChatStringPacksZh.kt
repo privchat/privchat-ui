@@ -558,6 +558,7 @@ internal val zhAuxiliary = PrivChatAuxiliaryStrings(
     switchAccountFailed = "切换账号失败，请稍后重试",
     logoutFailed = "退出登录失败，请稍后重试",
     loginFailed = "登录失败，请稍后重试",
+    loginFailedTitle = "登录失败",
     friendRequestAcceptFailed = "接受好友请求失败，请稍后重试",
     friendRequestDeclineFailed = "拒绝好友请求失败，请稍后重试",
     messageRecallFailed = "撤回消息失败，请稍后重试",

@@ -1975,6 +1975,7 @@ data class PrivChatAuxiliaryStrings(
     val switchAccountFailed: String,
     val logoutFailed: String,
     val loginFailed: String,
+    val loginFailedTitle: String,
     val friendRequestAcceptFailed: String,
     val friendRequestDeclineFailed: String,
     val messageRecallFailed: String,
@@ -2148,6 +2149,7 @@ data class PrivChatAuxiliaryStringsPatch(
     val switchAccountFailed: String? = null,
     val logoutFailed: String? = null,
     val loginFailed: String? = null,
+    val loginFailedTitle: String? = null,
     val friendRequestAcceptFailed: String? = null,
     val friendRequestDeclineFailed: String? = null,
     val messageRecallFailed: String? = null,
@@ -2284,6 +2286,7 @@ val PrivChatAuxiliaryStringsPatch.isEmpty: Boolean
         switchAccountFailed == null &&
         logoutFailed == null &&
         loginFailed == null &&
+        loginFailedTitle == null &&
         friendRequestAcceptFailed == null &&
         friendRequestDeclineFailed == null &&
         messageRecallFailed == null &&
@@ -2436,6 +2439,7 @@ fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivC
         switchAccountFailed = patch.switchAccountFailed ?: switchAccountFailed,
         logoutFailed = patch.logoutFailed ?: logoutFailed,
         loginFailed = patch.loginFailed ?: loginFailed,
+        loginFailedTitle = patch.loginFailedTitle ?: loginFailedTitle,
         friendRequestAcceptFailed = patch.friendRequestAcceptFailed ?: friendRequestAcceptFailed,
         friendRequestDeclineFailed = patch.friendRequestDeclineFailed ?: friendRequestDeclineFailed,
         messageRecallFailed = patch.messageRecallFailed ?: messageRecallFailed,

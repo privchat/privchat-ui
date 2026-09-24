@@ -522,6 +522,7 @@ data class PrivChatStrings(
     val switchAccountFailed: String get() = dAuxiliary.switchAccountFailed
     val logoutFailed: String get() = dAuxiliary.logoutFailed
     val loginFailed: String get() = dAuxiliary.loginFailed
+    val loginFailedTitle: String get() = dAuxiliary.loginFailedTitle
     val friendRequestAcceptFailed: String get() = dAuxiliary.friendRequestAcceptFailed
     val friendRequestDeclineFailed: String get() = dAuxiliary.friendRequestDeclineFailed
     val messageRecallFailed: String get() = dAuxiliary.messageRecallFailed

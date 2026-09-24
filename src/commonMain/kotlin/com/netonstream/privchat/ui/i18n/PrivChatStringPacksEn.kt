@@ -556,6 +556,7 @@ internal val enAuxiliary = PrivChatAuxiliaryStrings(
     switchAccountFailed = "Failed to switch account. Please try again later.",
     logoutFailed = "Logout failed. Please try again later.",
     loginFailed = "Login failed. Please try again later.",
+    loginFailedTitle = "Sign-in failed",
     friendRequestAcceptFailed = "Failed to accept the friend request. Please try again later.",
     friendRequestDeclineFailed = "Failed to decline the friend request. Please try again later.",
     messageRecallFailed = "Failed to recall the message. Please try again later.",

@@ -556,6 +556,7 @@ internal val viAuxiliary = PrivChatAuxiliaryStrings(
     switchAccountFailed = "Chuyển tài khoản thất bại, vui lòng thử lại sau",
     logoutFailed = "Đăng xuất thất bại, vui lòng thử lại sau",
     loginFailed = "Đăng nhập thất bại, vui lòng thử lại sau",
+    loginFailedTitle = "Đăng nhập thất bại",
     friendRequestAcceptFailed = "Chấp nhận lời mời kết bạn thất bại, vui lòng thử lại sau",
     friendRequestDeclineFailed = "Từ chối lời mời kết bạn thất bại, vui lòng thử lại sau",
     messageRecallFailed = "Thu hồi tin nhắn thất bại, vui lòng thử lại sau",

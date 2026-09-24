@@ -556,6 +556,7 @@ internal val hantAuxiliary = PrivChatAuxiliaryStrings(
     switchAccountFailed = "切換帳號失敗，請稍後再試",
     logoutFailed = "登出失敗，請稍後再試",
     loginFailed = "登入失敗，請稍後再試",
+    loginFailedTitle = "登入失敗",
     friendRequestAcceptFailed = "接受好友請求失敗，請稍後再試",
     friendRequestDeclineFailed = "拒絕好友請求失敗，請稍後再試",
     messageRecallFailed = "撤回訊息失敗，請稍後再試",
