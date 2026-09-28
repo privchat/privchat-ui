@@ -33,8 +33,8 @@ import kotlinx.coroutines.launch
  * @param onBack 返回回调
  * @param onSearch 搜索回调，返回搜索结果
  * @param onUserFound 找到用户后的回调，传入第一个找到的用户
- * @param onScanQrCode 扫一扫回调
- * @param onMyQrCode 我的二维码回调
+ * @param onScanQrCode 扫一扫回调；为 null 时不显示该入口（宿主没有扫码能力）
+ * @param onMyQrCode 我的二维码回调；为 null 时不显示该入口
  * @param modifier Modifier
  */
 @Composable
@@ -42,8 +42,8 @@ fun SearchUserPage(
     onBack: () -> Unit,
     onSearch: suspend (String) -> Result<List<UserEntry>>,
     onUserFound: (UserEntry) -> Unit,
-    onScanQrCode: () -> Unit,
-    onMyQrCode: () -> Unit,
+    onScanQrCode: (() -> Unit)? = null,
+    onMyQrCode: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val strings = PrivChatI18n.strings
@@ -146,13 +146,15 @@ fun SearchUserPage(
         } else {
             // 功能入口：一张 CellGroup 卡片，分隔线、圆角、按压反馈都归它管。
             // 之前是两个裸 Cell 用 Spacer 隔开，没有容器，看起来不像控件。
-            GearLazyColumn(modifier = Modifier.fillMaxSize()) {
+            // 宿主没提供的入口不画：给一个点了没反应的行，比没有这一行更糟。
+            val entries = listOfNotNull(
+                onScanQrCode?.let { strings.searchUserScan to it },
+                onMyQrCode?.let { strings.searchUserMyQrCode to it },
+            )
+            if (entries.isNotEmpty()) GearLazyColumn(modifier = Modifier.fillMaxSize()) {
                 item {
                     CellGroup(
-                        items = listOf(
-                            strings.searchUserScan to onScanQrCode,
-                            strings.searchUserMyQrCode to onMyQrCode,
-                        ),
+                        items = entries,
                         // A grouped card is inset from the page edges; flush to them
                         // its rounded corners have nothing to round against.
                         modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.md),
