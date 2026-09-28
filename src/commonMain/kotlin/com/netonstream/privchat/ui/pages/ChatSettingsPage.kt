@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.pages
 
+import com.gearui.foundation.field.FieldDescription
 import com.gearui.foundation.layout.Spacing
 import com.gearui.components.cellgroup.CellGroup
 import androidx.compose.runtime.getValue
@@ -201,98 +202,68 @@ fun ChatSettingsPage(
                     }
                 }
 
-                // 群管理设置（仅群主/管理员可见可改；服务端鉴权）。
+                // 群管理设置（仅群主/管理员可见可改；服务端鉴权）：一张带标题的卡片，
+                // 不是夹在两张卡片之间的一串通栏白条。
                 if (isManager) {
-                    item { Spacer(modifier = Modifier.height(12.dp)) }
                     item {
-                        Text(
-                            text = strings.groupSettingsSectionTitle,
-                            style = Theme.typography.label,
-                            color = colors.mutedForeground,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        )
-                    }
-                    // 加群方式（0/1/2）→ ActionSheet 选择。
-                    item {
-                        Cell(
-                            title = strings.groupSettingsJoinPolicy,
-                            description = joinPolicyLabel(joinPolicy),
-                            arrow = true,
-                            onClick = {
-                                ActionSheet.showList(
-                                    description = strings.groupSettingsJoinPolicy,
-                                    items = listOf(
-                                        ActionSheetItem(label = strings.groupSettingsJoinPolicyNone),
-                                        ActionSheetItem(label = strings.groupSettingsJoinPolicyApproval),
-                                        ActionSheetItem(label = strings.groupSettingsJoinPolicyOpen),
-                                    ),
-                                    onSelected = { _, index ->
-                                        val newValue = index.toUByte()
-                                        if (newValue != joinPolicy) {
-                                            patchSetting(
-                                                apply = { this.joinPolicy = newValue },
-                                                onOk = { joinPolicy = newValue },
-                                            )
-                                        }
+                        CellGroup(
+                            items = ManageRow.entries,
+                            title = strings.groupSettingsSectionTitle,
+                            modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.md),
+                        ) { row ->
+                            when (row) {
+                                // 加群方式（0/1/2）→ ActionSheet 选择。
+                                ManageRow.JoinPolicy -> Cell(
+                                    title = strings.groupSettingsJoinPolicy,
+                                    description = joinPolicyLabel(joinPolicy),
+                                    arrow = true,
+                                    onClick = {
+                                        ActionSheet.showList(
+                                            description = strings.groupSettingsJoinPolicy,
+                                            items = listOf(
+                                                ActionSheetItem(label = strings.groupSettingsJoinPolicyNone),
+                                                ActionSheetItem(label = strings.groupSettingsJoinPolicyApproval),
+                                                ActionSheetItem(label = strings.groupSettingsJoinPolicyOpen),
+                                            ),
+                                            onSelected = { _, index ->
+                                                val newValue = index.toUByte()
+                                                if (newValue != joinPolicy) {
+                                                    patchSetting(
+                                                        apply = { this.joinPolicy = newValue },
+                                                        onOk = { joinPolicy = newValue },
+                                                    )
+                                                }
+                                            },
+                                        )
                                     },
                                 )
-                            },
-                        )
-                    }
-                    // allowSearch
-                    item {
-                        SettingSwitchCell(
-                            title = strings.groupSettingsAllowSearch,
-                            checked = allowSearch == true,
-                            onToggle = { newValue ->
-                                patchSetting(
-                                    apply = { this.allowSearch = newValue },
-                                    onOk = { allowSearch = newValue },
+                                ManageRow.AllowSearch -> SettingSwitchCell(
+                                    title = strings.groupSettingsAllowSearch,
+                                    checked = allowSearch == true,
+                                    onToggle = { v -> patchSetting(apply = { this.allowSearch = v }, onOk = { allowSearch = v }) },
                                 )
-                            },
-                        )
-                    }
-                    // memberCanInvite
-                    item {
-                        SettingSwitchCell(
-                            title = strings.groupSettingsMemberCanInvite,
-                            checked = memberCanInvite == true,
-                            onToggle = { newValue ->
-                                patchSetting(
-                                    apply = { this.memberCanInvite = newValue },
-                                    onOk = { memberCanInvite = newValue },
+                                ManageRow.MemberCanInvite -> SettingSwitchCell(
+                                    title = strings.groupSettingsMemberCanInvite,
+                                    checked = memberCanInvite == true,
+                                    onToggle = { v -> patchSetting(apply = { this.memberCanInvite = v }, onOk = { memberCanInvite = v }) },
                                 )
-                            },
-                        )
-                    }
-                    // allowMemberAddFriend
-                    item {
-                        SettingSwitchCell(
-                            title = strings.groupSettingsAllowMemberAddFriend,
-                            checked = allowMemberAddFriend == true,
-                            onToggle = { newValue ->
-                                patchSetting(
-                                    apply = { this.allowMemberAddFriend = newValue },
-                                    onOk = { allowMemberAddFriend = newValue },
+                                ManageRow.AllowMemberAddFriend -> SettingSwitchCell(
+                                    title = strings.groupSettingsAllowMemberAddFriend,
+                                    checked = allowMemberAddFriend == true,
+                                    onToggle = { v -> patchSetting(apply = { this.allowMemberAddFriend = v }, onOk = { allowMemberAddFriend = v }) },
                                 )
-                            },
-                        )
-                    }
-                    // allMuted（全员禁言）：统一走 groupUpdateSettings（单一路径）。
-                    item {
-                        SettingSwitchCell(
-                            title = strings.groupSettingsAllMuted,
-                            checked = allMuted == true,
-                            onToggle = { newValue ->
-                                patchSetting(
-                                    apply = { this.allMuted = newValue },
-                                    onOk = { allMuted = newValue },
+                                // allMuted（全员禁言）：统一走 groupUpdateSettings（单一路径）。
+                                ManageRow.AllMuted -> SettingSwitchCell(
+                                    title = strings.groupSettingsAllMuted,
+                                    checked = allMuted == true,
+                                    onToggle = { v -> patchSetting(apply = { this.allMuted = v }, onOk = { allMuted = v }) },
                                 )
-                            },
-                        )
+                            }
+                        }
                     }
                 }
             }
+
 
             // 通用设置：一张卡片，开关行之间有分隔线。裸 Cell 在分组背景上是
             // 一条条没有容器的白带，行与行之间只剩空白。
@@ -338,47 +309,40 @@ fun ChatSettingsPage(
 
             // 群聊特有操作
             if (isGroup) {
-                // 分割线
-                item {
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-
-                // 退出群聊：群主不可直接退出（须先转让群主或解散群——后续 Phase B 实现）
+                // 退出群聊：自己一张卡片，红字居中——平台设置页里危险操作的做法。
+                // 群主不可直接退出（须先转让群主或解散群——后续 Phase B 实现），说明放在卡片下方。
                 item {
                     val leaveEnabled = !isOwner
-                    val leaveInteraction = remember { MutableInteractionSource() }
-                    val leavePressed by leaveInteraction.collectIsPressedAsState()
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(pressedSurfaceColor(colors.surface, leavePressed))
-                            .clickable(
-                                enabled = leaveEnabled,
-                                interactionSource = leaveInteraction,
-                                indication = null,
-                            ) { showLeaveConfirmDialog = true }
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.Center
+                    CellGroup(
+                        items = listOf(Unit),
+                        modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.md),
                     ) {
-                        Text(
-                            text = strings.chatSettingsLeaveGroup,
-                            style = Theme.typography.bodyMedium,
-                            color = if (leaveEnabled) colors.destructive else colors.mutedForeground
-                        )
-                    }
-                    if (isOwner) {
+                        val leaveInteraction = remember { MutableInteractionSource() }
+                        val leavePressed by leaveInteraction.collectIsPressedAsState()
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.Center,
+                                .background(pressedSurfaceColor(colors.surface, leavePressed))
+                                .clickable(
+                                    enabled = leaveEnabled,
+                                    interactionSource = leaveInteraction,
+                                    indication = null,
+                                ) { showLeaveConfirmDialog = true }
+                                .padding(Spacing.lg),
+                            horizontalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = strings.groupOwnerCannotLeave,
-                                style = Theme.typography.bodySmall,
-                                color = colors.mutedForeground,
+                                text = strings.chatSettingsLeaveGroup,
+                                style = Theme.typography.bodyMedium,
+                                color = if (leaveEnabled) colors.destructive else colors.mutedForeground
                             )
                         }
+                    }
+                    if (isOwner) {
+                        FieldDescription(
+                            text = strings.groupOwnerCannotLeave,
+                            modifier = Modifier.padding(horizontal = Spacing.lg * 2),
+                        )
                     }
                 }
             }
@@ -456,3 +420,6 @@ private enum class ChatSettingRow { Mute, Pin }
 
 /** 群设置卡片里的行。条件显隐先算成一个列表，再交给 CellGroup。 */
 private enum class GroupRow { Name, QrCode, Members, Invite, Manage, Approval }
+
+/** 群管理卡片里的行。 */
+private enum class ManageRow { JoinPolicy, AllowSearch, MemberCanInvite, AllowMemberAddFriend, AllMuted }
