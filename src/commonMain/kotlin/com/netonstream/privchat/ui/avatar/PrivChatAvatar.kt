@@ -7,22 +7,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.gearui.foundation.avatar.AvatarSizeTokens
-import com.gearui.primitives.Avatar
-import com.gearui.primitives.Badge
-import com.gearui.primitives.BadgeType
+import com.gearui.components.avatar.Avatar
 import com.netonstream.privchat.ui.common.base.PrivChatThemeExtension.onlineStatus
-import com.tencent.kuikly.compose.coil3.rememberAsyncImagePainter
-import com.tencent.kuikly.compose.foundation.Image
-import com.tencent.kuikly.compose.foundation.background
-import com.tencent.kuikly.compose.foundation.border
-import com.tencent.kuikly.compose.foundation.layout.Box
-import com.tencent.kuikly.compose.foundation.layout.size
-import com.tencent.kuikly.compose.foundation.shape.CircleShape
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
-import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
-import com.tencent.kuikly.compose.ui.draw.clip
-import com.tencent.kuikly.compose.ui.layout.ContentScale
 import com.tencent.kuikly.compose.ui.unit.Dp
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.gearui.theme.Theme
@@ -110,119 +98,57 @@ fun PrivChatAvatar(
     // 强制把 fallback 配色固定到 [AvatarPalette]，不让 gearui Avatar 回退到 Theme.colors.muted——
     // 否则 dark theme 下「我」tab 头像会变暗色，而 QR bitmap 头像永远是 light 色（保存到相册的
     // 图片跟 app theme 解耦），两条管道视觉就割裂了。
-    Box(modifier = modifier) {
-        // 底层：initials 色块（始终渲染，作为远程图加载中 / 失败的天然兜底）。
-        // badge 不交给 gearui Avatar 画——否则会被上层的远程图 Image 盖住，
-        // 在本组件里单独叠一层（见下）。
-        Avatar(
-            text = resolved.initials,
-            size = size,
-            radius = radius,
-            backgroundColor = resolved.backgroundColor,
-            contentColor = resolved.foregroundColor,
-        )
-        // 远程头像图：叠加在 initials 之上（gearui Avatar 的 image 分支无失败回退，
-        // 且 Icon 渲染是 ContentScale.Fit；这里自己 Image + Crop + clip 保证「加载中 /
-        // 失败露色块、成功盖满方圆角」）。
-        // local-first（CLIENT_GLOBAL_STATE §4 全局统一）：**任意用户头像**（自己/好友/群成员/会话 peer/
-        // 搜索结果）都优先读本地缓存文件（SDK 已下载/落盘，同一 active userRoot、
-        // 按 targetUid），near-instant、跳过远程网络加载 → 不再先 initials 后网络图闪一下。本地无则回落远程。
-        // `preferLocalCache` 参数保留为兼容项，现已对所有用户头像默认生效。
-        // 探本地真实头像文件仅当数据上该用户确有头像(avatarUrl 非空)——
-        // 否则槽位里可能是历史版本生成的 initials PNG(旧命名,无内容指纹),名字变了
-        // 也会被当成"已缓存头像"永久展示旧字母;无头像用户统一走下方生成分支
-        // (带指纹文件名,名字变化自动重生成)。
-        var localCacheUrl by remember(userId) { mutableStateOf<String?>(null) }
-        if (userId != null && !isGroup) {
-            LaunchedEffect(userId, resolved.avatarUrl) {
-                val root = AvatarLocalCache.userRoot
-                val given = resolved.avatarUrl
-                localCacheUrl = when {
-                    // 🔴 调用方已经给了本地文件（model.localPath → "file://…"）就直接用，
-                    // 不要再自己盲探 `{uid}.img`。
-                    //
-                    // 盲探那条路推导出的文件名只由 uid 决定，而换头像是**原地覆盖同一个
-                    // 文件**；加载器按 URL 缓存，URL 不变就永远给旧图——换完头像页面纹丝
-                    // 不动，要杀进程重进才看得到。数据里的 localPath 带内容指纹（SDK 侧
-                    // 按远端 URL 命名），换头像它就变，重新加载是自然发生的。
-                    //
-                    // 别想用 `?v=` 或 `#v=` 去骗缓存：两者都会被当成文件路径的一部分，
-                    // 文件打不开，头像直接掉回字母占位（实测过）。
-                    given?.startsWith("file://") == true -> given
-                    root != null && given != null ->
-                        AvatarCacheLayout.userAvatarFile(root, userId)?.let { "file://$it" }
-                    else -> null
-                }
+    // 头像渲染统一交给 gearui Avatar：首字色块始终在底层，图片（裁切填满）加载中 / 失败自然
+    // 露出首字；未读 badge 与在线点都画在图片之上。本组件只负责「选哪张图」。
+    // 本地优先（CLIENT_GLOBAL_STATE §4）：任意用户头像都先读本地缓存文件，near-instant，
+    // 不会先首字后网络图闪一下；本地无则远程；无远程头像的用户用生成的首字 PNG（P2）。
+    var localCacheUrl by remember(userId) { mutableStateOf<String?>(null) }
+    if (userId != null && !isGroup) {
+        LaunchedEffect(userId, resolved.avatarUrl) {
+            val root = AvatarLocalCache.userRoot
+            val given = resolved.avatarUrl
+            localCacheUrl = when {
+                // 🔴 调用方已经给了本地文件（model.localPath → "file://…"）就直接用，
+                // 不要再自己盲探 `{uid}.img`。
+                //
+                // 盲探那条路推导出的文件名只由 uid 决定，而换头像是**原地覆盖同一个
+                // 文件**；加载器按 URL 缓存，URL 不变就永远给旧图——换完头像页面纹丝
+                // 不动，要杀进程重进才看得到。数据里的 localPath 带内容指纹（SDK 侧
+                // 按远端 URL 命名），换头像它就变，重新加载是自然发生的。
+                //
+                // 别想用 `?v=` 或 `#v=` 去骗缓存：两者都会被当成文件路径的一部分，
+                // 文件打不开，头像直接掉回字母占位（实测过）。
+                given?.startsWith("file://") == true -> given
+                root != null && given != null ->
+                    AvatarCacheLayout.userAvatarFile(root, userId)?.let { "file://$it" }
+                else -> null
             }
-        }
-        val remoteUrl = resolved.avatarUrl?.trim()?.takeIf { it.isNotEmpty() }
-        val localUrl = localCacheUrl
-        if (localUrl != null) {
-            Image(
-                painter = rememberAsyncImagePainter(model = localUrl),
-                contentDescription = "",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(size)
-                    .clip(RoundedCornerShape(radius)),
-            )
-        } else if (remoteUrl != null) {
-            var loadFailed by remember(remoteUrl) { mutableStateOf(false) }
-            if (!loadFailed) {
-                Image(
-                    painter = rememberAsyncImagePainter(
-                        model = remoteUrl,
-                        onError = { loadFailed = true },
-                    ),
-                    contentDescription = "",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(size)
-                        .clip(RoundedCornerShape(radius)),
-                )
-            }
-        } else if (userId != null && !isGroup) {
-            // P2(AVATAR_CACHE_SPEC §5.2)：无远程头像的用户，生成 initials 色块 PNG 落盘，
-            // 用 file:// 覆盖在运行时色块之上（视觉一致；生成中/失败自然露底层色块，不阻塞）。
-            var genUrl by remember(userId) { mutableStateOf<String?>(null) }
-            LaunchedEffect(userId, name, username) {
-                genUrl = GeneratedAvatarCache
-                    .ensureInitials(userId.toString(), name, username)
-                    ?.let { "file://$it" }
-            }
-            val g = genUrl
-            if (g != null) {
-                Image(
-                    painter = rememberAsyncImagePainter(model = g),
-                    contentDescription = "",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(size)
-                        .clip(RoundedCornerShape(radius)),
-                )
-            }
-        }
-        // 未读 badge：与 gearui Avatar 内部的 Badge 用法完全同参（免打扰 → 红点，
-        // 否则数字），只是提到图片层之上。
-        val badgeCount = if (isMuted || unreadCount <= 0) null else unreadCount
-        val badgeDot = isMuted && unreadCount > 0
-        if (badgeCount != null || badgeDot) {
-            Badge(
-                type = if (badgeDot) BadgeType.RedPoint else BadgeType.Message,
-                count = badgeCount,
-                showZero = true,
-                content = { Box(modifier = Modifier.size(size)) },
-            )
-        }
-        if (isOnline) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(if (size <= AvatarSizeTokens.Small.size) 9.dp else 10.dp)
-                    .clip(CircleShape)
-                    .background(colors.onlineStatus)
-                    .border(2.dp, colors.surface, CircleShape),
-            )
         }
     }
+    val remoteUrl = resolved.avatarUrl?.trim()?.takeIf { it.isNotEmpty() }
+    // P2(AVATAR_CACHE_SPEC §5.2)：无远程头像的用户，生成 initials 色块 PNG 落盘，
+    // 与运行时色块视觉一致；生成中 / 失败时 Avatar 自然露出首字，不阻塞。
+    var generatedUrl by remember(userId) { mutableStateOf<String?>(null) }
+    if (remoteUrl == null && userId != null && !isGroup) {
+        LaunchedEffect(userId, name, username) {
+            generatedUrl = GeneratedAvatarCache
+                .ensureInitials(userId.toString(), name, username)
+                ?.let { "file://$it" }
+        }
+    }
+    Avatar(
+        fallback = resolved.initials,
+        url = localCacheUrl ?: remoteUrl ?: generatedUrl,
+        size = size,
+        shape = RoundedCornerShape(radius),
+        backgroundColor = resolved.backgroundColor,
+        contentColor = resolved.foregroundColor,
+        // 免打扰 → 红点，否则数字
+        badgeCount = if (isMuted || unreadCount <= 0) null else unreadCount,
+        badgeDot = isMuted && unreadCount > 0,
+        online = isOnline,
+        onlineColor = colors.onlineStatus,
+        contentDescription = name ?: username,
+        modifier = modifier,
+    )
 }

@@ -6,7 +6,7 @@
  *
  * ## 1. 业务头像渲染必须经过 [PrivChatAvatar]
  *
- * - 业务代码（pages/ / setting/ / qr/ / app/ 等）**不允许**直接 `import com.gearui.primitives.Avatar`
+ * - 业务代码（pages/ / setting/ / qr/ / app/ 等）**不允许**直接 `import com.gearui.components.avatar.Avatar`
  * - [com.netonstream.privchat.ui.components.ChatAvatar] / [com.netonstream.privchat.ui.components.GroupAvatar]
  *   保留作为历史名 wrapper，内部完全 delegate 到 [PrivChatAvatar]，**不允许**再加 initials / 配色逻辑
  *
