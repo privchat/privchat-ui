@@ -13,7 +13,6 @@ import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.runtime.LocalRuntimeEnvironment
-import com.gearui.runtime.LocalRuntimeFlags
 import com.gearui.components.navbar.NavBar
 import com.gearui.components.cell.Cell
 import com.gearui.components.empty.EmptyState
@@ -102,13 +101,7 @@ fun ForwardPickerPage(
 ) {
     val strings = PrivChatI18n.strings
     val colors = Theme.colors
-    val runtimeFlags = LocalRuntimeFlags.current
-    val runtimeEnvironment = LocalRuntimeEnvironment.current
-    val safeAreaBottom = if (runtimeFlags.unifiedSafeAreaPipeline) {
-        runtimeEnvironment.safeArea.bottom
-    } else {
-        0.dp
-    }
+    val safeAreaBottom = LocalRuntimeEnvironment.current.safeArea.bottom
     val channels by PrivChat.channels.collectAsState()
     val friends by PrivChat.friends.collectAsState()
     val groups by PrivChat.groups.collectAsState()

@@ -980,7 +980,7 @@ private fun FileLeadingBadge(
         Text(
             text = icon,
             style = Theme.typography.titleMedium,
-            color = if (hasLocal || state is MediaDownloadState.Done) null else Color.White,
+            color = if (hasLocal || state is MediaDownloadState.Done) Theme.colors.foreground else Color.White,
         )
     }
 }

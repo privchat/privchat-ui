@@ -203,7 +203,7 @@ fun GlobalSearchPage(
                 onValueChange = { query = it; drill = null; channelDrill = null },
                 placeholder = strings.globalSearchPlaceholder,
                 autoFocus = true,
-                showCancel = true,
+                cancel = com.gearui.components.searchbar.SearchBarCancel.Always,
                 onCancel = onBack,
                 shape = com.gearui.components.searchbar.SearchBarShape.SQUARE,
                 modifier = Modifier.weight(1f).padding(end = 12.dp),

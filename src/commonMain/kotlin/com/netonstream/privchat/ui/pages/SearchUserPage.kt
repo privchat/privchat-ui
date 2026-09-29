@@ -108,7 +108,7 @@ fun SearchUserPage(
                 noResult = false
             },
             placeholder = strings.searchUserPlaceholder,
-            showCancel = true,
+            cancel = com.gearui.components.searchbar.SearchBarCancel.Always,
             onCancel = onBack,
             onSearch = { doSearch() },
             shape = com.gearui.components.searchbar.SearchBarShape.SQUARE,
