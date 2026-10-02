@@ -67,6 +67,9 @@ data class PrivChatStrings(
     val messageUnknown: String get() = dMessage.messageUnknown
     val messageSending: String get() = dMessage.messageSending
     val messageSendFailed: String get() = dMessage.messageSendFailed
+    val sendRefusedNotFriend: String get() = dMessage.sendRefusedNotFriend
+    val sendRefusedBlockedByPeer: String get() = dMessage.sendRefusedBlockedByPeer
+    val sendRefusedPeerBlacklisted: String get() = dMessage.sendRefusedPeerBlacklisted
     val messageAttachmentSourceMissing: String get() = dMessage.messageAttachmentSourceMissing
     val messageAttachmentTooLarge: String get() = dMessage.messageAttachmentTooLarge
     val messageVoiceHint: String get() = dMessage.messageVoiceHint

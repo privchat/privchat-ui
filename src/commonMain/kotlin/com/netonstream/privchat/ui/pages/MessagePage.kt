@@ -1,5 +1,7 @@
 package com.netonstream.privchat.ui.pages
 
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import com.netonstream.privchat.ui.components.MessageSendStatus
 import com.gearui.foundation.interaction.PressableFeedback
 import com.gearui.components.link.LinkSize
@@ -434,7 +436,13 @@ fun MessagePage(
     modifier: Modifier = Modifier,
 ) {
     val strings = PrivChatI18n.strings
-    val messages by PrivChat.messages.collectAsState()
+    // This page's own conversation, not PrivChat.messages: that slot holds only the foreground
+    // conversation, and another chat page opening or closing above this one rewrites it.
+    val messages by remember(channel.channelId) {
+        PrivChat.messagesByChannel
+            .map { it[channel.channelId].orEmpty() }
+            .distinctUntilChanged()
+    }.collectAsState(initial = PrivChat.cachedMessages(channel.channelId))
     val messageReactions by PrivChat.messageReactions.collectAsState()
     val currentUserId by PrivChat.currentUserId.collectAsState()
     val presences by PrivChat.presences.collectAsState()
@@ -608,7 +616,7 @@ fun MessagePage(
                 scope.launch {
                     onSendVoice?.invoke(channel.channelId, channel.channelType, durationMs)
                     delay(50)
-                    val currentMessages = PrivChat.messages.value
+                    val currentMessages = PrivChat.cachedMessages(channel.channelId)
                     if (currentMessages.isNotEmpty()) {
                         listState.animateScrollToItem(currentMessages.size - 1)
                     }
@@ -623,7 +631,6 @@ fun MessagePage(
             "[MessagePage] initial load start: channelId=${channel.channelId} " +
                 "channelType=${channel.channelType} cached=${PrivChat.cachedMessages(channel.channelId).size}",
         )
-        PrivChat.setCurrentChannel(channel.channelId)
         val cachedBeforeLoad = PrivChat.cachedMessages(channel.channelId)
         if (cachedBeforeLoad.isNotEmpty()) {
             PrivChat.updateMessages(channel.channelId, cachedBeforeLoad)
@@ -812,10 +819,13 @@ fun MessagePage(
 
     // 保存草稿 + 取消订阅 typing 事件
     DisposableEffect(Unit) {
+        PrivChat.enterChannel(channel.channelId)
         onDispose {
             PrivChat.saveDraft(channel.channelId, inputText.takeIf { it.isNotBlank() })
-            PrivChat.clearTyping(channel.channelId)
-            PrivChat.setCurrentChannel(null)
+            // Another page may still show this conversation (chat → profile → chat). Then the
+            // conversation is not being left: keep its typing state and the subscription.
+            val stillOpen = PrivChat.leaveChannel(channel.channelId)
+            if (!stillOpen) PrivChat.clearTyping(channel.channelId)
             if (typingActive || inputText.isNotBlank()) {
                 scope.launch {
                     runCatching {
@@ -826,7 +836,7 @@ fun MessagePage(
                 }
             }
             // 取消订阅（best-effort，fire-and-forget）
-            scope.launch {
+            if (!stillOpen) scope.launch {
                 runCatching {
                     withContext(Dispatchers.Default) {
                         PrivChat.client.unsubscribeChannel(channel.channelId, channel.channelType.toUByte())
@@ -884,7 +894,7 @@ fun MessagePage(
             // 读它拿到的是旧长度，新消息一到就会把气泡误清。
             // 也不用 layoutInfo.totalItemsCount：它在新消息刚插入时可能还没更新
             // （同 nearBottom 那处的注释）。
-            val total = PrivChat.messages.value.size
+            val total = PrivChat.cachedMessages(channel.channelId).size
             if (lastVisible != null && total > 0 && lastVisible >= total - 1) {
                 newMsgBubbleCount = 0
                 // 顺带把欠账清掉：已经在底部，没有「还没露面」的自己人了。
@@ -1560,7 +1570,7 @@ fun MessagePage(
                     scope.launch {
                         onSendVoice?.invoke(channel.channelId, channel.channelType, durationMs)
                         delay(50)
-                        val currentMessages = PrivChat.messages.value
+                        val currentMessages = PrivChat.cachedMessages(channel.channelId)
                         if (currentMessages.isNotEmpty()) {
                             listState.animateScrollToItem(currentMessages.size - 1)
                         }
@@ -1747,7 +1757,7 @@ fun MessagePage(
                     // optimistic 消息已同步插入 UI，等一帧布局后滚动
                     scope.launch {
                         delay(50)
-                        val currentMessages = PrivChat.messages.value
+                        val currentMessages = PrivChat.cachedMessages(channel.channelId)
                         val lastIndex = (currentMessages.size - 1).coerceAtLeast(0)
                         if (currentMessages.isNotEmpty()) {
                             listState.animateScrollToItem(lastIndex)

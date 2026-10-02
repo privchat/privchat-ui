@@ -173,6 +173,9 @@ data class PrivChatMessageStrings(
     val messageUnknown: String,
     val messageSending: String,
     val messageSendFailed: String,
+    val sendRefusedNotFriend: String,
+    val sendRefusedBlockedByPeer: String,
+    val sendRefusedPeerBlacklisted: String,
     val messageAttachmentSourceMissing: String,
     val messageAttachmentTooLarge: String,
     val messageVoiceHint: String,
@@ -319,6 +322,9 @@ data class PrivChatMessageStringsPatch(
     val messageUnknown: String? = null,
     val messageSending: String? = null,
     val messageSendFailed: String? = null,
+    val sendRefusedNotFriend: String? = null,
+    val sendRefusedBlockedByPeer: String? = null,
+    val sendRefusedPeerBlacklisted: String? = null,
     val messageAttachmentSourceMissing: String? = null,
     val messageAttachmentTooLarge: String? = null,
     val messageVoiceHint: String? = null,
@@ -449,6 +455,9 @@ val PrivChatMessageStringsPatch.isEmpty: Boolean
         messageUnknown == null &&
         messageSending == null &&
         messageSendFailed == null &&
+        sendRefusedNotFriend == null &&
+        sendRefusedBlockedByPeer == null &&
+        sendRefusedPeerBlacklisted == null &&
         messageAttachmentSourceMissing == null &&
         messageAttachmentTooLarge == null &&
         messageVoiceHint == null &&
@@ -580,6 +589,9 @@ fun PrivChatMessageStrings.merge(patch: PrivChatMessageStringsPatch?): PrivChatM
         messageUnknown = patch.messageUnknown ?: messageUnknown,
         messageSending = patch.messageSending ?: messageSending,
         messageSendFailed = patch.messageSendFailed ?: messageSendFailed,
+        sendRefusedNotFriend = patch.sendRefusedNotFriend ?: sendRefusedNotFriend,
+        sendRefusedBlockedByPeer = patch.sendRefusedBlockedByPeer ?: sendRefusedBlockedByPeer,
+        sendRefusedPeerBlacklisted = patch.sendRefusedPeerBlacklisted ?: sendRefusedPeerBlacklisted,
         messageAttachmentSourceMissing = patch.messageAttachmentSourceMissing ?: messageAttachmentSourceMissing,
         messageAttachmentTooLarge = patch.messageAttachmentTooLarge ?: messageAttachmentTooLarge,
         messageVoiceHint = patch.messageVoiceHint ?: messageVoiceHint,

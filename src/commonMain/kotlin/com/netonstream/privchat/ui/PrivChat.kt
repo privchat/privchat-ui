@@ -141,13 +141,27 @@ object PrivChat {
 
     private val _currentChannelId = MutableStateFlow<ULong?>(null)
 
-    /** 当前打开的频道 ID */
+    /**
+     * 当前前台的频道 ID：[openChannels] 栈顶。
+     *
+     * 不是「最后一个调用 set 的人」：聊天页可以叠（聊天 A → 资料 → 聊天 A，或聊天 A → 聊天 B），
+     * 上面那页离开时，前台会话要回到下面那页，而不是变成「没有会话」。
+     */
     val currentChannelId: StateFlow<ULong?> = _currentChannelId.asStateFlow()
+
+    /** 打开着的聊天页，按打开顺序；同一频道可以出现多次（两个页面开着同一个会话）。 */
+    private val openChannels = mutableListOf<ULong>()
 
     // ========== 消息数据（直接用 SDK 类型） ==========
 
     private val _messages = MutableStateFlow<List<MessageEntry>>(emptyList())
     private val _messagesByChannel = MutableStateFlow<Map<ULong, List<MessageEntry>>>(emptyMap())
+
+    /**
+     * 按频道缓存的消息。聊天页只订阅自己那个频道的一项，而不是读 [messages]：
+     * [messages] 只装前台会话，别的页面进出会改写它，下面那页就会被清空成「暂无聊天内容」。
+     */
+    val messagesByChannel: StateFlow<Map<ULong, List<MessageEntry>>> = _messagesByChannel.asStateFlow()
 
     /** 当前频道的消息列表 */
     val messages: StateFlow<List<MessageEntry>> = _messages.asStateFlow()
@@ -359,6 +373,7 @@ object PrivChat {
         _currentUserName.value = null
         _channels.value = emptyList()
         channelUnreadClearWatermark.clear()
+        openChannels.clear()
         _currentChannelId.value = null
         _messages.value = emptyList()
         _messagesByChannel.value = emptyMap()
@@ -566,20 +581,32 @@ object PrivChat {
     fun removeChannel(channelId: ULong) {
         _channels.value = _channels.value.filter { it.channelId != channelId }
         _messagesByChannel.value = _messagesByChannel.value.toMutableMap().apply { remove(channelId) }
-        if (_currentChannelId.value == channelId) {
-            _currentChannelId.value = null
-            _messages.value = emptyList()
-        }
+        openChannels.removeAll { it == channelId }
+        showForeground(openChannels.lastOrNull())
     }
 
-    /** 设置当前频道 */
-    fun setCurrentChannel(channelId: ULong?) {
+    /** 聊天页进入：压栈并成为前台会话。每次进入必须配一次 [leaveChannel]。 */
+    fun enterChannel(channelId: ULong) {
+        openChannels.add(channelId)
+        showForeground(channelId)
+    }
+
+    /**
+     * 聊天页离开：出栈一次，前台会话回到栈里下一层。
+     *
+     * @return 这个频道是否仍有页面开着。仍开着时调用方不要做「离开会话」的收尾（取消订阅等），
+     *   否则下面那页会收不到这个会话的实时事件。
+     */
+    fun leaveChannel(channelId: ULong): Boolean {
+        val index = openChannels.lastIndexOf(channelId)
+        if (index >= 0) openChannels.removeAt(index)
+        showForeground(openChannels.lastOrNull())
+        return channelId in openChannels
+    }
+
+    private fun showForeground(channelId: ULong?) {
         _currentChannelId.value = channelId
-        if (channelId == null) {
-            _messages.value = emptyList()
-        } else {
-            _messages.value = _messagesByChannel.value[channelId].orEmpty()
-        }
+        _messages.value = if (channelId == null) emptyList() else _messagesByChannel.value[channelId].orEmpty()
     }
 
     /** 读取某个频道当前缓存的消息（不切换当前会话）。 */
