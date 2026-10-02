@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.pages
 
+import com.gearui.components.icon.*
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.dto.ChannelListEntry
 import com.netonstream.privchat.ui.PrivChat
@@ -189,8 +190,7 @@ fun ConversationPage(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                         // 全局搜索(聊天记录)入口
                         NavBarActionSlot(onClick = onGlobalSearch) {
-                            Icon(
-                                name = Icons.magnifying_glass,
+                            Icon(Icons.magnifyingGlass,
                                 size = NavBarDefaults.actionIconSize,
                                 tint = Theme.colors.foreground,
                             )
@@ -201,12 +201,12 @@ fun ConversationPage(
                             items = listOf(
                                 ContextMenuItem(
                                     label = strings.menuCreateGroup,
-                                    icon = Icons.users_three,
+                                    icon = Icons.usersThree,
                                     onClick = onCreateGroup,
                                 ),
                                 ContextMenuItem(
                                     label = strings.menuAddFriend,
-                                    icon = Icons.user_plus,
+                                    icon = Icons.userPlus,
                                     onClick = onAddFriend,
                                 ),
                                 ContextMenuItem(
@@ -216,14 +216,13 @@ fun ConversationPage(
                                 ),
                                 ContextMenuItem(
                                     label = strings.menuMyQrCode,
-                                    icon = Icons.arrow_square_out,
+                                    icon = Icons.arrowSquareOut,
                                     onClick = onMyQrCode,
                                 ),
                             ),
                         ) { onOpen ->
                             NavBarActionSlot(onClick = onOpen) {
-                                Icon(
-                                    name = Icons.plus,
+                                Icon(Icons.plus,
                                     size = NavBarDefaults.actionIconSize,
                                     tint = Theme.colors.foreground,
                                 )
@@ -413,8 +412,7 @@ private fun ChannelItem(
 
                     // 未读消息气泡或勿扰标识
                     if (item.isMuted) {
-                        Icon(
-                            name = Icons.bell_slash,
+                        Icon(Icons.bellSlash,
                             size = 14.dp,
                             tint = colors.mutedForeground
                         )

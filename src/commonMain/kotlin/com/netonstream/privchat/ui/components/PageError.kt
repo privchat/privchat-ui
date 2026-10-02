@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.components
 
+import com.gearui.components.icon.*
 import androidx.compose.runtime.Composable
 import com.gearui.components.button.Button
 import com.gearui.components.button.ButtonSize
@@ -41,8 +42,7 @@ fun PageError(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Icon(
-            name = Icons.warning_circle,
+        Icon(Icons.warningCircle,
             size = 40.dp,
             tint = colors.mutedForeground,
         )
@@ -56,7 +56,7 @@ fun PageError(
             Column(modifier = Modifier.height(20.dp)) {}
             Button(
                 text = PrivChatI18n.strings.retry,
-                icon = Icons.arrow_clockwise,
+                icon = Icons.arrowClockwise,
                 type = ButtonType.FILL,
                 theme = ButtonTheme.PRIMARY,
                 size = ButtonSize.MEDIUM,

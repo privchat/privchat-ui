@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.components
 
+import com.gearui.components.icon.*
 import androidx.compose.runtime.Composable
 import com.gearui.components.icon.Icons
 import com.gearui.foundation.primitives.Icon
@@ -54,7 +55,7 @@ fun SelectionDot(
         contentAlignment = Alignment.Center,
     ) {
         if (selected) {
-            Icon(name = Icons.check, size = 14.dp, tint = colors.primaryForeground)
+            Icon(Icons.check, size = 14.dp, tint = colors.primaryForeground)
         }
     }
 }

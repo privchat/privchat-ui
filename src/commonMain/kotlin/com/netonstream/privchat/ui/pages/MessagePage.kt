@@ -1,5 +1,7 @@
 package com.netonstream.privchat.ui.pages
 
+import com.netonstream.privchat.ui.icons.PrivChatIcons
+import com.gearui.components.icon.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import com.netonstream.privchat.ui.components.MessageSendStatus
@@ -1064,7 +1066,7 @@ fun MessagePage(
                             add(
                                 ContextMenuItem(
                                     label = strings.globalSearchPlaceholder,
-                                    icon = Icons.magnifying_glass,
+                                    icon = Icons.magnifyingGlass,
                                     onClick = { onSearchMessages() },
                                 )
                             )
@@ -1083,7 +1085,7 @@ fun MessagePage(
                             .padding(horizontal = 12.dp, vertical = 8.dp)
                             .clickable(onClick = onOpen),
                     ) {
-                        Icon(name = Icons.dots_three, size = 24.dp, tint = Theme.colors.foreground)
+                        Icon(Icons.dotsThree, size = 24.dp, tint = Theme.colors.foreground)
                     }
                 }
             },
@@ -1847,7 +1849,7 @@ private fun PinnedMessagesBar(
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(name = Icons.bookmark_simple_fill, size = IconSizes.Default.sm, tint = colors.primary)
+        Icon(Icons.bookmarkSimple.filled, size = IconSizes.Default.sm, tint = colors.primary)
         HorizontalSpacer(8.dp)
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -1865,7 +1867,7 @@ private fun PinnedMessagesBar(
         if (canManage) {
             HorizontalSpacer(8.dp)
             PressableFeedback(onClick = onUnpin) {
-                Icon(name = Icons.x, size = IconSizes.Default.sm, tint = colors.mutedForeground)
+                Icon(Icons.x, size = IconSizes.Default.sm, tint = colors.mutedForeground)
             }
         }
     }
@@ -2122,8 +2124,7 @@ private fun MessageRow(
                 modifier = Modifier.matchParentSize(),
                 contentAlignment = Alignment.CenterEnd,
             ) {
-                Icon(
-                    name = Icons.arrow_bend_up_left,
+                Icon(Icons.arrowBendUpLeft,
                     size = 20.dp,
                     tint = colors.mutedForeground,
                     modifier = Modifier.padding(end = 12.dp).alpha(replyProgress),
@@ -2812,8 +2813,7 @@ private fun NewMessagesBubble(count: Int, onClick: () -> Unit) {
             color = colors.primary,
         )
         HorizontalSpacer(6.dp)
-        Icon(
-            name = Icons.caret_down,
+        Icon(Icons.caretDown,
             tint = colors.primary,
             size = IconSizes.Default.lg,
         )
@@ -2906,11 +2906,11 @@ private fun MessageInputBar(
             }
             // 红包/转账 PLATFORM-only：moneyEnabled 才显示（BUILTIN 隐藏入口）。
             if (moneyEnabled) {
-                add(PlusAction(Icons.envelope_simple, strings.plusRedPacket, onRedPacket))
-                add(PlusAction(Icons.envelope_simple, strings.plusMoneyTransfer, onMoneyTransfer))
+                add(PlusAction(Icons.envelopeSimple, strings.plusRedPacket, onRedPacket))
+                add(PlusAction(Icons.envelopeSimple, strings.plusMoneyTransfer, onMoneyTransfer))
             }
             add(PlusAction(Icons.paperclip, strings.plusFile, onPickFile))
-            add(PlusAction(Icons.address_book, strings.plusContact, onContact))
+            add(PlusAction(Icons.addressBook, strings.plusContact, onContact))
         }
     }
     val plusPages = remember(plusActions) { plusActions.chunked(8) }
@@ -3233,7 +3233,7 @@ private fun MessageInputBar(
                     // 而按钮本身已经是个圆底，两个圆套在一起，在 20dp 上糊成一团。这个只画
                     // 两只眼睛和一张嘴（就是竖过来的 `:)`），小尺寸下才看得清。
                     // 自有图标的落地方式见 DESIGN_SYSTEM_SPEC 11.4。
-                    icon = "emoji_face",
+                    icon = PrivChatIcons.emojiFace,
                     onClick = {
                     if (panelMode == InputPanelMode.EMOJI || displayedPanelMode == InputPanelMode.EMOJI) {
                         closeAllPanels()
@@ -3479,7 +3479,7 @@ private fun VoiceRecordingOverlay(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (isCancel) {
-                Icon(name = Icons.trash, size = 34.dp, tint = Color.White)
+                Icon(Icons.trash, size = 34.dp, tint = Color.White)
             } else {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(3.dp),
@@ -3515,7 +3515,7 @@ private const val SAMPLE_MS = 80L
 
 @Composable
 private fun CircleIconButton(
-    icon: String,
+    icon: IconSource,
     onClick: () -> Unit,
     // 与 inputControlHeight 同值：这几个按钮都住在输入栏那一行里。
     size: Dp = 36.dp,
@@ -3529,8 +3529,7 @@ private fun CircleIconButton(
             .clickable { onClick() },
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            name = icon,
+        Icon(icon,
             size = 18.dp,
             tint = colors.foreground,
         )
@@ -3538,14 +3537,14 @@ private fun CircleIconButton(
 }
 
 private data class PlusAction(
-    val icon: String,
+    val icon: IconSource,
     val text: String,
     val onClick: () -> Unit,
 )
 
 @Composable
 private fun PlusActionItem(
-    icon: String,
+    icon: IconSource,
     text: String,
     onClick: () -> Unit,
 ) {
@@ -3563,7 +3562,7 @@ private fun PlusActionItem(
                 .background(colors.muted),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(name = icon, size = 22.dp, tint = colors.foreground)
+            Icon(icon, size = 22.dp, tint = colors.foreground)
         }
         VerticalSpacer(6.dp)
         Text(text = text, style = Theme.typography.label, color = colors.mutedForeground)
@@ -3788,19 +3787,19 @@ private fun MessageActionKind.toMessageAction(
     onClick: () -> Unit,
 ): MessageAction = when (this) {
     MessageActionKind.Reply ->
-        MessageAction(label = PrivChatI18n.current.actionReply, icon = Icons.arrow_bend_up_left, onClick = onClick)
+        MessageAction(label = PrivChatI18n.current.actionReply, icon = Icons.arrowBendUpLeft, onClick = onClick)
     MessageActionKind.Copy ->
         MessageAction(label = PrivChatI18n.current.actionCopyText, icon = Icons.copy, onClick = onClick)
     MessageActionKind.SaveImage ->
-        MessageAction(label = PrivChatI18n.current.actionSaveImage, icon = Icons.download_simple, onClick = onClick)
+        MessageAction(label = PrivChatI18n.current.actionSaveImage, icon = Icons.downloadSimple, onClick = onClick)
     MessageActionKind.Recall ->
-        MessageAction(label = PrivChatI18n.current.actionRecall, icon = Icons.arrows_clockwise, onClick = onClick)
+        MessageAction(label = PrivChatI18n.current.actionRecall, icon = Icons.arrowsClockwise, onClick = onClick)
     MessageActionKind.Forward ->
-        MessageAction(label = PrivChatI18n.current.actionForward, icon = Icons.arrow_bend_up_right, onClick = onClick)
+        MessageAction(label = PrivChatI18n.current.actionForward, icon = Icons.arrowBendUpRight, onClick = onClick)
     MessageActionKind.Pin ->
-        MessageAction(label = strings.messagePin, icon = Icons.bookmark_simple_fill, onClick = onClick)
+        MessageAction(label = strings.messagePin, icon = Icons.bookmarkSimple.filled, onClick = onClick)
     MessageActionKind.Unpin ->
-        MessageAction(label = strings.messageUnpin, icon = Icons.bookmark_simple, onClick = onClick)
+        MessageAction(label = strings.messageUnpin, icon = Icons.bookmarkSimple, onClick = onClick)
     MessageActionKind.DeleteLocal -> {
         val label = when (message.status) {
             MessageStatus.Pending, MessageStatus.Sending -> PrivChatI18n.current.actionCancelSend
@@ -3890,7 +3889,7 @@ private fun ReplyBar(
                 .clickable { onDismiss() },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(name = Icons.x, size = 16.dp, tint = colors.mutedForeground)
+            Icon(Icons.x, size = 16.dp, tint = colors.mutedForeground)
         }
     }
 }

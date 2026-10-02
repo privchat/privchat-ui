@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.components
 
+import com.gearui.components.icon.*
 import com.gearui.components.closebutton.CloseButton
 import com.tencent.kuikly.compose.foundation.interaction.collectIsPressedAsState
 import com.tencent.kuikly.compose.foundation.interaction.MutableInteractionSource
@@ -257,7 +258,7 @@ private fun Header(
             .padding(horizontal = Spacing.lg, vertical = Spacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CloseButton(onClick = onClose, icon = Icons.caret_down)
+        CloseButton(onClick = onClose, icon = Icons.caretDown)
 
         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
             Text(
@@ -327,7 +328,7 @@ private fun MentionAllRow(onClick: () -> Unit) {
                 .background(colors.primary),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(name = Icons.users, size = 18.dp, tint = colors.primaryForeground)
+            Icon(Icons.users, size = 18.dp, tint = colors.primaryForeground)
         }
         Spacer(modifier = Modifier.width(Spacing.md))
         Text(

@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.pages
 
+import com.gearui.components.icon.*
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.dto.UserEntry
 import com.netonstream.privchat.sdk.dto.FriendEntry
@@ -166,7 +167,7 @@ fun UserProfilePage(
                         // 已是好友或系统账号，显示发送消息按钮
                         Button(
                             text = strings.userProfileSendMessage,
-                            icon = Icons.chat_circle,
+                            icon = Icons.chatCircle,
                             type = ButtonType.FILL,
                             theme = ButtonTheme.PRIMARY,
                             onClick = onSendMessage,
@@ -190,7 +191,7 @@ fun UserProfilePage(
                         //     →server 幂等；已关注后按钮变 disabled，避免误点
                         Button(
                             text = strings.userProfileSendMessage,
-                            icon = Icons.chat_circle,
+                            icon = Icons.chatCircle,
                             type = ButtonType.FILL,
                             theme = ButtonTheme.PRIMARY,
                             onClick = onSendMessage,
@@ -238,7 +239,7 @@ fun UserProfilePage(
                                 isFromFriendRequest -> strings.userProfileAcceptFriendRequest
                                 else -> strings.userProfileAddFriend
                             },
-                            icon = Icons.user_plus,
+                            icon = Icons.userPlus,
                             type = ButtonType.FILL,
                             theme = ButtonTheme.PRIMARY,
                             disabled = hasSentFriendRequest,
@@ -368,7 +369,7 @@ fun FriendProfilePage(
             useDefaultBack = true,
             onBackClick = onBack,
             rightItems = listOf(
-                NavBarItem(icon = Icons.dots_three, onClick = onFriendSettings)
+                NavBarItem(icon = Icons.dotsThree, onClick = onFriendSettings)
             ),
         )
 
@@ -470,7 +471,7 @@ fun FriendProfilePage(
                 ) {
                     Button(
                         text = strings.userProfileSendMessage,
-                        icon = Icons.chat_circle,
+                        icon = Icons.chatCircle,
                         type = ButtonType.FILL,
                         theme = ButtonTheme.PRIMARY,
                         onClick = onSendMessage,

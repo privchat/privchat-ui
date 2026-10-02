@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.pages
 
+import com.gearui.components.icon.*
 import com.gearui.components.link.LinkButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -192,8 +193,7 @@ fun GlobalSearchPage(
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                com.gearui.foundation.primitives.Icon(
-                    name = com.gearui.components.icon.Icons.caret_left,
+                com.gearui.foundation.primitives.Icon(com.gearui.components.icon.Icons.caretLeft,
                     size = 24.dp,
                     tint = colors.foreground,
                 )

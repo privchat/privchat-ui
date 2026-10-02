@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.pages
 
+import com.gearui.components.icon.*
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.dto.GroupEntry
 import com.netonstream.privchat.ui.PrivChat

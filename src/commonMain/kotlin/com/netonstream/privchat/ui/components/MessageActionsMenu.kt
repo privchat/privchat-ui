@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.components
 
+import com.gearui.components.icon.IconSource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -118,7 +119,7 @@ val LocalMessageMenuTrigger = staticCompositionLocalOf<(() -> Unit)?> { null }
  */
 data class MessageAction(
     val label: String,
-    val icon: String,
+    val icon: IconSource,
     val disabled: Boolean = false,
     val danger: Boolean = false,
     val onClick: () -> Unit,
@@ -725,7 +726,7 @@ private fun ActionList(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             ) {
-                Icon(name = item.icon, size = IconSizes.Default.lg, tint = tint)
+                Icon(item.icon, size = IconSizes.Default.lg, tint = tint)
                 Text(
                     text = item.label,
                     style = Theme.typography.bodySmall,

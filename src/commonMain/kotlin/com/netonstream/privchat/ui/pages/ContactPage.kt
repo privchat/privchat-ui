@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.pages
 
+import com.gearui.components.icon.*
 import com.gearui.components.tabs.TabPager
 import com.gearui.foundation.list.CellDefaults
 import com.gearui.primitives.Divider
@@ -101,11 +102,11 @@ fun ContactPage(
             title = strings.contactTitle,
             rightItems = listOf(
                 com.gearui.components.navbar.NavBarItem(
-                    icon = com.gearui.components.icon.Icons.magnifying_glass,
+                    icon = com.gearui.components.icon.Icons.magnifyingGlass,
                     onClick = onGlobalSearch,
                 ),
                 com.gearui.components.navbar.NavBarItem(
-                    icon = com.gearui.components.icon.Icons.user_plus,
+                    icon = com.gearui.components.icon.Icons.userPlus,
                     onClick = onAddFriend,
                 ),
             ),
@@ -344,7 +345,7 @@ private fun FriendRequestEntry(
     Cell(
         onClick = onClick,
         compact = true,
-        leading = { ContactEntryIcon(Icons.user_plus) },
+        leading = { ContactEntryIcon(Icons.userPlus) },
         title = strings.contactFriendRequest,
         arrow = true,
         trailing = if (requestCount > 0) {
@@ -354,7 +355,7 @@ private fun FriendRequestEntry(
 }
 
 @Composable
-private fun ContactEntryIcon(icon: String) {
+private fun ContactEntryIcon(icon: IconSource) {
     val colors = Theme.colors
     Box(
         modifier = Modifier
@@ -363,7 +364,7 @@ private fun ContactEntryIcon(icon: String) {
             .background(colors.primary),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(name = icon, size = 18.dp, tint = colors.primaryForeground)
+        Icon(icon, size = 18.dp, tint = colors.primaryForeground)
     }
 }
 

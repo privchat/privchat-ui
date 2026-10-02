@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.components
 
+import com.gearui.components.icon.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -700,8 +701,7 @@ private fun VideoContent(
                 .background(Color.Black.copy(alpha = 0.5f)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                name = Icons.play_fill,
+            Icon(Icons.play.filled,
                 size = 26.dp,
                 tint = Color.White,
             )
@@ -1331,7 +1331,7 @@ private fun MoneyCardScaffold(
      * defect the kit's own `check_emoji_as_icon` guard describes — it just did
      * not cover this repo.
      */
-    icon: String,
+    icon: IconSource,
     bg: Color,
     refId: String?,
     clickable: Boolean,
@@ -1347,7 +1347,7 @@ private fun MoneyCardScaffold(
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(name = icon, size = IconSizes.Default.xl, tint = Color.White)
+        Icon(icon, size = IconSizes.Default.xl, tint = Color.White)
         HorizontalSpacer(12.dp)
         Column(modifier = Modifier.weight(1f)) { content() }
     }
