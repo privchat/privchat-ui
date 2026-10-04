@@ -1,5 +1,8 @@
 package com.netonstream.privchat.ui.pages
 
+import com.gearui.foundation.layout.Spacing
+import com.gearui.components.searchbar.SearchBarAlignment
+import com.gearui.components.searchbar.SearchBarButton
 import com.gearui.components.icon.*
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.dto.ChannelListEntry
@@ -110,7 +113,8 @@ fun ConversationPage(
     }
     val localStates by PrivChat.channelLocalStates.collectAsState()
     val scope = rememberCoroutineScope()
-    val listState = rememberLazyListState()
+    // 第 0 项是搜索入口，平时藏在导航栏下面：列表从第 1 项（第一条会话）开始，下拉才露出来。
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = FIRST_CONVERSATION_INDEX)
     val swipeGroup = rememberSwipeCellGroupState()
 
     // 搜索关键词
@@ -132,25 +136,40 @@ fun ConversationPage(
     }
 
     // 双击底部「消息」Tab 回到列表顶部：外部每次双击把计数 +1，这里响应变化滚动。
-    //
-    // 落点是 **index=0**。这里曾经写 1，注释说「index=0 是搜索栏」——那个内嵌搜索栏
-    // 后来挪到了 NavBar 的放大镜图标，列表第一个 item 就是第一条会话，于是每次滚动
-    // 都把最新的那条会话推出视口：冷启动后用户看到的第一行是第二条会话，
-    // 上面还露着半行被截断的边缘。
+    // 落点是第一条会话（搜索入口仍藏着），不是第 0 项。
     LaunchedEffect(scrollToTopSignal) {
-        if (scrollToTopSignal > 0 && filteredChannels.isNotEmpty()) {
-            listState.animateScrollToItem(0)
+        if (scrollToTopSignal > 0) {
+            listState.animateScrollToItem(FIRST_CONVERSATION_INDEX)
         }
     }
 
-    // 任意频道收到新消息时自动滚动到列表顶部（index=0 = 第一条会话，见上面的说明）。
+    // 任意频道收到新消息时自动回到顶部，让新消息那一行露出来。搜索入口正露着时列表已经
+    // 在顶部，不动它；否则落到第一条会话——不能落到第 0 项，否则每来一条消息搜索框都冒出来。
     val channelUpdateMarker = remember(channels) {
         channels.maxOfOrNull { it.lastTs } ?: 0UL
     }
     LaunchedEffect(channelUpdateMarker) {
         if (channelUpdateMarker > 0UL && filteredChannels.isNotEmpty()) {
             delay(50)
-            listState.scrollToItem(0)
+            if (listState.firstVisibleItemIndex != SEARCH_ENTRY_INDEX) {
+                listState.scrollToItem(FIRST_CONVERSATION_INDEX)
+            }
+        }
+    }
+
+    // 搜索入口只停在「全露」或「全藏」：松手时露出超过一半就展开，否则收回（iOS 列表顶部
+    // 搜索栏的行为）。只看滚动停下的那一刻，拖动中不干预。
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.isScrollInProgress }.collect { scrolling ->
+            if (scrolling || listState.firstVisibleItemIndex != SEARCH_ENTRY_INDEX) return@collect
+            val entry = listState.layoutInfo.visibleItemsInfo.firstOrNull() ?: return@collect
+            val hidden = listState.firstVisibleItemScrollOffset
+            if (hidden <= 0 || hidden >= entry.size) return@collect
+            if (hidden * 2 < entry.size) {
+                listState.animateScrollToItem(SEARCH_ENTRY_INDEX)
+            } else {
+                listState.animateScrollToItem(FIRST_CONVERSATION_INDEX)
+            }
         }
     }
 
@@ -234,11 +253,21 @@ fun ConversationPage(
             }
             networkStatusBar?.invoke()
 
-        // 会话列表。搜索入口在 NavBar 的放大镜图标上，列表里没有搜索栏 item。
+        // 会话列表。第 0 项是下拉露出的搜索入口，和 NavBar 的放大镜同一个去处（全局搜索页）。
         GearLazyColumn(
             modifier = Modifier.fillMaxSize(),
             state = listState,
         ) {
+            item(key = "search-entry") {
+                SearchBarButton(
+                    onClick = onGlobalSearch,
+                    placeholder = strings.search,
+                    alignment = SearchBarAlignment.CENTER,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
+                )
+            }
             if (filteredChannels.isEmpty()) {
                 // 空状态
                 item {
@@ -498,3 +527,9 @@ private fun buildDescription(
 
     return builder.toString()
 }
+
+/** 列表第 0 项：下拉露出的搜索入口。 */
+private const val SEARCH_ENTRY_INDEX = 0
+
+/** 第一条会话（或空状态）所在的位置；列表的「顶部」指这里，搜索入口藏在它上面。 */
+private const val FIRST_CONVERSATION_INDEX = 1
