@@ -1,7 +1,9 @@
 package com.netonstream.privchat.ui.avatar
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * App 登录后注入当前账号的 userRoot（`{dataDir}/users/{selfUid}`），生成头像落盘用。
@@ -82,9 +84,14 @@ object GeneratedAvatarCache {
         val root = AvatarLocalCache.userRoot ?: return null
         if (gid.isBlank() || members.isEmpty()) return null
         val path = "$root/avatars/groups/$gid.img"
-        val cells: List<CollageCell> = members.take(9).map { m ->
+        val shown = members.take(9)
+        // 查文件和合成都离开 UI 线程:列表滑回来时每个群行都会走一遍。
+        val files = withContext(Dispatchers.Default) {
+            AvatarCacheLayout.userAvatarFiles(root, shown.map { it.uid })
+        }
+        val cells: List<CollageCell> = shown.map { m ->
             // 真实头像文件存在就用真实图(那些文件只由 SDK 下载真实头像写入,字母走 .gen-*)。
-            val memberImg = AvatarCacheLayout.userAvatarFile(root, m.uid)
+            val memberImg = files[m.uid]
             if (memberImg != null) {
                 CollageCell.Image(memberImg)
             } else {
@@ -104,7 +111,7 @@ object GeneratedAvatarCache {
             }
         }
         return mutex.withLock {
-            if (collageFp[gid] == fp && AvatarBitmapRenderer.fileExists(path)) {
+            if (collageFp[gid] == fp && withContext(Dispatchers.Default) { AvatarBitmapRenderer.fileExists(path) }) {
                 return@withLock path
             }
             val ok = AvatarBitmapRenderer.renderCollage(cells, SIZE_PX, path)
@@ -119,6 +126,7 @@ object GeneratedAvatarCache {
 
     /** 登出/切号：清进程内记忆（文件随 `users/{selfUid}` 目录回收）。 */
     fun clear() {
+        CollageUrlMemo.clear()
         readyUsers.clear()
         collageFp.clear()
     }

@@ -7,6 +7,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.state.GroupStore
 import com.tencent.kuikly.compose.coil3.rememberAsyncImagePainter
@@ -76,7 +78,9 @@ fun GroupCollageAvatar(
 
     // P2(AVATAR_CACHE_SPEC §5.3)：九宫格合成一次 PNG 落盘，命中即 file:// 加载
     // （与 PrivChatAvatar 同一图片管道）；合成中/失败回退下方运行时逐格绘制。
-    var collageUrl by remember(channelId) { mutableStateOf<String?>(null) }
+    // 起始值取这个群上次合成的结果：行滑出屏幕会被销毁，滑回来时直接显示，
+    // 不先退回逐格绘制再换图(闪一下)；下面的 LaunchedEffect 照常核对是否需要重合成。
+    var collageUrl by remember(channelId) { mutableStateOf(CollageUrlMemo[channelId]) }
     LaunchedEffect(channelId, members) {
         val cm = members.take(9).map {
             GeneratedAvatarCache.CollageMember(
@@ -90,15 +94,17 @@ fun GroupCollageAvatar(
         collageUrl = GeneratedAvatarCache
             .ensureCollage(channelId.toString(), cm)
             ?.let { "file://$it" }
+            ?.also { CollageUrlMemo[channelId] = it }
 
         // 缺真实头像文件但 roster 带 URL 的成员 → 补下载(AVATAR_CACHE_SPEC §5.3
         // 「缺则先走 §5.1 补齐」);await 完成后重合成一次,让新下载的真实头像即时补进
-        // 九宫格(不必等下次进会话列表)。
+        // 九宫格(不必等下次进会话列表)。查文件不在 UI 线程上做。
         val root = AvatarLocalCache.userRoot ?: return@LaunchedEffect
-        val missing = members.take(9).filter { m ->
-            m.avatar.isNotBlank() &&
-                AvatarCacheLayout.userAvatarFile(root, m.userId.toLong()) == null
+        val withUrl = members.take(9).filter { it.avatar.isNotBlank() }
+        val present = withContext(Dispatchers.Default) {
+            AvatarCacheLayout.userAvatarFiles(root, withUrl.map { it.userId.toString() })
         }
+        val missing = withUrl.filter { it.userId.toString() !in present }
         if (missing.isEmpty()) return@LaunchedEffect
         var anyDownloaded = false
         missing.forEach { m ->
@@ -110,6 +116,7 @@ fun GroupCollageAvatar(
             collageUrl = GeneratedAvatarCache
                 .ensureCollage(channelId.toString(), cm)
                 ?.let { "file://$it" }
+                ?.also { CollageUrlMemo[channelId] = it }
         }
     }
     val cu = collageUrl
@@ -196,4 +203,15 @@ private fun CollageCell(member: GroupMemberEntry, cell: Dp) {
             color = resolved.foregroundColor,
         )
     }
+}
+
+/**
+ * 每个群上次合成出的九宫格 `file://` 路径，只在 UI 线程读写。登出/切号时随
+ * [GeneratedAvatarCache.clear] 一起清掉，免得新账号看到旧账号的群图。
+ */
+internal object CollageUrlMemo {
+    private val urls = HashMap<ULong, String>()
+    operator fun get(channelId: ULong): String? = urls[channelId]
+    operator fun set(channelId: ULong, url: String) { urls[channelId] = url }
+    fun clear() = urls.clear()
 }

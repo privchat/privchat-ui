@@ -68,16 +68,16 @@ actual object AvatarBitmapRenderer {
         NSFileManager.defaultManager.fileExistsAtPath(path)
 
     @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
-    actual fun listFilesNewestFirst(dir: String): List<String> {
-        val fm = NSFileManager.defaultManager
-        val names = fm.contentsOfDirectoryAtPath(dir, null)
+    actual fun listFileNames(dir: String): List<String> =
+        NSFileManager.defaultManager.contentsOfDirectoryAtPath(dir, null)
             ?.filterIsInstance<String>()
-            ?: return emptyList()
-        return names.sortedByDescending { name ->
-            val attrs = fm.attributesOfItemAtPath("$dir/$name", null)
-            (attrs?.get(platform.Foundation.NSFileModificationDate) as? platform.Foundation.NSDate)
-                ?.timeIntervalSince1970 ?: 0.0
-        }
+            ?: emptyList()
+
+    @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+    actual fun lastModifiedMillis(path: String): Long {
+        val attrs = NSFileManager.defaultManager.attributesOfItemAtPath(path, null) ?: return 0L
+        val date = attrs[platform.Foundation.NSFileModificationDate] as? platform.Foundation.NSDate ?: return 0L
+        return (date.timeIntervalSince1970 * 1000).toLong()
     }
 
     /** 建 image context → 绘制 → 取 PNG → 落盘。writeToFile(atomically) 内部即临时文件

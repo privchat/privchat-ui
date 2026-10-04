@@ -33,12 +33,14 @@ expect object AvatarBitmapRenderer {
     fun fileExists(path: String): Boolean
 
     /**
-     * 列出目录下的文件名（不含路径），**按修改时间从新到旧**；目录不存在返回空。
+     * 目录下的文件名（不含路径），顺序不定；目录不存在返回空。只读目录项，不逐个取文件属性。
      *
-     * 头像缓存文件名带内容指纹（见 [AvatarCacheLayout]），所以 UI 没法直接拼出路径，
-     * 只能列目录找。排序是契约的一部分：残留多个版本时必须拿到最新的那个。
+     * 头像缓存文件名带内容指纹（见 [AvatarCacheLayout]），UI 没法直接拼出路径，只能列目录找。
      */
-    fun listFilesNewestFirst(dir: String): List<String>
+    fun listFileNames(dir: String): List<String>
+
+    /** 文件修改时间（毫秒）；不存在返回 0。只在同一用户残留多个版本时用来挑最新的。 */
+    fun lastModifiedMillis(path: String): Long
 }
 
 /** 九宫格单格：一张本地图片 / 一个 initials 色块 / 空位。 */

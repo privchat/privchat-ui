@@ -1,5 +1,7 @@
 package com.netonstream.privchat.ui.avatar
 
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -119,8 +121,10 @@ fun PrivChatAvatar(
                 // 别想用 `?v=` 或 `#v=` 去骗缓存：两者都会被当成文件路径的一部分，
                 // 文件打不开，头像直接掉回字母占位（实测过）。
                 given?.startsWith("file://") == true -> given
-                root != null && given != null ->
-                    AvatarCacheLayout.userAvatarFile(root, userId)?.let { "file://$it" }
+                // 查文件不在 UI 线程上做：列表里每一行头像都会走到这里。
+                root != null && given != null -> withContext(Dispatchers.Default) {
+                    AvatarCacheLayout.userAvatarFile(root, userId)
+                }?.let { "file://$it" }
                 else -> null
             }
         }
