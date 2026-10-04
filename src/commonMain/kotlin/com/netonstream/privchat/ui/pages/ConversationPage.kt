@@ -280,7 +280,8 @@ fun ConversationPage(
                     alignment = SearchBarAlignment.CENTER,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
+                        // 搜索入口本身有 44 的点击区（画出来的框 36），上下再各 4，整行 52（微信）。
+                        .padding(horizontal = Spacing.lg, vertical = Spacing.xs),
                 )
             }
             if (filteredChannels.isEmpty()) {
