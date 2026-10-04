@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.pages
 
+import com.tencent.kuikly.compose.ui.graphics.graphicsLayer
 import com.gearui.foundation.layout.Spacing
 import com.gearui.components.searchbar.SearchBarAlignment
 import com.gearui.components.searchbar.SearchBarButton
@@ -135,6 +136,16 @@ fun ConversationPage(
         )
     }
 
+    // 搜索入口露出的比例（0 = 藏着，1 = 全露）。导航栏的放大镜随之淡出：两个搜索入口不同时出现（微信的做法）。
+    val searchReveal by remember {
+        derivedStateOf {
+            if (listState.firstVisibleItemIndex != SEARCH_ENTRY_INDEX) return@derivedStateOf 0f
+            val entry = listState.layoutInfo.visibleItemsInfo.firstOrNull() ?: return@derivedStateOf 0f
+            if (entry.size <= 0) 0f
+            else (1f - listState.firstVisibleItemScrollOffset.toFloat() / entry.size).coerceIn(0f, 1f)
+        }
+    }
+
     // 双击底部「消息」Tab 回到列表顶部：外部每次双击把计数 +1，这里响应变化滚动。
     // 落点是第一条会话（搜索入口仍藏着），不是第 0 项。
     LaunchedEffect(scrollToTopSignal) {
@@ -201,14 +212,18 @@ fun ConversationPage(
                     } else if (statusTitle != null) {
                         { Text(text = statusTitle, style = Theme.typography.titleMedium, color = Theme.colors.foreground) }
                     } else null,
-                    // 🔴 用 kit 的槽位宽度算总宽，别写死。写死过 96dp，而两个图标按
-                    // NavBarItem 的标准是 2×56dp——于是这一页的顶部图标比联系人页窄、
-                    // 间距也不一样。同一个顶栏两套几何，只能靠肉眼比截图才发现。
+                    // 🔴 用 kit 的槽位宽度算总宽，别写死。写死过 96dp，和 NavBarItem 的两个槽位
+                    // 不一致——于是这一页的顶部图标比联系人页窄、间距也不一样。同一个顶栏两套
+                    // 几何，只能靠肉眼比截图才发现。
                     rightWidgetWidth = NavBarDefaults.actionSlotWidth * 2,
                     rightWidget = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                        // 全局搜索(聊天记录)入口
-                        NavBarActionSlot(onClick = onGlobalSearch) {
+                        // 全局搜索(聊天记录)入口。列表顶部的搜索框露出时淡出；全露时不再接点击，
+                        // 不留一个看不见却点得到的按钮。
+                        NavBarActionSlot(
+                            modifier = Modifier.graphicsLayer { alpha = 1f - searchReveal },
+                            onClick = if (searchReveal < 1f) onGlobalSearch else null,
+                        ) {
                             Icon(Icons.magnifyingGlass,
                                 size = NavBarDefaults.actionIconSize,
                                 tint = Theme.colors.foreground,
