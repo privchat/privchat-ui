@@ -1,5 +1,9 @@
 package com.netonstream.privchat.ui.pages
 
+import com.tencent.kuikly.compose.ui.platform.LocalConfiguration
+import com.tencent.kuikly.compose.ui.input.pointer.pointerInput
+import com.tencent.kuikly.compose.foundation.gestures.awaitFirstDown
+import com.tencent.kuikly.compose.foundation.gestures.awaitEachGesture
 import com.tencent.kuikly.compose.ui.graphics.graphicsLayer
 import com.gearui.foundation.layout.Spacing
 import com.gearui.components.searchbar.SearchBarAlignment
@@ -168,19 +172,26 @@ fun ConversationPage(
         }
     }
 
-    // 搜索入口只停在「全露」或「全藏」：松手时露出超过一半就展开，否则收回（iOS 列表顶部
-    // 搜索栏的行为）。只看滚动停下的那一刻，拖动中不干预。
+    // 搜索入口只停在「全露」或「全藏」：露出超过一半就展开，否则收回（iOS 列表顶部搜索栏的行为）。
+    //
+    // 吸附时机分平台：
+    // - 滚动停下时（两端都有）：惯性滑进搜索区、半路停住时补一次；iOS 只用这一个——原生减速和
+    //   回弹本身连贯，松手就抢着动画，动画走完原生惯性还会再推几点，停在错的位置。
+    // - Android 再加手指抬起的那一刻：等滚动停下再动的话，松手后的惯性先走一小段、停一下、
+    //   吸附动画再接着走，走走停停看上去就是在抖。
+    val snapOnRelease = LocalConfiguration.current.isAndroid
+    suspend fun settleSearchEntry() {
+        if (listState.firstVisibleItemIndex != SEARCH_ENTRY_INDEX) return
+        val entry = listState.layoutInfo.visibleItemsInfo.firstOrNull() ?: return
+        val hidden = listState.firstVisibleItemScrollOffset
+        if (hidden <= 0 || hidden >= entry.size) return
+        listState.animateScrollToItem(
+            if (hidden * 2 < entry.size) SEARCH_ENTRY_INDEX else FIRST_CONVERSATION_INDEX
+        )
+    }
     LaunchedEffect(listState) {
         snapshotFlow { listState.isScrollInProgress }.collect { scrolling ->
-            if (scrolling || listState.firstVisibleItemIndex != SEARCH_ENTRY_INDEX) return@collect
-            val entry = listState.layoutInfo.visibleItemsInfo.firstOrNull() ?: return@collect
-            val hidden = listState.firstVisibleItemScrollOffset
-            if (hidden <= 0 || hidden >= entry.size) return@collect
-            if (hidden * 2 < entry.size) {
-                listState.animateScrollToItem(SEARCH_ENTRY_INDEX)
-            } else {
-                listState.animateScrollToItem(FIRST_CONVERSATION_INDEX)
-            }
+            if (!scrolling) settleSearchEntry()
         }
     }
 
@@ -270,7 +281,18 @@ fun ConversationPage(
 
         // 会话列表。第 0 项是下拉露出的搜索入口，和 NavBar 的放大镜同一个去处（全局搜索页）。
         GearLazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                // 只观察，不消费：Android 上手指抬起时吸附搜索入口（见 snapOnRelease）。
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false)
+                        do {
+                            val event = awaitPointerEvent()
+                        } while (event.changes.any { it.pressed })
+                        if (snapOnRelease) scope.launch { settleSearchEntry() }
+                    }
+                },
             state = listState,
         ) {
             item(key = "search-entry") {
