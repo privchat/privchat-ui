@@ -3205,13 +3205,15 @@ private fun MessageInputBar(
                         outlined = true,
                         modifier = Modifier.weight(1f),
                         maxLines = 8,
-                        // 单行要和「按住 说话」**一样高 42dp**（inputControlHeight），否则
-                        // 语音/键盘切换时整条栏子会跳。
+                        // 单行要和「按住 说话」**一样高**（inputControlHeight），否则语音/键盘
+                        // 切换时整条栏子会跳，两侧按钮也对不齐中线。
                         //
-                        // 🔴 这里的总高不是 2*verticalPadding + lineHeight 就完事：outlined 的
-                        // 那圈描边还要再占约 1.4dp（真机量过：padding 8.5 时总高 37.4dp）。
-                        // 所以 42 = 2 × 10.8 + 19 + 1.4。
-                        verticalPadding = 10.8.dp,
+                        // 🔴 用 minHeight 钉死，不要拿 verticalPadding 去凑：原生文本行盒比
+                        // lineHeight 高（19sp 实测约 20.7dp），按内边距凑的高度总会偏。内边距
+                        // 必须小到让单行的自然高度低于 minHeight（8 × 2 + 20.7 ≈ 36.7），
+                        // minHeight 才起作用；它只决定多行时的上下留白。
+                        minHeight = inputControlHeight,
+                        verticalPadding = 8.dp,
                         lineHeight = 19.sp,
                         autoFocus = pendingAutoFocus,
                         focusRequester = inputFocusRequester,
