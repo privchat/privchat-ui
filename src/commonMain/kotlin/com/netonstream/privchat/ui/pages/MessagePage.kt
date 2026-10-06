@@ -1034,7 +1034,8 @@ fun MessagePage(
             onBackClick = onBack,
             titleWidget = {
                 // presence 为真源：DM 标题下展示在线 / 「N 分钟前在线」相对时长（离线时用 muted 色）。
-                val presenceText = if (channel.isDm) presenceStatusText(peerPresence, strings) else null
+                val presenceNow = rememberPresenceClock(peerPresence)
+                val presenceText = if (channel.isDm) presenceStatusText(peerPresence, strings, presenceNow) else null
                 Column(
                     modifier = Modifier.clickable(onClick = onTitleClick),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -1879,7 +1880,7 @@ private fun DmPresenceStatus(
 ) {
     val strings = PrivChatI18n.strings
     val colors = Theme.colors
-    val statusText = presenceStatusText(presence, strings)
+    val statusText = presenceStatusText(presence, strings, rememberPresenceClock(presence))
     val statusColor = if (presence?.isOnline == true) colors.onlineStatus else colors.offlineStatus
 
     Box(
@@ -1898,18 +1899,40 @@ private fun DmPresenceStatus(
     }
 }
 
+/**
+ * 「N 分钟前在线」相对的「现在」。现在在走，文案就得跟着走：只在 presence 变化时重算的话，
+ * 打开会话那一刻算出的「刚刚在线」会一直挂着——对方早已离线半小时，另一台设备上同一个人
+ * 却显示「30 分钟前在线」，看起来像两边数据不一致。
+ *
+ * 离线且有 lastSeen 时每 30s 刷新；在线时没有相对时长，不起计时。
+ */
+@Composable
+private fun rememberPresenceClock(presence: PresenceEntry?): Long {
+    val ticking = presence != null && !presence.isOnline && (presence.lastSeen ?: 0L) > 0L
+    val now by produceState(currentTimeMillis(), ticking, presence?.lastSeen) {
+        value = currentTimeMillis()
+        while (ticking) {
+            delay(30_000)
+            value = currentTimeMillis()
+        }
+    }
+    return now
+}
+
 private fun presenceStatusText(
     presence: PresenceEntry?,
     strings: com.netonstream.privchat.ui.i18n.PrivChatStrings,
+    now: Long,
 ): String? {
     if (presence == null) return null
     if (presence.isOnline) return strings.presenceOnline
     val lastSeen = presence.lastSeen ?: return strings.presenceOffline
     if (lastSeen <= 0L) return strings.presenceOffline
-    // presence 为真源：离线时展示「N 分钟/小时/天前在线」相对时长（< 1 分钟回退到「最近在线」）。
+    // presence 为真源：离线时展示「N 分钟/小时/天前在线」相对时长（< 1 分钟为「刚刚在线」）。
     return Formatter.presenceLastSeen(
         lastSeen = lastSeen,
-        justNow = strings.presenceLastSeenPrefix,
+        now = now,
+        justNow = strings.presenceJustNow,
         minutesAgo = strings.presenceOfflineMinutesAgo,
         hoursAgo = strings.presenceOfflineHoursAgo,
         daysAgo = strings.presenceOfflineDaysAgo,

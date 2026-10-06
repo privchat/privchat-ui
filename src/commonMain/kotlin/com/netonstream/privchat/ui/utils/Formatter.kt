@@ -263,6 +263,8 @@ object Formatter {
      */
     fun presenceLastSeen(
         lastSeen: Long,
+        /** 相对时长的「现在」；调用方要让文案随时间走，就传一个会刷新的值。 */
+        now: Long = currentTimeMillis(),
         justNow: String,
         minutesAgo: String,
         hoursAgo: String,
@@ -272,7 +274,6 @@ object Formatter {
         // 防御:老 server 下发 Unix 秒(契约是 UTC 毫秒),秒值会被格式化成 1970-01-21。
         @Suppress("NAME_SHADOWING")
         val lastSeen = if (lastSeen < 1_000_000_000_000L) lastSeen * 1000 else lastSeen
-        val now = currentTimeMillis()
         val diffSec = (now - lastSeen) / 1000L
         return when {
             diffSec < 60 -> justNow

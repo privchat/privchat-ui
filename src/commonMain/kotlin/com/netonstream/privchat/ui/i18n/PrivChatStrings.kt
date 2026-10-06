@@ -75,7 +75,7 @@ data class PrivChatStrings(
     val messageVoiceHint: String get() = dMessage.messageVoiceHint
     val presenceOnline: String get() = dMessage.presenceOnline
     val presenceOffline: String get() = dMessage.presenceOffline
-    val presenceLastSeenPrefix: String get() = dMessage.presenceLastSeenPrefix
+    val presenceJustNow: String get() = dMessage.presenceJustNow
     val forwardTitle: String get() = dMessage.forwardTitle
     val forwardSend: String get() = dMessage.forwardSend
     val forwardSearchPlaceholder: String get() = dMessage.forwardSearchPlaceholder

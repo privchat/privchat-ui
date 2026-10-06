@@ -181,7 +181,7 @@ data class PrivChatMessageStrings(
     val messageVoiceHint: String,
     val presenceOnline: String,
     val presenceOffline: String,
-    val presenceLastSeenPrefix: String,
+    val presenceJustNow: String,
     val forwardTitle: String,
     val forwardSend: String,
     val forwardSearchPlaceholder: String,
@@ -330,7 +330,7 @@ data class PrivChatMessageStringsPatch(
     val messageVoiceHint: String? = null,
     val presenceOnline: String? = null,
     val presenceOffline: String? = null,
-    val presenceLastSeenPrefix: String? = null,
+    val presenceJustNow: String? = null,
     val forwardTitle: String? = null,
     val forwardSend: String? = null,
     val forwardSearchPlaceholder: String? = null,
@@ -463,7 +463,7 @@ val PrivChatMessageStringsPatch.isEmpty: Boolean
         messageVoiceHint == null &&
         presenceOnline == null &&
         presenceOffline == null &&
-        presenceLastSeenPrefix == null &&
+        presenceJustNow == null &&
         forwardTitle == null &&
         forwardSend == null &&
         forwardSearchPlaceholder == null &&
@@ -597,7 +597,7 @@ fun PrivChatMessageStrings.merge(patch: PrivChatMessageStringsPatch?): PrivChatM
         messageVoiceHint = patch.messageVoiceHint ?: messageVoiceHint,
         presenceOnline = patch.presenceOnline ?: presenceOnline,
         presenceOffline = patch.presenceOffline ?: presenceOffline,
-        presenceLastSeenPrefix = patch.presenceLastSeenPrefix ?: presenceLastSeenPrefix,
+        presenceJustNow = patch.presenceJustNow ?: presenceJustNow,
         forwardTitle = patch.forwardTitle ?: forwardTitle,
         forwardSend = patch.forwardSend ?: forwardSend,
         forwardSearchPlaceholder = patch.forwardSearchPlaceholder ?: forwardSearchPlaceholder,
