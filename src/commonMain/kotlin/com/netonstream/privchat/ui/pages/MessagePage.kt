@@ -2926,11 +2926,15 @@ private fun MessageInputBar(
             "📍", "🚗", "✈️", "⌛", "✅", "❌", "❓", "❗"
         )
     }
-    // 输入栏一行里所有控件同高：单行输入框、圆形按钮、语音条、发送按钮。
+    // 输入栏的两级高度：中间的单行输入框 / 「按住 说话」比两侧按钮高一档，两侧的圆形
+    // 按钮与发送按钮是 gearui `ButtonSize.SMALL` 的 36dp。一样高时中间那条撑不起来，
+    // 整条栏子看着又扁又挤。
     //
-    // 36dp = 微信输入框的高度，也正好是 gearui `ButtonSize.SMALL`。之前这里是 32dp 而
-    // 发送按钮用的是 SMALL，于是发送按钮比输入框高 4dp——整条栏子看着既矮又没对齐。
-    val inputControlHeight = 36.dp
+    // 行是底部对齐的（多行输入时输入框向上长、按钮留在底部），所以两侧控件垫上
+    // [inputButtonInset] 的底边距：单行时圆心与输入框中线水平对齐，多行时对齐最后一行。
+    val inputControlHeight = 42.dp
+    val inputButtonSize = 36.dp
+    val inputButtonInset = (inputControlHeight - inputButtonSize) / 2
     val panelHostHeight = 228.dp
     val panelTopSpacing = 8.dp
     val rawKeyboardVisible = keyboardHeight > 0.dp
@@ -3095,6 +3099,7 @@ private fun MessageInputBar(
             // 最左：bot/system/official 会话的菜单按钮（BOT_INTERACTION_SPEC §3.1）
             if (showMenuButton) {
                 CircleIconButton(
+                    modifier = Modifier.padding(bottom = inputButtonInset),
                     icon = Icons.list,
                     onClick = {
                         closeAllPanels()
@@ -3106,6 +3111,7 @@ private fun MessageInputBar(
 
             // 左侧：语音/键盘切换
                 CircleIconButton(
+                    modifier = Modifier.padding(bottom = inputButtonInset),
                     // 语音模式下这个按钮是"回到打字"，图标就该是键盘。之前用的是聊天气泡
                     // （chat_circle），它表达的是"会话"，看着像另开一个聊天。
                     icon = if (voiceMode) Icons.keyboard else Icons.microphone,
@@ -3199,12 +3205,13 @@ private fun MessageInputBar(
                         outlined = true,
                         modifier = Modifier.weight(1f),
                         maxLines = 8,
-                        // 单行要和两侧按钮**一样高 36dp**，否则语音/键盘切换时整条栏子会跳。
+                        // 单行要和「按住 说话」**一样高 42dp**（inputControlHeight），否则
+                        // 语音/键盘切换时整条栏子会跳。
                         //
                         // 🔴 这里的总高不是 2*verticalPadding + lineHeight 就完事：outlined 的
-                        // 那圈描边还要再占约 1.4dp（真机量过：padding 8.5 时总高 37.4dp，而
-                        // 圆形按钮和「按住 说话」都是 36.0dp）。所以内边距按 7.8 取，凑够 36。
-                        verticalPadding = 7.8.dp,
+                        // 那圈描边还要再占约 1.4dp（真机量过：padding 8.5 时总高 37.4dp）。
+                        // 所以 42 = 2 × 10.8 + 19 + 1.4。
+                        verticalPadding = 10.8.dp,
                         lineHeight = 19.sp,
                         autoFocus = pendingAutoFocus,
                         focusRequester = inputFocusRequester,
@@ -3227,6 +3234,7 @@ private fun MessageInputBar(
 
                 // 右侧：表情
                 CircleIconButton(
+                    modifier = Modifier.padding(bottom = inputButtonInset),
                     // 笑脸，不是桃心：这个按钮开的是表情面板，桃心表达的是"喜欢/收藏"。
                     //
                     // 用 App 自带的 emoji_face 而不是 Phosphor 的 smiley：后者自带一圈脸廓，
@@ -3255,12 +3263,15 @@ private fun MessageInputBar(
                         disabled = loading,
                         loading = loading,
                         onClick = { onSend() },
-                        // 显式绑定到同一个高度：光靠 SMALL 恰好等于 inputControlHeight 是
+                        // 显式绑定到两侧控件的高度：光靠 SMALL 恰好等于 inputButtonSize 是
                         // 巧合，token 一调整这里就又高出一截。
-                        modifier = Modifier.height(inputControlHeight),
+                        modifier = Modifier
+                            .padding(bottom = inputButtonInset)
+                            .height(inputButtonSize),
                     )
                 } else {
                 CircleIconButton(
+                    modifier = Modifier.padding(bottom = inputButtonInset),
                     icon = Icons.plus,
                     onClick = {
                     if (panelMode == InputPanelMode.PLUS || displayedPanelMode == InputPanelMode.PLUS) {
@@ -3517,12 +3528,13 @@ private const val SAMPLE_MS = 80L
 private fun CircleIconButton(
     icon: IconSource,
     onClick: () -> Unit,
-    // 与 inputControlHeight 同值：这几个按钮都住在输入栏那一行里。
+    modifier: Modifier = Modifier,
+    // 与 inputButtonSize 同值：这几个按钮都住在输入栏那一行里。
     size: Dp = 36.dp,
 ) {
     val colors = Theme.colors
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(size)
             .clip(RoundedCornerShape(size / 2))
             .background(colors.muted)
