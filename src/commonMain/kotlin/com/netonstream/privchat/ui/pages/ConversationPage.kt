@@ -48,7 +48,7 @@ import com.gearui.components.swipecell.SwipeCellGroupState
 import com.gearui.components.swipecell.rememberSwipeCellGroupState
 import com.gearui.components.swipecell.rememberSwipeCellState
 import com.tencent.kuikly.compose.foundation.background
-import com.tencent.kuikly.compose.foundation.clickable
+import com.gearui.foundation.list.rowClickable
 import com.tencent.kuikly.compose.foundation.layout.*
 import com.tencent.kuikly.compose.foundation.lazy.rememberLazyListState
 import com.tencent.kuikly.compose.foundation.shape.RoundedCornerShape
@@ -431,14 +431,17 @@ private fun ChannelItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(backgroundColor)
-                .clickable {
-                    if (swipeGroup.isAnyOpen) {
-                        scope.launch { swipeGroup.closeAll() }
-                    } else {
-                        onClick()
-                    }
-                }
+                // 按压反馈由 kit 提供；行底色交给 rowClickable，不能再单独设 background（会盖住按压层）。
+                .rowClickable(
+                    onClick = {
+                        if (swipeGroup.isAnyOpen) {
+                            scope.launch { swipeGroup.closeAll() }
+                        } else {
+                            onClick()
+                        }
+                    },
+                    background = backgroundColor,
+                )
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
