@@ -8,6 +8,7 @@ import com.netonstream.privchat.sdk.dto.GroupEntry
 import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.components.ChatAvatar
 import com.netonstream.privchat.ui.models.displayName
+import com.netonstream.privchat.ui.models.hasLocalHistory
 import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
@@ -113,7 +114,10 @@ fun ForwardPickerPage(
 
     // 最近：只取能解析成 DM/Group 的 channel，按 lastTs 降序。
     val recentTargets = remember(channels) {
+        // 「最近」只列本地已有聊天记录的会话（和会话列表同口径）；没记录的单聊对端
+        // 仍会出现在下面的好友区，转发目标不丢。
         channels
+            .filter { it.hasLocalHistory }
             .sortedByDescending { it.lastTs }
             .mapNotNull { it.toForwardTarget() }
     }

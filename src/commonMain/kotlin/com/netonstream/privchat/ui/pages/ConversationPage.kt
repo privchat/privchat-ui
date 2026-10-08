@@ -126,11 +126,16 @@ fun ConversationPage(
     var searchQuery by remember { mutableStateOf("") }
 
     // 过滤后的会话列表
-    val filteredChannels = remember(channels, searchQuery) {
+    val filteredChannels = remember(channels, localStates, searchQuery) {
+        // 本地还没有聊天记录的会话先不列（新设备登录时频道先于记录到达），补历史落库后
+        // history_hydrated 触发列表刷新，它们自然出现。带草稿的空会话照常列出。
+        val listed = channels.filter { channel ->
+            channel.isListedInConversations(localStates[channel.channelId]?.draftText)
+        }
         val base = if (searchQuery.isBlank()) {
-            channels
+            listed
         } else {
-            channels.filter { channel ->
+            listed.filter { channel ->
                 channel.displayName.contains(searchQuery, ignoreCase = true)
             }
         }

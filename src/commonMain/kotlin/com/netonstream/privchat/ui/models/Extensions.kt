@@ -61,6 +61,28 @@ fun ChannelListEntry.lastMessagePreviewLocalized(strings: PrivChatStrings): Stri
 val ChannelListEntry.lastMessageTime: ULong
     get() = latestEvent?.timestamp ?: lastTs
 
+/**
+ * 本地是否已有这个会话的聊天记录（有最后一条消息）。
+ *
+ * 新设备登录时，频道实体先于聊天记录同步下来，此刻本地一条消息都没有；直接列出会冒出一排只有
+ * 名字、没有预览的空行。首屏补历史落库后 SDK 发 `history_hydrated`，列表刷新，会话自然出现。
+ * 服务端本来就 0 条消息的会话（刚通过好友还没聊过）因此也不进列表——与「零消息会话不进列表」一致。
+ *
+ * `latestEvent` 的存在性已按「有没有最后一条消息」收敛（无 caption 媒体、撤回都算有），这里直接复用。
+ *
+ * 🔴 只用于「列出会话」的地方（会话列表、角标、转发的最近会话）。按 id 查会话（跳转、打开、
+ * 新建群后进入、从联系人进单聊）必须继续用完整的 `PrivChat.channels`，否则空会话会找不到。
+ */
+val ChannelListEntry.hasLocalHistory: Boolean
+    get() = latestEvent != null
+
+/**
+ * 是否出现在会话列表里：本地已有聊天记录，或用户在里面留了草稿（打了字又退出来的空会话，
+ * 和微信一样留在列表里，否则草稿就丢在看不见的地方）。
+ */
+fun ChannelListEntry.isListedInConversations(draftText: String?): Boolean =
+    hasLocalHistory || !draftText.isNullOrBlank()
+
 /** 是否置顶（isFavourite 的别名） */
 val ChannelListEntry.isPinned: Boolean
     get() = isFavourite

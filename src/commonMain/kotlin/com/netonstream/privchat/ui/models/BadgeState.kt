@@ -37,7 +37,12 @@ fun badgeStateOf(
     groupRequests: Int = 0,
 ): BadgeState =
     BadgeState(
-        totalUnread = channels.filterNot { it.isMuted }.sumOf { it.unreadCount },
+        // 只算列表里看得见的会话：本地还没有记录的会话（新设备补历史前）不在列表里，
+        // 算进角标就是一个找不到来源的红点。补齐后它进列表，角标随之计入。
+        totalUnread = channels
+            .filter { it.hasLocalHistory }
+            .filterNot { it.isMuted }
+            .sumOf { it.unreadCount },
         conversationUnread = channels.associate { it.channelId to it.unreadCount },
         friendRequests = friendRequests,
         groupRequests = groupRequests,
