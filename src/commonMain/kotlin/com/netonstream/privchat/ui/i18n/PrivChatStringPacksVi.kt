@@ -250,6 +250,7 @@ internal val viSearch = PrivChatSearchStrings(
     globalSearchNoResult = "Không tìm thấy kết quả",
     globalSearchLoadMore = "Tải thêm",
     globalSearchAnchorMissing = "Tin nhắn không khả dụng",
+    globalSearchBackToAll = "Tất cả kết quả",
 )
 
 internal val viUser = PrivChatUserStrings(

@@ -250,6 +250,7 @@ internal val hantSearch = PrivChatSearchStrings(
     globalSearchNoResult = "未找到相關結果",
     globalSearchLoadMore = "載入更多",
     globalSearchAnchorMissing = "該訊息已失效",
+    globalSearchBackToAll = "全部結果",
 )
 
 internal val hantUser = PrivChatUserStrings(

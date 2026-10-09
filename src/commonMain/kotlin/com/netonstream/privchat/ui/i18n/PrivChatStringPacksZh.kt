@@ -250,6 +250,7 @@ internal val zhSearch = PrivChatSearchStrings(
     globalSearchNoResult = "未找到相关结果",
     globalSearchLoadMore = "加载更多",
     globalSearchAnchorMissing = "该消息已失效",
+    globalSearchBackToAll = "全部结果",
 )
 
 internal val zhUser = PrivChatUserStrings(

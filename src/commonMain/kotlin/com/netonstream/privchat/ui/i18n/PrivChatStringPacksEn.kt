@@ -250,6 +250,7 @@ internal val enSearch = PrivChatSearchStrings(
     globalSearchNoResult = "No results found",
     globalSearchLoadMore = "Load more",
     globalSearchAnchorMissing = "Message unavailable",
+    globalSearchBackToAll = "All results",
 )
 
 internal val enUser = PrivChatUserStrings(

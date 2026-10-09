@@ -897,6 +897,7 @@ data class PrivChatSearchStrings(
     val globalSearchNoResult: String,
     val globalSearchLoadMore: String,
     val globalSearchAnchorMissing: String,
+    val globalSearchBackToAll: String,
 )
 
 data class PrivChatSearchStringsPatch(
@@ -925,6 +926,7 @@ data class PrivChatSearchStringsPatch(
     val globalSearchNoResult: String? = null,
     val globalSearchLoadMore: String? = null,
     val globalSearchAnchorMissing: String? = null,
+    val globalSearchBackToAll: String? = null,
 )
 
 val PrivChatSearchStringsPatch.isEmpty: Boolean
@@ -952,7 +954,8 @@ val PrivChatSearchStringsPatch.isEmpty: Boolean
         globalSearchSectionMessages == null &&
         globalSearchNoResult == null &&
         globalSearchLoadMore == null &&
-        globalSearchAnchorMissing == null
+        globalSearchAnchorMissing == null &&
+        globalSearchBackToAll == null
 
 fun PrivChatSearchStrings.merge(patch: PrivChatSearchStringsPatch?): PrivChatSearchStrings {
     if (patch == null || patch.isEmpty) return this
@@ -982,6 +985,7 @@ fun PrivChatSearchStrings.merge(patch: PrivChatSearchStringsPatch?): PrivChatSea
         globalSearchNoResult = patch.globalSearchNoResult ?: globalSearchNoResult,
         globalSearchLoadMore = patch.globalSearchLoadMore ?: globalSearchLoadMore,
         globalSearchAnchorMissing = patch.globalSearchAnchorMissing ?: globalSearchAnchorMissing,
+        globalSearchBackToAll = patch.globalSearchBackToAll ?: globalSearchBackToAll,
     )
 }
 

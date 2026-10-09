@@ -247,6 +247,7 @@ data class PrivChatStrings(
     val globalSearchNoResult: String get() = dSearch.globalSearchNoResult
     val globalSearchLoadMore: String get() = dSearch.globalSearchLoadMore
     val globalSearchAnchorMissing: String get() = dSearch.globalSearchAnchorMissing
+    val globalSearchBackToAll: String get() = dSearch.globalSearchBackToAll
     val userProfileTitle: String get() = dUser.userProfileTitle
     val userProfileUserId: String get() = dUser.userProfileUserId
     val userProfileSystemAccount: String get() = dUser.userProfileSystemAccount

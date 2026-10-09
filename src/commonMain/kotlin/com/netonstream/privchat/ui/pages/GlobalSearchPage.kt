@@ -172,32 +172,17 @@ fun GlobalSearchPage(
     }
 
     Column(modifier = modifier.fillMaxSize().background(colors.background)) {
-        // 微信式顶栏：一行 [<返回][搜索框（放大镜+清除x）][取消]，没有标题行。
-        // 返回逐级回退：会话钻取 → 分组钻取 → 总览 → 退出。
-        Row(
+        // 顶栏 = 这一页的导航栏：只有 GearUI 标准 SearchBar（放大镜 + 清除 + 取消），没有返回箭头。
+        // 「取消」关页，右划返回也关页——两条出口都在，箭头是多余的第三条。
+        //
+        // 底色用 surface：路由宿主给无 NavBar 页面补的顶部安全区画的是 surface（与各页 NavBar 同色），
+        // 顶栏若用页面背景色，状态栏那一条和搜索栏就是两种颜色，看起来背景没盖到顶。
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                // 路由宿主已为无 NavBar 页面补过顶部安全区，这里再加一次就是双倍留白。
-                .padding(vertical = 6.dp, horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .background(colors.surface)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clickable {
-                        when {
-                            channelDrill != null -> channelDrill = null
-                            drill != null -> drill = null
-                            else -> onBack()
-                        }
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                com.gearui.foundation.primitives.Icon(com.gearui.components.icon.Icons.caretLeft,
-                    size = 24.dp,
-                    tint = colors.foreground,
-                )
-            }
             SearchBar(
                 value = query,
                 onValueChange = { query = it; drill = null; channelDrill = null },
@@ -205,8 +190,7 @@ fun GlobalSearchPage(
                 autoFocus = true,
                 cancel = com.gearui.components.searchbar.SearchBarCancel.Always,
                 onCancel = onBack,
-                shape = com.gearui.components.searchbar.SearchBarShape.SQUARE,
-                modifier = Modifier.weight(1f).padding(end = 12.dp),
+                modifier = Modifier.fillMaxWidth(),
             )
         }
 
@@ -239,6 +223,18 @@ fun GlobalSearchPage(
             val visibleHits = if (drill == SearchDrill.MESSAGES) hits else hits.take(overviewCap)
 
             GearLazyColumn(modifier = Modifier.fillMaxSize()) {
+                // 钻取态（某一组全量 / 某会话的命中）原来靠返回箭头逐级退；箭头去掉后用文字链接回到总览。
+                // 改关键词也会回到总览（onValueChange 清钻取）。
+                if (drill != null || channelDrill != null) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
+                            LinkButton(
+                                text = strings.globalSearchBackToAll,
+                                onClick = { channelDrill = null; drill = null },
+                            )
+                        }
+                    }
+                }
                 if (showContacts) {
                     item { SectionHeader(strings.globalSearchSectionContacts) }
                     items(visibleContacts.size) { i ->
