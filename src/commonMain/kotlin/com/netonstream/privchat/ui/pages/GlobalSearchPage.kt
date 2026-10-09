@@ -306,6 +306,28 @@ fun GlobalSearchPage(
                         item { SearchMoreRow(strings.globalSearchMoreGroups) { drill = SearchDrill.GROUPS } }
                     }
                 }
+                // 聊天记录（远程）搜索失败、但本地联系人/群组有命中时，整页错误态不会出现
+                // （那只在本地也为空时才显示）。以前这里什么都不画：页面照常列出联系人，
+                // 聊天记录一栏直接消失，用户看到的是「没搜到聊天记录」——真实原因被吞掉了。
+                if (error && !isSearching && (contactHits.isNotEmpty() || groupHits.isNotEmpty()) &&
+                    channelDrill == null && (drill == null || drill == SearchDrill.MESSAGES)
+                ) {
+                    item { SectionHeader(strings.globalSearchSectionMessages) }
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = strings.networkError,
+                                style = Theme.typography.bodyMedium,
+                                color = colors.mutedForeground,
+                                modifier = Modifier.weight(1f),
+                            )
+                            LinkButton(text = strings.retry, onClick = { retryNonce += 1 })
+                        }
+                    }
+                }
                 if (showMessages) {
                     item { SectionHeader(strings.globalSearchSectionMessages) }
                     if (effectiveScopeId == null) {
