@@ -678,11 +678,28 @@ fun MessagePage(
                 if (list != null) PrivChat.updateMessages(channel.channelId, list)
             }
         } else {
+            // local-first 快读：内存缓存为空（往下滑点进本次启动没打开过的会话）时，先用
+            // 绕开网络 actor 的 getLocalTimeline 从 SQLite 瞬读渲染，别白屏等。
+            //
+            // 为什么必须绕开：openConversation / 纯本地读都排在 SDK 网络 actor 的命令队列里，
+            // 而首屏预取扫补会在同一 actor 循环里逐个内联拉历史。扫补正打网络时，哪怕这个会话
+            // 消息早已在本地库，那次本地读也排在扫补的网络 RPC 后面——表现就是「有些会话点进去
+            // 要等一会儿才出历史」。getLocalTimeline 走独立存储 actor，不受此阻塞。
+            if (cachedBeforeLoad.isEmpty()) {
+                val localFirst = withContext(Dispatchers.Default) {
+                    PrivChat.client.getLocalTimeline(channel.channelId, channel.channelType, 50u)
+                        .getOrNull()
+                }
+                if (!localFirst.isNullOrEmpty()) {
+                    PrivChat.updateMessages(channel.channelId, localFirst)
+                    hasInitialLoadCompleted = true // 先让缓存内容上屏，不卡白屏
+                }
+            }
             // SDK-HISTORY-7：打开会话走 openConversation，不是纯本地读。
             //
             // 纯本地读时，本地没有这个会话的消息就永远显示「暂无聊天内容」——而上滑翻页
             // 救不了它：翻页要有一个已存在的锚点往前翻，一条都没有时连起点都没有。
-            // openConversation 在本地为空时补一次最新窗口，本地有内容则直接返回不打网络。
+            // openConversation 在本地为空时补一次最新窗口，本地有内容则追一次增量（catch-up）。
             val list = if (onLoadMessages != null) {
                 onLoadMessages.invoke(channel.channelId, channel.channelType).getOrNull()
             } else {
