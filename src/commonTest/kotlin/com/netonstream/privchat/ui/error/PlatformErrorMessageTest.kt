@@ -65,6 +65,45 @@ class PlatformErrorMessageTest {
     }
 
     @Test
+    fun qr_login_codes_map_to_qr_copy() {
+        assertEquals(en.qrLoginCodeExpired, PlatformErrorMessage.describe(Err(10201, "QR_SCENE_NOT_FOUND"), en))
+        assertEquals(en.qrLoginCodeExpired, PlatformErrorMessage.describe(Err(10100, "QR_TOKEN_MISMATCH"), en))
+        assertEquals(en.qrLoginCodeUsed, PlatformErrorMessage.describe(Err(10205, "QR_SCENE_STATE_INVALID"), en))
+        assertEquals(en.qrLoginConfirmExpired, PlatformErrorMessage.describe(Err(10100, "QR_CONFIRM_TOKEN_INVALID"), en))
+        assertEquals(en.qrLoginScannerMismatch, PlatformErrorMessage.describe(Err(10004, "QR_SCANNER_MISMATCH"), en))
+        assertEquals(en.platformErrServiceUnavailable, PlatformErrorMessage.describe(Err(3, "QR_LOGIN_UNAVAILABLE"), en))
+    }
+
+    @Test
+    fun privchat_refresh_codes_are_session_expired() {
+        assertEquals(en.platformErrSessionExpired, PlatformErrorMessage.describe(Err(10101, "DEVICE_ID_REQUIRED"), en))
+        assertEquals(en.platformErrSessionExpired, PlatformErrorMessage.describe(Err(10009, "REFRESH_TOKEN_EXPIRED"), en))
+        assertEquals(true, PlatformErrorMessage.isSessionExpired(Err(10101, "DEVICE_ID_REQUIRED")))
+        assertEquals(true, PlatformErrorMessage.isSessionExpired(Err(10000, "AUTH_REQUIRED")))
+        assertEquals(true, PlatformErrorMessage.isSessionExpired(Err(401, null)))
+        assertEquals(false, PlatformErrorMessage.isSessionExpired(Err(10201, "QR_SCENE_NOT_FOUND")))
+    }
+
+    @Test
+    fun bot_transfer_reply_codes_are_translated_and_unknown_text_is_dropped() {
+        assertEquals(en.botServiceUnavailable, PlatformErrorMessage.forServerMessage("PRIVCHAT_BOT_DISABLED", en))
+        assertEquals(en.botServiceUnavailable, PlatformErrorMessage.forServerMessage("PRIVCHAT_CHANNEL_NOT_BOUND", en))
+        assertEquals(en.platformErrServiceUnavailable, PlatformErrorMessage.forServerMessage("PRIVCHAT_HANDLER_FAILED", en))
+        assertNull(PlatformErrorMessage.forServerMessage("bot 不存在", en))
+        assertNull(PlatformErrorMessage.forServerMessage("", en))
+        assertNull(PlatformErrorMessage.forServerMessage(null, en))
+    }
+
+    @Test
+    fun new_copy_exists_in_every_language() {
+        for (pack in listOf(PrivChatStringPacks.Chinese, en, PrivChatStringPacks.ChineseTraditional, PrivChatStringPacks.Vietnamese)) {
+            assertEquals(true, pack.qrLoginConfirmExpired.isNotBlank())
+            assertEquals(true, pack.qrLoginScannerMismatch.isNotBlank())
+            assertEquals(true, pack.botServiceUnavailable.isNotBlank())
+        }
+    }
+
+    @Test
     fun sentences_are_not_machine_codes() {
         assertNull(PlatformErrorMessage.machineCodeOrNull("Already signed in today"))
         assertNull(PlatformErrorMessage.machineCodeOrNull("no_access_token"))

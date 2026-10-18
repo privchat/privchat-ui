@@ -135,6 +135,7 @@ data class PrivChatStrings(
     val menuActionDone: String get() = dMessage.menuActionDone
     val menuPreparing: String get() = dMessage.menuPreparing
     val menuSignFailed: String get() = dMessage.menuSignFailed
+    val botServiceUnavailable: String get() = dMessage.botServiceUnavailable
     val menuPrepareLinkFailed: String get() = dMessage.menuPrepareLinkFailed
     val menuInvalidRoute: String get() = dMessage.menuInvalidRoute
     val menuEmptyContent: String get() = dMessage.menuEmptyContent
@@ -672,6 +673,8 @@ data class PrivChatStrings(
     val qrLoginNeedLogin: String get() = dAuth.qrLoginNeedLogin
     val qrLoginCodeExpired: String get() = dAuth.qrLoginCodeExpired
     val qrLoginCodeUsed: String get() = dAuth.qrLoginCodeUsed
+    val qrLoginConfirmExpired: String get() = dAuth.qrLoginConfirmExpired
+    val qrLoginScannerMismatch: String get() = dAuth.qrLoginScannerMismatch
     val qrLoginFailedWithCode: String get() = dAuth.qrLoginFailedWithCode
     val countryChinaMainland: String get() = dAuth.countryChinaMainland
     val countryHongKong: String get() = dAuth.countryHongKong

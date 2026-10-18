@@ -244,6 +244,7 @@ data class PrivChatMessageStrings(
     val menuActionDone: String,
     val menuPreparing: String,
     val menuSignFailed: String,
+    val botServiceUnavailable: String,
     val menuPrepareLinkFailed: String,
     /** 菜单/转账路由不合法，占位符=原始 route。 */
     val menuInvalidRoute: String,
@@ -389,6 +390,7 @@ data class PrivChatMessageStringsPatch(
     val menuActionDone: String? = null,
     val menuPreparing: String? = null,
     val menuSignFailed: String? = null,
+    val botServiceUnavailable: String? = null,
     val menuPrepareLinkFailed: String? = null,
     val menuInvalidRoute: String? = null,
     val menuEmptyContent: String? = null,
@@ -522,6 +524,7 @@ val PrivChatMessageStringsPatch.isEmpty: Boolean
         menuActionDone == null &&
         menuPreparing == null &&
         menuSignFailed == null &&
+        botServiceUnavailable == null &&
         menuPrepareLinkFailed == null &&
         menuInvalidRoute == null &&
         menuEmptyContent == null &&
@@ -656,6 +659,7 @@ fun PrivChatMessageStrings.merge(patch: PrivChatMessageStringsPatch?): PrivChatM
         menuActionDone = patch.menuActionDone ?: menuActionDone,
         menuPreparing = patch.menuPreparing ?: menuPreparing,
         menuSignFailed = patch.menuSignFailed ?: menuSignFailed,
+        botServiceUnavailable = patch.botServiceUnavailable ?: botServiceUnavailable,
         menuPrepareLinkFailed = patch.menuPrepareLinkFailed ?: menuPrepareLinkFailed,
         menuInvalidRoute = patch.menuInvalidRoute ?: menuInvalidRoute,
         menuEmptyContent = patch.menuEmptyContent ?: menuEmptyContent,
@@ -2608,6 +2612,8 @@ data class PrivChatAuthStrings(
     val qrLoginNeedLogin: String,
     val qrLoginCodeExpired: String,
     val qrLoginCodeUsed: String,
+    val qrLoginConfirmExpired: String,
+    val qrLoginScannerMismatch: String,
     /** 占位符=错误码。 */
     val qrLoginFailedWithCode: String,
     val countryChinaMainland: String,
@@ -2717,6 +2723,8 @@ data class PrivChatAuthStringsPatch(
     val qrLoginNeedLogin: String? = null,
     val qrLoginCodeExpired: String? = null,
     val qrLoginCodeUsed: String? = null,
+    val qrLoginConfirmExpired: String? = null,
+    val qrLoginScannerMismatch: String? = null,
     val qrLoginFailedWithCode: String? = null,
     val countryChinaMainland: String? = null,
     val countryHongKong: String? = null,
@@ -2820,6 +2828,8 @@ val PrivChatAuthStringsPatch.isEmpty: Boolean
         qrLoginNeedLogin == null &&
         qrLoginCodeExpired == null &&
         qrLoginCodeUsed == null &&
+        qrLoginConfirmExpired == null &&
+        qrLoginScannerMismatch == null &&
         qrLoginFailedWithCode == null &&
         countryChinaMainland == null &&
         countryHongKong == null &&
@@ -2922,6 +2932,8 @@ fun PrivChatAuthStrings.merge(patch: PrivChatAuthStringsPatch?): PrivChatAuthStr
         qrLoginNeedLogin = patch.qrLoginNeedLogin ?: qrLoginNeedLogin,
         qrLoginCodeExpired = patch.qrLoginCodeExpired ?: qrLoginCodeExpired,
         qrLoginCodeUsed = patch.qrLoginCodeUsed ?: qrLoginCodeUsed,
+        qrLoginConfirmExpired = patch.qrLoginConfirmExpired ?: qrLoginConfirmExpired,
+        qrLoginScannerMismatch = patch.qrLoginScannerMismatch ?: qrLoginScannerMismatch,
         qrLoginFailedWithCode = patch.qrLoginFailedWithCode ?: qrLoginFailedWithCode,
         countryChinaMainland = patch.countryChinaMainland ?: countryChinaMainland,
         countryHongKong = patch.countryHongKong ?: countryHongKong,

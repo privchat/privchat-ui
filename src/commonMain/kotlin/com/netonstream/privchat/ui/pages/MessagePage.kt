@@ -208,6 +208,15 @@ private fun showBotMenu(
     }
 }
 
+/**
+ * 机器人 transfer 回包失败 → 上屏文案。回包 message 是机器码（PRIVCHAT_* …），按码翻译；
+ * 认不出就用动作文案。code / message 原文只进日志。
+ */
+private fun botTransferReplyError(code: Any?, message: String?, fallback: String): String {
+    println("[BotMenu] transfer reply failed: code=$code message=$message")
+    return com.netonstream.privchat.ui.error.PlatformErrorMessage.forServerMessage(message) ?: fallback
+}
+
 private fun presentBotMenuSheet(
     channel: ChannelListEntry,
     menu: BotMenu,
@@ -273,7 +282,7 @@ private fun dispatchTransferAction(
                         ?.takeIf { it.length <= 200 }
                     Toast.success(preview ?: PrivChatI18n.current.menuActionDone)
                 } else {
-                    onError?.invoke("[${reply.code}] ${reply.message.ifBlank { PrivChatI18n.current.operationFailed }}")
+                    onError?.invoke(botTransferReplyError(reply.code, reply.message, PrivChatI18n.current.menuInvokeFailed))
                 }
             },
             onFailure = { e ->
@@ -351,7 +360,7 @@ private fun dispatchWebAction(
         result.fold(
             onSuccess = { reply ->
                 if (!reply.isOk) {
-                    onError?.invoke("[${reply.code}] ${reply.message.ifBlank { PrivChatI18n.current.menuSignFailed }}")
+                    onError?.invoke(botTransferReplyError(reply.code, reply.message, PrivChatI18n.current.menuSignFailed))
                     return@fold
                 }
                 val signed = runCatching {

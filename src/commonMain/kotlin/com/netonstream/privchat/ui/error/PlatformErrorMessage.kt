@@ -58,6 +58,13 @@ object PlatformErrorMessage {
         return forCategory(error.code, strings)
     }
 
+    /**
+     * 只有一个 `message` 的回包（例如机器人菜单的 IM transfer 回包 `{code, message}`，code 是
+     * registry 段位码不是 `NetonErrorCode`）：message 是已知机器码才给文案，否则 null 交给动作文案。
+     */
+    fun forServerMessage(message: String?, strings: PrivChatStrings = PrivChatI18n.current): String? =
+        machineCodeOrNull(message)?.let { forMachineCode(it, strings) }
+
     /** [throwable] 是 [PlatformApiError] 时的便捷入口。 */
     fun describeThrowable(throwable: Throwable?, strings: PrivChatStrings = PrivChatI18n.current): String? =
         (throwable as? PlatformApiError)?.let { describe(it, strings) }
@@ -90,9 +97,7 @@ object PlatformErrorMessage {
 
     fun forMachineCode(code: String, strings: PrivChatStrings = PrivChatI18n.current): String? = when (code) {
         // ── 会话 / 权限 / 资源（框架 + 各模块）──
-        "AUTH_REQUIRED", "INVALID_REFRESH_TOKEN", "NOT_A_REFRESH_TOKEN", "INVALID_REFRESH_TOKEN_SUBJECT",
-        "REFRESH_TOKEN_EXPIRED", "REFRESH_TOKEN_REVOKED", "LOGIN_REQUIRED", "REFRESH_TOKEN_INVALID",
-        -> strings.platformErrSessionExpired
+        in SESSION_MACHINE_CODES -> strings.platformErrSessionExpired
         "PERMISSION_DENIED", "IP_NOT_ALLOWED", "ACCOUNT_DELETION_DISABLED", "FILE_FORBIDDEN",
         -> strings.platformErrPermissionDenied
         "RESOURCE_NOT_FOUND", "ACCOUNT_NOT_FOUND", "WITHDRAW_ORDER_NOT_FOUND", "PAY_TRANSFER_NOT_FOUND",
@@ -173,6 +178,22 @@ object PlatformErrorMessage {
         "INVALID_MIME_TYPE" -> strings.platformErrFileTypeNotAllowed
         "EMPTY_FILE" -> strings.platformErrFileEmpty
 
+        // ── privchat：扫码登录（/platform/qr-login/*）──
+        "QR_SCENE_NOT_FOUND", "QR_TOKEN_MISMATCH" -> strings.qrLoginCodeExpired
+        "QR_SCENE_STATE_INVALID" -> strings.qrLoginCodeUsed
+        "QR_CONFIRM_TOKEN_INVALID" -> strings.qrLoginConfirmExpired
+        "QR_SCANNER_MISMATCH" -> strings.qrLoginScannerMismatch
+        "QR_LOGIN_UNAVAILABLE" -> strings.platformErrServiceUnavailable
+
+        // ── privchat：频道 transfer 回包（机器人菜单走 IM transfer，回包 message 同为机器码）──
+        "PRIVCHAT_CHANNEL_NOT_BOUND", "PRIVCHAT_CHANNEL_DISABLED", "PRIVCHAT_TRANSFER_DISABLED",
+        "PRIVCHAT_SERVICE_NOT_FOUND", "PRIVCHAT_SERVICE_DISABLED", "PRIVCHAT_ROUTE_SERVICE_MISMATCH",
+        "PRIVCHAT_ROUTE_NOT_SUPPORTED", "PRIVCHAT_BOT_BINDING_MISSING", "PRIVCHAT_BOT_DISABLED",
+        -> strings.botServiceUnavailable
+        "PRIVCHAT_HANDLER_UNAVAILABLE", "PRIVCHAT_HANDLER_FAILED", "PRIVCHAT_CALLBACK_FAILED",
+        "PRIVCHAT_RESPONSE_TOO_LARGE",
+        -> strings.platformErrServiceUnavailable
+
         // 各入口的 @RateLimit 机器码（LOGIN_RATE_LIMITED / SMS_SEND_RATE_LIMITED …）。
         else -> if (code.endsWith("_RATE_LIMITED")) strings.platformErrRateLimited else null
     }
@@ -180,7 +201,7 @@ object PlatformErrorMessage {
     /** 数字类别兜底（`NetonErrorCode` 段位）。参数类 / 系统类没有可说的，返回 null 交给动作文案。 */
     fun forCategory(code: Int, strings: PrivChatStrings = PrivChatI18n.current): String? = when (code) {
         // 401：客户端本地「没有可用 token」。
-        401, 10000, 10001, 10002, 10003, 10005, 10006, 10009, 10010 -> strings.platformErrSessionExpired
+        in SESSION_CATEGORY_CODES -> strings.platformErrSessionExpired
         10004, 10008 -> strings.platformErrPermissionDenied
         10007 -> strings.loginErrAccountDisabled
         10011 -> strings.loginErrInvalidCredentials
@@ -193,6 +214,23 @@ object PlatformErrorMessage {
         3, 5 -> strings.platformErrServiceUnavailable
         else -> null
     }
+
+    /**
+     * 会话已失效、需要重新登录的错误（机器码或数字类别任一命中）。给需要「先登录再操作」专用文案的入口用
+     * （例如扫码登录），免得各处再抄一份码表。
+     */
+    fun isSessionExpired(error: PlatformApiError): Boolean =
+        error.machineCode in SESSION_MACHINE_CODES || error.code in SESSION_CATEGORY_CODES
+
+    /** 会话类机器码（框架 + account / member / privchat 模块；DEVICE_ID_REQUIRED = 刷新时缺签发设备，只能重新登录）。 */
+    private val SESSION_MACHINE_CODES = setOf(
+        "AUTH_REQUIRED", "INVALID_REFRESH_TOKEN", "NOT_A_REFRESH_TOKEN", "INVALID_REFRESH_TOKEN_SUBJECT",
+        "REFRESH_TOKEN_EXPIRED", "REFRESH_TOKEN_REVOKED", "LOGIN_REQUIRED", "REFRESH_TOKEN_INVALID",
+        "DEVICE_ID_REQUIRED",
+    )
+
+    /** 会话类数字类别；401 = 客户端本地「没有可用 token」。 */
+    private val SESSION_CATEGORY_CODES = setOf(401, 10000, 10001, 10002, 10003, 10005, 10006, 10009, 10010)
 
     const val VALIDATION_FAILED = "VALIDATION_FAILED"
     const val INVALID_PARAMS = "INVALID_PARAMS"
