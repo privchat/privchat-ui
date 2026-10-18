@@ -710,7 +710,7 @@ internal val hantAuth = PrivChatAuthStrings(
     qrLoginCodeUsed = "二維碼已被處理，請重新產生。",
     qrLoginConfirmExpired = "登入確認已失效，請重新掃碼。",
     qrLoginScannerMismatch = "請在掃碼的裝置上以同一帳號確認登入。",
-    qrLoginFailedWithCode = "掃碼失敗：code=%s",
+    qrLoginFailed = "掃碼登入失敗，請稍後再試。",
     countryChinaMainland = "中國大陸",
     countryHongKong = "中國香港",
     countryTaiwan = "中國台灣",

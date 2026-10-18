@@ -675,7 +675,7 @@ data class PrivChatStrings(
     val qrLoginCodeUsed: String get() = dAuth.qrLoginCodeUsed
     val qrLoginConfirmExpired: String get() = dAuth.qrLoginConfirmExpired
     val qrLoginScannerMismatch: String get() = dAuth.qrLoginScannerMismatch
-    val qrLoginFailedWithCode: String get() = dAuth.qrLoginFailedWithCode
+    val qrLoginFailed: String get() = dAuth.qrLoginFailed
     val countryChinaMainland: String get() = dAuth.countryChinaMainland
     val countryHongKong: String get() = dAuth.countryHongKong
     val countryTaiwan: String get() = dAuth.countryTaiwan

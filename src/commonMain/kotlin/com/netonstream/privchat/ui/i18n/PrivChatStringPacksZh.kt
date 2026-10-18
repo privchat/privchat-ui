@@ -712,7 +712,7 @@ internal val zhAuth = PrivChatAuthStrings(
     qrLoginCodeUsed = "二维码已被处理（已扫码 / 已确认 / 已拒绝），请重新生成。",
     qrLoginConfirmExpired = "登录确认已失效，请重新扫码。",
     qrLoginScannerMismatch = "请在扫码的设备上用同一账号确认登录。",
-    qrLoginFailedWithCode = "扫码失败：code=%s",
+    qrLoginFailed = "扫码登录失败，请稍后重试。",
     countryChinaMainland = "中国大陆",
     countryHongKong = "中国香港",
     countryTaiwan = "中国台湾",

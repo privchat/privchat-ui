@@ -710,7 +710,7 @@ internal val enAuth = PrivChatAuthStrings(
     qrLoginCodeUsed = "This QR code was already handled — generate a new one.",
     qrLoginConfirmExpired = "This login confirmation has expired — scan the QR code again.",
     qrLoginScannerMismatch = "Confirm the login on the same device and account that scanned the code.",
-    qrLoginFailedWithCode = "Scan failed: code=%s",
+    qrLoginFailed = "QR login failed. Please try again later.",
     countryChinaMainland = "Chinese Mainland",
     countryHongKong = "Hong Kong SAR",
     countryTaiwan = "Taiwan",

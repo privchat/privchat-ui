@@ -710,7 +710,7 @@ internal val viAuth = PrivChatAuthStrings(
     qrLoginCodeUsed = "Mã QR đã được xử lý — hãy tạo mã mới.",
     qrLoginConfirmExpired = "Xác nhận đăng nhập đã hết hạn — hãy quét lại mã QR.",
     qrLoginScannerMismatch = "Hãy xác nhận đăng nhập trên đúng thiết bị và tài khoản đã quét mã.",
-    qrLoginFailedWithCode = "Quét thất bại: code=%s",
+    qrLoginFailed = "Đăng nhập bằng mã QR thất bại, vui lòng thử lại sau.",
     countryChinaMainland = "Trung Quốc đại lục",
     countryHongKong = "Hồng Kông",
     countryTaiwan = "Đài Loan",

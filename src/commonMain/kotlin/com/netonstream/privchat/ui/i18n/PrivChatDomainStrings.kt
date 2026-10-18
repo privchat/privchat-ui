@@ -2614,8 +2614,7 @@ data class PrivChatAuthStrings(
     val qrLoginCodeUsed: String,
     val qrLoginConfirmExpired: String,
     val qrLoginScannerMismatch: String,
-    /** 占位符=错误码。 */
-    val qrLoginFailedWithCode: String,
+    val qrLoginFailed: String,
     val countryChinaMainland: String,
     val countryHongKong: String,
     val countryTaiwan: String,
@@ -2725,7 +2724,7 @@ data class PrivChatAuthStringsPatch(
     val qrLoginCodeUsed: String? = null,
     val qrLoginConfirmExpired: String? = null,
     val qrLoginScannerMismatch: String? = null,
-    val qrLoginFailedWithCode: String? = null,
+    val qrLoginFailed: String? = null,
     val countryChinaMainland: String? = null,
     val countryHongKong: String? = null,
     val countryTaiwan: String? = null,
@@ -2830,7 +2829,7 @@ val PrivChatAuthStringsPatch.isEmpty: Boolean
         qrLoginCodeUsed == null &&
         qrLoginConfirmExpired == null &&
         qrLoginScannerMismatch == null &&
-        qrLoginFailedWithCode == null &&
+        qrLoginFailed == null &&
         countryChinaMainland == null &&
         countryHongKong == null &&
         countryTaiwan == null &&
@@ -2934,7 +2933,7 @@ fun PrivChatAuthStrings.merge(patch: PrivChatAuthStringsPatch?): PrivChatAuthStr
         qrLoginCodeUsed = patch.qrLoginCodeUsed ?: qrLoginCodeUsed,
         qrLoginConfirmExpired = patch.qrLoginConfirmExpired ?: qrLoginConfirmExpired,
         qrLoginScannerMismatch = patch.qrLoginScannerMismatch ?: qrLoginScannerMismatch,
-        qrLoginFailedWithCode = patch.qrLoginFailedWithCode ?: qrLoginFailedWithCode,
+        qrLoginFailed = patch.qrLoginFailed ?: qrLoginFailed,
         countryChinaMainland = patch.countryChinaMainland ?: countryChinaMainland,
         countryHongKong = patch.countryHongKong ?: countryHongKong,
         countryTaiwan = patch.countryTaiwan ?: countryTaiwan,
