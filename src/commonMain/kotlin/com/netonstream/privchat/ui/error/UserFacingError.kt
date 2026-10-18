@@ -35,6 +35,8 @@ object UserFacingError {
         if (isCancellation(throwable)) return fallback
         // 结构化错误优先于字符串嗅探：SDK 已给出类型时不要再猜文案。
         typedMessage(throwable)?.let { return it }
+        // Neton 应用服务端（PLATFORM）错误：按机器码 / 字段码 / 数字类别给文案。
+        PlatformErrorMessage.describeThrowable(throwable)?.let { return it }
         serverCodeMessage(throwable)?.let { return it }
         return if (isTransportFailure(throwable)) PrivChatI18n.current.networkError else fallback
     }

@@ -26,6 +26,7 @@ data class PrivChatStrings(
     val dAuxiliary: PrivChatAuxiliaryStrings,
     val dWallet: PrivChatWalletStrings,
     val dAuth: PrivChatAuthStrings,
+    val dPlatformError: PrivChatPlatformErrorStrings,
 ) {
     val appName: String get() = dCommon.appName
     val confirm: String get() = dCommon.confirm
@@ -899,6 +900,59 @@ data class PrivChatStrings(
     val connectingShort: String get() = dWallet.connectingShort
     val initializingShort: String get() = dWallet.initializingShort
     val avatarNotAnImage: String get() = dWallet.avatarNotAnImage
+    val platformErrSessionExpired: String get() = dPlatformError.platformErrSessionExpired
+    val platformErrPermissionDenied: String get() = dPlatformError.platformErrPermissionDenied
+    val platformErrNotFound: String get() = dPlatformError.platformErrNotFound
+    val platformErrConflict: String get() = dPlatformError.platformErrConflict
+    val platformErrDuplicate: String get() = dPlatformError.platformErrDuplicate
+    val platformErrBusy: String get() = dPlatformError.platformErrBusy
+    val platformErrRateLimited: String get() = dPlatformError.platformErrRateLimited
+    val platformErrDailyLimit: String get() = dPlatformError.platformErrDailyLimit
+    val platformErrServiceUnavailable: String get() = dPlatformError.platformErrServiceUnavailable
+    val platformErrRequestTooLarge: String get() = dPlatformError.platformErrRequestTooLarge
+    val platformErrFieldRequired: String get() = dPlatformError.platformErrFieldRequired
+    val platformErrFieldTooShort: String get() = dPlatformError.platformErrFieldTooShort
+    val platformErrFieldTooLong: String get() = dPlatformError.platformErrFieldTooLong
+    val platformErrFieldLengthRange: String get() = dPlatformError.platformErrFieldLengthRange
+    val platformErrFieldTooSmall: String get() = dPlatformError.platformErrFieldTooSmall
+    val platformErrFieldTooLarge: String get() = dPlatformError.platformErrFieldTooLarge
+    val platformErrFieldInvalidFormat: String get() = dPlatformError.platformErrFieldInvalidFormat
+    val platformErrFieldInvalidEmail: String get() = dPlatformError.platformErrFieldInvalidEmail
+    val platformErrAccountDeleted: String get() = dPlatformError.platformErrAccountDeleted
+    val platformErrSmsCodeRequired: String get() = dPlatformError.platformErrSmsCodeRequired
+    val platformErrSmsCodeExpired: String get() = dPlatformError.platformErrSmsCodeExpired
+    val platformErrSmsCodeAttemptsExceeded: String get() = dPlatformError.platformErrSmsCodeAttemptsExceeded
+    val platformErrVerificationTooFrequent: String get() = dPlatformError.platformErrVerificationTooFrequent
+    val platformErrVerificationDailyLimit: String get() = dPlatformError.platformErrVerificationDailyLimit
+    val platformErrVerificationUnavailable: String get() = dPlatformError.platformErrVerificationUnavailable
+    val platformErrLoginLocked: String get() = dPlatformError.platformErrLoginLocked
+    val platformErrPasswordTooLong: String get() = dPlatformError.platformErrPasswordTooLong
+    val platformErrRegisterModeDisabled: String get() = dPlatformError.platformErrRegisterModeDisabled
+    val platformErrBioTooLong: String get() = dPlatformError.platformErrBioTooLong
+    val platformErrProfileFieldInvalid: String get() = dPlatformError.platformErrProfileFieldInvalid
+    val platformErrAvatarInvalid: String get() = dPlatformError.platformErrAvatarInvalid
+    val platformErrReportDescriptionTooLong: String get() = dPlatformError.platformErrReportDescriptionTooLong
+    val platformErrInviteAlreadyBound: String get() = dPlatformError.platformErrInviteAlreadyBound
+    val platformErrSignInRewardUnavailable: String get() = dPlatformError.platformErrSignInRewardUnavailable
+    val platformErrWalletNotFound: String get() = dPlatformError.platformErrWalletNotFound
+    val platformErrBalanceInsufficient: String get() = dPlatformError.platformErrBalanceInsufficient
+    val platformErrTransferToSelf: String get() = dPlatformError.platformErrTransferToSelf
+    val platformErrRedPacketCountInvalid: String get() = dPlatformError.platformErrRedPacketCountInvalid
+    val platformErrRedPacketNotFound: String get() = dPlatformError.platformErrRedPacketNotFound
+    val platformErrRedPacketExpired: String get() = dPlatformError.platformErrRedPacketExpired
+    val platformErrRedPacketDrained: String get() = dPlatformError.platformErrRedPacketDrained
+    val platformErrRedPacketAlreadyClaimed: String get() = dPlatformError.platformErrRedPacketAlreadyClaimed
+    val platformErrRedPacketNotClaimable: String get() = dPlatformError.platformErrRedPacketNotClaimable
+    val platformErrRedPacketClaimForbidden: String get() = dPlatformError.platformErrRedPacketClaimForbidden
+    val platformErrBankCardInfoRequired: String get() = dPlatformError.platformErrBankCardInfoRequired
+    val platformErrBankCardNumberInvalid: String get() = dPlatformError.platformErrBankCardNumberInvalid
+    val platformErrBankCardNotFound: String get() = dPlatformError.platformErrBankCardNotFound
+    val platformErrBankCardHasPendingWithdrawals: String get() = dPlatformError.platformErrBankCardHasPendingWithdrawals
+    val platformErrWithdrawStatusNotAllowed: String get() = dPlatformError.platformErrWithdrawStatusNotAllowed
+    val platformErrPayChannelUnavailable: String get() = dPlatformError.platformErrPayChannelUnavailable
+    val platformErrFileTooLarge: String get() = dPlatformError.platformErrFileTooLarge
+    val platformErrFileTypeNotAllowed: String get() = dPlatformError.platformErrFileTypeNotAllowed
+    val platformErrFileEmpty: String get() = dPlatformError.platformErrFileEmpty
 }
 
 data class PrivChatStringsPatch(
@@ -916,6 +970,7 @@ data class PrivChatStringsPatch(
     val dAuxiliary: PrivChatAuxiliaryStringsPatch? = null,
     val dWallet: PrivChatWalletStringsPatch? = null,
     val dAuth: PrivChatAuthStringsPatch? = null,
+    val dPlatformError: PrivChatPlatformErrorStringsPatch? = null,
 )
 
 val PrivChatStringsPatch.isEmpty: Boolean
@@ -932,7 +987,8 @@ val PrivChatStringsPatch.isEmpty: Boolean
         (dAbout == null || dAbout.isEmpty) &&
         (dAuxiliary == null || dAuxiliary.isEmpty) &&
         (dWallet == null || dWallet.isEmpty) &&
-        (dAuth == null || dAuth.isEmpty)
+        (dAuth == null || dAuth.isEmpty) &&
+        (dPlatformError == null || dPlatformError.isEmpty)
 
 fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
     if (patch == null || patch.isEmpty) return this
@@ -951,6 +1007,7 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         dAuxiliary = dAuxiliary.merge(patch.dAuxiliary),
         dWallet = dWallet.merge(patch.dWallet),
         dAuth = dAuth.merge(patch.dAuth),
+        dPlatformError = dPlatformError.merge(patch.dPlatformError),
     )
 }
 
@@ -972,6 +1029,7 @@ object PrivChatStringPacks {
         dAuxiliary = zhAuxiliary,
         dWallet = zhWallet,
         dAuth = zhAuth,
+        dPlatformError = zhPlatformError,
     )
 
     val English = PrivChatStrings(
@@ -989,6 +1047,7 @@ object PrivChatStringPacks {
         dAuxiliary = enAuxiliary,
         dWallet = enWallet,
         dAuth = enAuth,
+        dPlatformError = enPlatformError,
     )
 
     val ChineseTraditional = PrivChatStrings(
@@ -1006,6 +1065,7 @@ object PrivChatStringPacks {
         dAuxiliary = hantAuxiliary,
         dWallet = hantWallet,
         dAuth = hantAuth,
+        dPlatformError = hantPlatformError,
     )
 
     val Vietnamese = PrivChatStrings(
@@ -1023,6 +1083,7 @@ object PrivChatStringPacks {
         dAuxiliary = viAuxiliary,
         dWallet = viWallet,
         dAuth = viAuth,
+        dPlatformError = viPlatformError,
     )
 
     val builtIn: Map<String, PrivChatStrings> = mapOf(

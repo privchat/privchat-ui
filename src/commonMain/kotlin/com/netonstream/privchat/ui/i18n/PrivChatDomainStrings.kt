@@ -3739,3 +3739,240 @@ fun PrivChatWalletStrings.merge(patch: PrivChatWalletStringsPatch?): PrivChatWal
         avatarNotAnImage = patch.avatarNotAnImage ?: avatarNotAnImage,
     )
 }
+
+/**
+ * Neton 应用服务端（PLATFORM：account / member / payment / system / infra）机器码与错误类别的文案。
+ * 由 [com.netonstream.privchat.ui.error.PlatformErrorMessage] 按 spec ERROR_CODE_SPEC 映射，
+ * 服务端 message 只是机器码，绝不直出。
+ */
+@Immutable
+data class PrivChatPlatformErrorStrings(
+    val platformErrSessionExpired: String,
+    val platformErrPermissionDenied: String,
+    val platformErrNotFound: String,
+    val platformErrConflict: String,
+    val platformErrDuplicate: String,
+    val platformErrBusy: String,
+    val platformErrRateLimited: String,
+    val platformErrDailyLimit: String,
+    val platformErrServiceUnavailable: String,
+    val platformErrRequestTooLarge: String,
+    val platformErrFieldRequired: String,
+    /** 占位符=最小长度。 */
+    val platformErrFieldTooShort: String,
+    /** 占位符=最大长度。 */
+    val platformErrFieldTooLong: String,
+    /** 占位符依次=最小、最大长度。 */
+    val platformErrFieldLengthRange: String,
+    /** 占位符=下限。 */
+    val platformErrFieldTooSmall: String,
+    /** 占位符=上限。 */
+    val platformErrFieldTooLarge: String,
+    val platformErrFieldInvalidFormat: String,
+    val platformErrFieldInvalidEmail: String,
+    val platformErrAccountDeleted: String,
+    val platformErrSmsCodeRequired: String,
+    val platformErrSmsCodeExpired: String,
+    val platformErrSmsCodeAttemptsExceeded: String,
+    val platformErrVerificationTooFrequent: String,
+    val platformErrVerificationDailyLimit: String,
+    val platformErrVerificationUnavailable: String,
+    val platformErrLoginLocked: String,
+    val platformErrPasswordTooLong: String,
+    val platformErrRegisterModeDisabled: String,
+    val platformErrBioTooLong: String,
+    val platformErrProfileFieldInvalid: String,
+    val platformErrAvatarInvalid: String,
+    val platformErrReportDescriptionTooLong: String,
+    val platformErrInviteAlreadyBound: String,
+    val platformErrSignInRewardUnavailable: String,
+    val platformErrWalletNotFound: String,
+    val platformErrBalanceInsufficient: String,
+    val platformErrTransferToSelf: String,
+    val platformErrRedPacketCountInvalid: String,
+    val platformErrRedPacketNotFound: String,
+    val platformErrRedPacketExpired: String,
+    val platformErrRedPacketDrained: String,
+    val platformErrRedPacketAlreadyClaimed: String,
+    val platformErrRedPacketNotClaimable: String,
+    val platformErrRedPacketClaimForbidden: String,
+    val platformErrBankCardInfoRequired: String,
+    val platformErrBankCardNumberInvalid: String,
+    val platformErrBankCardNotFound: String,
+    val platformErrBankCardHasPendingWithdrawals: String,
+    val platformErrWithdrawStatusNotAllowed: String,
+    val platformErrPayChannelUnavailable: String,
+    val platformErrFileTooLarge: String,
+    val platformErrFileTypeNotAllowed: String,
+    val platformErrFileEmpty: String,
+)
+
+data class PrivChatPlatformErrorStringsPatch(
+    val platformErrSessionExpired: String? = null,
+    val platformErrPermissionDenied: String? = null,
+    val platformErrNotFound: String? = null,
+    val platformErrConflict: String? = null,
+    val platformErrDuplicate: String? = null,
+    val platformErrBusy: String? = null,
+    val platformErrRateLimited: String? = null,
+    val platformErrDailyLimit: String? = null,
+    val platformErrServiceUnavailable: String? = null,
+    val platformErrRequestTooLarge: String? = null,
+    val platformErrFieldRequired: String? = null,
+    val platformErrFieldTooShort: String? = null,
+    val platformErrFieldTooLong: String? = null,
+    val platformErrFieldLengthRange: String? = null,
+    val platformErrFieldTooSmall: String? = null,
+    val platformErrFieldTooLarge: String? = null,
+    val platformErrFieldInvalidFormat: String? = null,
+    val platformErrFieldInvalidEmail: String? = null,
+    val platformErrAccountDeleted: String? = null,
+    val platformErrSmsCodeRequired: String? = null,
+    val platformErrSmsCodeExpired: String? = null,
+    val platformErrSmsCodeAttemptsExceeded: String? = null,
+    val platformErrVerificationTooFrequent: String? = null,
+    val platformErrVerificationDailyLimit: String? = null,
+    val platformErrVerificationUnavailable: String? = null,
+    val platformErrLoginLocked: String? = null,
+    val platformErrPasswordTooLong: String? = null,
+    val platformErrRegisterModeDisabled: String? = null,
+    val platformErrBioTooLong: String? = null,
+    val platformErrProfileFieldInvalid: String? = null,
+    val platformErrAvatarInvalid: String? = null,
+    val platformErrReportDescriptionTooLong: String? = null,
+    val platformErrInviteAlreadyBound: String? = null,
+    val platformErrSignInRewardUnavailable: String? = null,
+    val platformErrWalletNotFound: String? = null,
+    val platformErrBalanceInsufficient: String? = null,
+    val platformErrTransferToSelf: String? = null,
+    val platformErrRedPacketCountInvalid: String? = null,
+    val platformErrRedPacketNotFound: String? = null,
+    val platformErrRedPacketExpired: String? = null,
+    val platformErrRedPacketDrained: String? = null,
+    val platformErrRedPacketAlreadyClaimed: String? = null,
+    val platformErrRedPacketNotClaimable: String? = null,
+    val platformErrRedPacketClaimForbidden: String? = null,
+    val platformErrBankCardInfoRequired: String? = null,
+    val platformErrBankCardNumberInvalid: String? = null,
+    val platformErrBankCardNotFound: String? = null,
+    val platformErrBankCardHasPendingWithdrawals: String? = null,
+    val platformErrWithdrawStatusNotAllowed: String? = null,
+    val platformErrPayChannelUnavailable: String? = null,
+    val platformErrFileTooLarge: String? = null,
+    val platformErrFileTypeNotAllowed: String? = null,
+    val platformErrFileEmpty: String? = null,
+)
+
+val PrivChatPlatformErrorStringsPatch.isEmpty: Boolean
+    get() = platformErrSessionExpired == null &&
+        platformErrPermissionDenied == null &&
+        platformErrNotFound == null &&
+        platformErrConflict == null &&
+        platformErrDuplicate == null &&
+        platformErrBusy == null &&
+        platformErrRateLimited == null &&
+        platformErrDailyLimit == null &&
+        platformErrServiceUnavailable == null &&
+        platformErrRequestTooLarge == null &&
+        platformErrFieldRequired == null &&
+        platformErrFieldTooShort == null &&
+        platformErrFieldTooLong == null &&
+        platformErrFieldLengthRange == null &&
+        platformErrFieldTooSmall == null &&
+        platformErrFieldTooLarge == null &&
+        platformErrFieldInvalidFormat == null &&
+        platformErrFieldInvalidEmail == null &&
+        platformErrAccountDeleted == null &&
+        platformErrSmsCodeRequired == null &&
+        platformErrSmsCodeExpired == null &&
+        platformErrSmsCodeAttemptsExceeded == null &&
+        platformErrVerificationTooFrequent == null &&
+        platformErrVerificationDailyLimit == null &&
+        platformErrVerificationUnavailable == null &&
+        platformErrLoginLocked == null &&
+        platformErrPasswordTooLong == null &&
+        platformErrRegisterModeDisabled == null &&
+        platformErrBioTooLong == null &&
+        platformErrProfileFieldInvalid == null &&
+        platformErrAvatarInvalid == null &&
+        platformErrReportDescriptionTooLong == null &&
+        platformErrInviteAlreadyBound == null &&
+        platformErrSignInRewardUnavailable == null &&
+        platformErrWalletNotFound == null &&
+        platformErrBalanceInsufficient == null &&
+        platformErrTransferToSelf == null &&
+        platformErrRedPacketCountInvalid == null &&
+        platformErrRedPacketNotFound == null &&
+        platformErrRedPacketExpired == null &&
+        platformErrRedPacketDrained == null &&
+        platformErrRedPacketAlreadyClaimed == null &&
+        platformErrRedPacketNotClaimable == null &&
+        platformErrRedPacketClaimForbidden == null &&
+        platformErrBankCardInfoRequired == null &&
+        platformErrBankCardNumberInvalid == null &&
+        platformErrBankCardNotFound == null &&
+        platformErrBankCardHasPendingWithdrawals == null &&
+        platformErrWithdrawStatusNotAllowed == null &&
+        platformErrPayChannelUnavailable == null &&
+        platformErrFileTooLarge == null &&
+        platformErrFileTypeNotAllowed == null &&
+        platformErrFileEmpty == null
+
+fun PrivChatPlatformErrorStrings.merge(patch: PrivChatPlatformErrorStringsPatch?): PrivChatPlatformErrorStrings {
+    if (patch == null || patch.isEmpty) return this
+    return copy(
+        platformErrSessionExpired = patch.platformErrSessionExpired ?: platformErrSessionExpired,
+        platformErrPermissionDenied = patch.platformErrPermissionDenied ?: platformErrPermissionDenied,
+        platformErrNotFound = patch.platformErrNotFound ?: platformErrNotFound,
+        platformErrConflict = patch.platformErrConflict ?: platformErrConflict,
+        platformErrDuplicate = patch.platformErrDuplicate ?: platformErrDuplicate,
+        platformErrBusy = patch.platformErrBusy ?: platformErrBusy,
+        platformErrRateLimited = patch.platformErrRateLimited ?: platformErrRateLimited,
+        platformErrDailyLimit = patch.platformErrDailyLimit ?: platformErrDailyLimit,
+        platformErrServiceUnavailable = patch.platformErrServiceUnavailable ?: platformErrServiceUnavailable,
+        platformErrRequestTooLarge = patch.platformErrRequestTooLarge ?: platformErrRequestTooLarge,
+        platformErrFieldRequired = patch.platformErrFieldRequired ?: platformErrFieldRequired,
+        platformErrFieldTooShort = patch.platformErrFieldTooShort ?: platformErrFieldTooShort,
+        platformErrFieldTooLong = patch.platformErrFieldTooLong ?: platformErrFieldTooLong,
+        platformErrFieldLengthRange = patch.platformErrFieldLengthRange ?: platformErrFieldLengthRange,
+        platformErrFieldTooSmall = patch.platformErrFieldTooSmall ?: platformErrFieldTooSmall,
+        platformErrFieldTooLarge = patch.platformErrFieldTooLarge ?: platformErrFieldTooLarge,
+        platformErrFieldInvalidFormat = patch.platformErrFieldInvalidFormat ?: platformErrFieldInvalidFormat,
+        platformErrFieldInvalidEmail = patch.platformErrFieldInvalidEmail ?: platformErrFieldInvalidEmail,
+        platformErrAccountDeleted = patch.platformErrAccountDeleted ?: platformErrAccountDeleted,
+        platformErrSmsCodeRequired = patch.platformErrSmsCodeRequired ?: platformErrSmsCodeRequired,
+        platformErrSmsCodeExpired = patch.platformErrSmsCodeExpired ?: platformErrSmsCodeExpired,
+        platformErrSmsCodeAttemptsExceeded = patch.platformErrSmsCodeAttemptsExceeded ?: platformErrSmsCodeAttemptsExceeded,
+        platformErrVerificationTooFrequent = patch.platformErrVerificationTooFrequent ?: platformErrVerificationTooFrequent,
+        platformErrVerificationDailyLimit = patch.platformErrVerificationDailyLimit ?: platformErrVerificationDailyLimit,
+        platformErrVerificationUnavailable = patch.platformErrVerificationUnavailable ?: platformErrVerificationUnavailable,
+        platformErrLoginLocked = patch.platformErrLoginLocked ?: platformErrLoginLocked,
+        platformErrPasswordTooLong = patch.platformErrPasswordTooLong ?: platformErrPasswordTooLong,
+        platformErrRegisterModeDisabled = patch.platformErrRegisterModeDisabled ?: platformErrRegisterModeDisabled,
+        platformErrBioTooLong = patch.platformErrBioTooLong ?: platformErrBioTooLong,
+        platformErrProfileFieldInvalid = patch.platformErrProfileFieldInvalid ?: platformErrProfileFieldInvalid,
+        platformErrAvatarInvalid = patch.platformErrAvatarInvalid ?: platformErrAvatarInvalid,
+        platformErrReportDescriptionTooLong = patch.platformErrReportDescriptionTooLong ?: platformErrReportDescriptionTooLong,
+        platformErrInviteAlreadyBound = patch.platformErrInviteAlreadyBound ?: platformErrInviteAlreadyBound,
+        platformErrSignInRewardUnavailable = patch.platformErrSignInRewardUnavailable ?: platformErrSignInRewardUnavailable,
+        platformErrWalletNotFound = patch.platformErrWalletNotFound ?: platformErrWalletNotFound,
+        platformErrBalanceInsufficient = patch.platformErrBalanceInsufficient ?: platformErrBalanceInsufficient,
+        platformErrTransferToSelf = patch.platformErrTransferToSelf ?: platformErrTransferToSelf,
+        platformErrRedPacketCountInvalid = patch.platformErrRedPacketCountInvalid ?: platformErrRedPacketCountInvalid,
+        platformErrRedPacketNotFound = patch.platformErrRedPacketNotFound ?: platformErrRedPacketNotFound,
+        platformErrRedPacketExpired = patch.platformErrRedPacketExpired ?: platformErrRedPacketExpired,
+        platformErrRedPacketDrained = patch.platformErrRedPacketDrained ?: platformErrRedPacketDrained,
+        platformErrRedPacketAlreadyClaimed = patch.platformErrRedPacketAlreadyClaimed ?: platformErrRedPacketAlreadyClaimed,
+        platformErrRedPacketNotClaimable = patch.platformErrRedPacketNotClaimable ?: platformErrRedPacketNotClaimable,
+        platformErrRedPacketClaimForbidden = patch.platformErrRedPacketClaimForbidden ?: platformErrRedPacketClaimForbidden,
+        platformErrBankCardInfoRequired = patch.platformErrBankCardInfoRequired ?: platformErrBankCardInfoRequired,
+        platformErrBankCardNumberInvalid = patch.platformErrBankCardNumberInvalid ?: platformErrBankCardNumberInvalid,
+        platformErrBankCardNotFound = patch.platformErrBankCardNotFound ?: platformErrBankCardNotFound,
+        platformErrBankCardHasPendingWithdrawals = patch.platformErrBankCardHasPendingWithdrawals ?: platformErrBankCardHasPendingWithdrawals,
+        platformErrWithdrawStatusNotAllowed = patch.platformErrWithdrawStatusNotAllowed ?: platformErrWithdrawStatusNotAllowed,
+        platformErrPayChannelUnavailable = patch.platformErrPayChannelUnavailable ?: platformErrPayChannelUnavailable,
+        platformErrFileTooLarge = patch.platformErrFileTooLarge ?: platformErrFileTooLarge,
+        platformErrFileTypeNotAllowed = patch.platformErrFileTypeNotAllowed ?: platformErrFileTypeNotAllowed,
+        platformErrFileEmpty = patch.platformErrFileEmpty ?: platformErrFileEmpty,
+    )
+}
