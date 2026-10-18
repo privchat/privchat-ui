@@ -602,7 +602,6 @@ internal val enAuxiliary = PrivChatAuxiliaryStrings(
     bindMobileButton = "Continue",
     bindMobileErrTaken = "That number is already linked to another account",
     bindMobileErrBound = "This account already has a phone number",
-    bindMobileErrInvalid = "Enter a phone number",
     inviteBindTitle = "Invite code",
     inviteBindPlaceholder = "Enter invite code",
     inviteBindButton = "Bind invite code",

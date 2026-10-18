@@ -569,7 +569,6 @@ data class PrivChatStrings(
     val bindMobileButton: String get() = dAuxiliary.bindMobileButton
     val bindMobileErrTaken: String get() = dAuxiliary.bindMobileErrTaken
     val bindMobileErrBound: String get() = dAuxiliary.bindMobileErrBound
-    val bindMobileErrInvalid: String get() = dAuxiliary.bindMobileErrInvalid
     val inviteBindTitle: String get() = dAuxiliary.inviteBindTitle
     val inviteBindPlaceholder: String get() = dAuxiliary.inviteBindPlaceholder
     val inviteBindButton: String get() = dAuxiliary.inviteBindButton

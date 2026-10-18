@@ -602,7 +602,6 @@ internal val viAuxiliary = PrivChatAuxiliaryStrings(
     bindMobileButton = "Tiếp tục",
     bindMobileErrTaken = "Số này đã được liên kết với tài khoản khác",
     bindMobileErrBound = "Tài khoản này đã có số điện thoại",
-    bindMobileErrInvalid = "Vui lòng nhập số điện thoại",
     inviteBindTitle = "Mã mời",
     inviteBindPlaceholder = "Nhập mã mời",
     inviteBindButton = "Liên kết mã mời",

@@ -602,7 +602,6 @@ internal val hantAuxiliary = PrivChatAuxiliaryStrings(
     bindMobileButton = "下一步",
     bindMobileErrTaken = "該手機號已被其他帳號綁定",
     bindMobileErrBound = "目前帳號已綁定手機號",
-    bindMobileErrInvalid = "請輸入手機號碼",
     inviteBindTitle = "填寫邀請碼",
     inviteBindPlaceholder = "請輸入邀請碼",
     inviteBindButton = "綁定邀請碼",

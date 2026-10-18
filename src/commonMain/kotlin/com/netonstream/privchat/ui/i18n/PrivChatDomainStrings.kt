@@ -2033,7 +2033,6 @@ data class PrivChatAuxiliaryStrings(
     val bindMobileButton: String,
     val bindMobileErrTaken: String,
     val bindMobileErrBound: String,
-    val bindMobileErrInvalid: String,
     val inviteBindTitle: String,
     val inviteBindPlaceholder: String,
     val inviteBindButton: String,
@@ -2207,7 +2206,6 @@ data class PrivChatAuxiliaryStringsPatch(
     val bindMobileButton: String? = null,
     val bindMobileErrTaken: String? = null,
     val bindMobileErrBound: String? = null,
-    val bindMobileErrInvalid: String? = null,
     val inviteBindTitle: String? = null,
     val inviteBindPlaceholder: String? = null,
     val inviteBindButton: String? = null,
@@ -2344,7 +2342,6 @@ val PrivChatAuxiliaryStringsPatch.isEmpty: Boolean
         bindMobileButton == null &&
         bindMobileErrTaken == null &&
         bindMobileErrBound == null &&
-        bindMobileErrInvalid == null &&
         inviteBindTitle == null &&
         inviteBindPlaceholder == null &&
         inviteBindButton == null &&
@@ -2497,7 +2494,6 @@ fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivC
         bindMobileButton = patch.bindMobileButton ?: bindMobileButton,
         bindMobileErrTaken = patch.bindMobileErrTaken ?: bindMobileErrTaken,
         bindMobileErrBound = patch.bindMobileErrBound ?: bindMobileErrBound,
-        bindMobileErrInvalid = patch.bindMobileErrInvalid ?: bindMobileErrInvalid,
         inviteBindTitle = patch.inviteBindTitle ?: inviteBindTitle,
         inviteBindPlaceholder = patch.inviteBindPlaceholder ?: inviteBindPlaceholder,
         inviteBindButton = patch.inviteBindButton ?: inviteBindButton,

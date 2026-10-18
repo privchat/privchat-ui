@@ -604,7 +604,6 @@ internal val zhAuxiliary = PrivChatAuxiliaryStrings(
     bindMobileButton = "下一步",
     bindMobileErrTaken = "该手机号已被其他账号绑定",
     bindMobileErrBound = "当前账号已绑定手机号",
-    bindMobileErrInvalid = "请输入手机号码",
     inviteBindTitle = "填写邀请码",
     inviteBindPlaceholder = "请输入邀请码",
     inviteBindButton = "绑定邀请码",
