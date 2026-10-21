@@ -1018,17 +1018,34 @@ private fun fileSubtitle(
 private fun StickerContent(
     parsed: ParsedContent,
 ) {
-    if (parsed.attachmentUrl != null) {
-        Image(
-            painter = rememberAsyncImagePainter(model = parsed.attachmentUrl),
-            contentDescription = parsed.text ?: PrivChatI18n.current.a11ySticker,
+    val catalog = com.netonstream.privchat.ui.sticker.StickerUiBridge.catalog
+    val session = catalog?.session
+    var resolvedUrl by remember(parsed.stickerId, parsed.attachmentUrl, catalog, session) { mutableStateOf(parsed.attachmentUrl) }
+    var retry by remember(parsed.stickerId, parsed.attachmentUrl, session) { mutableStateOf(0) }
+    LaunchedEffect(parsed.stickerId, parsed.attachmentUrl, catalog, session, retry) {
+        if (retry == 0 || !com.netonstream.privchat.ui.sticker.canResolveStickerFallback(parsed.attachmentUrl, session?.platform)) return@LaunchedEffect
+        val id = parsed.stickerId?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
+        if (catalog != null) {
+            try {
+                val resolved = catalog.resolve(id)
+                if (catalog.session == session) resolvedUrl = resolved.imageUrl
+            }
+            catch (cancel: kotlinx.coroutines.CancellationException) { throw cancel }
+            catch (_: Exception) { /* Preserve the message's published URL when resolution is unavailable. */ }
+        }
+    }
+    if (resolvedUrl != null) {
+        com.netonstream.privchat.ui.sticker.PublishedStickerImage(
+            url = resolvedUrl!!,
+            label = parsed.text?.takeIf { it.isNotBlank() } ?: PrivChatI18n.current.a11ySticker,
             modifier = Modifier.size(100.dp),
-            contentScale = ContentScale.Fit,
+            onRetry = { retry++ },
         )
     } else {
         Text(
-            text = parsed.text ?: "😀",
+            text = parsed.text?.takeIf { it.isNotBlank() } ?: PrivChatI18n.current.messageSticker,
             style = Theme.typography.displayMedium,
+            modifier = Modifier.clickable { retry++ },
         )
     }
 }

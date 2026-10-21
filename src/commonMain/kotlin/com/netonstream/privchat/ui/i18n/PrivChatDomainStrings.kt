@@ -168,6 +168,14 @@ data class PrivChatMessageStrings(
     val messageFile: String,
     val messageLocation: String,
     val messageSticker: String,
+    val stickerPacks: String,
+    val stickerRefresh: String,
+    val stickerInstalled: String,
+    val stickerStore: String,
+    val stickerInstall: String,
+    val stickerUninstall: String,
+    val stickerMoveUp: String,
+    val stickerOffline: String,
     val messageRevoked: String,
     val messageSystem: String,
     val messageUnknown: String,
@@ -318,6 +326,14 @@ data class PrivChatMessageStringsPatch(
     val messageFile: String? = null,
     val messageLocation: String? = null,
     val messageSticker: String? = null,
+    val stickerPacks: String? = null,
+    val stickerRefresh: String? = null,
+    val stickerInstalled: String? = null,
+    val stickerStore: String? = null,
+    val stickerInstall: String? = null,
+    val stickerUninstall: String? = null,
+    val stickerMoveUp: String? = null,
+    val stickerOffline: String? = null,
     val messageRevoked: String? = null,
     val messageSystem: String? = null,
     val messageUnknown: String? = null,
@@ -452,6 +468,14 @@ val PrivChatMessageStringsPatch.isEmpty: Boolean
         messageFile == null &&
         messageLocation == null &&
         messageSticker == null &&
+        stickerPacks == null &&
+        stickerRefresh == null &&
+        stickerInstalled == null &&
+        stickerStore == null &&
+        stickerInstall == null &&
+        stickerUninstall == null &&
+        stickerMoveUp == null &&
+        stickerOffline == null &&
         messageRevoked == null &&
         messageSystem == null &&
         messageUnknown == null &&
@@ -587,6 +611,14 @@ fun PrivChatMessageStrings.merge(patch: PrivChatMessageStringsPatch?): PrivChatM
         messageFile = patch.messageFile ?: messageFile,
         messageLocation = patch.messageLocation ?: messageLocation,
         messageSticker = patch.messageSticker ?: messageSticker,
+        stickerPacks = patch.stickerPacks ?: stickerPacks,
+        stickerRefresh = patch.stickerRefresh ?: stickerRefresh,
+        stickerInstalled = patch.stickerInstalled ?: stickerInstalled,
+        stickerStore = patch.stickerStore ?: stickerStore,
+        stickerInstall = patch.stickerInstall ?: stickerInstall,
+        stickerUninstall = patch.stickerUninstall ?: stickerUninstall,
+        stickerMoveUp = patch.stickerMoveUp ?: stickerMoveUp,
+        stickerOffline = patch.stickerOffline ?: stickerOffline,
         messageRevoked = patch.messageRevoked ?: messageRevoked,
         messageSystem = patch.messageSystem ?: messageSystem,
         messageUnknown = patch.messageUnknown ?: messageUnknown,
@@ -1217,6 +1249,7 @@ fun PrivChatFriendStrings.merge(patch: PrivChatFriendStringsPatch?): PrivChatFri
 data class PrivChatChatSettingsStrings(
     val chatSettingsTitle: String,
     val chatSettingsGroupName: String,
+    val chatSettingsGroupDescription: String,
     val groupNameEditTitle: String,
     val chatSettingsGroupQrCode: String,
     val chatSettingsGroupMembers: String,
@@ -1231,6 +1264,7 @@ data class PrivChatChatSettingsStrings(
 data class PrivChatChatSettingsStringsPatch(
     val chatSettingsTitle: String? = null,
     val chatSettingsGroupName: String? = null,
+    val chatSettingsGroupDescription: String? = null,
     val groupNameEditTitle: String? = null,
     val chatSettingsGroupQrCode: String? = null,
     val chatSettingsGroupMembers: String? = null,
@@ -1245,6 +1279,7 @@ data class PrivChatChatSettingsStringsPatch(
 val PrivChatChatSettingsStringsPatch.isEmpty: Boolean
     get() = chatSettingsTitle == null &&
         chatSettingsGroupName == null &&
+        chatSettingsGroupDescription == null &&
         groupNameEditTitle == null &&
         chatSettingsGroupQrCode == null &&
         chatSettingsGroupMembers == null &&
@@ -1260,6 +1295,7 @@ fun PrivChatChatSettingsStrings.merge(patch: PrivChatChatSettingsStringsPatch?):
     return copy(
         chatSettingsTitle = patch.chatSettingsTitle ?: chatSettingsTitle,
         chatSettingsGroupName = patch.chatSettingsGroupName ?: chatSettingsGroupName,
+        chatSettingsGroupDescription = patch.chatSettingsGroupDescription ?: chatSettingsGroupDescription,
         groupNameEditTitle = patch.groupNameEditTitle ?: groupNameEditTitle,
         chatSettingsGroupQrCode = patch.chatSettingsGroupQrCode ?: chatSettingsGroupQrCode,
         chatSettingsGroupMembers = patch.chatSettingsGroupMembers ?: chatSettingsGroupMembers,

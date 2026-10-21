@@ -64,6 +64,14 @@ data class PrivChatStrings(
     val messageFile: String get() = dMessage.messageFile
     val messageLocation: String get() = dMessage.messageLocation
     val messageSticker: String get() = dMessage.messageSticker
+    val stickerPacks: String get() = dMessage.stickerPacks
+    val stickerRefresh: String get() = dMessage.stickerRefresh
+    val stickerInstalled: String get() = dMessage.stickerInstalled
+    val stickerStore: String get() = dMessage.stickerStore
+    val stickerInstall: String get() = dMessage.stickerInstall
+    val stickerUninstall: String get() = dMessage.stickerUninstall
+    val stickerMoveUp: String get() = dMessage.stickerMoveUp
+    val stickerOffline: String get() = dMessage.stickerOffline
     val messageRevoked: String get() = dMessage.messageRevoked
     val messageSystem: String get() = dMessage.messageSystem
     val messageUnknown: String get() = dMessage.messageUnknown
@@ -290,6 +298,7 @@ data class PrivChatStrings(
     val friendSettingsDelete: String get() = dFriend.friendSettingsDelete
     val chatSettingsTitle: String get() = dChatSettings.chatSettingsTitle
     val chatSettingsGroupName: String get() = dChatSettings.chatSettingsGroupName
+    val chatSettingsGroupDescription: String get() = dChatSettings.chatSettingsGroupDescription
     val groupNameEditTitle: String get() = dChatSettings.groupNameEditTitle
     val chatSettingsGroupQrCode: String get() = dChatSettings.chatSettingsGroupQrCode
     val chatSettingsGroupMembers: String get() = dChatSettings.chatSettingsGroupMembers

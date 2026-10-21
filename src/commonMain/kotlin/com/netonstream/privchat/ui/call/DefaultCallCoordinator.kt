@@ -45,6 +45,7 @@ class DefaultCallCoordinator(
     private var peerSession: CallPeerSession? = null
     private var peerCallId: ULong? = null
     private var peerRecovery: Job? = null
+    private var ringingDeadline: Job? = null
 
     init { require(heartbeatIntervalMs >= 1_000) }
 
@@ -93,7 +94,8 @@ class DefaultCallCoordinator(
             if (!current(ticket)) return
             commands.remove(key)
             startedCallId = result.call.callId
-            apply(result.call)
+            apply(result.call, localInvite = true)
+            if (state.value.call == null) mutableState.value = state.value.copy(busy = false)
             if (state.value.call?.callId == result.call.callId) {
                 if (cancelStart) hangUp() else join(result.call, ticket)
             }
@@ -109,7 +111,13 @@ class DefaultCallCoordinator(
         mutableState.value = state.value.copy(busy = true, error = null)
         try { checkMedia(); join(call, ticket) }
         catch (cancelled: CancellationException) { throw cancelled }
-        catch (failure: Exception) { errorIfCurrent(call.callId, ticket, failure) }
+        catch (failure: Exception) {
+            errorIfCurrent(call.callId, ticket, failure)
+            if (currentCall(call.callId, ticket) && !state.value.joined &&
+                state.value.call?.participants?.any { it.userId == userId && it.state == CallParticipantState.JOINED } == true) {
+                mutableState.value = idle()
+            }
+        }
         finally { if (currentCall(call.callId, ticket)) mutableState.value = state.value.copy(busy = false) }
     }
 
@@ -237,6 +245,7 @@ class DefaultCallCoordinator(
         if (!current(epoch) || !finishing.add(call.callId)) return
         val ticket = epoch
         stopping += call.callId
+        ringingDeadline?.cancel()
         stopPeer(call.callId)
         heartbeat?.cancel()
         mutableState.value = state.value.copy(busy = true, joined = false, mediaConnected = false)
@@ -288,25 +297,39 @@ class DefaultCallCoordinator(
         }
     }
 
-    private fun apply(call: CallSnapshot) {
+    private fun apply(call: CallSnapshot, localInvite: Boolean = false) {
         if (!current(epoch)) return
+        if (call.participants.none { it.userId == userId }) return
         val previous = snapshots[call.callId]
+        if (previous != null && (call.version < previous.version || previous.state == CallState.ENDED)) return
         if (previous != null && previous.transport != call.transport) {
             errorIfCurrent(call.callId, epoch, CallException(CallFailure.MEDIA))
             return
         }
-        if (previous != null && (call.version < previous.version || previous.state == CallState.ENDED)) return
         if (previous?.version == call.version && (state.value.call != null || call.callId in stopping)) return
-        if (call.participants.none { it.userId == userId }) return
         snapshots[call.callId] = call
         revision++
         val self = call.participants.first { it.userId == userId }
         val terminal = call.state == CallState.ENDED || self.state == CallParticipantState.LEFT || self.state == CallParticipantState.REJECTED
         val activeId = state.value.call?.callId
+        if (call.state == CallState.RINGING && nowMs?.invoke()?.let { call.expiresAtMs <= it } == true) {
+            expireRinging(call.callId, epoch)
+            return
+        }
+        // Joined on another device: this device must not offer controls that end that call.
+        if (!terminal && self.state == CallParticipantState.JOINED && !localInvite &&
+            joining != call.callId && !(activeId == call.callId && state.value.joined)) {
+            if (activeId == call.callId) {
+                ringingDeadline?.cancel()
+                mutableState.value = idle()
+            }
+            return
+        }
         if (terminal) {
             stopping += call.callId
             stopPeer(call.callId)
             if (activeId == call.callId) {
+                ringingDeadline?.cancel()
                 heartbeat?.cancel()
                 mutableState.value = idle()
                 scope.launch(NonCancellable) { detach(call.callId) }
@@ -317,6 +340,7 @@ class DefaultCallCoordinator(
                 incoming = self.state == CallParticipantState.INVITED && call.initiatorId != userId,
                 error = if (activeId == null) null else state.value.error,
             )
+            scheduleRingingDeadline(call)
             if (call.transport == CallTransport.WEBRTC && call.state == CallState.ACTIVE && state.value.joined) {
                 awaitPeerRecovery(call.callId, epoch)
             }
@@ -325,7 +349,7 @@ class DefaultCallCoordinator(
 
     override fun onEvent(envelope: SdkEventEnvelope) {
         if (!current(epoch)) return
-        envelope.event.callStateSnapshot()?.fold(onSuccess = ::apply, onFailure = ::error)
+        envelope.event.callStateSnapshot()?.fold(onSuccess = { apply(it) }, onFailure = ::error)
     }
 
     override fun onForegroundOrReconnect() {
@@ -353,14 +377,14 @@ class DefaultCallCoordinator(
                 if (!current(ticket)) return@launch
                 val old = state.value.call
                 val unchanged = before == revision
-                active.calls.sortedBy { it.createdAtMs }.forEach(::apply)
+                active.calls.sortedBy { it.createdAtMs }.forEach { apply(it) }
                 // An event arriving during active() is newer evidence than an absent entry.
                 if (unchanged && old != null && active.calls.none { it.callId == old.callId }) {
                     stopping += old.callId
                     heartbeat?.cancel()
                     mutableState.value = idle()
                     detach(old.callId)
-                    active.calls.sortedBy { it.createdAtMs }.forEach(::apply)
+                    active.calls.sortedBy { it.createdAtMs }.forEach { apply(it) }
                 }
                 state.value.call?.let {
                     if (state.value.joined && it.callId !in stopping) startHeartbeat(it.callId, ticket)
@@ -476,6 +500,7 @@ class DefaultCallCoordinator(
         epoch++
         heartbeat?.cancel()
         resync?.cancel()
+        ringingDeadline?.cancel()
         peerSession?.close()
         peerRecovery?.cancel()
         peerRecovery = null
@@ -486,6 +511,31 @@ class DefaultCallCoordinator(
         if (callId != null) scope.launch(NonCancellable) { detach(callId) }
         snapshots.clear()
         commands.clear()
+    }
+
+    private fun scheduleRingingDeadline(call: CallSnapshot) {
+        ringingDeadline?.cancel()
+        ringingDeadline = null
+        val clock = nowMs ?: return
+        if (call.state != CallState.RINGING) return
+        val ticket = epoch
+        ringingDeadline = scope.launch {
+            delay((call.expiresAtMs - clock()).coerceAtLeast(0))
+            expireRinging(call.callId, ticket)
+        }
+    }
+
+    private fun expireRinging(callId: ULong, ticket: Long) {
+        if (!currentCall(callId, ticket)) return
+        val call = snapshots[callId] ?: return
+        if (call.state != CallState.RINGING || nowMs?.invoke()?.let { it < call.expiresAtMs } != false) return
+        // Local presentation deadline only: retain the authoritative snapshot and send no mutation.
+        heartbeat?.cancel()
+        stopPeer(callId)
+        mutableState.value = idle()
+        revision++
+        scope.launch(NonCancellable) { detach(callId) }
+        onForegroundOrReconnect()
     }
 
     private fun stopPeer(callId: ULong) {

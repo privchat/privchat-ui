@@ -38,6 +38,14 @@ import kotlinx.coroutines.flow.update
  */
 object PrivChat {
 
+    var appInForeground: Boolean = true
+        private set
+    fun setAppForeground(value: Boolean) { appInForeground = value }
+
+    private val _groupProjectionRevision = MutableStateFlow(0L)
+    val groupProjectionRevision: StateFlow<Long> = _groupProjectionRevision.asStateFlow()
+    fun invalidateGroupProjection() { _groupProjectionRevision.value += 1 }
+
     const val VERSION = "0.2.0"
 
     // SDK 版本信息（从 FFI 获取，初始化时设置）

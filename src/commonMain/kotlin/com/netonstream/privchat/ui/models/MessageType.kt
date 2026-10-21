@@ -58,6 +58,7 @@ data class ParsedContent(
     val type: MessageType,
     val text: String? = null,
     val attachmentUrl: String? = null,
+    val stickerId: String? = null,
     // 主附件协议权威 file_id（image/video/voice/file 的 `file_id`，0/缺省=无）。
     // 附件加密 v1 下载走 file_id：SDK 调 file/get_url 取签名 URL + cek 并解密，
     // 不再依赖可能过期/明文的 attachmentUrl（仅作 legacy 兜底）。
@@ -355,6 +356,7 @@ fun parseMessageContent(message: MessageEntry): ParsedContent {
         type = type,
         text = body.text,
         attachmentUrl = body.attachmentUrl,
+        stickerId = body.stickerId,
         attachmentFileId = body.attachmentFileId,
         thumbnailUrl = body.thumbnailUrl,
         thumbnailFileId = body.thumbnailFileId,

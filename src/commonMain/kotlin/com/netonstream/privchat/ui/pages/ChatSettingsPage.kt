@@ -21,6 +21,7 @@ import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.components.navbar.NavBar
+import com.gearui.components.input.Input
 import com.gearui.components.cell.Cell
 import com.gearui.components.switch.Switch
 import com.gearui.components.dialog.DialogAction
@@ -97,6 +98,11 @@ fun ChatSettingsPage(
     // allowMemberAddFriend / allMuted）。服务端仍是权威鉴权。
     val isManager = isGroup && (isOwner || isAdmin)
 
+    var description by remember(channel.channelId) { mutableStateOf<String?>(null) }
+    var profileEditor by remember(channel.channelId) { mutableStateOf(false) }
+    var profileSaving by remember(channel.channelId) { mutableStateOf(false) }
+    var descriptionDraft by remember(channel.channelId) { mutableStateOf("") }
+    val projectionRevision by PrivChat.groupProjectionRevision.collectAsState()
     // 群设置初值（groupGetSettings 读，groupUpdateSettings 改；每次只 patch 改动项）。
     var allowSearch by remember(channel.channelId) { mutableStateOf<Boolean?>(null) }
     var memberCanInvite by remember(channel.channelId) { mutableStateOf<Boolean?>(null) }
@@ -104,11 +110,12 @@ fun ChatSettingsPage(
     var allMuted by remember(channel.channelId) { mutableStateOf<Boolean?>(null) }
     var joinPolicy by remember(channel.channelId) { mutableStateOf<UByte?>(null) }
 
-    if (isManager) {
-        LaunchedEffect(channel.channelId) {
+    if (isGroup) {
+        LaunchedEffect(channel.channelId, projectionRevision) {
             withContext(Dispatchers.Default) {
                 PrivChat.client.groupGetSettings(channel.channelId)
             }.onSuccess { s ->
+                description = s.description ?: ""
                 allowSearch = s.allowSearch
                 memberCanInvite = s.memberCanInvite
                 allowMemberAddFriend = s.allowMemberAddFriend
@@ -153,6 +160,7 @@ fun ChatSettingsPage(
                 item {
                     val groupRows = buildList {
                         add(GroupRow.Name)
+                        add(GroupRow.Description)
                         add(GroupRow.QrCode)
                         add(GroupRow.Members)
                         add(GroupRow.Invite)
@@ -171,6 +179,17 @@ fun ChatSettingsPage(
                                 // P6-3 上线要求：群改名尚未持久化（GROUP_SETTINGS_PERSISTENCE 未完成）→ 暂隐藏编辑入口，
                                 // 只读展示群名，避免用户改了 resync 后丢失的假成功。
                                 arrow = false,
+                            )
+                            GroupRow.Description -> Cell(
+                                title = strings.chatSettingsGroupDescription,
+                                description = description ?: strings.loading,
+                                arrow = isManager && description != null,
+                                onClick = {
+                                    if (isManager && description != null) {
+                                        descriptionDraft = description.orEmpty()
+                                        profileEditor = true
+                                    }
+                                },
                             )
                             GroupRow.QrCode -> Cell(
                                 title = strings.chatSettingsGroupQrCode,
@@ -204,7 +223,7 @@ fun ChatSettingsPage(
 
                 // 群管理设置（仅群主/管理员可见可改；服务端鉴权）：一张带标题的卡片，
                 // 不是夹在两张卡片之间的一串通栏白条。
-                if (isManager) {
+                if (isOwner) {
                     item {
                         CellGroup(
                             items = ManageRow.entries,
@@ -354,6 +373,35 @@ fun ChatSettingsPage(
         }
     }
 
+    Dialog.Host(visible = profileEditor, onDismiss = { if (!profileSaving) profileEditor = false }) {
+        DialogContent(
+            title = strings.chatSettingsGroupDescription,
+            content = {
+                Input(value = descriptionDraft, onValueChange = { if (!profileSaving) descriptionDraft = it },
+                    clearable = !profileSaving, onClear = { descriptionDraft = "" }, autoFocus = true)
+            },
+            actions = listOf(
+                DialogAction(text = strings.cancel, role = DialogActionRole.CANCEL, enabled = !profileSaving,
+                    onClick = { profileEditor = false }),
+                DialogAction(text = strings.save, role = DialogActionRole.PRIMARY, enabled = !profileSaving,
+                    onClick = {
+                        profileSaving = true
+                        val value = descriptionDraft
+                        scope.launch {
+                            withContext(Dispatchers.Default) {
+                                PrivChat.client.groupUpdateProfile(channel.channelId, description = value)
+                            }.onSuccess {
+                                description = value
+                                profileEditor = false
+                                PrivChat.invalidateGroupProjection()
+                            }.onFailure { Toast.error(UserFacingError.message(it, strings.groupSettingsUpdateFailed)) }
+                            profileSaving = false
+                        }
+                    }),
+            ),
+        )
+    }
+
     // 退出群聊确认对话框
     Dialog.Host(
         visible = showLeaveConfirmDialog,
@@ -419,7 +467,7 @@ private fun SettingSwitchCell(
 private enum class ChatSettingRow { Mute, Pin }
 
 /** 群设置卡片里的行。条件显隐先算成一个列表，再交给 CellGroup。 */
-private enum class GroupRow { Name, QrCode, Members, Invite, Manage, Approval }
+private enum class GroupRow { Name, Description, QrCode, Members, Invite, Manage, Approval }
 
 /** 群管理卡片里的行。 */
 private enum class ManageRow { JoinPolicy, AllowSearch, MemberCanInvite, AllowMemberAddFriend, AllMuted }

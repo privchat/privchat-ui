@@ -156,6 +156,7 @@ import kotlin.math.sin
 private enum class InputPanelMode {
     NONE,
     EMOJI,
+    STICKER,
     PLUS,
 }
 
@@ -573,6 +574,7 @@ fun MessagePage(
     var pinnedMessages by remember(channel.channelId) {
         mutableStateOf<List<com.netonstream.privchat.sdk.dto.GroupPinnedMessageView>>(emptyList())
     }
+    var pinsHidden by remember(channel.channelId) { mutableStateOf(false) }
     val pinnedMessageIds = remember(pinnedMessages) { pinnedMessages.map { it.messageId }.toSet() }
     // 加载/刷新置顶列表（封装供初始加载与置顶操作后调用）。
     val refreshPinnedMessages: suspend () -> Unit = refresh@{
@@ -580,6 +582,15 @@ fun MessagePage(
         withContext(Dispatchers.Default) {
             PrivChat.client.groupPinnedMessages(channel.channelId)
         }.onSuccess { pinnedMessages = it }
+    }
+    val groupProjectionRevision by PrivChat.groupProjectionRevision.collectAsState()
+    LaunchedEffect(channel.channelId, groupProjectionRevision) {
+        if (!channel.isDm) {
+            while (true) {
+                if (PrivChat.appInForeground) refreshPinnedMessages()
+                kotlinx.coroutines.delay(30_000)
+            }
+        }
     }
     // Typing 节流：记录上次发送 typing 的时间戳（毫秒）
     var lastTypingSentMs by remember { mutableStateOf(0L) }
@@ -798,6 +809,7 @@ fun MessagePage(
     val connectionState by PrivChat.connectionState.collectAsState()
     LaunchedEffect(connectionState) {
         if (connectionState == ConnectionState.Connected) {
+            refreshPinnedMessages()
             // 频道订阅恢复（typing + presence_changed 都走 channel publish）
             runCatching {
                 withContext(Dispatchers.Default) {
@@ -1122,8 +1134,8 @@ fun MessagePage(
         com.netonstream.privchat.ui.call.ChatCallButtons(channel.channelId)
 
         // 置顶条：群聊有置顶消息时展示最新一条预览；群主/管理员可一键取消置顶。
-        // 不做跳转原消息（产品定稿）。普通成员只读。
-        if (!channel.isDm && pinnedMessages.isNotEmpty()) {
+        // 所有成员可打开完整列表并定位原消息；收起仅影响本地显示。
+        if (!channel.isDm && !pinsHidden && pinnedMessages.isNotEmpty()) {
             val latestPinned = pinnedMessages.first()
             val pinnedMsg = sortedMessages.firstOrNull {
                 it.serverMessageId == latestPinned.messageId
@@ -1134,6 +1146,31 @@ fun MessagePage(
                     strings.previewOf(it)
                 } ?: strings.pinnedMessagesTitle,
                 canManage = canPinMessages,
+                onClose = { pinsHidden = true },
+                onOpen = {
+                    ActionSheet.showList(
+                        items = pinnedMessages.map { pin ->
+                            ActionSheetItem(label = sortedMessages.firstOrNull { it.serverMessageId == pin.messageId }
+                                ?.let { strings.previewOf(it) } ?: strings.pinnedMessagesTitle)
+                        },
+                        onSelected = { _, index ->
+                            val pin = pinnedMessages.getOrNull(index)
+                            if (pin != null) scope.launch {
+                                val window = withContext(Dispatchers.Default) {
+                                    PrivChat.client.getMessagesAround(channel.channelId, channel.channelType, pin.messageId, 25u, 25u)
+                                        .fold(onSuccess = { PrivChat.client.getLocalMessagesAround(channel.channelId, channel.channelType, pin.messageId).getOrNull() },
+                                            onFailure = { null })
+                                }
+                                val anchor = window?.firstOrNull { it.serverMessageId == pin.messageId }
+                                if (anchor != null) {
+                                    jumpPending = true
+                                    PrivChat.updateMessages(channel.channelId, window)
+                                    pendingFocusLocalId = anchor.id
+                                } else Toast.error(strings.globalSearchAnchorMissing)
+                            }
+                        },
+                    )
+                },
                 onUnpin = {
                     scope.launch {
                         withContext(Dispatchers.Default) {
@@ -1724,6 +1761,25 @@ fun MessagePage(
                         }
                 }
             },
+            onSticker = { payload ->
+                val catalog = com.netonstream.privchat.ui.sticker.StickerUiBridge.catalog
+                val session = catalog?.session ?: throw CancellationException("sticker session ended")
+                val result = com.netonstream.privchat.ui.sticker.withStickerSendReservation(
+                    reserve = { selfSendsAwaitingRender += 1 },
+                    release = { selfSendsAwaitingRender = (selfSendsAwaitingRender - 1).coerceAtLeast(0) },
+                ) {
+                    withContext(Dispatchers.Default) {
+                        if (catalog.session != session) throw CancellationException("sticker session changed")
+                        PrivChat.client.sendSticker(channel.channelId, channel.channelType, payload)
+                    }
+                }
+                if (result.isSuccess) scope.launch {
+                    delay(50)
+                    val count = PrivChat.cachedMessages(channel.channelId).size
+                    if (count > 0) listState.animateScrollToItem(count - 1)
+                }
+                result
+            },
             onRedPacket = { onRedPacket?.invoke() },
             onMoneyTransfer = { onMoneyTransfer?.invoke() },
             moneyEnabled = onRedPacket != null,
@@ -1867,7 +1923,7 @@ internal fun resolveGroupMessageSenderName(
 }
 
 /**
- * 群置顶消息条：展示最新一条置顶消息预览（不做跳转）。
+ * 群置顶消息条：最新预览、完整列表入口及独立的本地收起。
  * 群主/管理员（[canManage]）可点右侧图标一键取消置顶；普通成员只读。
  */
 @Composable
@@ -1876,6 +1932,8 @@ private fun PinnedMessagesBar(
     preview: String,
     canManage: Boolean,
     onUnpin: () -> Unit,
+    onOpen: () -> Unit,
+    onClose: () -> Unit,
 ) {
     val colors = Theme.colors
     val strings = PrivChatI18n.strings
@@ -1888,7 +1946,7 @@ private fun PinnedMessagesBar(
     ) {
         Icon(Icons.bookmarkSimple.filled, size = IconSizes.Default.sm, tint = colors.primary)
         HorizontalSpacer(8.dp)
-        Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.weight(1f).clickable(onClick = onOpen)) {
             Text(
                 text = if (count > 1) "${strings.pinnedMessagesTitle} ($count)" else strings.pinnedMessagesTitle,
                 style = Theme.typography.label,
@@ -1903,9 +1961,10 @@ private fun PinnedMessagesBar(
         }
         if (canManage) {
             HorizontalSpacer(8.dp)
-            PressableFeedback(onClick = onUnpin) {
-                Icon(Icons.x, size = IconSizes.Default.sm, tint = colors.mutedForeground)
-            }
+            PressableFeedback(onClick = onUnpin) { Text(text = strings.messageUnpin) }
+        }
+        PressableFeedback(onClick = onClose) {
+            Icon(Icons.x, size = IconSizes.Default.sm, tint = colors.mutedForeground)
         }
     }
 }
@@ -2907,6 +2966,7 @@ private fun MessageInputBar(
     onPickCamera: () -> Unit = {},
     onPickFile: () -> Unit = {},
     onLocation: () -> Unit = {},
+    onSticker: suspend (com.netonstream.privchat.sdk.dto.StickerMessagePayload) -> Result<ULong>,
     onRedPacket: () -> Unit = {},
     onMoneyTransfer: () -> Unit = {},
     moneyEnabled: Boolean = false,
@@ -2953,10 +3013,17 @@ private fun MessageInputBar(
     }
     var lastKeyboardHeight by remember { mutableStateOf(0f) }
     // strings 进 key：切语言后这些标签必须重算，否则加号面板还停在旧语言。
-    val plusActions = remember(moneyEnabled, strings) {
+    val stickerCatalog = com.netonstream.privchat.ui.sticker.StickerUiBridge.catalog
+    val plusActions = remember(moneyEnabled, strings, stickerCatalog) {
         buildList {
             add(PlusAction(Icons.image, strings.plusAlbum, onPickImage))
             add(PlusAction(Icons.camera, strings.plusCamera, onPickCamera))
+            if (stickerCatalog != null) {
+                add(PlusAction(Icons.image, strings.stickerPacks) {
+                    displayedPanelMode = InputPanelMode.STICKER
+                    onPanelModeChange(InputPanelMode.STICKER)
+                })
+            }
             if (com.netonstream.privchat.ui.platform.LocationUiBridge.available) {
                 add(PlusAction(Icons.flag, strings.plusLocation, onLocation))
             }
@@ -3436,6 +3503,10 @@ private fun MessageInputBar(
                             )
                         }
                         }
+                    }
+
+                    if (displayedPanelMode == InputPanelMode.STICKER) {
+                        com.netonstream.privchat.ui.sticker.StickerPanel(onSend = onSticker)
                     }
 
                     if (displayedPanelMode == InputPanelMode.PLUS) {

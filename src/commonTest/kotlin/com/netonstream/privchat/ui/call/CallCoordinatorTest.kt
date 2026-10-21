@@ -18,8 +18,8 @@ class CallCoordinatorTest {
         expiresAtMs = 50_000, participants = listOf(CallParticipant(1u, self), CallParticipant(2u, CallParticipantState.JOINED)),
     )
     private fun event(call: CallSnapshot) = SdkEventEnvelope(1u, 0, SdkEventPayload(
-        type = "subscription_message_received", topic = "call/state",
-        payload = Json.encodeToString(CallResponse(call)).encodeToByteArray(),
+        type = "rpc_notification_received", route = "call/state",
+        body = Json.encodeToString(CallResponse(call)).encodeToByteArray(),
     ))
 
     private class Media : CallMedia {
@@ -184,7 +184,102 @@ class CallCoordinatorTest {
         val api = Control(); val c = DefaultCallCoordinator(api, 1u, Media(), backgroundScope)
         c.onEvent(event(snapshot(8u, CallParticipantState.JOINED, CallState.ACTIVE)))
         c.onEvent(event(snapshot(3u)))
-        assertEquals(8uL, c.state.value.call?.version); assertFalse(c.state.value.incoming)
+        assertNull(c.state.value.call); assertFalse(c.state.value.incoming)
+        c.close(); runCurrent()
+    }
+
+    @Test fun answeredOnOtherDeviceDismissesIncomingWithoutEndingRemoteCall() = runTest {
+        val api = Control(); val media = Media()
+        val c = DefaultCallCoordinator(api, 1u, media, backgroundScope)
+        c.onEvent(event(api.call)); assertTrue(c.state.value.incoming)
+        val answered = snapshot(8u, CallParticipantState.JOINED, CallState.ACTIVE)
+        c.onEvent(event(answered)); runCurrent()
+        assertNull(c.state.value.call)
+        c.onEvent(event(api.call)); c.onEvent(event(answered))
+        api.call = answered
+        c.onForegroundOrReconnect(); runCurrent()
+        c.hangUp(); c.reject(); c.accept()
+        assertNull(c.state.value.call); assertNull(c.state.value.error)
+        assertTrue(api.mutations.isEmpty()); assertEquals(0, media.connections)
+        c.close(); runCurrent()
+    }
+
+    @Test fun otherDeviceWinsWhileLocalJoinIsPending() = runTest {
+        val api = Control().apply { joinGate = CompletableDeferred() }
+        val media = Media(); val c = DefaultCallCoordinator(api, 1u, media, backgroundScope)
+        c.onEvent(event(api.call))
+        val accepting = launch { c.accept() }; runCurrent()
+        val answered = snapshot(8u, CallParticipantState.JOINED, CallState.ACTIVE)
+        c.onEvent(event(answered))
+        api.joinGate!!.completeExceptionally(IllegalStateException("owned by another device"))
+        accepting.join(); runCurrent()
+        assertNull(c.state.value.call); assertNotNull(c.state.value.error)
+        c.hangUp(); c.reject(); c.onEvent(event(api.call))
+        assertNull(c.state.value.call)
+        assertEquals(listOf("join"), api.mutations.map { it.first })
+        assertEquals(0, media.connections)
+        c.close(); runCurrent()
+    }
+
+    @Test fun notificationRejectsPublishForeignUserAndPreservesLocalJoinedCall() = runTest {
+        val api = Control(); val media = Media()
+        val c = DefaultCallCoordinator(api, 1u, media, backgroundScope)
+        c.onEvent(SdkEventEnvelope(1u, 0, SdkEventPayload("subscription_message_received", topic = "call/state",
+            payload = Json.encodeToString(CallResponse(api.call)).encodeToByteArray())))
+        assertNull(c.state.value.call)
+        c.onEvent(event(api.call)); c.accept(); runCurrent()
+        val accepted = c.state.value.call!!
+        c.onEvent(event(accepted.copy(version = 20u, transport = CallTransport.WEBRTC,
+            participants = listOf(CallParticipant(2u, CallParticipantState.JOINED)))))
+        assertEquals(accepted, c.state.value.call); assertNull(c.state.value.error)
+        c.onEvent(event(accepted.copy(version = 3u, state = CallState.ACTIVE)))
+        c.onEvent(event(accepted.copy(version = 1u, transport = CallTransport.WEBRTC)))
+        c.onEvent(event(api.call))
+        assertEquals(3uL, c.state.value.call?.version); assertTrue(c.state.value.joined)
+        assertNull(c.state.value.error)
+        assertFalse(c.state.value.incoming); assertEquals(1, media.connections)
+        c.close(); runCurrent()
+    }
+
+    @Test fun expiredRingingNeverAppearsAndMissingTerminalPacketUsesLocalDeadline() = runTest {
+        val api = Control().apply { call = snapshot().copy(expiresAtMs = 1_000) }
+        val media = Media()
+        val c = DefaultCallCoordinator(api, 1u, media, backgroundScope, nowMs = { testScheduler.currentTime })
+        c.onEvent(event(api.call)); assertTrue(c.state.value.incoming)
+        advanceTimeBy(1_001); runCurrent()
+        assertNull(c.state.value.call); assertTrue(api.mutations.isEmpty())
+        assertEquals(1, api.activeCalls)
+        c.onEvent(event(api.call)); c.onEvent(event(api.call.copy(version = 2u)))
+        assertNull(c.state.value.call); assertNull(c.state.value.error)
+        assertEquals(0, media.connections)
+        c.close(); runCurrent()
+        val late = DefaultCallCoordinator(api, 1u, Media(), backgroundScope, nowMs = { testScheduler.currentTime })
+        late.onEvent(event(api.call)); assertNull(late.state.value.call)
+        late.start(9u, CallMediaKind.AUDIO)
+        assertNull(late.state.value.call); assertFalse(late.state.value.busy)
+        assertTrue(api.mutations.isEmpty())
+        late.close(); runCurrent()
+    }
+
+    @Test fun serverActiveSnapshotCancelsRingingDeadline() = runTest {
+        val api = Control().apply { call = snapshot().copy(expiresAtMs = 1_000) }
+        val c = DefaultCallCoordinator(api, 1u, Media(), backgroundScope, nowMs = { testScheduler.currentTime })
+        c.onEvent(event(api.call)); c.accept(); runCurrent()
+        c.onEvent(event(c.state.value.call!!.copy(version = 3u, state = CallState.ACTIVE)))
+        advanceTimeBy(1_001); runCurrent()
+        assertEquals(CallState.ACTIVE, c.state.value.call?.state); assertTrue(c.state.value.joined)
+        assertEquals(listOf("join"), api.mutations.map { it.first })
+        c.close(); runCurrent()
+    }
+
+    @Test fun oldRingingDeadlineCannotClearNewCall() = runTest {
+        val api = Control().apply { call = snapshot().copy(expiresAtMs = 1_000) }
+        val c = DefaultCallCoordinator(api, 1u, Media(), backgroundScope, nowMs = { testScheduler.currentTime })
+        c.onEvent(event(api.call)); runCurrent()
+        c.onEvent(event(api.call.copy(version = 2u, state = CallState.ENDED)))
+        val second = api.call.copy(callId = 42u, expiresAtMs = 5_000)
+        c.onEvent(event(second)); advanceTimeBy(1_001); runCurrent()
+        assertEquals(second, c.state.value.call); assertTrue(api.mutations.isEmpty())
         c.close(); runCurrent()
     }
 
@@ -418,7 +513,7 @@ class CallCoordinatorTest {
             c.onMediaEvent(41u, "peer_signal", """{"revision":1,"kind":"offer","payload":"raw-SDP"}""")
             c.onMediaEvent(41u, "peer_signal", """{"revision":1,"kind":"ice","payload":"candidate-json"}""")
         }
-        c.onEvent(event(api.call)); c.accept(); runCurrent(); advanceTimeBy(251); runCurrent()
+        c.start(9u, CallMediaKind.AUDIO); runCurrent(); advanceTimeBy(251); runCurrent()
         assertEquals(3, api.signals.size)
         assertEquals(api.signals[0], api.signals[1])
         assertEquals(listOf(CallPeerSignalKind.OFFER, CallPeerSignalKind.OFFER, CallPeerSignalKind.ICE), api.signals.map { it.kind })
@@ -444,7 +539,7 @@ class CallCoordinatorTest {
     @Test fun noTurnZeroExpiryStaysConnectedWithoutAutomaticRenewal() = runTest {
         for (servers in listOf(emptyList(), listOf(CallIceServer(listOf("stun:example.invalid"))))) {
             val api = Control().apply {
-                call = snapshot().copy(transport = CallTransport.WEBRTC)
+                call = snapshot(state = CallState.ACTIVE).copy(transport = CallTransport.WEBRTC)
                 peer = peer.copy(iceServers = servers, credentialExpiresAtMs = 0)
             }
             val media = Media()
@@ -461,7 +556,7 @@ class CallCoordinatorTest {
     }
 
     @Test fun renewalCanDisableTurnAndReturnZeroExpiry() = runTest {
-        val api = Control().apply { call = snapshot().copy(transport = CallTransport.WEBRTC) }
+        val api = Control().apply { call = snapshot(state = CallState.ACTIVE).copy(transport = CallTransport.WEBRTC) }
         val media = Media()
         val c = DefaultCallCoordinator(api, 1u, media, backgroundScope, nowMs = { testScheduler.currentTime })
         c.onEvent(event(api.call)); c.accept(); runCurrent()
