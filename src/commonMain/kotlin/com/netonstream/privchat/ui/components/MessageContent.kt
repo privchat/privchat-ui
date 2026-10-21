@@ -1037,8 +1037,8 @@ private fun StickerContent(
  * 位置消息（协议 LocationMetadata，Phase 2 已扩展）。
  *
  * 展示优先级：POI name > address > lat/lng 兜底。点击 → 系统地图，按 coordinate_system
- * 转成 WGS-84 再打开（gcj02/bd09 不转会偏几百米）。缩略图：协议是 thumbnail_file_id，
- * 接收端用 server 解析后的 thumbnailUrl 显示；只有 file_id 拿不到 url 时退视觉占位块。
+ * 转成 WGS-84 再打开（gcj02/bd09 不转会偏几百米）。历史 thumbnailUrl 保持兼容；
+ * 无历史缩略图时通过宿主异步生成本地预览，不阻塞文字显示，不上传或写入消息。
  */
 @Composable
 private fun LocationContent(
@@ -1055,31 +1055,62 @@ private fun LocationContent(
     val title = placeName ?: PrivChatI18n.current.locationFallbackTitle
     val clickMod = if (lat != null && lng != null) {
         Modifier.clickable {
-            ExternalLinkBridge.openMap(lat, lng, parsed.coordinateSystem, placeName)
+            val opened = com.netonstream.privchat.ui.platform.LocationUiBridge.show?.invoke(
+                com.netonstream.privchat.ui.platform.LocationPresentation(lat, lng, parsed.coordinateSystem, placeName, parsed.address)
+            ) == true
+            if (!opened) ExternalLinkBridge.openMap(lat, lng, parsed.coordinateSystem, placeName)
         }
     } else {
         Modifier
     }
     val thumb = parsed.thumbnailUrl?.takeIf { it.isNotBlank() }
+    val previewLease = com.netonstream.privchat.ui.platform.LocationPreviewBridge.registration
+    val presentation = if (lat != null && lng != null) {
+        com.netonstream.privchat.ui.platform.LocationPresentation(
+            lat, lng, parsed.coordinateSystem, placeName, parsed.address,
+        )
+    } else null
+    val density = com.tencent.kuikly.compose.ui.platform.LocalDensity.current
+    val widthPx = with(density) { 220.dp.roundToPx() }
+    val heightPx = with(density) { 110.dp.roundToPx() }
+    var preview by remember(previewLease, presentation, thumb, widthPx, heightPx) {
+        mutableStateOf<String?>(null)
+    }
+    LaunchedEffect(previewLease, presentation, thumb, widthPx, heightPx) {
+        if (thumb == null && previewLease != null && presentation != null) {
+            try {
+                val image = com.netonstream.privchat.ui.platform.LocationPreviewBridge.load(
+                    previewLease, presentation, widthPx, heightPx,
+                )
+                if (com.netonstream.privchat.ui.platform.LocationPreviewBridge.registration === previewLease) {
+                    preview = image
+                }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // A failed preview must not prevent text display, navigation, or message delivery.
+            }
+        }
+    }
+    val displayedImage = thumb ?: preview
     Column(modifier = clickMod.width(220.dp)) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(110.dp)
-                .clip(RoundedCornerShape(8.dp))
                 .background(Theme.colors.muted),
             contentAlignment = Alignment.Center,
         ) {
-            if (thumb != null) {
-                // 发送端生成的静态地图缩略图（server 已把 thumbnail_file_id 解析成 url）。
+            Text(text = "📍", style = Theme.typography.titleLarge)
+            if (displayedImage != null) {
+                // Historical thumbnails retain their path; new snapshots are local data URIs only.
                 Image(
-                    painter = rememberAsyncImagePainter(model = thumb),
+                    painter = rememberAsyncImagePainter(model = displayedImage),
                     contentDescription = title,
                     modifier = Modifier.fillMaxWidth().height(110.dp),
-                    contentScale = ContentScale.Crop,
+                    // Preserve edge attribution for native snapshots and historical map images.
+                    contentScale = ContentScale.Fit,
                 )
-            } else {
-                Text(text = "📍", style = Theme.typography.titleLarge)
             }
         }
         VerticalSpacer(6.dp)
