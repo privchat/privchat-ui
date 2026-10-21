@@ -49,6 +49,7 @@ import com.netonstream.privchat.ui.utils.Formatter
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.netonstream.privchat.ui.i18n.PrivChatStrings
 import com.netonstream.privchat.ui.i18n.withArgs
+import com.netonstream.privchat.ui.i18n.historySummary
 import com.gearui.foundation.keyboard.keyboardDismissExempt
 import com.gearui.theme.Theme
 import com.gearui.foundation.primitives.Text
@@ -1118,6 +1119,7 @@ fun MessagePage(
             },
         )
         networkStatusBar?.invoke()
+        com.netonstream.privchat.ui.call.ChatCallButtons(channel.channelId)
 
         // 置顶条：群聊有置顶消息时展示最新一条预览；群主/管理员可一键取消置顶。
         // 不做跳转原消息（产品定稿）。普通成员只读。
@@ -2466,6 +2468,11 @@ private fun SystemMessageRow(
                         )
                     }
                 }
+                parsed.callHistory != null -> Text(
+                    text = strings.dCall.historySummary(parsed.callHistory),
+                    style = Theme.typography.label,
+                    color = sys.text,
+                )
                 parsed.systemTemplate != null -> SystemTemplateText(
                     template = parsed.systemTemplate,
                     refs = parsed.systemRefs ?: emptyList(),

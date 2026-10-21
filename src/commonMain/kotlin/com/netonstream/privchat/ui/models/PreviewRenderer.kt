@@ -4,6 +4,7 @@ import com.netonstream.privchat.sdk.dto.ChannelListEntry
 import com.netonstream.privchat.sdk.dto.LatestChannelEvent
 import com.netonstream.privchat.sdk.dto.MessageEntry
 import com.netonstream.privchat.ui.i18n.PrivChatStrings
+import com.netonstream.privchat.ui.i18n.historySummary
 
 /**
  * 会话列表 / 消息预览渲染**单点入口**（架构归正后唯一渲染源）。
@@ -155,6 +156,7 @@ private fun renderSystemPreview(
     parsed: ParsedContent,
     rawContent: String,
 ): String {
+    parsed.callHistory?.let { return strings.dCall.historySummary(it) }
     val template = parsed.systemTemplate
     if (template == null) {
         // 老的纯文本系统消息（少数遗留）：parsed.text 在新版解析里不再 fallback 到 content；

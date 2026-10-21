@@ -95,6 +95,7 @@ data class ParsedContent(
     // template 是模板字符串或 i18n key（如 `system.member_invited`），refs 按下标替换 `{i}` 占位。
     val systemTemplate: String? = null,
     val systemRefs: List<MessageRef>? = null,
+    val callHistory: com.netonstream.privchat.sdk.dto.call.CallHistory? = null,
     // MONEY MESSAGE（RED_PACKET / MONEY_TRANSFER）：payload 引用 + 展示快照。
     // moneyRefId = redPacketId / transferId（字符串）；其余是展示快照，非资金依据，
     // 交互（领取/查看）以 platform 订单/ledger 为准。
@@ -377,6 +378,7 @@ fun parseMessageContent(message: MessageEntry): ParsedContent {
         contactAvatarUrl = body.contactAvatarUrl,
         systemTemplate = body.systemTemplate,
         systemRefs = body.systemRefs.map { MessageRef(it.type, it.targetId.orEmpty(), it.text.orEmpty()) },
+        callHistory = body.callHistory,
         moneyRefId = body.moneyRefId,
         moneyTitle = body.moneyTitle,
         moneySummary = body.moneySummary,

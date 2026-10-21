@@ -27,6 +27,7 @@ data class PrivChatStrings(
     val dWallet: PrivChatWalletStrings,
     val dAuth: PrivChatAuthStrings,
     val dPlatformError: PrivChatPlatformErrorStrings,
+    val dCall: PrivChatCallStrings = enCall,
 ) {
     val appName: String get() = dCommon.appName
     val confirm: String get() = dCommon.confirm
@@ -973,6 +974,7 @@ data class PrivChatStringsPatch(
     val dWallet: PrivChatWalletStringsPatch? = null,
     val dAuth: PrivChatAuthStringsPatch? = null,
     val dPlatformError: PrivChatPlatformErrorStringsPatch? = null,
+    val dCall: PrivChatCallStrings? = null,
 )
 
 val PrivChatStringsPatch.isEmpty: Boolean
@@ -990,7 +992,7 @@ val PrivChatStringsPatch.isEmpty: Boolean
         (dAuxiliary == null || dAuxiliary.isEmpty) &&
         (dWallet == null || dWallet.isEmpty) &&
         (dAuth == null || dAuth.isEmpty) &&
-        (dPlatformError == null || dPlatformError.isEmpty)
+        (dPlatformError == null || dPlatformError.isEmpty) && dCall == null
 
 fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
     if (patch == null || patch.isEmpty) return this
@@ -1010,6 +1012,7 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         dWallet = dWallet.merge(patch.dWallet),
         dAuth = dAuth.merge(patch.dAuth),
         dPlatformError = dPlatformError.merge(patch.dPlatformError),
+        dCall = patch.dCall ?: dCall,
     )
 }
 
@@ -1032,6 +1035,7 @@ object PrivChatStringPacks {
         dWallet = zhWallet,
         dAuth = zhAuth,
         dPlatformError = zhPlatformError,
+        dCall = zhCall,
     )
 
     val English = PrivChatStrings(
@@ -1050,6 +1054,7 @@ object PrivChatStringPacks {
         dWallet = enWallet,
         dAuth = enAuth,
         dPlatformError = enPlatformError,
+        dCall = enCall,
     )
 
     val ChineseTraditional = PrivChatStrings(
@@ -1068,6 +1073,7 @@ object PrivChatStringPacks {
         dWallet = hantWallet,
         dAuth = hantAuth,
         dPlatformError = hantPlatformError,
+        dCall = hantCall,
     )
 
     val Vietnamese = PrivChatStrings(
@@ -1086,6 +1092,7 @@ object PrivChatStringPacks {
         dWallet = viWallet,
         dAuth = viAuth,
         dPlatformError = viPlatformError,
+        dCall = viCall,
     )
 
     val builtIn: Map<String, PrivChatStrings> = mapOf(
