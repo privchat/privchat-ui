@@ -26,6 +26,11 @@ class CallCoordinatorTest {
         override var available = true
         var connections = 0
         var disconnections = 0
+        var peerConnections = 0
+        val peerEvents = mutableListOf<CallPeerEvent>()
+        val peerConfigs = mutableListOf<CallPeerConfig>()
+        var peerReceiveFailures = 0
+        var peerSetupEvent: (() -> Unit)? = null
         val microphoneCalls = mutableListOf<Boolean>()
         val cameraCalls = mutableListOf<Boolean>()
         val speakerCalls = mutableListOf<Boolean>()
@@ -34,6 +39,12 @@ class CallCoordinatorTest {
         var microphoneFailure = false
         var gate: CompletableDeferred<Unit>? = null
         override suspend fun connect(call: CallSnapshot, url: String, token: String) { connections++; gate?.await() }
+        override suspend fun connectPeer(call: CallSnapshot, peer: CallPeerConfig) { peerConnections++; peerSetupEvent?.invoke(); gate?.await() }
+        override suspend fun receivePeerSignal(event: CallPeerEvent) {
+            if (peerReceiveFailures-- > 0) error("retry native delivery")
+            peerEvents += event
+        }
+        override suspend fun updatePeerConfig(peer: CallPeerConfig) { peerConfigs += peer }
         override suspend fun disconnect() { disconnections++ }
         override suspend fun setMicrophone(enabled: Boolean) {
             microphoneCalls += enabled
@@ -61,6 +72,12 @@ class CallCoordinatorTest {
         var beats = 0
         var heartbeatFailures = 0
         var heartbeatHook: (() -> Unit)? = null
+        var peer = CallPeerConfig(1u, 2u, false, listOf(CallIceServer(listOf("turn:example.invalid"), "user", "SECRET")), 10_000)
+        val journal = mutableListOf<CallPeerEvent>()
+        val polls = mutableListOf<CallPeerEventsRequest>()
+        val signals = mutableListOf<CallPeerSignalRequest>()
+        var signalFailures = 0
+        var peerPollGate: CompletableDeferred<CallPeerEventsResponse>? = null
         val mutations = mutableListOf<Pair<String, CallMutationRequest>>()
         val invitations = mutableListOf<CallInviteRequest>()
         override suspend fun capabilities(): Result<CallCapabilitiesResponse> =
@@ -80,7 +97,7 @@ class CallCoordinatorTest {
             return Result.success(joinGate?.await() ?: CallJoinResponse(
                 call.copy(version = call.version + 1u, participants = call.participants.map {
                     if (it.userId == 1uL) it.copy(state = CallParticipantState.JOINED) else it
-                }), "wss://media.invalid", "secret", 50_000,
+                }), "wss://media.invalid", "secret", 50_000, peer = peer.takeIf { call.transport == CallTransport.WEBRTC },
             ))
         }
         private fun finish(action: String, request: CallMutationRequest): Result<CallResponse> {
@@ -97,6 +114,14 @@ class CallCoordinatorTest {
             heartbeatHook?.invoke()
             if (heartbeatFailures-- > 0) return Result.failure(IllegalStateException("transient"))
             return Result.success(CallResponse(call))
+        }
+        override suspend fun peerSignal(request: CallPeerSignalRequest): Result<Unit> {
+            signals += request
+            return if (signalFailures-- > 0) Result.failure(IllegalStateException("transient")) else Result.success(Unit)
+        }
+        override suspend fun peerEvents(request: CallPeerEventsRequest): Result<CallPeerEventsResponse> {
+            polls += request
+            return Result.success(peerPollGate?.await() ?: CallPeerEventsResponse(journal.filter { it.seq > request.afterSeq }, journal.lastOrNull()?.seq ?: request.afterSeq))
         }
     }
 
@@ -343,6 +368,177 @@ class CallCoordinatorTest {
         c.onEvent(event(api.call)); c.accept()
         assertEquals(listOf(false), media.speakerCalls)
         assertFalse(c.state.value.speakerEnabled); assertTrue(c.state.value.joined)
+        c.close(); runCurrent()
+    }
+
+    @Test fun peerSetupDoesNotClaimConnectionAndReplaysOfferSentBeforeJoin() = runTest {
+        val api = Control().apply {
+            call = snapshot().copy(transport = CallTransport.WEBRTC)
+            journal += CallPeerEvent(1u, 1u, CallPeerSignalKind.OFFER, "raw-offer", 2u)
+        }
+        val media = Media(); val c = DefaultCallCoordinator(api, 1u, media, backgroundScope)
+        c.onEvent(event(api.call)); c.accept(); runCurrent()
+        assertEquals(1, media.peerConnections); assertEquals(0, media.connections)
+        assertTrue(c.state.value.joined); assertFalse(c.state.value.mediaConnected)
+        assertEquals(0uL, api.polls.first().afterSeq); assertEquals(api.journal, media.peerEvents)
+        c.onMediaEvent(41u, "connected"); assertTrue(c.state.value.mediaConnected)
+        c.onMediaEvent(41u, "reconnecting"); assertFalse(c.state.value.mediaConnected)
+        c.close(); runCurrent()
+    }
+
+    @Test fun livekitNeverPollsPeerJournal() = runTest {
+        val api = Control(); val media = Media(); val c = DefaultCallCoordinator(api, 1u, media, backgroundScope)
+        c.onEvent(event(api.call)); c.accept(); runCurrent(); advanceTimeBy(2_500); runCurrent()
+        assertEquals(1, media.connections); assertEquals(0, media.peerConnections); assertTrue(api.polls.isEmpty())
+        c.close(); runCurrent()
+    }
+
+    @Test fun nativeReceiveFailureReplaysUnacknowledgedSignalAndCloseCancelsPolling() = runTest {
+        val api = Control().apply {
+            call = snapshot().copy(transport = CallTransport.WEBRTC)
+            journal += CallPeerEvent(1u, 1u, CallPeerSignalKind.OFFER, "raw-offer", 2u)
+            journal += CallPeerEvent(2u, 1u, CallPeerSignalKind.ICE, "candidate-json", 2u)
+        }
+        val media = Media().apply { peerReceiveFailures = 1 }
+        val c = DefaultCallCoordinator(api, 1u, media, backgroundScope)
+        c.onEvent(event(api.call)); c.accept(); runCurrent(); advanceTimeBy(501); runCurrent()
+        assertEquals(listOf(0uL, 0uL), api.polls.take(2).map { it.afterSeq })
+        assertEquals(api.journal, media.peerEvents)
+        c.close(); runCurrent(); val polls = api.polls.size
+        advanceTimeBy(10_000); runCurrent(); assertEquals(polls, api.polls.size)
+    }
+
+    @Test fun signalsGeneratedDuringSetupAreQueuedAndRetryWithSameCommandId() = runTest {
+        val api = Control().apply {
+            call = snapshot(initiator = 1u, self = CallParticipantState.JOINED).copy(transport = CallTransport.WEBRTC)
+            peer = peer.copy(offerer = true); signalFailures = 1
+        }
+        val media = Media(); val c = DefaultCallCoordinator(api, 1u, media, backgroundScope)
+        media.peerSetupEvent = {
+            c.onMediaEvent(41u, "peer_signal", """{"revision":1,"kind":"offer","payload":"raw-SDP"}""")
+            c.onMediaEvent(41u, "peer_signal", """{"revision":1,"kind":"ice","payload":"candidate-json"}""")
+        }
+        c.onEvent(event(api.call)); c.accept(); runCurrent(); advanceTimeBy(251); runCurrent()
+        assertEquals(3, api.signals.size)
+        assertEquals(api.signals[0], api.signals[1])
+        assertEquals(listOf(CallPeerSignalKind.OFFER, CallPeerSignalKind.OFFER, CallPeerSignalKind.ICE), api.signals.map { it.kind })
+        c.close(); runCurrent()
+    }
+
+    @Test fun oldPeerPollAndCallbackCannotReachNewCall() = runTest {
+        val api = Control().apply { call = snapshot().copy(transport = CallTransport.WEBRTC); peerPollGate = CompletableDeferred() }
+        val media = Media(); val c = DefaultCallCoordinator(api, 1u, media, backgroundScope)
+        val first = api.call
+        c.onEvent(event(first)); c.accept(); runCurrent()
+        c.onEvent(event(first.copy(version = 9u, state = CallState.ENDED)))
+        val second = snapshot().copy(callId = 42u)
+        c.onEvent(event(second))
+        api.peerPollGate!!.complete(CallPeerEventsResponse(listOf(CallPeerEvent(1u, 1u, CallPeerSignalKind.OFFER, "old", 2u)), 1u))
+        c.onMediaEvent(41u, "peer_signal", """{"revision":1,"kind":"answer","payload":"old"}""")
+        c.onMediaEvent(41u, "connected"); runCurrent()
+        assertEquals(second, c.state.value.call); assertFalse(c.state.value.mediaConnected)
+        assertTrue(media.peerEvents.isEmpty()); assertTrue(api.signals.isEmpty()); assertNull(c.state.value.error)
+        c.close(); runCurrent()
+    }
+
+    @Test fun noTurnZeroExpiryStaysConnectedWithoutAutomaticRenewal() = runTest {
+        for (servers in listOf(emptyList(), listOf(CallIceServer(listOf("stun:example.invalid"))))) {
+            val api = Control().apply {
+                call = snapshot().copy(transport = CallTransport.WEBRTC)
+                peer = peer.copy(iceServers = servers, credentialExpiresAtMs = 0)
+            }
+            val media = Media()
+            val c = DefaultCallCoordinator(api, 1u, media, backgroundScope, nowMs = { testScheduler.currentTime })
+            c.onEvent(event(api.call)); c.accept(); runCurrent()
+            assertTrue(c.state.value.joined); assertNull(c.state.value.error)
+            c.onMediaEvent(41u, "connected")
+            advanceTimeBy(120_000); runCurrent()
+            assertTrue(c.state.value.mediaConnected); assertNull(c.state.value.error)
+            assertEquals(1, api.mutations.count { it.first == "join" })
+            assertEquals(1, media.peerConnections); assertEquals(0, media.connections)
+            c.close(); runCurrent()
+        }
+    }
+
+    @Test fun renewalCanDisableTurnAndReturnZeroExpiry() = runTest {
+        val api = Control().apply { call = snapshot().copy(transport = CallTransport.WEBRTC) }
+        val media = Media()
+        val c = DefaultCallCoordinator(api, 1u, media, backgroundScope, nowMs = { testScheduler.currentTime })
+        c.onEvent(event(api.call)); c.accept(); runCurrent()
+        api.peer = api.peer.copy(iceServers = emptyList(), credentialExpiresAtMs = 0)
+        c.onMediaEvent(41u, "peer_credentials_required"); runCurrent()
+        assertEquals(listOf(api.peer), media.peerConfigs)
+        c.onMediaEvent(41u, "connected")
+        advanceTimeBy(120_000); runCurrent()
+        assertNull(c.state.value.error); assertTrue(c.state.value.mediaConnected)
+        assertEquals(2, api.mutations.count { it.first == "join" })
+        assertEquals(0, media.connections)
+        c.close(); runCurrent()
+    }
+
+    @Test fun noTurnConnectionFailureIsExplicitAndNeverFallsBackToLivekit() = runTest {
+        for (timeout in listOf(false, true)) {
+            val api = Control().apply {
+                call = snapshot(state = CallState.ACTIVE).copy(transport = CallTransport.WEBRTC)
+                peer = peer.copy(iceServers = emptyList(), credentialExpiresAtMs = 0)
+            }
+            val media = Media()
+            val c = DefaultCallCoordinator(api, 1u, media, backgroundScope, nowMs = { testScheduler.currentTime })
+            c.onEvent(event(api.call)); c.accept(); runCurrent()
+            assertTrue(c.state.value.joined); assertFalse(c.state.value.mediaConnected)
+            if (timeout) advanceTimeBy(30_001) else c.onMediaEvent(41u, "failed", "private native detail")
+            runCurrent()
+            assertNull(c.state.value.call)
+            assertEquals(CallFailure.CONNECTION, (c.state.value.error as? CallException)?.reason)
+            assertEquals("建立通话失败", com.netonstream.privchat.ui.i18n.zhCall.connectionFailed)
+            assertEquals(0, media.connections); assertEquals(1, media.peerConnections)
+            c.close(); runCurrent()
+        }
+    }
+
+    @Test fun turnCredentialsRefreshWithoutRebuildingPeerOrReusingJoinIntent() = runTest {
+        val api = Control().apply { call = snapshot().copy(transport = CallTransport.WEBRTC) }
+        val media = Media(); val c = DefaultCallCoordinator(api, 1u, media, backgroundScope, nowMs = { testScheduler.currentTime })
+        c.onEvent(event(api.call)); c.accept(); runCurrent()
+        api.peer = api.peer.copy(credentialExpiresAtMs = 30_000)
+        advanceTimeBy(7_501); runCurrent()
+        val joins = api.mutations.filter { it.first == "join" }
+        assertEquals(2, joins.size); assertNotEquals(joins[0].second.commandId, joins[1].second.commandId)
+        assertTrue(joins.all { it.second.supportsPeer })
+        assertEquals(1, media.peerConnections); assertEquals(listOf(api.peer), media.peerConfigs)
+        assertTrue(c.state.value.joined)
+        c.close(); runCurrent()
+    }
+
+    @Test fun callTransportCannotChangeOnLaterSnapshot() = runTest {
+        val api = Control(); val c = DefaultCallCoordinator(api, 1u, Media(), backgroundScope)
+        c.onEvent(event(api.call))
+        c.onEvent(event(api.call.copy(version = 2u, transport = CallTransport.WEBRTC)))
+        assertEquals(CallTransport.LIVEKIT, c.state.value.call?.transport)
+        c.close(); runCurrent()
+    }
+
+    @Test fun calleeRestartWaitHasFixedDeadlineAndCannotHangSilently() = runTest {
+        val api = Control().apply { call = snapshot().copy(transport = CallTransport.WEBRTC) }
+        val c = DefaultCallCoordinator(api, 1u, Media(), backgroundScope)
+        c.onEvent(event(api.call)); c.accept(); runCurrent()
+        c.onMediaEvent(41u, "connected"); c.onMediaEvent(41u, "peer_restart_needed"); runCurrent()
+        assertFalse(c.state.value.mediaConnected)
+        advanceTimeBy(20_000); c.onMediaEvent(41u, "peer_restart_needed"); runCurrent()
+        advanceTimeBy(10_001); runCurrent()
+        assertNull(c.state.value.call); assertNotNull(c.state.value.error)
+        assertTrue(api.signals.none { it.kind == CallPeerSignalKind.OFFER })
+        c.close(); runCurrent()
+    }
+
+    @Test fun recoveredConnectionCancelsCalleeRestartDeadline() = runTest {
+        val api = Control().apply { call = snapshot().copy(transport = CallTransport.WEBRTC) }
+        val c = DefaultCallCoordinator(api, 1u, Media(), backgroundScope)
+        c.onEvent(event(api.call)); c.accept(); runCurrent()
+        c.onMediaEvent(41u, "peer_restart_needed"); runCurrent()
+        advanceTimeBy(5_000); c.onMediaEvent(41u, "connected")
+        advanceTimeBy(30_000); runCurrent()
+        assertTrue(c.state.value.mediaConnected); assertNotNull(c.state.value.call); assertNull(c.state.value.error)
         c.close(); runCurrent()
     }
 

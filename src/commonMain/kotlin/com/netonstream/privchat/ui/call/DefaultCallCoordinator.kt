@@ -13,7 +13,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-enum class CallFailure { UNAVAILABLE, DISABLED, PARTICIPANT_LIMIT, BUSY, MEDIA, ROUTING }
+enum class CallFailure { UNAVAILABLE, DISABLED, PARTICIPANT_LIMIT, BUSY, MEDIA, ROUTING, CONNECTION }
 class CallException(val reason: CallFailure) : Exception(reason.name)
 
 /** Scope runs on a single UI dispatcher. close() cleanup survives scope cancellation. Never collects SDK events. */
@@ -25,6 +25,7 @@ class DefaultCallCoordinator(
     private val isCurrentSession: () -> Boolean = { true },
     private val heartbeatIntervalMs: Long = 15_000,
     private val commandId: () -> String = ::newCallCommandId,
+    private val nowMs: (() -> Long)? = null,
 ) : CallCoordinator {
     private val mutableState = MutableStateFlow(CallUiState())
     override val state: StateFlow<CallUiState> = mutableState.asStateFlow()
@@ -41,6 +42,9 @@ class DefaultCallCoordinator(
     private var joinRpc: CompletableDeferred<Unit>? = null
     private var cancelStart = false
     private var leaseMs = 60_000L
+    private var peerSession: CallPeerSession? = null
+    private var peerCallId: ULong? = null
+    private var peerRecovery: Job? = null
 
     init { require(heartbeatIntervalMs >= 1_000) }
 
@@ -131,7 +135,45 @@ class DefaultCallCoordinator(
                     owner?.let { previous -> previous.media.disconnect() }
                     owner = this
                     ownedCall = call.callId
-                    media.connect(response.call, response.url, response.token)
+                    require(response.call.transport == call.transport)
+                    if (call.transport == CallTransport.WEBRTC) {
+                        val peer = requireNotNull(response.peer)
+                        require(peer.selfUserId == userId && peer.peerUserId != userId)
+                        require(peer.offerer == (call.initiatorId == userId))
+                        require(call.participants.any { it.userId == peer.peerUserId })
+                        stopPeer(call.callId)
+                        peerCallId = call.callId
+                        peerSession = CallPeerSession(
+                            call.callId, peer, control, scope, commandId,
+                            isCurrent = { canConnect(call.callId, ticket) },
+                            connected = { state.value.mediaConnected },
+                            receive = { event ->
+                                mediaLock.withLock {
+                                    if (!canConnect(call.callId, ticket) || owner !== this || ownedCall != call.callId) {
+                                        throw CancellationException("Call replaced")
+                                    }
+                                    media.receivePeerSignal(event)
+                                }
+                            },
+                            renewed = { result ->
+                                if (currentCall(call.callId, ticket)) apply(result.call)
+                                mediaLock.withLock {
+                                    if (!canConnect(call.callId, ticket) || owner !== this || ownedCall != call.callId) {
+                                        throw CancellationException("Call replaced")
+                                    }
+                                    media.updatePeerConfig(requireNotNull(result.peer))
+                                }
+                            },
+                            failed = { finishIfCurrent(call.callId, ticket, CallException(CallFailure.CONNECTION)) },
+                            nowMs = nowMs,
+                        )
+                        try { media.connectPeer(response.call, peer) }
+                        catch (cancelled: CancellationException) { throw cancelled }
+                        catch (failure: Exception) { throw CallException(CallFailure.CONNECTION) }
+                    } else {
+                        require(response.url.isNotBlank() && response.token.isNotBlank())
+                        media.connect(response.call, response.url, response.token)
+                    }
                     if (canConnect(call.callId, ticket)) media.setMicrophone(true)
                     var speakerEnabled = state.value.speakerEnabled
                     if (canConnect(call.callId, ticket)) {
@@ -158,13 +200,19 @@ class DefaultCallCoordinator(
                         speakerEnabled = speakerEnabled,
                     )
                 }
-                if (canConnect(call.callId, ticket) && state.value.joined) startHeartbeat(call.callId, ticket)
+                if (canConnect(call.callId, ticket) && state.value.joined) {
+                    startHeartbeat(call.callId, ticket)
+                    if (peerCallId == call.callId) peerSession?.start()
+                    if (call.transport == CallTransport.WEBRTC && state.value.call?.state == CallState.ACTIVE) {
+                        awaitPeerRecovery(call.callId, ticket)
+                    }
+                }
             } catch (cancelled: CancellationException) {
                 withContext(NonCancellable) { detach(call.callId) }
                 throw cancelled
             }
             catch (failure: Exception) {
-                finishIfCurrent(call.callId, ticket, CallException(CallFailure.MEDIA))
+                finishIfCurrent(call.callId, ticket, failure as? CallException ?: CallException(CallFailure.MEDIA))
             }
         } finally {
             rpcDone.complete(Unit)
@@ -189,8 +237,9 @@ class DefaultCallCoordinator(
         if (!current(epoch) || !finishing.add(call.callId)) return
         val ticket = epoch
         stopping += call.callId
+        stopPeer(call.callId)
         heartbeat?.cancel()
-        mutableState.value = state.value.copy(busy = true, joined = false)
+        mutableState.value = state.value.copy(busy = true, joined = false, mediaConnected = false)
         try {
             detach(call.callId)
             if (joining == call.callId) joinRpc?.await()
@@ -227,6 +276,7 @@ class DefaultCallCoordinator(
     }
 
     private suspend fun detach(callId: ULong) {
+        stopPeer(callId)
         val ticket = epoch
         mediaLock.withLock {
             if (owner === this && ownedCall == callId) {
@@ -241,6 +291,10 @@ class DefaultCallCoordinator(
     private fun apply(call: CallSnapshot) {
         if (!current(epoch)) return
         val previous = snapshots[call.callId]
+        if (previous != null && previous.transport != call.transport) {
+            errorIfCurrent(call.callId, epoch, CallException(CallFailure.MEDIA))
+            return
+        }
         if (previous != null && (call.version < previous.version || previous.state == CallState.ENDED)) return
         if (previous?.version == call.version && (state.value.call != null || call.callId in stopping)) return
         if (call.participants.none { it.userId == userId }) return
@@ -251,6 +305,7 @@ class DefaultCallCoordinator(
         val activeId = state.value.call?.callId
         if (terminal) {
             stopping += call.callId
+            stopPeer(call.callId)
             if (activeId == call.callId) {
                 heartbeat?.cancel()
                 mutableState.value = idle()
@@ -262,6 +317,9 @@ class DefaultCallCoordinator(
                 incoming = self.state == CallParticipantState.INVITED && call.initiatorId != userId,
                 error = if (activeId == null) null else state.value.error,
             )
+            if (call.transport == CallTransport.WEBRTC && call.state == CallState.ACTIVE && state.value.joined) {
+                awaitPeerRecovery(call.callId, epoch)
+            }
         }
     }
 
@@ -346,9 +404,38 @@ class DefaultCallCoordinator(
 
     override fun onMediaEvent(callId: ULong, type: String, message: String?) {
         if (!current(epoch) || state.value.call?.callId != callId || callId in stopping) return
+        if (type == "peer_signal") {
+            if (peerCallId == callId) peerSession?.send(message)
+            return
+        }
+        if (type == "peer_credentials_required") {
+            if (peerCallId == callId) {
+                mutableState.value = state.value.copy(mediaConnected = false)
+                awaitPeerRecovery(callId, epoch)
+                peerSession?.refreshCredentials()
+            }
+            return
+        }
+        if (type == "peer_restart_needed") {
+            if (peerCallId == callId) {
+                mutableState.value = state.value.copy(mediaConnected = false)
+                awaitPeerRecovery(callId, epoch)
+            }
+            return
+        }
+        if (type == "connected" || type == "reconnecting") {
+            if (owner === this && ownedCall == callId) {
+                mutableState.value = state.value.copy(mediaConnected = type == "connected")
+                if (type == "connected") { peerRecovery?.cancel(); peerRecovery = null }
+                else if (peerCallId == callId) awaitPeerRecovery(callId, epoch)
+            }
+            return
+        }
+        if (type == "route") return // Never retain/log raw native statistics (candidate addresses may be sensitive).
         if (type == "error" || type == "failed" || type == "disconnected") {
             val ticket = epoch
-            scope.launch { finishIfCurrent(callId, ticket, CallException(CallFailure.MEDIA)) }
+            val reason = if (peerCallId == callId) CallFailure.CONNECTION else CallFailure.MEDIA
+            scope.launch { finishIfCurrent(callId, ticket, CallException(reason)) }
         }
     }
 
@@ -389,11 +476,37 @@ class DefaultCallCoordinator(
         epoch++
         heartbeat?.cancel()
         resync?.cancel()
+        peerSession?.close()
+        peerRecovery?.cancel()
+        peerRecovery = null
+        peerSession = null
+        peerCallId = null
         val callId = if (owner === this) ownedCall else state.value.call?.callId
         mutableState.value = CallUiState()
         if (callId != null) scope.launch(NonCancellable) { detach(callId) }
         snapshots.clear()
         commands.clear()
+    }
+
+    private fun stopPeer(callId: ULong) {
+        if (peerCallId != callId) return
+        peerRecovery?.cancel()
+        peerRecovery = null
+        peerSession?.close()
+        peerSession = null
+        peerCallId = null
+    }
+
+    /** Callee never creates an offer. Wait for the native caller restart, with a fixed deadline. */
+    private fun awaitPeerRecovery(callId: ULong, ticket: Long) {
+        if (!canConnect(callId, ticket) || state.value.mediaConnected || peerRecovery?.isActive == true) return
+        peerRecovery = scope.launch {
+            delay(30_000)
+            if (currentCall(callId, ticket) && !state.value.mediaConnected) {
+                // finish() cancels peerRecovery; keep teardown in a separately guarded coroutine.
+                scope.launch { finishIfCurrent(callId, ticket, CallException(CallFailure.CONNECTION)) }
+            }
+        }
     }
 
     companion object {

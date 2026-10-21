@@ -17,12 +17,14 @@ plugin="$(find "$CACHE/org.jetbrains.kotlin/kotlin-serialization-compiler-plugin
     -target ios_simulator_arm64 -language-version 2.1 -produce library -Xplugin="$plugin" \
     "${libs[@]}" -o "$OUT/call-tests-lib" \
     "$SDK/src/commonMain/kotlin/com/netonstream/privchat/sdk/dto/call/CallModels.kt" \
+    "$SDK/src/commonMain/kotlin/com/netonstream/privchat/sdk/dto/call/CallPeerModels.kt" \
     "$SDK/src/commonMain/kotlin/com/netonstream/privchat/sdk/dto/call/CallHistory.kt" \
     "$SDK/src/commonMain/kotlin/com/netonstream/privchat/sdk/dto/SdkEventEnvelope.kt" \
     "$SDK/src/commonMain/kotlin/com/netonstream/privchat/sdk/dto/SyncState.kt" \
     "$SDK/src/commonMain/kotlin/com/netonstream/privchat/sdk/call/CallControl.kt" \
     "$ROOT/src/commonMain/kotlin/com/netonstream/privchat/ui/call/CallContracts.kt" \
     "$ROOT/src/commonMain/kotlin/com/netonstream/privchat/ui/call/DefaultCallCoordinator.kt" \
+    "$ROOT/src/commonMain/kotlin/com/netonstream/privchat/ui/call/CallPeerSession.kt" \
     "$ROOT/src/commonMain/kotlin/com/netonstream/privchat/ui/i18n/PrivChatCallStrings.kt" \
     "$ROOT/src/commonTest/kotlin/com/netonstream/privchat/ui/call/CallCoordinatorTest.kt" \
     "$ROOT/src/commonTest/kotlin/com/netonstream/privchat/ui/call/CallHistoryTest.kt" \

@@ -65,6 +65,7 @@ fun CallOverlay(coordinator: CallCoordinator) {
                 Text(when {
                     state.incoming -> labels.incoming
                     call.state == CallState.RINGING -> labels.ringing
+                    !state.mediaConnected -> labels.connecting
                     else -> labels.active
                 })
                 if (!state.joined) {
@@ -108,6 +109,7 @@ fun CallOverlay(coordinator: CallCoordinator) {
                     CallFailure.PARTICIPANT_LIMIT -> labels.participantLimit
                     CallFailure.BUSY -> labels.busy
                     CallFailure.MEDIA -> labels.mediaError
+                    CallFailure.CONNECTION -> labels.connectionFailed
                     CallFailure.ROUTING -> labels.routingError
                     null -> UserFacingError.message(failure, strings.networkError)
                 })
