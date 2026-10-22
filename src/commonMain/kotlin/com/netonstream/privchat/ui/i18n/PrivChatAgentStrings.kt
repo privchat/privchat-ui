@@ -57,9 +57,11 @@ data class PrivChatAgentStrings(
     val errPairingNotFound: String,
     val errPairingExpired: String,
     val errDeviceAlreadyPaired: String,
+    val employees: PrivChatEmployeeStrings = enEmployees,
 )
 
 internal val enAgent = PrivChatAgentStrings(
+    employees = enEmployees,
     workspace = enWorkspace,
     assistantTitle = "Personal Assistant",
     assistantUnavailable = "Personal assistant is not available yet",
@@ -107,6 +109,7 @@ internal val enAgent = PrivChatAgentStrings(
 )
 
 internal val zhAgent = PrivChatAgentStrings(
+    employees = zhEmployees,
     workspace = zhWorkspace,
     assistantTitle = "个人助理",
     assistantUnavailable = "个人助理暂未开放",
@@ -154,6 +157,7 @@ internal val zhAgent = PrivChatAgentStrings(
 )
 
 internal val hantAgent = PrivChatAgentStrings(
+    employees = hantEmployees,
     workspace = zhTWWorkspace,
     assistantTitle = "個人助理",
     assistantUnavailable = "個人助理暫未開放",
@@ -201,6 +205,7 @@ internal val hantAgent = PrivChatAgentStrings(
 )
 
 internal val viAgent = PrivChatAgentStrings(
+    employees = viEmployees,
     workspace = viWorkspace,
     assistantTitle = "Trợ lý cá nhân",
     assistantUnavailable = "Trợ lý cá nhân chưa được mở",
