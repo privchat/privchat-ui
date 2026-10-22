@@ -1,6 +1,9 @@
 package com.netonstream.privchat.ui.i18n
 
 data class PrivChatWorkspaceStrings(
+    val delegation: String,
+    val selected: String,
+    val records: String,
     val title: String,
     val spaces: String,
     val nodes: String,
@@ -43,6 +46,9 @@ data class PrivChatWorkspaceStrings(
 )
 
 internal val enWorkspace = PrivChatWorkspaceStrings(
+    records = "Records and artifacts",
+    delegation = "Optional delegation targets (none by default)",
+    selected = "Selected",
     title = "Workspaces and devices",
     spaces = "Workspaces",
     nodes = "Devices",
@@ -85,6 +91,9 @@ internal val enWorkspace = PrivChatWorkspaceStrings(
 )
 
 internal val zhWorkspace = PrivChatWorkspaceStrings(
+    records = "记录与产物",
+    delegation = "可选委托目标（默认不授权）",
+    selected = "已选择",
     title = "工作空间与设备",
     spaces = "工作空间",
     nodes = "设备节点",
@@ -127,6 +136,9 @@ internal val zhWorkspace = PrivChatWorkspaceStrings(
 )
 
 internal val zhTWWorkspace = PrivChatWorkspaceStrings(
+    records = "紀錄與產物",
+    delegation = "可選委託目標（預設不授權）",
+    selected = "已選擇",
     title = "工作空間與裝置",
     spaces = "工作空間",
     nodes = "裝置節點",
@@ -169,6 +181,9 @@ internal val zhTWWorkspace = PrivChatWorkspaceStrings(
 )
 
 internal val viWorkspace = PrivChatWorkspaceStrings(
+    records = "Ghi chú và sản phẩm",
+    delegation = "Thiết bị được ủy quyền (mặc định không có)",
+    selected = "Đã chọn",
     title = "Không gian và thiết bị",
     spaces = "Không gian làm việc",
     nodes = "Thiết bị",
