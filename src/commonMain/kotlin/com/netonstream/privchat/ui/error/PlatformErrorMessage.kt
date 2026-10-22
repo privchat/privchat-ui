@@ -112,6 +112,16 @@ object PlatformErrorMessage {
         -> strings.platformErrServiceUnavailable
         "PAYLOAD_TOO_LARGE" -> strings.platformErrRequestTooLarge
 
+        // ── assistant / agent：个人助理与设备节点 ──
+        "ASSISTANT_PERSONAL_UNAVAILABLE" -> strings.dAgent.errAssistantUnavailable
+        "ASSISTANT_NAME_INVALID" -> strings.dAgent.errAssistantNameInvalid
+        "ASSISTANT_IDENTITY_SERVICE_UNAVAILABLE", "AGENT_IM_UNAVAILABLE" -> strings.platformErrServiceUnavailable
+        "ASSISTANT_PERSONAL_NOT_CLAIMED", "AGENT_ASSISTANT_NOT_CLAIMED" -> strings.dAgent.errNeedAssistant
+        "AGENT_PAIRING_NOT_FOUND" -> strings.dAgent.errPairingNotFound
+        "AGENT_PAIRING_EXPIRED" -> strings.dAgent.errPairingExpired
+        "AGENT_DEVICE_ALREADY_PAIRED" -> strings.dAgent.errDeviceAlreadyPaired
+        "AGENT_NODE_NOT_FOUND", "AGENT_EXECUTION_NOT_FOUND" -> strings.platformErrNotFound
+
         // ── account / system：登录、验证码 ──
         "INVALID_CREDENTIALS" -> strings.loginErrInvalidCredentials
         "ACCOUNT_DISABLED" -> strings.loginErrAccountDisabled
