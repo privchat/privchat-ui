@@ -2,6 +2,7 @@ package com.netonstream.privchat.ui.i18n
 
 /** 个人助理与设备节点（ACCOUNT_IDENTITY_SPEC §6.5、MODULE_AGENT_SPEC）。品牌名不进文案。 */
 data class PrivChatAgentStrings(
+    val conversation: PrivChatAssistantConversationStrings,
     val workspace: PrivChatWorkspaceStrings,
     val assistantTitle: String,
     val assistantUnavailable: String,
@@ -62,6 +63,7 @@ data class PrivChatAgentStrings(
 
 internal val enAgent = PrivChatAgentStrings(
     employees = enEmployees,
+    conversation = enAssistantConversation,
     workspace = enWorkspace,
     assistantTitle = "Personal Assistant",
     assistantUnavailable = "Personal assistant is not available yet",
@@ -110,6 +112,7 @@ internal val enAgent = PrivChatAgentStrings(
 
 internal val zhAgent = PrivChatAgentStrings(
     employees = zhEmployees,
+    conversation = zhAssistantConversation,
     workspace = zhWorkspace,
     assistantTitle = "个人助理",
     assistantUnavailable = "个人助理暂未开放",
@@ -158,6 +161,7 @@ internal val zhAgent = PrivChatAgentStrings(
 
 internal val hantAgent = PrivChatAgentStrings(
     employees = hantEmployees,
+    conversation = zhTWAssistantConversation,
     workspace = zhTWWorkspace,
     assistantTitle = "個人助理",
     assistantUnavailable = "個人助理暫未開放",
@@ -206,6 +210,7 @@ internal val hantAgent = PrivChatAgentStrings(
 
 internal val viAgent = PrivChatAgentStrings(
     employees = viEmployees,
+    conversation = viAssistantConversation,
     workspace = viWorkspace,
     assistantTitle = "Trợ lý cá nhân",
     assistantUnavailable = "Trợ lý cá nhân chưa được mở",
