@@ -22,6 +22,10 @@ class PrivChatAssistantWorkflowStringsTest {
             assertEquals(c.waiting, c.executionState("waiting_permission"))
             assertNull(c.executionState("future_state"))
             val w = agent.workspace
+            listOf(w.activity, w.latestExecution, w.noExecution, w.noFinalResult, w.resultDetails,
+                w.archivedRecords, w.normalizedRecordsOnly, w.archivePosition, w.archiveGap,
+                w.publicOutput, w.userInput, w.toolSummary, w.notice, w.archivedPermission, w.loading)
+                .forEach { assertTrue(it.isNotBlank()) }
             listOf(w.acceptance, w.evidence, w.assign, w.review, w.recordReview, w.reviewHint,
                 w.statusOpen, w.statusInProgress, w.statusDone, w.statusCancelled, w.terminalHint).forEach { assertTrue(it.isNotBlank()) }
             assertEquals(w.statusDone, w.workStatus("done"))
@@ -29,5 +33,8 @@ class PrivChatAssistantWorkflowStringsTest {
         }
         assertFalse(zhAgent.conversation.hint.contains("Free-text"))
         assertEquals("已受理，尚未完成", zhAgent.conversation.accepted)
+        assertEquals(4, locales.map { it.workspace.activity }.distinct().size)
+        assertEquals(4, locales.map { it.workspace.normalizedRecordsOnly }.distinct().size)
+        assertTrue(zhAgent.workspace.normalizedRecordsOnly.contains("不代表完整工具日志"))
     }
 }
