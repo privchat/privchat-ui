@@ -26,6 +26,10 @@ data class PrivChatAssistantConversationStrings(
     val retry: String,
     val user: String,
     val assistant: String,
+    val naturalChat: String,
+    val advanced: String,
+    val prompt: String,
+    val employeeReply: String,
 )
 
 internal val enAssistantConversation = PrivChatAssistantConversationStrings(
@@ -39,7 +43,7 @@ internal val enAssistantConversation = PrivChatAssistantConversationStrings(
     cancelled = "Cancelled",
     title = "Assistant conversation",
     profile = "Assistant profile",
-    hint = "Choose a target and an explicit action. Free-text understanding is not enabled. Accepted does not mean completed.",
+    hint = "Use Chinese commands with exact names: 让「开发」做…; 让「开发」处理「登录修复」任务：…; 让「评审」评审「登录修复」任务，证据：commit abc123; 查看「开发」的进度; 停止「开发」的任务. Missing or duplicate names need clarification. This is not general AI chat. Accepted does not mean completed.",
     action = "Action",
     target = "Target employee",
     send = "Send",
@@ -54,6 +58,10 @@ internal val enAssistantConversation = PrivChatAssistantConversationStrings(
     retry = "Retry original request",
     user = "You",
     assistant = "Assistant",
+    naturalChat = "Back to natural chat",
+    advanced = "Advanced actions",
+    prompt = "Ask a question or give an employee a task",
+    employeeReply = "Employee reply",
 )
 
 internal val zhAssistantConversation = PrivChatAssistantConversationStrings(
@@ -67,7 +75,7 @@ internal val zhAssistantConversation = PrivChatAssistantConversationStrings(
     cancelled = "已取消",
     title = "小薇对话",
     profile = "助理资料",
-    hint = "请选择目标和明确动作。当前不支持自由文本理解；已受理不代表已完成。",
+    hint = "支持中文指令：让「开发」做…；让「开发」处理「登录修复」任务：…；让「评审」评审「登录修复」任务，证据：commit abc123；查看「开发」的进度；停止「开发」的任务。请使用准确名称；重名或信息不足会追问。不是通用 AI 问答，已受理不代表已完成。",
     action = "动作",
     target = "目标员工",
     send = "发送",
@@ -82,6 +90,10 @@ internal val zhAssistantConversation = PrivChatAssistantConversationStrings(
     retry = "重试原请求",
     user = "我",
     assistant = "小薇",
+    naturalChat = "返回自然对话",
+    advanced = "高级操作",
+    prompt = "提问，或让指定员工完成任务",
+    employeeReply = "员工回复",
 )
 
 internal val zhTWAssistantConversation = PrivChatAssistantConversationStrings(
@@ -95,7 +107,7 @@ internal val zhTWAssistantConversation = PrivChatAssistantConversationStrings(
     cancelled = "已取消",
     title = "小薇對話",
     profile = "助理資料",
-    hint = "請選擇目標和明確動作。目前不支援自由文字理解；已受理不代表已完成。",
+    hint = "使用中文指令及準確名稱：让「开发」做…；让「开发」处理「登录修复」任务：…；让「评审」评审「登录修复」任务，证据：commit abc123；查看「开发」的进度；停止「开发」的任务。重名或資訊不足會追問。不是通用 AI 問答，已受理不代表已完成。",
     action = "動作",
     target = "目標員工",
     send = "傳送",
@@ -110,6 +122,10 @@ internal val zhTWAssistantConversation = PrivChatAssistantConversationStrings(
     retry = "重試原請求",
     user = "我",
     assistant = "小薇",
+    naturalChat = "返回自然對話",
+    advanced = "進階操作",
+    prompt = "提問，或讓指定員工完成任務",
+    employeeReply = "員工回覆",
 )
 
 internal val viAssistantConversation = PrivChatAssistantConversationStrings(
@@ -123,7 +139,7 @@ internal val viAssistantConversation = PrivChatAssistantConversationStrings(
     cancelled = "Đã hủy",
     title = "Trò chuyện trợ lý",
     profile = "Hồ sơ trợ lý",
-    hint = "Chọn đích và thao tác rõ ràng. Chưa hỗ trợ hiểu văn bản tự do; đã nhận không có nghĩa hoàn tất.",
+    hint = "Dùng lệnh tiếng Trung với tên chính xác: 让「开发」做…; 让「开发」处理「登录修复」任务：…; 让「评审」评审「登录修复」任务，证据：commit abc123; 查看「开发」的进度; 停止「开发」的任务. Thiếu hoặc trùng tên sẽ cần làm rõ. Không phải trò chuyện AI tổng quát. Đã nhận không có nghĩa hoàn tất.",
     action = "Thao tác",
     target = "Nhân viên đích",
     send = "Gửi",
@@ -138,6 +154,10 @@ internal val viAssistantConversation = PrivChatAssistantConversationStrings(
     retry = "Thử lại yêu cầu gốc",
     user = "Bạn",
     assistant = "Trợ lý",
+    naturalChat = "Trở về trò chuyện tự nhiên",
+    advanced = "Thao tác nâng cao",
+    prompt = "Đặt câu hỏi hoặc giao việc cho nhân viên",
+    employeeReply = "Phản hồi của nhân viên",
 )
 
 fun PrivChatAssistantConversationStrings.executionState(state: String?): String? = when (state) {

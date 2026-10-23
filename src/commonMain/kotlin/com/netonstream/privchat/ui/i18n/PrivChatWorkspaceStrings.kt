@@ -31,6 +31,7 @@ data class PrivChatWorkspaceStrings(
     val passed: String,
     val changesRequested: String,
     val reviewHint: String,
+    val reviewPending: String,
     val employee: String,
     val executionLink: String,
     val delegation: String,
@@ -84,6 +85,7 @@ internal val enWorkspace = PrivChatWorkspaceStrings(
     sourceExecution = "Successful source execution",
     evidence = "Fixed evidence: repository + commit / artifact version",
     recordReview = "Record review conclusion",
+    reviewPending = "Waiting for a human review conclusion",
     passed = "Passed",
     changesRequested = "Changes requested",
     reviewHint = "Review is not acceptance, merge, or publishing permission. Record a human conclusion after the reviewer finishes.",
@@ -161,6 +163,7 @@ internal val zhWorkspace = PrivChatWorkspaceStrings(
     sourceExecution = "已成功的来源执行",
     evidence = "固定证据：仓库及 commit / 产物版本",
     recordReview = "人工记录评审结论",
+    reviewPending = "等待人工记录评审结论",
     passed = "通过",
     changesRequested = "需修改",
     reviewHint = "评审不代表验收、合并或发布授权。员工完成评审后，再人工记录结论。",
@@ -238,6 +241,7 @@ internal val zhTWWorkspace = PrivChatWorkspaceStrings(
     sourceExecution = "已成功的來源執行",
     evidence = "固定證據：倉庫及 commit / 產物版本",
     recordReview = "人工記錄評審結論",
+    reviewPending = "等待人工記錄評審結論",
     passed = "通過",
     changesRequested = "需修改",
     reviewHint = "評審不代表驗收、合併或發佈授權。員工完成評審後，再人工記錄結論。",
@@ -315,6 +319,7 @@ internal val viWorkspace = PrivChatWorkspaceStrings(
     sourceExecution = "Thực thi nguồn thành công",
     evidence = "Bằng chứng cố định: kho + commit / phiên bản sản phẩm",
     recordReview = "Ghi kết luận thủ công",
+    reviewPending = "Chờ ghi kết luận đánh giá thủ công",
     passed = "Đạt",
     changesRequested = "Cần sửa",
     reviewHint = "Đánh giá không phải nghiệm thu hay quyền hợp nhất/phát hành. Ghi kết luận thủ công sau khi đánh giá xong.",
@@ -384,6 +389,12 @@ internal val viWorkspace = PrivChatWorkspaceStrings(
     permissionHint = "Chỉ phê duyệt yêu cầu này, không áp dụng cho lần sau.",
     unsupported = "Máy chủ hoặc thiết bị chưa hỗ trợ thao tác này",
 )
+
+fun PrivChatWorkspaceStrings.reviewConclusion(conclusion: String?): String = when (conclusion) {
+    "passed" -> passed
+    "changes_requested" -> changesRequested
+    else -> reviewPending
+}
 
 fun PrivChatWorkspaceStrings.workStatus(status: String): String = when (status) {
     "open" -> statusOpen
