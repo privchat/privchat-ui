@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 # Compile only call production sources and pure tests; no app/framework/FFI link.
 set -euo pipefail
+# Never select an arbitrary booted simulator when other acceptance workers are running.
+: "${SIMULATOR_UDID:?Set SIMULATOR_UDID to the dedicated, already booted test simulator UUID}"
+if [[ ! "$SIMULATOR_UDID" =~ ^[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}$ ]]; then
+    echo "SIMULATOR_UDID must be an explicit simulator UUID, not booted or a device name" >&2
+    exit 1
+fi
+xcrun simctl getenv "$SIMULATOR_UDID" HOME >/dev/null
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SDK="$ROOT/../privchat-sdk-kotlin/sdk"
 KONAN="${CALL_KONAN_HOME:-$HOME/.konan/kotlin-native-prebuilt-macos-aarch64-2.1.21}"
@@ -31,4 +38,4 @@ plugin="$(find "$CACHE/org.jetbrains.kotlin/kotlin-serialization-compiler-plugin
     "$SDK/src/commonTest/kotlin/com/netonstream/privchat/sdk/call/CallControlTest.kt"
 "$KONAN/bin/kotlinc-native" -target ios_simulator_arm64 -generate-test-runner \
     "${libs[@]}" -Xinclude="$OUT/call-tests-lib.klib" -o "$OUT/call-tests"
-xcrun simctl spawn "${SIMULATOR_UDID:-booted}" "$OUT/call-tests.kexe"
+xcrun simctl spawn "$SIMULATOR_UDID" "$OUT/call-tests.kexe"

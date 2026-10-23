@@ -37,6 +37,7 @@ class DefaultCallCoordinator(
     private val finishing = mutableSetOf<ULong>()
     private val commands = mutableMapOf<String, String>()
     private var heartbeat: Job? = null
+    private var heartbeatCallId: ULong? = null
     private var resync: Job? = null
     private var joining: ULong? = null
     private var joinRpc: CompletableDeferred<Unit>? = null
@@ -395,7 +396,10 @@ class DefaultCallCoordinator(
     }
 
     private fun startHeartbeat(callId: ULong, ticket: Long) {
+        // Reconciliation must not postpone renewal or reset an in-flight retry budget.
+        if (heartbeat?.isActive == true && heartbeatCallId == callId) return
         heartbeat?.cancel()
+        heartbeatCallId = callId
         heartbeat = scope.launch {
             while (canConnect(callId, ticket) && state.value.joined) {
                 delay(minOf(heartbeatIntervalMs, leaseMs / 4))

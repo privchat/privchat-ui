@@ -1,0 +1,44 @@
+Call reliability focused acceptance - 2026-10-23
+
+Scope: heartbeat task preservation; no protocol/spec/SDK/native/app Gradle/production changes.
+Simulator: Weey Maps Acceptance E4CD0BF6-1697-4A38-B4E4-B535C1837ED2, iOS 27.0.
+Compiler: Kotlin/Native 2.1.21. Android configured Kotlin 2.1.21, NOT 2.2.20.
+
+iOS command (from /Users/zoujiaqing/projects/privchat):
+TMPDIR=/tmp/privchat-call-reliability-ios-tmp SIMULATOR_UDID=E4CD0BF6-1697-4A38-B4E4-B535C1837ED2 bash privchat-ui/scripts/test-call-coordinator-ios.sh > /tmp/privchat-call-reliability-ios-20261023.log 2>&1
+
+
+[----------] Global test environment tear-down
+[==========] 52 tests from 3 test cases ran. (19 ms total)
+[  PASSED  ] 52 tests.
+
+JVM 48-test command:
+bash /tmp/privchat-call-reliability-jvm.sh > /tmp/privchat-call-reliability-green.log 2>&1
+JUnit version 4.13.2
+................................................
+Time: 0.576
+
+OK (48 tests)
+
+
+JVM caveat: above 48 tests are coordinator/history only; RPC tests are NOT included in that pass.
+RPC 4/4 failed in the initial pre-fix JVM run: /tmp/privchat-call-reliability-red.log
+RPC-only unchanged-source run: bash /tmp/privchat-call-reliability-jvm-env.sh
+Log: /tmp/privchat-call-reliability-rpc-baseline.log
+Disassembly shows boxed Result returned by SAM versus String consumed by RpcCallControl. Dependencies/source omission not demonstrated.
+SAM class generation also fails 4/4. Simple Result/suspend/SAM minimal examples pass on 2.1.21 and 2.2.20. Exact trigger remains unresolved.
+No claim of Android product failure or harness-only resolution. Android configured 2.1.21 and production has the same interface boundary; follow up separately.
+2.2.20/2.4.20 full harness attempts failed to compile with locally incomplete dependencies; not runtime evidence. No further variants attempted after stop request.
+
+Identity and hashes:
+50585e64ca80dcb692117b744ea5727462db4874
+39318fc3b9b5b7e858911f0a39e8134e69d37cdb44169a19c6d79e0763ab13bf  privchat-ui/scripts/test-call-coordinator-ios.sh
+6657c7e92366599790c7143cbd351c359ce5d856a81e1d7f12d5d559699b37c7  privchat-ui/src/commonMain/kotlin/com/netonstream/privchat/ui/call/DefaultCallCoordinator.kt
+ff32661300aba24beb60270df6a59607fcd58802516fb2f3fe5766d2e1b95fea  privchat-ui/src/commonTest/kotlin/com/netonstream/privchat/ui/call/CallCoordinatorTest.kt
+371ba0b3a234edceb93a1923fdffb18e871c2a7c043a5306e2672a30aab39d47  privchat-ui/build/call-tests-ios/call-tests.kexe
+
+Footprint KiB (native cache unchanged at 3986508 KiB):
+13716	privchat-ui/build/call-tests-ios
+1620	/tmp/privchat-call-reliability-jvm-classes
+1620	/tmp/privchat-call-reliability-jvm-sam-class-classes
+0	/tmp/privchat-call-reliability-ios-tmp

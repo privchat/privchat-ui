@@ -363,6 +363,55 @@ class CallCoordinatorTest {
         c.close(); runCurrent()
     }
 
+    @Test fun repeatedReconnectReconciliationDoesNotStarveHeartbeat() = runTest {
+        val api = Control()
+        val c = DefaultCallCoordinator(api, 1u, Media(), backgroundScope, heartbeatIntervalMs = 1_000)
+        c.onEvent(event(api.call)); c.accept(); runCurrent()
+        repeat(10) {
+            advanceTimeBy(500)
+            c.onForegroundOrReconnect(); runCurrent()
+        }
+        assertEquals(10, api.activeCalls)
+        assertEquals(5, api.beats)
+        assertTrue(c.state.value.joined)
+        c.close(); runCurrent()
+    }
+
+    @Test fun reconnectReconciliationPreservesHeartbeatRetryBudget() = runTest {
+        val api = Control().apply { heartbeatFailures = 20 }
+        val media = Media()
+        val c = DefaultCallCoordinator(api, 1u, media, backgroundScope, heartbeatIntervalMs = 1_000)
+        c.onEvent(event(api.call)); c.accept(); runCurrent()
+        advanceTimeBy(1_000); runCurrent()
+        assertEquals(1, api.beats)
+        c.onForegroundOrReconnect(); runCurrent()
+        advanceTimeBy(1_000); runCurrent()
+        assertEquals(2, api.beats)
+        c.onForegroundOrReconnect(); runCurrent()
+        advanceTimeBy(2_000); runCurrent()
+        assertEquals(3, api.beats)
+        assertFalse(c.state.value.joined)
+        assertEquals(1, media.disconnections)
+        advanceTimeBy(10_000); runCurrent()
+        assertEquals(3, api.beats)
+        c.close(); runCurrent()
+    }
+
+    @Test fun newCallStartsItsOwnHeartbeatAfterPreviousCallEnds() = runTest {
+        val api = Control()
+        val c = DefaultCallCoordinator(api, 1u, Media(), backgroundScope, heartbeatIntervalMs = 1_000)
+        c.onEvent(event(api.call)); c.accept(); runCurrent()
+        advanceTimeBy(1_000); runCurrent(); assertEquals(1, api.beats)
+        c.onEvent(event(api.call.copy(version = 9u, state = CallState.ENDED))); runCurrent()
+        api.call = api.call.copy(callId = 42u)
+        c.onEvent(event(api.call)); c.accept(); runCurrent()
+        advanceTimeBy(1_000); runCurrent()
+        assertEquals(2, api.beats)
+        assertEquals(42uL, c.state.value.call?.callId)
+        assertTrue(c.state.value.joined)
+        c.close(); runCurrent()
+    }
+
     @Test fun repeatedHeartbeatFailureStopsAfterBoundedRetries() = runTest {
         val api = Control().apply { heartbeatFailures = 20 }
         val media = Media(); val c = DefaultCallCoordinator(api, 1u, media, backgroundScope, heartbeatIntervalMs = 1_000)
