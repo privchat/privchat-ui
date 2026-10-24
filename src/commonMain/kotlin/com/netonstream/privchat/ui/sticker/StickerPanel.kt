@@ -10,8 +10,6 @@ import com.netonstream.privchat.sdk.dto.StickerMessagePayload
 import com.netonstream.privchat.ui.error.UserFacingError
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.netonstream.privchat.ui.i18n.stickerPanelStrings
-import com.tencent.kuikly.compose.coil3.rememberAsyncImagePainter
-import com.tencent.kuikly.compose.foundation.Image
 import com.tencent.kuikly.compose.foundation.background
 import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.*
@@ -20,7 +18,6 @@ import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.draw.clip
 import com.tencent.kuikly.compose.ui.draw.clipToBounds
-import com.tencent.kuikly.compose.ui.layout.ContentScale
 import com.tencent.kuikly.compose.ui.semantics.contentDescription
 import com.tencent.kuikly.compose.ui.semantics.selected
 import com.tencent.kuikly.compose.ui.semantics.semantics
@@ -131,8 +128,7 @@ private fun PackCover(pack: StickerPack, language: String, modifier: Modifier) {
     val url = pack.coverImageUrl?.takeIf { it.isNotBlank() } ?: pack.stickers.firstOrNull()?.imageUrl
     Box(modifier.testTag(StickerPanelTestTags.cover(pack.packId)).clip(Theme.shapes.lg).background(Theme.colors.muted),
         contentAlignment = Alignment.Center) {
-        if (url != null) Image(rememberAsyncImagePainter(url), contentDescription = pack.displayName(language),
-            modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+        if (url != null) PublishedStickerImage(url, pack.displayName(language), Modifier.fillMaxSize())
         else Text(pack.displayName(language).take(1), style = Theme.typography.titleMedium)
     }
 }
