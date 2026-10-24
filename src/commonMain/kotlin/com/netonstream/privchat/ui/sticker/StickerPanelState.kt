@@ -18,6 +18,27 @@ internal class StickerPanelState(private val catalog: StickerCatalog, private va
     var storeError by mutableStateOf<Throwable?>(null); private set
     var actionError by mutableStateOf<Throwable?>(null); private set
     var busy by mutableStateOf(false); private set
+    var selectedPackId by mutableStateOf<String?>(null); private set
+    val selectedPack: StickerPack? get() = installed.firstOrNull { it.packId == selectedPackId }
+        ?: installed.firstOrNull()
+    fun offlineReadiness(packId: String): StickerOfflineReadiness =
+        installed.firstOrNull { it.packId == packId }?.offlineReadiness ?: StickerOfflineReadiness.UNAVAILABLE
+
+    fun selectPack(packId: String) {
+        if (installed.any { it.packId == packId }) selectedPackId = packId
+    }
+
+    suspend fun install(packId: String) = perform(changesInstallation = true) { catalog.install(packId) }
+    suspend fun uninstall(packId: String) = perform(changesInstallation = true) { catalog.uninstall(packId) }
+    suspend fun move(packId: String, delta: Int) = perform(changesInstallation = true) {
+        val ids = installed.map { it.packId }.toMutableList()
+        val from = ids.indexOf(packId)
+        val to = from + delta
+        if (from >= 0 && delta in listOf(-1, 1) && to in ids.indices) {
+            ids.add(to, ids.removeAt(from))
+            catalog.reorder(ids)
+        }
+    }
 
     private fun checkSession() {
         if (catalog.session != owner) throw CancellationException("sticker session changed")
@@ -34,6 +55,7 @@ internal class StickerPanelState(private val catalog: StickerCatalog, private va
             val value = catalog.installed()
             checkSession()
             installed = value
+            if (value.none { it.packId == selectedPackId }) selectedPackId = value.firstOrNull()?.packId
             installedReady = true
         } catch (cancel: CancellationException) { throw cancel }
         catch (failure: Exception) { installedError = failure }

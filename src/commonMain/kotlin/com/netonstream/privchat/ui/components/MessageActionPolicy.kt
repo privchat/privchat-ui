@@ -61,6 +61,8 @@ object MessageActionPolicy {
         val canPin: Boolean = false,
         /** 该消息当前是否已被置顶（决定显示「置顶」还是「取消置顶」）。 */
         val isPinned: Boolean = false,
+        /** Unpin is narrower than Pin: admins cannot remove the owner's pin. */
+        val canUnpin: Boolean = canPin,
     )
 
     /**
@@ -129,7 +131,7 @@ object MessageActionPolicy {
 
         // Pin / Unpin：仅群主/管理员（canPin），且消息已在服务端（非 failed）。
         // 普通成员不显示；server 仍做最终鉴权。
-        if (ctx.canPin && !isFailed) {
+        if (ctx.canPin && !isFailed && (!ctx.isPinned || ctx.canUnpin)) {
             result += if (ctx.isPinned) MessageActionKind.Unpin else MessageActionKind.Pin
         }
 

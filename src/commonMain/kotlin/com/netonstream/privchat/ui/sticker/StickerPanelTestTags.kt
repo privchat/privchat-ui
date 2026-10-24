@@ -1,0 +1,22 @@
+package com.netonstream.privchat.ui.sticker
+
+object StickerPanelTestTags {
+    const val Panel = "sticker-panel"
+    const val Installed = "sticker-installed"
+    const val Store = "sticker-store"
+    const val Manage = "sticker-manage"
+    const val Refresh = "sticker-refresh"
+    const val Toggle = "sticker-toggle"
+    const val SelectedPack = "sticker-selected-pack"
+    fun pack(packId: String) = "sticker-pack-$packId"
+    fun card(packId: String) = "sticker-card-$packId"
+    fun cover(packId: String) = "sticker-cover-$packId"
+    fun name(packId: String) = "sticker-name-$packId"
+    fun count(packId: String) = "sticker-count-$packId"
+    fun grid(packId: String) = "sticker-grid-$packId"
+    fun install(packId: String) = "sticker-install-$packId"
+    fun uninstall(packId: String) = "sticker-uninstall-$packId"
+    fun up(packId: String) = "sticker-up-$packId"
+    fun down(packId: String) = "sticker-down-$packId"
+    fun send(stickerId: String) = "sticker-send-$stickerId"
+}

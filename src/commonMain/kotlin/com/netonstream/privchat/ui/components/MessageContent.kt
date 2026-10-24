@@ -16,6 +16,7 @@ import com.netonstream.privchat.ui.media.MediaDownloadState
 import com.netonstream.privchat.ui.media.MediaOpener
 import com.netonstream.privchat.ui.models.*
 import com.netonstream.privchat.ui.PrivChat
+import com.netonstream.privchat.ui.emoji.appleEmoji
 import com.netonstream.privchat.ui.avatar.PrivChatAvatar
 import com.netonstream.privchat.ui.platform.ClipboardBridge
 import com.netonstream.privchat.ui.platform.ExternalLinkBridge
@@ -233,6 +234,7 @@ private fun TextContent(
     if (safeEntities.isEmpty()) {
         Text(
             text = text,
+            modifier = Modifier.appleEmoji(),
             style = Theme.typography.bodyMedium,
             color = textColor,
         )
@@ -271,6 +273,7 @@ private fun TextContent(
 
     KuiklyText(
         text = annotated,
+        modifier = Modifier.appleEmoji(),
         color = textColor,
         fontSize = bodyStyle.fontSize,
         fontWeight = bodyStyle.fontWeight,
@@ -1022,22 +1025,32 @@ private fun StickerContent(
     val session = catalog?.session
     var resolvedUrl by remember(parsed.stickerId, parsed.attachmentUrl, catalog, session) { mutableStateOf(parsed.attachmentUrl) }
     var retry by remember(parsed.stickerId, parsed.attachmentUrl, session) { mutableStateOf(0) }
-    LaunchedEffect(parsed.stickerId, parsed.attachmentUrl, catalog, session, retry) {
-        if (retry == 0 || !com.netonstream.privchat.ui.sticker.canResolveStickerFallback(parsed.attachmentUrl, session?.platform)) return@LaunchedEffect
+    var representation by remember(parsed.stickerId, parsed.attachmentUrl, catalog, session) { mutableStateOf<com.netonstream.privchat.ui.sticker.CatalogSticker?>(null) }
+    val pagAvailable = com.netonstream.privchat.ui.pag.PagRuntimeUiBridge.supports(com.netonstream.privchat.ui.pag.PagRepresentation.STICKER_PROFILE)
+    LaunchedEffect(parsed.stickerId, parsed.attachmentUrl, catalog, session, retry, pagAvailable) {
+        if (retry == 0 && !pagAvailable) return@LaunchedEffect
+        if (!com.netonstream.privchat.ui.sticker.canResolveStickerPag(parsed.stickerId, parsed.attachmentUrl, session?.platform)) return@LaunchedEffect
         val id = parsed.stickerId?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
         if (catalog != null) {
             try {
                 val resolved = catalog.resolve(id)
-                if (catalog.session == session) resolvedUrl = resolved.imageUrl
+                if (catalog.session == session && resolved.stickerId == id) {
+                    if (retry > 0) resolvedUrl = resolved.imageUrl
+                    representation = resolved
+                }
             }
             catch (cancel: kotlinx.coroutines.CancellationException) { throw cancel }
             catch (_: Exception) { /* Preserve the message's published URL when resolution is unavailable. */ }
         }
     }
     if (resolvedUrl != null) {
-        com.netonstream.privchat.ui.sticker.PublishedStickerImage(
-            url = resolvedUrl!!,
-            label = parsed.text?.takeIf { it.isNotBlank() } ?: PrivChatI18n.current.a11ySticker,
+        com.netonstream.privchat.ui.sticker.PublishedSticker(
+            sticker = com.netonstream.privchat.ui.sticker.CatalogSticker(
+                stickerId = parsed.stickerId.orEmpty(), imageUrl = resolvedUrl!!,
+                label = parsed.text?.takeIf { it.isNotBlank() } ?: PrivChatI18n.current.a11ySticker,
+                width = representation?.width ?: 100, height = representation?.height ?: 100,
+                pag = representation?.pag,
+            ),
             modifier = Modifier.size(100.dp),
             onRetry = { retry++ },
         )

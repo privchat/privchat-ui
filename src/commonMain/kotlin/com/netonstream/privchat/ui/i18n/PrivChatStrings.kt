@@ -29,6 +29,7 @@ data class PrivChatStrings(
     val dPlatformError: PrivChatPlatformErrorStrings,
     val dCall: PrivChatCallStrings = enCall,
     val dAgent: PrivChatAgentStrings = enAgent,
+    val dVisual: PrivChatVisualStrings = enVisual,
 ) {
     val appName: String get() = dCommon.appName
     val confirm: String get() = dCommon.confirm
@@ -986,6 +987,7 @@ data class PrivChatStringsPatch(
     val dPlatformError: PrivChatPlatformErrorStringsPatch? = null,
     val dCall: PrivChatCallStrings? = null,
     val dAgent: PrivChatAgentStrings? = null,
+    val dVisual: PrivChatVisualStrings? = null,
 )
 
 val PrivChatStringsPatch.isEmpty: Boolean
@@ -1003,7 +1005,7 @@ val PrivChatStringsPatch.isEmpty: Boolean
         (dAuxiliary == null || dAuxiliary.isEmpty) &&
         (dWallet == null || dWallet.isEmpty) &&
         (dAuth == null || dAuth.isEmpty) &&
-        (dPlatformError == null || dPlatformError.isEmpty) && dCall == null && dAgent == null
+        (dPlatformError == null || dPlatformError.isEmpty) && dCall == null && dAgent == null && dVisual == null
 
 fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
     if (patch == null || patch.isEmpty) return this
@@ -1025,6 +1027,7 @@ fun PrivChatStrings.merge(patch: PrivChatStringsPatch?): PrivChatStrings {
         dPlatformError = dPlatformError.merge(patch.dPlatformError),
         dCall = patch.dCall ?: dCall,
         dAgent = patch.dAgent ?: dAgent,
+        dVisual = patch.dVisual ?: dVisual,
     )
 }
 
@@ -1048,6 +1051,7 @@ object PrivChatStringPacks {
         dAuth = zhAuth,
         dPlatformError = zhPlatformError,
         dCall = zhCall,
+        dVisual = zhVisual,
         dAgent = zhAgent,
     )
 
@@ -1068,6 +1072,7 @@ object PrivChatStringPacks {
         dAuth = enAuth,
         dPlatformError = enPlatformError,
         dCall = enCall,
+        dVisual = enVisual,
         dAgent = enAgent,
     )
 
@@ -1088,6 +1093,7 @@ object PrivChatStringPacks {
         dAuth = hantAuth,
         dPlatformError = hantPlatformError,
         dCall = hantCall,
+        dVisual = hantVisual,
         dAgent = hantAgent,
     )
 
@@ -1108,6 +1114,7 @@ object PrivChatStringPacks {
         dAuth = viAuth,
         dPlatformError = viPlatformError,
         dCall = viCall,
+        dVisual = viVisual,
         dAgent = viAgent,
     )
 

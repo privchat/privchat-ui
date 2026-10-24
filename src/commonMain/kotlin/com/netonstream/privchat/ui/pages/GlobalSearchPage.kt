@@ -15,10 +15,12 @@ import com.gearui.components.navbar.NavBar
 import com.gearui.components.searchbar.SearchBar
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.primitives.Text
+import com.gearui.foundation.typography.resolveFontFamily
 import com.gearui.theme.Theme
 import com.netonstream.privchat.sdk.dto.ChannelListEntry
 import com.netonstream.privchat.sdk.dto.SearchHistoryHit
 import com.netonstream.privchat.ui.PrivChat
+import com.netonstream.privchat.ui.emoji.appleEmoji
 import com.netonstream.privchat.ui.search.PeopleSearch
 import com.netonstream.privchat.ui.search.SearchField
 import com.netonstream.privchat.ui.components.HighlightedText
@@ -31,6 +33,11 @@ import com.tencent.kuikly.compose.foundation.clickable
 import com.tencent.kuikly.compose.foundation.layout.*
 import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
+import com.tencent.kuikly.compose.foundation.text.BasicText
+import com.tencent.kuikly.compose.ui.graphics.Color
+import com.tencent.kuikly.compose.ui.text.SpanStyle
+import com.tencent.kuikly.compose.ui.text.TextStyle
+import com.tencent.kuikly.compose.ui.text.buildAnnotatedString
 import com.tencent.kuikly.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -421,7 +428,7 @@ fun GlobalSearchPage(
     }
 }
 
-/** 消息命中行：会话名 + snippet（第一段命中用主题色，三段拆分，单行省略） */
+/** 消息命中行：会话名 + snippet（第一段命中用主题色，单个文本节点）。 */
 @Composable
 private fun MessageHitRow(
     hit: SearchHistoryHit,
@@ -440,24 +447,7 @@ private fun MessageHitRow(
     ) {
         Text(text = channelName, color = colors.foreground)
         Spacer(modifier = Modifier.height(2.dp))
-        val range = hit.highlightRanges.firstOrNull()
-        if (range != null && range.first in 0 until hit.snippet.length && range.second <= hit.snippet.length && range.first < range.second) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                val chars = hit.snippet.toCharArray()
-                val prefix = chars.concatToString(0, range.first)
-                val match = chars.concatToString(range.first, range.second)
-                val suffix = chars.concatToString(range.second, chars.size)
-                if (prefix.isNotEmpty()) {
-                    Text(text = prefix, color = colors.mutedForeground, maxLines = 1)
-                }
-                Text(text = match, color = colors.primary, maxLines = 1)
-                if (suffix.isNotEmpty()) {
-                    Text(text = suffix, color = colors.mutedForeground, maxLines = 1)
-                }
-            }
-        } else {
-            Text(text = hit.snippet, color = colors.mutedForeground, maxLines = 1)
-        }
+        SnippetText(hit, color = colors.mutedForeground)
     }
 }
 
@@ -527,20 +517,21 @@ private fun ScopedMessageHitRow(
 
 /** snippet 高亮渲染（首段命中主题色）。 */
 @Composable
-private fun SnippetText(hit: SearchHistoryHit) {
+private fun SnippetText(hit: SearchHistoryHit, color: Color = Theme.colors.foreground) {
     val colors = Theme.colors
     val range = hit.highlightRanges.firstOrNull()
-    if (range != null && range.first in 0 until hit.snippet.length && range.second <= hit.snippet.length && range.first < range.second) {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            val chars = hit.snippet.toCharArray()
-            val prefix = chars.concatToString(0, range.first)
-            val match = chars.concatToString(range.first, range.second)
-            val suffix = chars.concatToString(range.second, chars.size)
-            if (prefix.isNotEmpty()) Text(text = prefix, color = colors.foreground, maxLines = 1)
-            Text(text = match, color = colors.primary, maxLines = 1)
-            if (suffix.isNotEmpty()) Text(text = suffix, color = colors.foreground, maxLines = 1)
+    val annotated = buildAnnotatedString {
+        append(hit.snippet)
+        if (range != null && range.first in 0 until hit.snippet.length && range.second <= hit.snippet.length && range.first < range.second) {
+            addStyle(SpanStyle(color = colors.primary), range.first, range.second)
         }
-    } else {
-        Text(text = hit.snippet, color = colors.foreground, maxLines = 1)
     }
+    val body = Theme.typography.bodyMedium
+    BasicText(
+        text = annotated,
+        modifier = Modifier.fillMaxWidth().appleEmoji(),
+        style = TextStyle(color = color, fontSize = body.fontSize, lineHeight = body.lineHeight,
+            fontWeight = body.fontWeight, fontFamily = body.resolveFontFamily(), letterSpacing = body.letterSpacing),
+        maxLines = 1,
+    )
 }

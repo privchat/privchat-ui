@@ -6,6 +6,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
+import com.netonstream.privchat.ui.group.GroupProfilePolicy
+import com.netonstream.privchat.ui.group.GroupProfileTestTags
+import com.netonstream.privchat.ui.group.GroupUiError
+import com.tencent.kuikly.compose.ui.semantics.testTag
 import com.gearui.components.input.Input
 import com.gearui.components.input.InputSize
 import com.gearui.components.navbar.NavBar
@@ -39,18 +43,22 @@ fun GroupNameEditPage(
     val colors = Theme.colors
     val scope = androidx.compose.runtime.rememberCoroutineScope()
 
-    var groupName by remember { mutableStateOf(currentName) }
+    var groupName by remember(currentName) { mutableStateOf(currentName) }
+    var saving by remember(currentName) { mutableStateOf(false) }
 
     val trimmed = groupName.trim()
-    val canSave = trimmed.isNotEmpty() && trimmed != currentName
+    val canSave = !saving && GroupProfilePolicy.validName(groupName) && trimmed != currentName
 
     val doSave: () -> Unit = {
-        if (canSave) {
+        if (canSave && !saving) {
+            saving = true
             scope.launch {
-                onSave(trimmed).fold(
-                    onSuccess = { onBack() },
-                    onFailure = { onError?.invoke(com.netonstream.privchat.ui.error.UserFacingError.message(it, strings.networkError)) },
-                )
+                try {
+                    onSave(trimmed).fold(
+                        onSuccess = { onBack() },
+                        onFailure = { onError?.invoke(GroupUiError.message(it, strings.groupSettingsUpdateFailed)) },
+                    )
+                } finally { saving = false }
             }
         }
     }
@@ -63,13 +71,15 @@ fun GroupNameEditPage(
         NavBar(
             title = strings.groupNameEditTitle,
             useDefaultBack = true,
-            onBackClick = onBack,
+            onBackClick = { if (!saving) onBack() },
             rightWidget = {
+                com.tencent.kuikly.compose.foundation.layout.Box(Modifier.testTag(GroupProfileTestTags.NameSave)) {
                 com.netonstream.privchat.ui.components.NavBarAction(
                     text = strings.save,
                     enabled = canSave,
                     onClick = doSave,
                 )
+                }
             },
             rightWidgetWidth = com.netonstream.privchat.ui.components.NavBarActionSlotWidth,
         )
@@ -77,12 +87,15 @@ fun GroupNameEditPage(
         Column(modifier = Modifier.padding(16.dp)) {
             Input(
                 value = groupName,
-                onValueChange = { groupName = it },
+                onValueChange = { if (!saving) groupName = it },
+                modifier = Modifier.testTag(GroupProfileTestTags.NameInput),
+                enabled = !saving,
                 size = InputSize.LARGE,
                 clearable = true,
-                onClear = { groupName = "" },
+                onClear = { if (!saving) groupName = "" },
                 autoFocus = true,
             )
+            Text(text = "${GroupProfilePolicy.scalarCount(groupName)}/30", style = Theme.typography.label)
         }
     }
 }

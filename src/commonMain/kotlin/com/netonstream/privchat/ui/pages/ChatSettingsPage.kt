@@ -13,6 +13,11 @@ import com.netonstream.privchat.sdk.dto.ChannelListEntry
 import com.netonstream.privchat.sdk.dto.GroupSettingsUpdateInput
 import com.netonstream.privchat.ui.error.UserFacingError
 import com.netonstream.privchat.ui.PrivChat
+import com.netonstream.privchat.ui.group.GroupDescriptionEditor
+import com.netonstream.privchat.ui.group.GroupProfilePolicy
+import com.netonstream.privchat.ui.group.GroupProfileTestTags
+import com.netonstream.privchat.ui.group.GroupUiError
+import com.tencent.kuikly.compose.ui.semantics.testTag
 import com.netonstream.privchat.ui.components.ChatAvatar
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.gearui.theme.Theme
@@ -21,7 +26,7 @@ import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.GearLazyColumn
 import com.gearui.foundation.avatar.AvatarSizeTokens
 import com.gearui.components.navbar.NavBar
-import com.gearui.components.input.Input
+import com.gearui.components.textarea.Textarea
 import com.gearui.components.cell.Cell
 import com.gearui.components.switch.Switch
 import com.gearui.components.dialog.DialogAction
@@ -96,13 +101,13 @@ fun ChatSettingsPage(
     val isGroup = !channel.isDm
     // 群主/管理员可见并可改群管理设置（allowSearch / joinPolicy / memberCanInvite /
     // allowMemberAddFriend / allMuted）。服务端仍是权威鉴权。
-    val isManager = isGroup && (isOwner || isAdmin)
+    val isManager = GroupProfilePolicy.canEdit(isGroup, isOwner, isAdmin)
 
-    var description by remember(channel.channelId) { mutableStateOf<String?>(null) }
-    var profileEditor by remember(channel.channelId) { mutableStateOf(false) }
-    var profileSaving by remember(channel.channelId) { mutableStateOf(false) }
-    var descriptionDraft by remember(channel.channelId) { mutableStateOf("") }
+    val profile = remember(channel.channelId) { GroupDescriptionEditor() }
+    val description = profile.description
+    val profileSaving = profile.saving
     val projectionRevision by PrivChat.groupProjectionRevision.collectAsState()
+    val connectionState by PrivChat.connectionState.collectAsState()
     // 群设置初值（groupGetSettings 读，groupUpdateSettings 改；每次只 patch 改动项）。
     var allowSearch by remember(channel.channelId) { mutableStateOf<Boolean?>(null) }
     var memberCanInvite by remember(channel.channelId) { mutableStateOf<Boolean?>(null) }
@@ -111,16 +116,18 @@ fun ChatSettingsPage(
     var joinPolicy by remember(channel.channelId) { mutableStateOf<UByte?>(null) }
 
     if (isGroup) {
-        LaunchedEffect(channel.channelId, projectionRevision) {
-            withContext(Dispatchers.Default) {
-                PrivChat.client.groupGetSettings(channel.channelId)
-            }.onSuccess { s ->
-                description = s.description ?: ""
-                allowSearch = s.allowSearch
-                memberCanInvite = s.memberCanInvite
-                allowMemberAddFriend = s.allowMemberAddFriend
-                allMuted = s.allMuted
-                joinPolicy = s.joinPolicy
+        LaunchedEffect(channel.channelId, projectionRevision, connectionState) {
+            profile.refresh {
+                withContext(Dispatchers.Default) {
+                    PrivChat.client.groupGetSettings(channel.channelId)
+                }.map { s ->
+                    allowSearch = s.allowSearch
+                    memberCanInvite = s.memberCanInvite
+                    allowMemberAddFriend = s.allowMemberAddFriend
+                    allMuted = s.allMuted
+                    joinPolicy = s.joinPolicy
+                    s.description.orEmpty()
+                }
             }
         }
     }
@@ -173,23 +180,19 @@ fun ChatSettingsPage(
                     ) { row ->
                         when (row) {
                             GroupRow.Name -> Cell(
+                                modifier = Modifier.testTag(GroupProfileTestTags.NameRow),
                                 title = strings.chatSettingsGroupName,
                                 // P6-1：收口到 GroupDisplay.titleOf（此前裸 channel.name 无 fallback，空群名显示空白）。
                                 description = com.netonstream.privchat.ui.models.GroupDisplay.titleOf(channel.name),
-                                // P6-3 上线要求：群改名尚未持久化（GROUP_SETTINGS_PERSISTENCE 未完成）→ 暂隐藏编辑入口，
-                                // 只读展示群名，避免用户改了 resync 后丢失的假成功。
-                                arrow = false,
+                                arrow = isManager,
+                                onClick = if (isManager) onGroupNameClick else null,
                             )
                             GroupRow.Description -> Cell(
+                                modifier = Modifier.testTag(GroupProfileTestTags.DescriptionRow),
                                 title = strings.chatSettingsGroupDescription,
                                 description = description ?: strings.loading,
                                 arrow = isManager && description != null,
-                                onClick = {
-                                    if (isManager && description != null) {
-                                        descriptionDraft = description.orEmpty()
-                                        profileEditor = true
-                                    }
-                                },
+                                onClick = if (isManager && description != null) ({ profile.begin(isManager) }) else null,
                             )
                             GroupRow.QrCode -> Cell(
                                 title = strings.chatSettingsGroupQrCode,
@@ -373,29 +376,37 @@ fun ChatSettingsPage(
         }
     }
 
-    Dialog.Host(visible = profileEditor, onDismiss = { if (!profileSaving) profileEditor = false }) {
+    Dialog.Host(visible = profile.editing, onDismiss = profile::dismiss) {
         DialogContent(
             title = strings.chatSettingsGroupDescription,
             content = {
-                Input(value = descriptionDraft, onValueChange = { if (!profileSaving) descriptionDraft = it },
-                    clearable = !profileSaving, onClear = { descriptionDraft = "" }, autoFocus = true)
+                Column {
+                    Textarea(value = profile.draft, onValueChange = profile::change,
+                        modifier = Modifier.testTag(GroupProfileTestTags.DescriptionInput),
+                        placeholder = strings.chatSettingsGroupDescription,
+                        minLines = 3,
+                        maxLines = 6,
+                        enabled = !profileSaving && isManager)
+                    profile.error?.let {
+                        Text(text = GroupUiError.message(it, strings.groupSettingsUpdateFailed),
+                            modifier = Modifier.testTag(GroupProfileTestTags.DescriptionError),
+                            color = colors.destructive)
+                    }
+                }
             },
             actions = listOf(
                 DialogAction(text = strings.cancel, role = DialogActionRole.CANCEL, enabled = !profileSaving,
-                    onClick = { profileEditor = false }),
-                DialogAction(text = strings.save, role = DialogActionRole.PRIMARY, enabled = !profileSaving,
+                    onClick = profile::dismiss),
+                DialogAction(text = strings.save, role = DialogActionRole.PRIMARY, enabled = !profileSaving && isManager,
                     onClick = {
-                        profileSaving = true
-                        val value = descriptionDraft
                         scope.launch {
-                            withContext(Dispatchers.Default) {
-                                PrivChat.client.groupUpdateProfile(channel.channelId, description = value)
-                            }.onSuccess {
-                                description = value
-                                profileEditor = false
+                            profile.save(isManager) { value ->
+                                withContext(Dispatchers.Default) {
+                                    PrivChat.client.groupUpdateProfile(channel.channelId, description = value)
+                                }
+                            }?.onSuccess {
                                 PrivChat.invalidateGroupProjection()
-                            }.onFailure { Toast.error(UserFacingError.message(it, strings.groupSettingsUpdateFailed)) }
-                            profileSaving = false
+                            }
                         }
                     }),
             ),

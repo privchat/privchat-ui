@@ -1,6 +1,14 @@
 package com.netonstream.privchat.ui.pages
 
 import com.netonstream.privchat.ui.icons.PrivChatIcons
+import com.netonstream.privchat.ui.emoji.AppleEmojiInput
+import com.netonstream.privchat.ui.emoji.rememberAppleEmojiEditorController
+import com.netonstream.privchat.ui.emoji.appleEmoji
+import com.tencent.kuikly.compose.ui.semantics.testTag
+import com.netonstream.privchat.ui.group.GroupPinPolicy
+import com.netonstream.privchat.ui.group.GroupPinsState
+import com.netonstream.privchat.ui.group.PinTestTags
+import com.netonstream.privchat.ui.group.GroupUiError
 import com.gearui.components.icon.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -78,7 +86,6 @@ import kotlin.math.roundToInt
 import com.gearui.foundation.primitives.Icon
 import com.gearui.components.input.Input
 import com.gearui.components.input.InputSize
-import com.gearui.components.textarea.AutoResizeTextarea
 import com.gearui.components.button.Button
 import com.gearui.components.button.ButtonTheme
 import com.gearui.components.button.ButtonSize
@@ -564,24 +571,26 @@ fun MessagePage(
     // 它自己没法让谁重组。
     val knownUsers by PrivChat.knownUsers.collectAsState()
     // 群消息置顶：仅群主/管理员可操作（canPin），所有成员可见置顶条。
-    // 当前用户在该群的角色（role: 2=群主 1=管理员 0=成员）。
+    // 当前用户在该群的角色（role: 1=群主 2=管理员 0=成员）。
     val canPinMessages = remember(groupMembersForChannel, currentUserId, channel.isDm) {
         if (channel.isDm) false
         else groupMembersForChannel.firstOrNull { it.userId == currentUserId }
             ?.let { it.isOwner || it.isAdmin } ?: false
     }
-    // 已置顶消息列表（来自服务端 groupPinnedMessages，群聊 channelId == groupId）。
-    var pinnedMessages by remember(channel.channelId) {
-        mutableStateOf<List<com.netonstream.privchat.sdk.dto.GroupPinnedMessageView>>(emptyList())
-    }
-    var pinsHidden by remember(channel.channelId) { mutableStateOf(false) }
+    val pinsState = remember(channel.channelId) { GroupPinsState(channel.channelId) }
+    val pinnedMessages = pinsState.messages
+    val pinsHidden = pinsState.hidden
+    val pinActorRole = groupMembersForChannel.firstOrNull { it.userId == currentUserId }?.role
+    fun canUnpinMessage(pin: com.netonstream.privchat.sdk.dto.GroupPinnedMessageView): Boolean =
+        GroupPinPolicy.canUnpin(currentUserId, pinActorRole, pin.pinnedBy,
+            groupMembersForChannel.firstOrNull { it.userId == pin.pinnedBy }?.role)
     val pinnedMessageIds = remember(pinnedMessages) { pinnedMessages.map { it.messageId }.toSet() }
     // 加载/刷新置顶列表（封装供初始加载与置顶操作后调用）。
     val refreshPinnedMessages: suspend () -> Unit = refresh@{
         if (channel.isDm) return@refresh
-        withContext(Dispatchers.Default) {
-            PrivChat.client.groupPinnedMessages(channel.channelId)
-        }.onSuccess { pinnedMessages = it }
+        pinsState.refresh {
+            withContext(Dispatchers.Default) { PrivChat.client.groupPinnedMessages(channel.channelId) }
+        }
     }
     val groupProjectionRevision by PrivChat.groupProjectionRevision.collectAsState()
     LaunchedEffect(channel.channelId, groupProjectionRevision) {
@@ -807,7 +816,7 @@ fun MessagePage(
     // 频道（恢复 presence_changed / typing 的 channel-published 通道）② 重新 fetch 一次对端
     // 当前 presence。不能依赖用户重新进会话。
     val connectionState by PrivChat.connectionState.collectAsState()
-    LaunchedEffect(connectionState) {
+    LaunchedEffect(channel.channelId, connectionState) {
         if (connectionState == ConnectionState.Connected) {
             refreshPinnedMessages()
             // 频道订阅恢复（typing + presence_changed 都走 channel publish）
@@ -1050,8 +1059,9 @@ fun MessagePage(
             .fillMaxSize()
             .then(
                 if (hasOpenInputPanel) {
-                    Modifier.clickable {
-                        panelMode = InputPanelMode.NONE
+                    // Background dismissal must not merge the whole page into one accessibility button.
+                    Modifier.pointerInput(Unit) {
+                        detectTapGestures(onTap = { panelMode = InputPanelMode.NONE })
                     }
                 } else {
                     Modifier
@@ -1145,24 +1155,25 @@ fun MessagePage(
                 preview = pinnedMsg?.let {
                     strings.previewOf(it)
                 } ?: strings.pinnedMessagesTitle,
-                canManage = canPinMessages,
-                onClose = { pinsHidden = true },
+                canManage = canUnpinMessage(latestPinned),
+                onClose = pinsState::hide,
                 onOpen = {
+                    val openedPins = pinsState.selectionSnapshot()
                     ActionSheet.showList(
-                        items = pinnedMessages.map { pin ->
+                        items = openedPins.map { pin ->
                             ActionSheetItem(label = sortedMessages.firstOrNull { it.serverMessageId == pin.messageId }
                                 ?.let { strings.previewOf(it) } ?: strings.pinnedMessagesTitle)
                         },
                         onSelected = { _, index ->
-                            val pin = pinnedMessages.getOrNull(index)
+                            val pin = openedPins.getOrNull(index)
                             if (pin != null) scope.launch {
                                 val window = withContext(Dispatchers.Default) {
                                     PrivChat.client.getMessagesAround(channel.channelId, channel.channelType, pin.messageId, 25u, 25u)
                                         .fold(onSuccess = { PrivChat.client.getLocalMessagesAround(channel.channelId, channel.channelType, pin.messageId).getOrNull() },
                                             onFailure = { null })
                                 }
-                                val anchor = window?.firstOrNull { it.serverMessageId == pin.messageId }
-                                if (anchor != null) {
+                                val anchor = GroupPinPolicy.sourceAnchor(channel.channelId, pin.messageId, window)
+                                if (anchor != null && window != null) {
                                     jumpPending = true
                                     PrivChat.updateMessages(channel.channelId, window)
                                     pendingFocusLocalId = anchor.id
@@ -1172,7 +1183,7 @@ fun MessagePage(
                     )
                 },
                 onUnpin = {
-                    scope.launch {
+                    if (canUnpinMessage(latestPinned)) scope.launch {
                         withContext(Dispatchers.Default) {
                             PrivChat.client.groupPinMessage(
                                 groupId = channel.channelId,
@@ -1184,7 +1195,7 @@ fun MessagePage(
                             refreshPinnedMessages()
                             Toast.success(strings.messageUnpinSuccess)
                         }.onFailure { error ->
-                            Toast.error(UserFacingError.message(error, strings.networkError))
+                            Toast.error(GroupUiError.message(error, strings.networkError))
                         }
                     }
                 },
@@ -1424,11 +1435,15 @@ fun MessagePage(
                                     isHighlighted = highlightMessageId == message.id,
                                     canPin = canPinMessages,
                                     isPinned = pinnedMessageIds.contains(message.serverMessageId),
+                                    canUnpin = pinnedMessages.firstOrNull { it.messageId == message.serverMessageId }
+                                        ?.let(::canUnpinMessage) ?: false,
                                     onPinMessage = { target, pin ->
                                         val serverId = target.serverMessageId
                                         if (serverId == null) {
                                             Toast.error(strings.messageOriginalNotSentYet)
-                                        } else {
+                                        } else if (canPinMessages && (pin || pinnedMessages.firstOrNull {
+                                                it.messageId == serverId
+                                            }?.let(::canUnpinMessage) == true)) {
                                             scope.launch {
                                                 withContext(Dispatchers.Default) {
                                                     // 群聊 channelId == groupId（同值）。
@@ -1445,7 +1460,7 @@ fun MessagePage(
                                                         else strings.messageUnpinSuccess
                                                     )
                                                 }.onFailure { error ->
-                                                    Toast.error(UserFacingError.message(error, strings.networkError))
+                                                    Toast.error(GroupUiError.message(error, strings.networkError))
                                                 }
                                             }
                                         }
@@ -1884,6 +1899,12 @@ fun MessagePage(
             )
         }
     }
+    com.netonstream.privchat.ui.effect.ChatEffectUiBridge.coordinator?.let { effects ->
+        val activeEffect by effects.active.collectAsState()
+        if (activeEffect?.channelId == channel.channelId.toString() && !mediaPrepBusy) {
+            com.netonstream.privchat.ui.effect.ChatEffectOverlay(effects, Modifier.fillMaxSize())
+        }
+    }
     // UX-3 / UX-4：文本内联实体点击后的 ActionSheet 通过全局单例弹出，
     // 必须有一个 Host 挂载在页面根部才能接收显示请求。
     }
@@ -1927,7 +1948,7 @@ internal fun resolveGroupMessageSenderName(
  * 群主/管理员（[canManage]）可点右侧图标一键取消置顶；普通成员只读。
  */
 @Composable
-private fun PinnedMessagesBar(
+fun PinnedMessagesBar(
     count: Int,
     preview: String,
     canManage: Boolean,
@@ -1941,12 +1962,13 @@ private fun PinnedMessagesBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(colors.surface)
+            .testTag(PinTestTags.Bar)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(Icons.bookmarkSimple.filled, size = IconSizes.Default.sm, tint = colors.primary)
         HorizontalSpacer(8.dp)
-        Column(modifier = Modifier.weight(1f).clickable(onClick = onOpen)) {
+        Column(modifier = Modifier.weight(1f).testTag(PinTestTags.Open).clickable(onClick = onOpen)) {
             Text(
                 text = if (count > 1) "${strings.pinnedMessagesTitle} ($count)" else strings.pinnedMessagesTitle,
                 style = Theme.typography.label,
@@ -1954,6 +1976,7 @@ private fun PinnedMessagesBar(
             )
             Text(
                 text = preview,
+                modifier = Modifier.appleEmoji(),
                 style = Theme.typography.bodySmall,
                 color = colors.foreground,
                 maxLines = 1,
@@ -1961,9 +1984,9 @@ private fun PinnedMessagesBar(
         }
         if (canManage) {
             HorizontalSpacer(8.dp)
-            PressableFeedback(onClick = onUnpin) { Text(text = strings.messageUnpin) }
+            PressableFeedback(onClick = onUnpin, modifier = Modifier.testTag(PinTestTags.Unpin)) { Text(text = strings.messageUnpin) }
         }
-        PressableFeedback(onClick = onClose) {
+        PressableFeedback(onClick = onClose, modifier = Modifier.testTag(PinTestTags.Hide)) {
             Icon(Icons.x, size = IconSizes.Default.sm, tint = colors.mutedForeground)
         }
     }
@@ -2034,81 +2057,6 @@ private fun presenceStatusText(
     ) ?: strings.presenceOffline
 }
 
-private fun String.dropLastGraphemeCluster(): String {
-    if (isEmpty()) return this
-
-    var clusterStart = previousCodePointStart(length)
-    clusterStart = consumeTrailingEmojiContinuations(clusterStart)
-
-    while (clusterStart > 0) {
-        val previousStart = previousCodePointStart(clusterStart)
-        if (codePointAtIndex(previousStart) != 0x200D) break
-        clusterStart = consumeTrailingEmojiContinuations(previousStart)
-    }
-
-    if (clusterStart > 0) {
-        val previousStart = previousCodePointStart(clusterStart)
-        val currentCp = codePointAtIndex(clusterStart)
-        val previousCp = codePointAtIndex(previousStart)
-        if (currentCp.isRegionalIndicator() && previousCp.isRegionalIndicator()) {
-            clusterStart = previousStart
-        }
-    }
-
-    return substring(0, clusterStart)
-}
-
-private fun String.consumeTrailingEmojiContinuations(startIndex: Int): Int {
-    var currentStart = startIndex
-    while (currentStart > 0) {
-        val cp = codePointAtIndex(currentStart)
-        if (!cp.isGraphemeContinuation()) break
-        currentStart = previousCodePointStart(currentStart)
-    }
-    return currentStart
-}
-
-private fun String.previousCodePointStart(index: Int): Int {
-    if (index <= 0) return 0
-    var cursor = index - 1
-    if (cursor > 0 && this[cursor].isLowSurrogateChar() && this[cursor - 1].isHighSurrogateChar()) {
-        cursor -= 1
-    }
-    return cursor
-}
-
-private fun String.codePointAtIndex(index: Int): Int {
-    val current = this[index]
-    return if (
-        current.isHighSurrogateChar() &&
-        index + 1 < length &&
-        this[index + 1].isLowSurrogateChar()
-    ) {
-        ((current.code - 0xD800) shl 10) + (this[index + 1].code - 0xDC00) + 0x10000
-    } else {
-        current.code
-    }
-}
-
-private fun Char.isHighSurrogateChar(): Boolean = this in '\uD800'..'\uDBFF'
-
-private fun Char.isLowSurrogateChar(): Boolean = this in '\uDC00'..'\uDFFF'
-
-private fun Int.isRegionalIndicator(): Boolean = this in 0x1F1E6..0x1F1FF
-
-private fun Int.isGraphemeContinuation(): Boolean =
-    this == 0x200D ||
-        this == 0x20E3 ||
-        this in 0x0300..0x036F ||
-        this in 0x1AB0..0x1AFF ||
-        this in 0x1DC0..0x1DFF ||
-        this in 0x20D0..0x20FF ||
-        this in 0xFE00..0xFE0F ||
-        this in 0xFE20..0xFE2F ||
-        this in 0x1F3FB..0x1F3FF ||
-        this in 0xE0020..0xE007F ||
-        this in 0xE0100..0xE01EF
-
 /**
  * 消息行
  */
@@ -2151,6 +2099,7 @@ private fun MessageRow(
     canPin: Boolean = false,
     /** 该消息当前是否已被置顶。 */
     isPinned: Boolean = false,
+    canUnpin: Boolean = canPin,
     /** 置顶/取消置顶回调（pinned=true 置顶，false 取消）。 */
     onPinMessage: ((MessageEntry, Boolean) -> Unit)? = null,
 ) {
@@ -2323,13 +2272,13 @@ private fun MessageRow(
                     )
                     // 三端统一:群主橙字、管理红字(web/h5 同色)。
                     when (senderRole) {
-                        2 -> Text(
+                        1 -> Text(
                             text = "【${strings.groupOwner}】",
                             style = Theme.typography.label,
                             color = Color(0xFFF97316),
                             modifier = Modifier.padding(start = 2.dp),
                         )
-                        1 -> Text(
+                        2 -> Text(
                             text = "【${strings.groupAdminTag}】",
                             style = Theme.typography.label,
                             color = Color(0xFFEF4444),
@@ -2385,6 +2334,7 @@ private fun MessageRow(
                 onReportMessage = onReportMessage,
                 canPin = canPin,
                 isPinned = isPinned,
+                canUnpin = canUnpin,
                 onPinMessage = onPinMessage,
             ) {
                 Box(
@@ -2733,6 +2683,7 @@ private fun MessageReactionsRow(
             ) {
                 Text(
                     text = chip.emoji,
+                    modifier = Modifier.appleEmoji(),
                     style = Theme.typography.bodySmall,
                     color = colors.foreground,
                 )
@@ -3037,18 +2988,7 @@ private fun MessageInputBar(
         }
     }
     val plusPages = remember(plusActions) { plusActions.chunked(8) }
-    val emojis = remember {
-        listOf(
-            "😀", "😁", "😂", "🤣", "😊", "😉", "😍", "🥰",
-            "😘", "😋", "😎", "🤩", "🥳", "🤗", "🤔", "🫡",
-            "😴", "😮", "😢", "😭", "😤", "😡", "🤯", "🥺",
-            "👍", "👎", "👌", "✌️", "🙏", "👏", "🙌", "🤝",
-            "💪", "👀", "🎉", "🎂", "❤️", "💔", "💕", "💯",
-            "🔥", "✨", "🌹", "🌞", "🌙", "⭐", "☕", "🍺",
-            "🍎", "🍉", "⚽", "🏀", "🎮", "🎵", "🎁", "📷",
-            "📍", "🚗", "✈️", "⌛", "✅", "❌", "❓", "❗"
-        )
-    }
+    val emojiEditor = rememberAppleEmojiEditorController(text, onTextChange)
     // 输入栏的两级高度：中间的单行输入框 / 「按住 说话」比两侧按钮高一档，两侧的圆形
     // 按钮与发送按钮是 gearui `ButtonSize.SMALL` 的 36dp。一样高时中间那条撑不起来，
     // 整条栏子看着又扁又挤。
@@ -3315,17 +3255,16 @@ private fun MessageInputBar(
                         )
                     }
                 } else {
-                    AutoResizeTextarea(
+                    AppleEmojiInput(
                         value = text,
                         onValueChange = onTextChange,
+                        controller = emojiEditor,
                         // 不给占位文案。聊天页的输入框摆在会话下方、两侧是语音和表情按钮，
                         // 它是什么已经无需再说一遍；一句「输入消息...」只是让空框里永远挂着
                         // 一行灰字。微信和 Telegram 的输入框也都是空的。
-                        // 「这里能打字」改由边框传达，见下面的 outlined。
-                        placeholder = "",
+                        // 「这里能打字」改由边框传达，由专用输入包装绘制。
                         // 没有边框时，muted 底色和输入栏背景太接近，整条看起来是一片背景
                         // 而不是一个可点的输入框。
-                        outlined = true,
                         modifier = Modifier.weight(1f),
                         maxLines = 8,
                         // 单行要和「按住 说话」**一样高**（inputControlHeight），否则语音/键盘
@@ -3359,7 +3298,7 @@ private fun MessageInputBar(
 
                 // 右侧：表情
                 CircleIconButton(
-                    modifier = Modifier.padding(bottom = inputButtonInset),
+                    modifier = Modifier.padding(bottom = inputButtonInset).testTag(com.netonstream.privchat.ui.sticker.StickerPanelTestTags.Toggle),
                     // 笑脸，不是桃心：这个按钮开的是表情面板，桃心表达的是"喜欢/收藏"。
                     //
                     // 用 App 自带的 emoji_face 而不是 Phosphor 的 smiley：后者自带一圈脸廓，
@@ -3368,10 +3307,11 @@ private fun MessageInputBar(
                     // 自有图标的落地方式见 DESIGN_SYSTEM_SPEC 11.4。
                     icon = PrivChatIcons.emojiFace,
                     onClick = {
-                    if (panelMode == InputPanelMode.EMOJI || displayedPanelMode == InputPanelMode.EMOJI) {
+                    if (panelMode == InputPanelMode.STICKER || displayedPanelMode == InputPanelMode.STICKER ||
+                        panelMode == InputPanelMode.EMOJI || displayedPanelMode == InputPanelMode.EMOJI) {
                         closeAllPanels()
                     } else {
-                        requestPanel(InputPanelMode.EMOJI)
+                        requestPanel(InputPanelMode.STICKER)
                         }
                         if (voiceMode) voiceMode = false
                     }
@@ -3429,83 +3369,10 @@ private fun MessageInputBar(
                         .height(panelHostHeight)
                         .clip(RoundedCornerShape(10.dp))
                         .background(colors.background)
-                        .clickable { }
+                        // Consume background taps without merging every sticker into one AX button.
+                        .pointerInput(Unit) { detectTapGestures(onTap = {}) }
                 ) {
-                    if (displayedPanelMode == InputPanelMode.EMOJI) {
-                        BoxWithConstraints(
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                        val emojiCellMinWidth = 48.dp
-                        val emojiCellSpacing = 3.dp
-                        val emojiColumns = (((maxWidth.value + emojiCellSpacing.value) /
-                            (emojiCellMinWidth.value + emojiCellSpacing.value)).toInt())
-                            .coerceIn(1, 7)
-                        val emojiRows = remember(emojis, emojiColumns) { emojis.chunked(emojiColumns) }
-                        val emojiGridHorizontalPadding = emojiCellSpacing
-                        val emojiGridVerticalPadding = emojiCellSpacing
-                        val emojiActionInset = 44.dp
-                        val emojiContentWidth =
-                            maxWidth - (emojiGridHorizontalPadding * 2) - (emojiCellSpacing * (emojiColumns - 1))
-                        val emojiCellSize = emojiContentWidth / emojiColumns
-
-                        ScrollView(
-                            modifier = Modifier.fillMaxSize(),
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(
-                                        start = emojiGridHorizontalPadding,
-                                        end = emojiGridHorizontalPadding,
-                                        top = emojiGridVerticalPadding,
-                                        bottom = emojiGridVerticalPadding + emojiActionInset,
-                                    )
-                            ) {
-                                emojiRows.forEachIndexed { rowIndex, rowEmojis ->
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(emojiCellSpacing),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        rowEmojis.forEach { emoji ->
-                                            Box(
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .height(emojiCellSize)
-                                                    .clickable { onTextChange(text + emoji) },
-                                                contentAlignment = Alignment.Center,
-                                            ) {
-                                                Text(text = emoji, style = Theme.typography.headlineSmall)
-                                            }
-                                        }
-                                        repeat((emojiColumns - rowEmojis.size).coerceAtLeast(0)) {
-                                            Spacer(modifier = Modifier.weight(1f))
-                                        }
-                                    }
-                                    if (rowIndex < emojiRows.lastIndex) VerticalSpacer(emojiCellSpacing)
-                                }
-                            }
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(end = 10.dp, bottom = 8.dp),
-                            contentAlignment = Alignment.BottomEnd,
-                        ) {
-                            Button(
-                                text = strings.delete,
-                                theme = ButtonTheme.DEFAULT,
-                                size = ButtonSize.SMALL,
-                                onClick = {
-                                    if (text.isNotEmpty()) onTextChange(text.dropLastGraphemeCluster())
-                                },
-                            )
-                        }
-                        }
-                    }
-
-                    if (displayedPanelMode == InputPanelMode.STICKER) {
+                    if (displayedPanelMode == InputPanelMode.STICKER || displayedPanelMode == InputPanelMode.EMOJI) {
                         com.netonstream.privchat.ui.sticker.StickerPanel(onSend = onSticker)
                     }
 
@@ -3725,6 +3592,7 @@ private fun MessageActionsWrapper(
     onReportMessage: ((MessageEntry) -> Unit)? = null,
     canPin: Boolean = false,
     isPinned: Boolean = false,
+    canUnpin: Boolean = canPin,
     onPinMessage: ((MessageEntry, Boolean) -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
@@ -3748,6 +3616,7 @@ private fun MessageActionsWrapper(
         nowMs = currentTimeMillis(),
         canPin = canPin,
         isPinned = isPinned,
+        canUnpin = canUnpin,
     )
     val menuActions = MessageActionPolicy.menuActions(ctx).map { kind ->
         kind.toMessageAction(message, strings) {
@@ -3894,7 +3763,8 @@ private fun MessageActionsWrapper(
 
     MessageActionsMenu(
         actions = menuActions + listOfNotNull(readEntryAction),
-        modifier = Modifier.widthIn(max = 260.dp),
+        modifier = Modifier.widthIn(max = 260.dp).then(
+            serverMessageId?.let { Modifier.testTag(PinTestTags.source(it)) } ?: Modifier),
         reactions = reactions,
         onReaction = onReaction,
         isSelf = isSelf,
@@ -4014,11 +3884,13 @@ private fun ReplyBar(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = strings.replyToPrefix.withArgs(senderLabel),
+                modifier = Modifier.appleEmoji(),
                 style = Theme.typography.label,
                 color = colors.mutedForeground,
             )
             Text(
                 text = summarizeForReply(strings, message),
+                modifier = Modifier.appleEmoji(),
                 style = Theme.typography.bodySmall,
                 color = colors.foreground,
             )
@@ -4071,12 +3943,14 @@ private fun ReplyQuoteBanner(
             if (senderText != null) {
                 Text(
                     text = senderText,
+                    modifier = Modifier.appleEmoji(),
                     style = Theme.typography.label,
                     color = secondary,
                 )
             }
             Text(
                 text = summary,
+                modifier = Modifier.appleEmoji(),
                 style = Theme.typography.bodySmall,
                 color = foreground,
             )

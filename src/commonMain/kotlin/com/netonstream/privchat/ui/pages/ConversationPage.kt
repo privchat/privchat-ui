@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.pages
 
+import com.netonstream.privchat.ui.emoji.appleEmoji
 import com.tencent.kuikly.compose.ui.platform.LocalConfiguration
 import com.tencent.kuikly.compose.ui.input.pointer.pointerInput
 import com.tencent.kuikly.compose.foundation.gestures.awaitFirstDown
@@ -480,7 +481,7 @@ private fun ChannelItem(
                         style = Theme.typography.bodyLarge,
                         color = colors.foreground,
                         maxLines = 1,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).appleEmoji()
                     )
 
                     HorizontalSpacer(8.dp)
@@ -525,7 +526,7 @@ private fun ChannelItem(
                                 style = Theme.typography.bodySmall,
                                 color = colors.mutedForeground,
                                 maxLines = 1,
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.weight(1f).appleEmoji(),
                             )
                         }
                     } else {
@@ -534,7 +535,7 @@ private fun ChannelItem(
                             style = Theme.typography.bodySmall,
                             color = colors.mutedForeground,
                             maxLines = 1,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f).appleEmoji()
                         )
                     }
 

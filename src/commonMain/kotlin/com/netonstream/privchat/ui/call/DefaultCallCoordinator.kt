@@ -41,6 +41,8 @@ class DefaultCallCoordinator(
     private var resync: Job? = null
     private var joining: ULong? = null
     private var joinRpc: CompletableDeferred<Unit>? = null
+    private data class MediaJoinFlight(val callId: ULong, val job: Job)
+    private var mediaJoinFlight: MediaJoinFlight? = null
     private var cancelStart = false
     private var leaseMs = 60_000L
     private var peerSession: CallPeerSession? = null
@@ -138,7 +140,7 @@ class DefaultCallCoordinator(
             } finally { rpcDone.complete(Unit) }
             if (!current(ticket)) return
             if (!canConnect(call.callId, ticket)) return
-            try {
+            try { withMediaJoin(call.callId) {
                 mediaLock.withLock {
                     if (!canConnect(call.callId, ticket)) return@withLock
                     owner?.let { previous -> previous.media.disconnect() }
@@ -216,8 +218,13 @@ class DefaultCallCoordinator(
                         awaitPeerRecovery(call.callId, ticket)
                     }
                 }
-            } catch (cancelled: CancellationException) {
-                withContext(NonCancellable) { detach(call.callId) }
+            } } catch (cancelled: CancellationException) {
+                // This device's join RPC succeeded. Cancellation must release its server claim too.
+                withContext(NonCancellable) {
+                    withTimeoutOrNull(5_000) {
+                        if (currentCall(call.callId, ticket)) finish() else detach(call.callId)
+                    }
+                }
                 throw cancelled
             }
             catch (failure: Exception) {
@@ -227,6 +234,13 @@ class DefaultCallCoordinator(
             rpcDone.complete(Unit)
             if (joinRpc === rpcDone) { joinRpc = null; joining = null }
         }
+    }
+
+    private suspend fun withMediaJoin(callId: ULong, block: suspend () -> Unit) = coroutineScope {
+        val flight = MediaJoinFlight(callId, currentCoroutineContext().job)
+        mediaJoinFlight = flight
+        try { block() }
+        finally { if (mediaJoinFlight === flight) mediaJoinFlight = null }
     }
 
     private fun canConnect(callId: ULong, ticket: Long): Boolean =
@@ -251,6 +265,8 @@ class DefaultCallCoordinator(
         heartbeat?.cancel()
         mutableState.value = state.value.copy(busy = true, joined = false, mediaConnected = false)
         try {
+            mediaJoinFlight?.takeIf { it.callId == call.callId && it.job !== currentCoroutineContext().job }
+                ?.job?.cancelAndJoin()
             detach(call.callId)
             if (joining == call.callId) joinRpc?.await()
             if (!current(ticket)) return
@@ -502,6 +518,7 @@ class DefaultCallCoordinator(
         if (closed) return
         closed = true
         epoch++
+        mediaJoinFlight?.job?.cancel()
         heartbeat?.cancel()
         resync?.cancel()
         ringingDeadline?.cancel()

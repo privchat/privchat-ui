@@ -5,6 +5,7 @@ import com.gearui.theme.Theme
 import androidx.compose.runtime.*
 import com.netonstream.privchat.sdk.dto.GroupMemberEntry
 import com.netonstream.privchat.ui.PrivChat
+import com.netonstream.privchat.ui.group.GroupProfilePolicy
 import com.netonstream.privchat.ui.components.ChatAvatar
 import com.netonstream.privchat.ui.models.displayName
 import com.netonstream.privchat.ui.models.isAdmin
@@ -79,7 +80,7 @@ fun GroupMembersPage(
     val strings = PrivChatI18n.strings
     // 系统类型账号(user_type==1)已在上游 loadGroupMembers 按 user_type 滤除,这里只排序。
     val sorted = members
-        .sortedWith(compareByDescending<GroupMemberEntry> { it.role }.thenBy { it.displayName })
+        .sortedWith(compareBy<GroupMemberEntry> { GroupProfilePolicy.memberRoleOrder(it.role) }.thenBy { it.displayName })
     val scope = rememberCoroutineScope()
 
     // 成员搜索。几十人还能翻，几百人的群靠翻是找不到人的。
