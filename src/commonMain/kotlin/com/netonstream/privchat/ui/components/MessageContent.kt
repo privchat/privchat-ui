@@ -1103,26 +1103,15 @@ private fun LocationContent(
     val density = com.tencent.kuikly.compose.ui.platform.LocalDensity.current
     val widthPx = with(density) { 220.dp.roundToPx() }
     val heightPx = with(density) { 110.dp.roundToPx() }
-    var preview by remember(previewLease, presentation, thumb, widthPx, heightPx) {
-        mutableStateOf<String?>(null)
-    }
-    LaunchedEffect(previewLease, presentation, thumb, widthPx, heightPx) {
+    val previewState = remember(previewLease, presentation, thumb, widthPx, heightPx) {
         if (thumb == null && previewLease != null && presentation != null) {
-            try {
-                val image = com.netonstream.privchat.ui.platform.LocationPreviewBridge.load(
-                    previewLease, presentation, widthPx, heightPx,
-                )
-                if (com.netonstream.privchat.ui.platform.LocationPreviewBridge.registration === previewLease) {
-                    preview = image
-                }
-            } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                // A failed preview must not prevent text display, navigation, or message delivery.
-            }
-        }
+            com.netonstream.privchat.ui.platform.LocationPreviewState(previewLease, presentation, widthPx, heightPx)
+        } else null
     }
-    val displayedImage = thumb ?: preview
+    LaunchedEffect(previewState, previewState?.attempt) {
+        previewState?.load()
+    }
+    val displayedImage = thumb ?: previewState?.image
     Column(modifier = clickMod.width(220.dp)) {
         Box(
             modifier = Modifier
@@ -1140,6 +1129,14 @@ private fun LocationContent(
                     modifier = Modifier.fillMaxWidth().height(110.dp),
                     // Preserve edge attribution for native snapshots and historical map images.
                     contentScale = ContentScale.Fit,
+                )
+            }
+            if (previewState?.canRetry == true) {
+                Text(
+                    text = PrivChatI18n.strings.retry,
+                    style = Theme.typography.label,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                        .clickable { previewState.retry() }.padding(8.dp),
                 )
             }
         }
