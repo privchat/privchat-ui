@@ -2,6 +2,8 @@ package com.netonstream.privchat.ui.pages
 
 import com.gearui.components.icon.*
 import com.gearui.components.tabs.TabPager
+import com.gearui.components.refresh.pullRefreshItem
+import com.gearui.components.refresh.rememberPullRefreshState
 import com.gearui.foundation.list.CellDefaults
 import com.gearui.primitives.Divider
 import com.gearui.foundation.layout.Spacing
@@ -78,6 +80,7 @@ fun ContactPage(
     onFriendSettings: (FriendEntry) -> Unit = {},
     networkStatusBar: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
+    onRefresh: (suspend () -> Unit)? = null,
 ) {
     val strings = PrivChatI18n.strings
     val friends by PrivChat.friends.collectAsState()
@@ -146,11 +149,13 @@ fun ContactPage(
                     searchQuery = searchQuery,
                     onFriendClick = onFriendClick,
                     onFriendRequestClick = onFriendRequestClick,
+                    onRefresh = onRefresh,
                 )
                 CONTACT_TAB_GROUPS -> GroupsTabContent(
                     groups = groups,
                     searchQuery = searchQuery,
                     onGroupClick = onGroupClick,
+                    onRefresh = onRefresh,
                 )
             }
         }
@@ -165,6 +170,7 @@ private fun FriendsTabContent(
     searchQuery: String,
     onFriendClick: (FriendEntry) -> Unit,
     onFriendRequestClick: () -> Unit,
+    onRefresh: (suspend () -> Unit)?,
 ) {
     val strings = PrivChatI18n.strings
 
@@ -203,15 +209,20 @@ private fun FriendsTabContent(
 
     // 索引条要滚到某个字母，就得知道那个分组的首行在列表里的第几个 item。
     // 前面固定有两项：好友申请入口、以及「好友 (n)」这个分组标题。
-    val sectionStarts = remember(sections) {
+    val sectionStarts = remember(sections, onRefresh != null) {
         // 一个字母段 = 列表里的一个 item（整张 CellGroup 卡片）。
-        sections.second.mapIndexed { index, (letter, _) -> letter to LEADING_ROWS + index }
+        sections.second.mapIndexed { index, (letter, _) -> letter to LEADING_ROWS + (if (onRefresh != null) 1 else 0) + index }
     }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    var refreshing by remember { mutableStateOf(false) }
+    val refreshState = rememberPullRefreshState(refreshing)
 
     Box(modifier = Modifier.fillMaxSize()) {
     GearLazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
+        if (onRefresh != null) pullRefreshItem(state = refreshState, listState = listState, onRefresh = {
+            if (!refreshing) { refreshing = true; scope.launch { try { onRefresh() } finally { refreshing = false } } }
+        })
         // 好友申请入口（始终顶置；搜索时也保留，便于直接进入）。
         // 它是一个动作，不是通讯录里的一个人——所以给它自己的卡片，和下面的名单分开。
         item {
@@ -292,6 +303,7 @@ private fun GroupsTabContent(
     groups: List<GroupEntry>,
     searchQuery: String,
     onGroupClick: (GroupEntry) -> Unit,
+    onRefresh: (suspend () -> Unit)?,
 ) {
     val strings = PrivChatI18n.strings
 
@@ -299,18 +311,22 @@ private fun GroupsTabContent(
         g.displayName.contains(searchQuery, ignoreCase = true)
     }
 
-    if (filtered.isEmpty()) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            EmptyState(message = strings.contactGroupsEmpty)
-        }
-        return
-    }
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    var refreshing by remember { mutableStateOf(false) }
+    val refreshState = rememberPullRefreshState(refreshing)
 
     // 和好友页同一种东西：一张卡片，而不是一列浮在页面底色上的裸 Cell。
-    GearLazyColumn(modifier = Modifier.fillMaxSize()) {
+    GearLazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
+        if (onRefresh != null) pullRefreshItem(state = refreshState, listState = listState, onRefresh = {
+            if (!refreshing) { refreshing = true; scope.launch { try { onRefresh() } finally { refreshing = false } } }
+        })
+        if (filtered.isEmpty()) item {
+            Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                EmptyState(message = strings.contactGroupsEmpty)
+            }
+        }
+        else
         item {
             CellGroup(
                 items = filtered,

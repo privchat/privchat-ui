@@ -61,6 +61,8 @@ fun FriendSettingsPage(
     val strings = PrivChatI18n.strings
     val colors = Theme.colors
     val scope = rememberCoroutineScope()
+    // PERSONAL_ASSISTANT is a real protected friend; the server also enforces this rule.
+    val protectedAssistant = friend.userType.toInt() == 3
 
     // 特别关注状态
     var isSpecialFollow by remember { mutableStateOf(false) }
@@ -91,12 +93,14 @@ fun FriendSettingsPage(
                     arrow = true,
                     onClick = onEditRemark
                 )
+                if (!protectedAssistant) {
                 Divider(insetStart = 16.dp)
                 Cell(
                     title = strings.friendSettingsShare,
                     arrow = true,
                     onClick = onShareFriend
                 )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -114,6 +118,7 @@ fun FriendSettingsPage(
                         )
                     }
                 )
+                if (!protectedAssistant) {
                 Divider(insetStart = 16.dp)
                 Cell(
                     title = strings.userProfileBlockUser,
@@ -130,21 +135,22 @@ fun FriendSettingsPage(
                         )
                     }
                 )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // 举报 + 删除：一组破坏性/治理操作（App Store UGC 1.2）。
-            Card(padding = PaddingValues(0.dp)) {
+            if (!protectedAssistant || onReportUser != null) Card(padding = PaddingValues(0.dp)) {
                 if (onReportUser != null) {
                     Cell(
                         title = strings.friendSettingsReport,
                         onClick = { onReportUser.invoke() },
                     )
-                    Divider(insetStart = 16.dp)
+                    if (!protectedAssistant) Divider(insetStart = 16.dp)
                 }
                 // 破坏性操作：红字（UIKit destructive 行的做法）。
-                Cell(
+                if (!protectedAssistant) Cell(
                     title = strings.friendSettingsDelete,
                     titleColor = colors.destructive,
                     onClick = { showDeleteConfirmDialog = true },
@@ -155,7 +161,7 @@ fun FriendSettingsPage(
 
     // 删除确认 Dialog
     Dialog.Host(
-        visible = showDeleteConfirmDialog,
+        visible = showDeleteConfirmDialog && !protectedAssistant,
         dismissOnOutside = true,
         onDismiss = { showDeleteConfirmDialog = false }
     ) {
