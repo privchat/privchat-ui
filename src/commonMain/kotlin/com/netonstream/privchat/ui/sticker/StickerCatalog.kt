@@ -32,6 +32,8 @@ data class StickerPack(
 
 data class StickerSession(val platform: String, val account: ULong, val epoch: Int)
 
+data class StickerSearchResult(val packs: List<StickerPack>, val stickers: List<CatalogSticker>)
+
 /** Resource availability only; this never creates an installation relationship. */
 enum class StickerOfflineReadiness { UNAVAILABLE, NOT_READY, READY, FAILED }
 data class StickerPackArchive(val versionRowId: String, val sha256: String, val size: Long)
@@ -50,6 +52,19 @@ interface StickerCatalog {
     suspend fun uninstall(packId: String)
     suspend fun reorder(packIds: List<String>)
     suspend fun resolve(stickerId: String): CatalogSticker
+    suspend fun favorites(): List<CatalogSticker> = emptyList()
+    suspend fun addFavorite(stickerId: String) { error("favorites unavailable") }
+    suspend fun removeFavorite(stickerId: String) { error("favorites unavailable") }
+    suspend fun search(query: String): StickerSearchResult {
+        val text = query.trim()
+        if (text.isEmpty()) return StickerSearchResult(emptyList(), emptyList())
+        val packs = store()
+        return StickerSearchResult(
+            packs.filter { it.names.values.any { name -> name.contains(text, ignoreCase = true) } },
+            (packs.flatMap { it.stickers } + favorites()).distinctBy { it.stickerId }
+                .filter { it.label.contains(text, ignoreCase = true) }.take(100),
+        )
+    }
 }
 
 /** Resolve only the painter source. Message/outbox/catalog identities keep the original URL. */

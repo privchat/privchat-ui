@@ -8,6 +8,7 @@ import kotlinx.coroutines.sync.withLock
 /** Store availability must never gate an already installed pack. */
 internal class StickerPanelState(private val catalog: StickerCatalog, private val owner: StickerSession) {
     private val installationMutex = Mutex()
+    private val favoritesMutex = Mutex()
     var installed by mutableStateOf<List<StickerPack>>(emptyList()); private set
     var store by mutableStateOf<List<StickerPack>>(emptyList()); private set
     var installedReady by mutableStateOf(false); private set
@@ -19,6 +20,15 @@ internal class StickerPanelState(private val catalog: StickerCatalog, private va
     var actionError by mutableStateOf<Throwable?>(null); private set
     var busy by mutableStateOf(false); private set
     var selectedPackId by mutableStateOf<String?>(null); private set
+    var favorites by mutableStateOf<List<CatalogSticker>>(emptyList()); private set
+    var favoritesLoading by mutableStateOf(false); private set
+    var favoritesError by mutableStateOf<Throwable?>(null); private set
+    var searchResult by mutableStateOf(StickerSearchResult(emptyList(), emptyList())); private set
+    var searchLoading by mutableStateOf(false); private set
+    var searchError by mutableStateOf<Throwable?>(null); private set
+    private var searchRevision = 0
+    val defaultPack: StickerPack? get() = installed.firstOrNull { it.defaultInstall }
+        ?: installed.firstOrNull { it.packId == "apple-smileys-emotion" }
     val selectedPack: StickerPack? get() = installed.firstOrNull { it.packId == selectedPackId }
         ?: installed.firstOrNull()
     fun offlineReadiness(packId: String): StickerOfflineReadiness =
@@ -28,7 +38,9 @@ internal class StickerPanelState(private val catalog: StickerCatalog, private va
         if (installed.any { it.packId == packId }) selectedPackId = packId
     }
 
-    suspend fun install(packId: String) = perform(changesInstallation = true) { catalog.install(packId) }
+    suspend fun install(packId: String) = perform(changesInstallation = true) {
+        if (installed.none { it.packId == packId }) catalog.install(packId)
+    }
     suspend fun uninstall(packId: String) = perform(changesInstallation = true) { catalog.uninstall(packId) }
     suspend fun move(packId: String, delta: Int) = perform(changesInstallation = true) {
         val ids = installed.map { it.packId }.toMutableList()
@@ -42,6 +54,47 @@ internal class StickerPanelState(private val catalog: StickerCatalog, private va
 
     private fun checkSession() {
         if (catalog.session != owner) throw CancellationException("sticker session changed")
+    }
+    fun dismissActionError() { actionError = null }
+
+    suspend fun refreshFavorites() = favoritesMutex.withLock { loadFavorites() }
+
+    private suspend fun loadFavorites() {
+        checkSession()
+        favoritesLoading = true
+        favoritesError = null
+        try {
+            val value = catalog.favorites()
+            checkSession()
+            favorites = value.distinctBy { it.stickerId }
+        } catch (cancel: CancellationException) { throw cancel }
+        catch (failure: Exception) { favoritesError = failure }
+        finally { favoritesLoading = false }
+    }
+
+    suspend fun removeFavorite(stickerId: String) = perform {
+        favoritesMutex.withLock {
+            checkSession()
+            catalog.removeFavorite(stickerId)
+            checkSession()
+            loadFavorites()
+        }
+    }
+
+    suspend fun search(query: String) {
+        checkSession()
+        val revision = ++searchRevision
+        searchResult = StickerSearchResult(emptyList(), emptyList())
+        searchError = null
+        searchLoading = query.isNotBlank()
+        if (query.isBlank()) return
+        try {
+            val value = catalog.search(query.trim().take(100))
+            checkSession()
+            if (revision == searchRevision) searchResult = value
+        } catch (cancel: CancellationException) { throw cancel }
+        catch (failure: Exception) { if (revision == searchRevision) searchError = failure }
+        finally { if (revision == searchRevision) searchLoading = false }
     }
     suspend fun refreshInstalled() {
         installationMutex.withLock { loadInstalled() }
@@ -75,8 +128,9 @@ internal class StickerPanelState(private val catalog: StickerCatalog, private va
         catch (failure: Exception) { storeError = failure }
         finally { storeLoading = false }
     }
-    fun canSend(pack: StickerPack): Boolean = !busy && installedReady &&
+    fun canSendPackForAction(pack: StickerPack): Boolean = installedReady &&
         pack.canSend(installed.any { it.packId == pack.packId }) && catalog.session == owner
+    fun canSend(pack: StickerPack): Boolean = !busy && canSendPackForAction(pack)
 
     suspend fun perform(changesInstallation: Boolean = false, action: suspend () -> Unit) {
         if (busy) return

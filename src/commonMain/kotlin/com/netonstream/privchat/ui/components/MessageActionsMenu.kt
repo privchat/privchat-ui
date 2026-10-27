@@ -396,11 +396,12 @@ fun MessageActionsMenu(
     //
     // 更彻底的做法是把「哪条消息的菜单开着」提到页面一级，让它不随行的回收而消失；那是
     // 一次对这个组件的结构性改动，先不做。
-    val openMenu: () -> Unit = remember(onMenuOpen) {
+    val currentOnMenuOpen by rememberUpdatedState(onMenuOpen)
+    val openMenu: () -> Unit = remember {
         {
             if (!visible) {
                 visible = true
-                onMenuOpen?.invoke()
+                currentOnMenuOpen?.invoke()
             }
         }
     }

@@ -2945,6 +2945,7 @@ private fun MessageInputBar(
     var reservePanelHost by remember { mutableStateOf(false) }
     var overlayReservedPanelHost by remember { mutableStateOf(false) }
     var inputFocused by remember { mutableStateOf(false) }
+    var stickerSearchActive by remember { mutableStateOf(false) }
     val inputFocusRequester = remember { FocusRequester() }
     var pendingAutoFocus by remember { mutableStateOf(false) }
     // REPLY_SPEC §4.3：进入回复态后自动聚焦文本输入并弹键盘；语音模式不触发，避免打断录音体验。
@@ -3009,8 +3010,8 @@ private fun MessageInputBar(
     // 也跟着 focusRequestNonce 重跑：pendingAutoFocus 只在文本框真的拿到焦点时才归零，
     // 上一次没落地就还是 true——再置一次 true 不是变化，这个 effect 就不会重跑，
     // 于是"第二次请求焦点"悄悄丢掉了。
-    LaunchedEffect(voiceMode, pendingAutoFocus, focusRequestNonce) {
-        if (!voiceMode && pendingAutoFocus) {
+    LaunchedEffect(voiceMode, pendingAutoFocus, focusRequestNonce, stickerSearchActive) {
+        if (!voiceMode && pendingAutoFocus && !stickerSearchActive) {
             // 等 textarea 完成组合并挂上原生输入视图，再请求焦点。焦点先到位、
             // 随后 show() 才能把软键盘唤起（先 show 后 focus 会被忽略）。
             delay(80)
@@ -3034,7 +3035,7 @@ private fun MessageInputBar(
     val hostVisible = displayedPanelMode != InputPanelMode.NONE || pendingPanelMode != null || reservePanelHost
     // 过渡期间用键盘高度撑起面板区域，使输入框位置保持不动；panel 显示时 bottom padding 切换为 collapsed inset
     val effectivePanelHeight = ((lastKeyboardHeight - panelTopSpacing.value).coerceAtLeast(panelHostHeight.value)).dp
-    val effectiveBottomPadding = if (hostVisible) {
+    val effectiveBottomPadding = if (hostVisible && !stickerSearchActive) {
         systemSafeAreaBottom
     } else {
         maxOf(systemSafeAreaBottom, keyboardHeight)
@@ -3045,6 +3046,7 @@ private fun MessageInputBar(
             "closeAllPanels panelMode=$panelMode displayed=$displayedPanelMode pending=$pendingPanelMode reserve=$reservePanelHost overlayReserve=$overlayReservedPanelHost systemBottom=${systemSafeAreaBottom.value} keyboard=${keyboardHeight.value}"
         )
         pendingPanelMode = null
+        stickerSearchActive = false
         reservePanelHost = false
         overlayReservedPanelHost = false
         displayedPanelMode = InputPanelMode.NONE
@@ -3277,14 +3279,15 @@ private fun MessageInputBar(
                         minHeight = inputControlHeight,
                         verticalPadding = 8.dp,
                         lineHeight = 19.sp,
-                        autoFocus = pendingAutoFocus,
+                        autoFocus = pendingAutoFocus && !stickerSearchActive,
+                        enabled = !stickerSearchActive,
                         focusRequester = inputFocusRequester,
                         onFocusChanged = { focused ->
                             logMessageInputBar(
                                 "focusChanged focused=$focused panelMode=$panelMode displayed=$displayedPanelMode pending=$pendingPanelMode reserve=$reservePanelHost overlayReserve=$overlayReservedPanelHost keyboard=${keyboardHeight.value}"
                             )
                             inputFocused = focused
-                            if (focused) {
+                            if (focused && !stickerSearchActive) {
                                 pendingAutoFocus = false
                                 if (displayedPanelMode != InputPanelMode.NONE || pendingPanelMode != null) {
                                     transitionPanelToKeyboard()
@@ -3373,7 +3376,11 @@ private fun MessageInputBar(
                         .pointerInput(Unit) { detectTapGestures(onTap = {}) }
                 ) {
                     if (displayedPanelMode == InputPanelMode.STICKER || displayedPanelMode == InputPanelMode.EMOJI) {
-                        com.netonstream.privchat.ui.sticker.StickerPanel(onSend = onSticker)
+                        com.netonstream.privchat.ui.sticker.StickerPanel(onSend = onSticker,
+                            onSearchActiveChange = { active ->
+                                stickerSearchActive = active
+                                if (active) pendingAutoFocus = false
+                            })
                     }
 
                     if (displayedPanelMode == InputPanelMode.PLUS) {
@@ -3716,6 +3723,59 @@ private fun MessageActionsWrapper(
         }
     }
 
+    val stickerCatalog = com.netonstream.privchat.ui.sticker.StickerUiBridge.catalog
+    val stickerSession = stickerCatalog?.session
+    val stickerAccount by PrivChat.currentUserId.collectAsState()
+    val stickerContent = message.parsedContent
+    val favoriteStickerId = stickerContent.stickerId?.takeIf {
+        !isSelf && !message.isRevoked && stickerContent.type == MessageType.STICKER &&
+            stickerSession != null && stickerSession.account == stickerAccount &&
+            com.netonstream.privchat.ui.sticker.canResolveStickerPag(
+                it, stickerContent.attachmentUrl, stickerSession.platform,
+            )
+    }
+    var stickerIsFavorite by remember(message.id, favoriteStickerId, stickerCatalog, stickerSession) {
+        mutableStateOf<Boolean?>(null)
+    }
+    var stickerFavoriteBusy by remember(message.id, stickerCatalog, stickerSession) { mutableStateOf(false) }
+    var stickerFavoriteLookup by remember(message.id, stickerCatalog, stickerSession) {
+        mutableStateOf<kotlinx.coroutines.Job?>(null)
+    }
+    fun ownsStickerSession(): Boolean = stickerSession != null &&
+        com.netonstream.privchat.ui.sticker.StickerUiBridge.catalog === stickerCatalog &&
+        stickerCatalog?.session == stickerSession && PrivChat.currentUserId.value == stickerSession.account
+
+    val stickerLibraryStrings = com.netonstream.privchat.ui.i18n.stickerLibraryStrings(PrivChatI18n.languageTag)
+    val favoriteAction = if (favoriteStickerId != null && stickerCatalog != null) {
+        MessageAction(
+            label = if (stickerIsFavorite == true) stickerLibraryStrings.removeFavorite else stickerLibraryStrings.favorite,
+            icon = Icons.star,
+            disabled = stickerIsFavorite == null || stickerFavoriteBusy,
+            onClick = {
+                if (ownsStickerSession() && !stickerFavoriteBusy && stickerIsFavorite != null) {
+                    val remove = stickerIsFavorite == true
+                    stickerFavoriteBusy = true
+                    scope.launch {
+                        try {
+                            withContext(Dispatchers.Default) {
+                                if (!ownsStickerSession()) throw CancellationException("sticker session changed")
+                                if (remove) stickerCatalog.removeFavorite(favoriteStickerId)
+                                else stickerCatalog.addFavorite(favoriteStickerId)
+                            }
+                            if (ownsStickerSession()) stickerIsFavorite = !remove
+                        } catch (error: CancellationException) {
+                            throw error
+                        } catch (error: Exception) {
+                            if (ownsStickerSession()) Toast.error(UserFacingError.message(error, strings.networkError))
+                        } finally {
+                            stickerFavoriteBusy = false
+                        }
+                    }
+                }
+            },
+        )
+    } else null
+
     val canReact = MessageActionPolicy.canReact(ctx)
     val reactions = if (canReact) DefaultMessageReactions else emptyList()
     val onReaction: ((String) -> Unit)? = if (canReact) {
@@ -3762,15 +3822,33 @@ private fun MessageActionsWrapper(
     }
 
     MessageActionsMenu(
-        actions = menuActions + listOfNotNull(readEntryAction),
+        actions = menuActions + listOfNotNull(favoriteAction, readEntryAction),
         modifier = Modifier.widthIn(max = 260.dp).then(
             serverMessageId?.let { Modifier.testTag(PinTestTags.source(it)) } ?: Modifier),
         reactions = reactions,
         onReaction = onReaction,
         isSelf = isSelf,
         pointerInputKey = message.id,
-        onMenuOpen = if (canQueryReadDetail && serverMessageId != null) {
-            {
+        onMenuOpen = {
+            if (favoriteStickerId != null && stickerCatalog != null && !stickerFavoriteBusy && ownsStickerSession()) {
+                stickerFavoriteLookup?.cancel()
+                stickerIsFavorite = null
+                stickerFavoriteLookup = scope.launch {
+                    try {
+                        val favorites = withContext(Dispatchers.Default) {
+                            if (!ownsStickerSession()) throw CancellationException("sticker session changed")
+                            stickerCatalog.favorites()
+                        }
+                        if (ownsStickerSession()) stickerIsFavorite = favorites.any { it.stickerId == favoriteStickerId }
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (_: Exception) {
+                        // A failed membership lookup must not prevent an idempotent add.
+                        if (ownsStickerSession()) stickerIsFavorite = false
+                    }
+                }
+            }
+            if (canQueryReadDetail && serverMessageId != null) {
                 scope.launch {
                     withContext(Dispatchers.Default) {
                         PrivChat.client.messageReadStats(serverMessageId, message.channelId)
@@ -3779,8 +3857,6 @@ private fun MessageActionsWrapper(
                     }.onSuccess { readStats = it }
                 }
             }
-        } else {
-            null
         },
         bubble = content,
     )
