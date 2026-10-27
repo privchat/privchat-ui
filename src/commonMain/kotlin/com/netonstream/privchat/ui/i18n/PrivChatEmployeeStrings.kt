@@ -15,11 +15,11 @@ data class PrivChatEmployeeStrings(
 
 internal val enEmployees = PrivChatEmployeeStrings(
     title = "Virtual employees", create = "Create employee", edit = "Edit employee", nickname = "Nickname",
-    role = "Role instructions", sessionTitle = "Session title (optional)", executor = "Executor", model = "Model (optional)",
+    role = "Role instructions", sessionTitle = "Session title (optional)", executor = "Executor", model = "Model",
     workdir = "Authorized directory on remote node", newSession = "New managed session", bindSession = "Bind managed session",
     configOnly = "Creates configuration only. A new native session starts on your first explicit send; no model is called to create employee details.",
     roleHint = "Role changes apply on the next explicit send. Role instructions do not grant permissions or enforce read-only access.",
-    immutableHint = "Node, executor and directory are fixed after binding. Create another employee for a different environment.",
+    immutableHint = "Profile edits do not change the work binding. Use Change work binding for a different environment.",
     managedOnly = "Only your private Weey-managed sessions are listed. History stays private and is not shared with a workspace.",
     discoveryUnavailable = "External session discovery / takeover is not verified. Create a new managed session instead.",
     noWorkdirs = "No authorized directories reported. Configure a work root on this node, then refresh.",
@@ -35,11 +35,11 @@ internal val enEmployees = PrivChatEmployeeStrings(
 
 internal val zhEmployees = PrivChatEmployeeStrings(
     title = "虚拟员工", create = "创建员工", edit = "编辑员工", nickname = "昵称",
-    role = "角色指令", sessionTitle = "会话标题（可选）", executor = "执行器", model = "模型（可选）",
+    role = "角色指令", sessionTitle = "会话标题（可选）", executor = "执行器", model = "模型",
     workdir = "远程节点的授权目录", newSession = "新建托管会话", bindSession = "绑定已有托管会话",
     configOnly = "仅创建配置。首次明确发送时才新建原生会话；不会调用模型生成员工资料。",
     roleHint = "角色修改在下一次明确发送时生效。角色指令不授予权限，也不构成只读限制。",
-    immutableHint = "绑定后节点、执行器和目录不可修改。需要其他环境时请新建员工。",
+    immutableHint = "资料编辑不会更换工作绑定。需要其他环境时请使用独立的更换工作绑定操作。",
     managedOnly = "仅列出你私有的 Weey 托管会话。历史保持私有，不会共享到工作空间。",
     discoveryUnavailable = "非托管会话发现及接管尚未验证，请新建托管会话。",
     noWorkdirs = "节点未上报授权目录，请在该节点配置工作根后刷新。",
@@ -55,11 +55,11 @@ internal val zhEmployees = PrivChatEmployeeStrings(
 
 internal val hantEmployees = PrivChatEmployeeStrings(
     title = "虛擬員工", create = "建立員工", edit = "編輯員工", nickname = "暱稱",
-    role = "角色指令", sessionTitle = "會話標題（選填）", executor = "執行器", model = "模型（選填）",
+    role = "角色指令", sessionTitle = "會話標題（選填）", executor = "執行器", model = "模型",
     workdir = "遠端節點的授權目錄", newSession = "新建託管會話", bindSession = "綁定既有託管會話",
     configOnly = "僅建立設定。首次明確傳送時才新建原生會話；不會呼叫模型產生員工資料。",
     roleHint = "角色修改在下一次明確傳送時生效。角色指令不授予權限，也不構成唯讀限制。",
-    immutableHint = "綁定後節點、執行器與目錄不可修改。需要其他環境時請新建員工。",
+    immutableHint = "資料編輯不會更換工作綁定。需要其他環境時請使用獨立的更換工作綁定操作。",
     managedOnly = "僅列出你私有的 Weey 託管會話。歷史保持私有，不會分享到工作空間。",
     discoveryUnavailable = "非託管會話探索與接管尚未驗證，請新建託管會話。",
     noWorkdirs = "節點未回報授權目錄，請在該節點設定工作根後重新整理。",
@@ -75,11 +75,11 @@ internal val hantEmployees = PrivChatEmployeeStrings(
 
 internal val viEmployees = PrivChatEmployeeStrings(
     title = "Nhân viên ảo", create = "Tạo nhân viên", edit = "Sửa nhân viên", nickname = "Biệt danh",
-    role = "Chỉ dẫn vai trò", sessionTitle = "Tiêu đề phiên (tùy chọn)", executor = "Trình thực thi", model = "Mô hình (tùy chọn)",
+    role = "Chỉ dẫn vai trò", sessionTitle = "Tiêu đề phiên (tùy chọn)", executor = "Trình thực thi", model = "Mô hình",
     workdir = "Thư mục được cấp quyền trên thiết bị từ xa", newSession = "Phiên được quản lý mới", bindSession = "Liên kết phiên được quản lý",
     configOnly = "Chỉ tạo cấu hình. Phiên gốc được tạo khi bạn gửi lần đầu; không gọi mô hình để tạo thông tin nhân viên.",
     roleHint = "Đổi vai trò áp dụng ở lần gửi tiếp theo. Chỉ dẫn vai trò không cấp quyền hay bảo đảm chỉ đọc.",
-    immutableHint = "Thiết bị, trình thực thi và thư mục cố định sau khi liên kết. Hãy tạo nhân viên khác để đổi môi trường.",
+    immutableHint = "Sửa hồ sơ không đổi liên kết làm việc. Hãy dùng thao tác đổi liên kết để chuyển môi trường.",
     managedOnly = "Chỉ liệt kê phiên Weey riêng tư của bạn. Lịch sử không được chia sẻ vào không gian làm việc.",
     discoveryUnavailable = "Chưa xác minh khám phá hoặc tiếp quản phiên ngoài Weey. Hãy tạo phiên được quản lý mới.",
     noWorkdirs = "Chưa có thư mục được cấp quyền. Cấu hình thư mục gốc trên thiết bị rồi tải lại.",
