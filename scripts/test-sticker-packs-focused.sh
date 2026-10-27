@@ -50,9 +50,12 @@ sources=(
     "$BASE/sticker/StickerCatalog.kt"
     "$BASE/sticker/StickerPanelState.kt"
     "$BASE/sticker/StickerPanelTestTags.kt"
+    "$BASE/sticker/StickerPagIdentity.kt"
     "$BASE/i18n/PrivChatStickerPanelStrings.kt"
+    "$BASE/i18n/StickerLibraryStrings.kt"
     "$ROOT/src/commonTest/kotlin/com/netonstream/privchat/ui/sticker/StickerPanelStateTest.kt"
     "$ROOT/src/commonTest/kotlin/com/netonstream/privchat/ui/sticker/StickerPackPanelTest.kt"
+    "$ROOT/src/commonTest/kotlin/com/netonstream/privchat/ui/sticker/StickerLibraryStringsTest.kt"
 )
 shasum -a 256 "${sources[@]}" > "$OUT/state-source-hashes.txt"
 java -Xmx768m -cp "$compiler" org.jetbrains.kotlin.cli.jvm.K2JVMCompiler \
@@ -60,5 +63,6 @@ java -Xmx768m -cp "$compiler" org.jetbrains.kotlin.cli.jvm.K2JVMCompiler \
     -no-stdlib -no-reflect -jvm-target 1.8 -classpath "$cp" -d "$OUT/classes" "${sources[@]}"
 java -Xmx512m -cp "$OUT/classes:$cp" org.junit.runner.JUnitCore \
     com.netonstream.privchat.ui.sticker.StickerPanelStateTest \
-    com.netonstream.privchat.ui.sticker.StickerPackPanelTest | tee "$OUT/test.log"
+    com.netonstream.privchat.ui.sticker.StickerPackPanelTest \
+    com.netonstream.privchat.ui.sticker.StickerLibraryStringsTest | tee "$OUT/test.log"
 shasum -a 256 -c "$OUT/state-source-hashes.txt" >/dev/null

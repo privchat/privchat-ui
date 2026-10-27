@@ -39,6 +39,7 @@ fun AppleEmojiInput(
     focusRequester: FocusRequester? = null,
     onFocusChanged: ((Boolean) -> Unit)? = null,
     controller: AppleEmojiEditorController? = null,
+    enabled: Boolean = true,
 ) {
     val editor = controller ?: rememberAppleEmojiEditorController(value, onValueChange)
     val state = editor.state
@@ -50,8 +51,8 @@ fun AppleEmojiInput(
     val input = remember(editor) { InputTransformation {
         editor.publishNative(toString())
     } }
-    LaunchedEffect(autoFocus, requester, laidOut) {
-        if (autoFocus && laidOut) {
+    LaunchedEffect(autoFocus, requester, laidOut, enabled) {
+        if (autoFocus && laidOut && enabled) {
             withFrameNanos { }
             requester.requestFocus()
         }
@@ -61,6 +62,7 @@ fun AppleEmojiInput(
         .padding(horizontal = 10.dp, vertical = verticalPadding), contentAlignment = Alignment.CenterStart) {
         BasicTextField(
             state = state,
+            enabled = enabled,
             modifier = Modifier.fillMaxWidth().testTag(AppleEmojiTestTags.Input).focusRequester(requester)
                 .onGloballyPositioned { laidOut = it.isAttached && it.size.width > 0 && it.size.height > 0 }
                 .onFocusChanged { onFocusChanged?.invoke(it.isFocused) },
