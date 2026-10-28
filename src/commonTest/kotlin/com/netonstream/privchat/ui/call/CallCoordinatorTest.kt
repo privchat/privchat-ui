@@ -12,6 +12,66 @@ import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CallCoordinatorTest {
+    @Test fun terminalSnapshotCancelsPendingNativeConnectWithoutWaitingForItsTimeout() = runTest {
+        for (transport in listOf(CallTransport.LIVEKIT, CallTransport.WEBRTC)) {
+            val api = Control().apply { call = snapshot().copy(transport = transport) }
+            val gate = CompletableDeferred<Unit>()
+            val media = Media().apply { this.gate = gate }
+            val c = DefaultCallCoordinator(api, 1u, media, backgroundScope)
+            c.onEvent(event(api.call))
+            val accepting = launch { c.accept() }
+            try {
+                runCurrent()
+                assertEquals(1, media.connections + media.peerConnections)
+                assertFalse(accepting.isCompleted)
+                c.onEvent(event(api.call.copy(version = 9u, state = CallState.ENDED)))
+                runCurrent()
+                assertNull(c.state.value.call)
+                assertTrue(accepting.isCompleted, "Terminal authority must cancel native setup, not hold the global media lock until its timeout")
+                assertTrue(media.disconnections > 0)
+                assertEquals(listOf("join"), api.mutations.map { it.first }, "Do not mutate an already terminal server call")
+            } finally {
+                accepting.cancel(); gate.complete(Unit); c.close(); runCurrent()
+            }
+        }
+    }
+
+    @Test fun ringingDeadlineCancelsPendingNativeConnectWithoutServerMutation() = runTest {
+        val api = Control().apply { call = snapshot(initiator = 1u, self = CallParticipantState.JOINED).copy(expiresAtMs = 1_000) }
+        val gate = CompletableDeferred<Unit>()
+        val media = Media().apply { this.gate = gate }
+        val c = DefaultCallCoordinator(api, 1u, media, backgroundScope, nowMs = { testScheduler.currentTime })
+        val starting = launch { c.start(9u, CallMediaKind.AUDIO) }
+        try {
+            runCurrent(); assertEquals(1, media.connections)
+            advanceTimeBy(1_001); runCurrent()
+            assertNull(c.state.value.call)
+            assertTrue(starting.isCompleted, "Expired ringing must release an unfinished native setup")
+            assertTrue(media.disconnections > 0)
+            assertEquals(listOf("join"), api.mutations.map { it.first })
+        } finally {
+            starting.cancel(); gate.complete(Unit); c.close(); runCurrent()
+        }
+    }
+
+    @Test fun absentActiveReconciliationCancelsPendingNativeConnect() = runTest {
+        val api = Control().apply { activeGate = CompletableDeferred(CallActiveResponse(emptyList())) }
+        val gate = CompletableDeferred<Unit>()
+        val media = Media().apply { this.gate = gate }
+        val c = DefaultCallCoordinator(api, 1u, media, backgroundScope)
+        c.onEvent(event(api.call))
+        val accepting = launch { c.accept() }
+        try {
+            runCurrent(); assertEquals(1, media.connections)
+            c.onForegroundOrReconnect(); runCurrent()
+            assertNull(c.state.value.call)
+            assertTrue(accepting.isCompleted, "Server reconciliation cannot leave an orphan native setup holding media ownership")
+            assertTrue(media.disconnections > 0)
+        } finally {
+            accepting.cancel(); gate.complete(Unit); c.close(); runCurrent()
+        }
+    }
+
     private fun snapshot(version: ULong = 1u, self: CallParticipantState = CallParticipantState.INVITED,
                          state: CallState = CallState.RINGING, initiator: ULong = 2u) = CallSnapshot(
         41u, 9u, initiator, CallMediaKind.AUDIO, state, version = version, createdAtMs = 1,

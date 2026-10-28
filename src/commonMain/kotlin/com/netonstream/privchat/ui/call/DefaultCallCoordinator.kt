@@ -243,6 +243,11 @@ class DefaultCallCoordinator(
         finally { if (mediaJoinFlight === flight) mediaJoinFlight = null }
     }
 
+    private fun cancelMediaJoin(callId: ULong) {
+        // Removing presentation must not leave native setup holding the shared media lock.
+        mediaJoinFlight?.takeIf { it.callId == callId }?.job?.cancel()
+    }
+
     private fun canConnect(callId: ULong, ticket: Long): Boolean =
         current(ticket) && callId !in stopping && state.value.call?.let {
             it.callId == callId && it.state != CallState.ENDED &&
@@ -345,6 +350,7 @@ class DefaultCallCoordinator(
         if (terminal) {
             stopping += call.callId
             stopPeer(call.callId)
+            cancelMediaJoin(call.callId)
             if (activeId == call.callId) {
                 ringingDeadline?.cancel()
                 heartbeat?.cancel()
@@ -398,6 +404,7 @@ class DefaultCallCoordinator(
                 // An event arriving during active() is newer evidence than an absent entry.
                 if (unchanged && old != null && active.calls.none { it.callId == old.callId }) {
                     stopping += old.callId
+                    cancelMediaJoin(old.callId)
                     heartbeat?.cancel()
                     mutableState.value = idle()
                     detach(old.callId)
@@ -553,6 +560,7 @@ class DefaultCallCoordinator(
         // Local presentation deadline only: retain the authoritative snapshot and send no mutation.
         heartbeat?.cancel()
         stopPeer(callId)
+        cancelMediaJoin(callId)
         mutableState.value = idle()
         revision++
         scope.launch(NonCancellable) { detach(callId) }
