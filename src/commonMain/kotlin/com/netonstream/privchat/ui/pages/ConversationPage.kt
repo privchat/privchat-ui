@@ -325,7 +325,7 @@ fun ConversationPage(
                     }
                 }
             } else {
-                items(filteredChannels.size) { index ->
+                items(filteredChannels.size, key = { filteredChannels[it].channelId.toString() }) { index ->
                     val channel = filteredChannels[index]
                     val draft = localStates[channel.channelId]?.draftText
 
