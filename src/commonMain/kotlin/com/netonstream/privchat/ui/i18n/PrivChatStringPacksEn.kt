@@ -538,6 +538,7 @@ internal val enAuxiliary = PrivChatAuxiliaryStrings(
     systemTemplates = mapOf(
                 "system.member_invited" to "{0} invited {1+} to the group",
                 "system.friend_request_accepted" to "You are now friends",
+                "system.group_name_changed" to "{0} renamed the group to \"{1}\"",
                 "system.group_mute_all_on" to "{0} muted all members",
                 "system.group_mute_all_off" to "{0} unmuted all members",
                 "system.member_joined"  to "{0} joined the group",
