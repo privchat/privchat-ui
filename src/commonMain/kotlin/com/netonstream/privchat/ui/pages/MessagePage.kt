@@ -11,6 +11,7 @@ import com.netonstream.privchat.ui.group.PinTestTags
 import com.netonstream.privchat.ui.group.GroupUiError
 import com.gearui.components.icon.*
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import com.netonstream.privchat.ui.components.MessageSendStatus
 import com.gearui.foundation.interaction.PressableFeedback
@@ -549,7 +550,9 @@ fun MessagePage(
         val focusId = pendingFocusLocalId ?: return@LaunchedEffect
         val idx = messages.indexOfFirst { it.id == focusId }
         if (idx >= 0) {
-            listState.animateScrollToItem(idx)
+            // Hydrating the anchor prepends rows; wait until the lazy layout owns that window.
+            snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it >= messages.size }
+            listState.scrollToItem(idx)
             highlightMessageId = focusId
             pendingFocusLocalId = null
             // 已定位到 anchor：声明初始定位完成 + 解除滚底抑制，后续新消息走常规近底逻辑。
@@ -958,9 +961,10 @@ fun MessagePage(
     // 首次进入直接定位到底部，并在定位完成前隐藏列表，避免看到"从上滚到下"。
     LaunchedEffect(channel.channelId, sortedMessages.lastOrNull()?.id, sortedMessages.size) {
         if (sortedMessages.isEmpty()) return@LaunchedEffect
+        // Jump-to-message owns scrolling even when this page was already positioned.
+        if (jumpPending) return@LaunchedEffect
         val lastIndex = sortedMessages.size - 1
         if (!initialPositioned) {
-            if (jumpPending) return@LaunchedEffect // 跳转模式：让 focus 定位接管，别滚到底部
             delay(16)
             listState.scrollToItem(lastIndex)
             initialPositioned = true
