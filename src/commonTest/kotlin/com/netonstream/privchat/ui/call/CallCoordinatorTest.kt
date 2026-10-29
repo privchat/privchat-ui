@@ -530,6 +530,22 @@ class CallCoordinatorTest {
         c.close(); runCurrent()
     }
 
+    @Test fun ringingAudioChoicesAreAppliedAtJoinWithoutPrematureCapture() = runTest {
+        val api = Control(); val media = Media()
+        val c = DefaultCallCoordinator(api, 1u, media, backgroundScope)
+        c.onEvent(event(api.call))
+        assertTrue(c.state.value.microphoneEnabled)
+        assertFalse(c.state.value.speakerEnabled)
+        c.setMicrophone(false); c.setSpeaker(true)
+        assertFalse(c.state.value.microphoneEnabled); assertTrue(c.state.value.speakerEnabled)
+        assertTrue(media.microphoneCalls.isEmpty()); assertTrue(media.speakerCalls.isEmpty())
+        c.accept()
+        assertEquals(listOf(false), media.microphoneCalls)
+        assertEquals(listOf(true), media.speakerCalls)
+        assertFalse(c.state.value.microphoneEnabled); assertTrue(c.state.value.speakerEnabled)
+        c.close(); runCurrent()
+    }
+
     @Test fun cameraPermissionFailureKeepsConnectedWithoutFalseCameraState() = runTest {
         val api = Control().apply { call = snapshot().copy(mediaKind = CallMediaKind.VIDEO) }
         val media = Media().apply { cameraFailure = true }

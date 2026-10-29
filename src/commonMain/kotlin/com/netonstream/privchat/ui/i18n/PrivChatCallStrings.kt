@@ -39,6 +39,15 @@ data class PrivChatCallStrings(
     val connecting: String,
     val connectionFailed: String,
     val entry: String = "Call",
+    val waitingForAnswer: String = "Waiting for the other person to answer…",
+    val microphoneIsOn: String = "Microphone on",
+    val microphoneIsOff: String = "Microphone off",
+    val speakerIsOn: String = "Speaker on",
+    val speakerIsOff: String = "Speaker off",
+    val earpieceHint: String = "Hold the phone to your ear",
+    val incomingVoiceInvitation: String = "Inviting you to a voice call",
+    val incomingVideoInvitation: String = "Inviting you to a video call",
+    val declineIncoming: String = "Decline",
 )
 
 fun PrivChatCallStrings.channelLabel(id: ULong, name: String?): String =
@@ -88,6 +97,11 @@ internal val zhCall = PrivChatCallStrings(
     "正在连接音视频…",
     "建立通话失败",
     entry = "通话",
+    waitingForAnswer = "正在等待对方接受邀请…",
+    microphoneIsOn = "麦克风已开", microphoneIsOff = "麦克风已关",
+    speakerIsOn = "扬声器已开", speakerIsOff = "扬声器已关",
+    earpieceHint = "请用听筒接听",
+    incomingVoiceInvitation = "邀请你语音通话", incomingVideoInvitation = "邀请你视频通话", declineIncoming = "拒接",
 )
 internal val hantCall = PrivChatCallStrings(
     "語音通話", "視訊通話", "來電", "正在呼叫…", "通話中", "接聽", "拒絕", "掛斷",
@@ -100,6 +114,11 @@ internal val hantCall = PrivChatCallStrings(
     "正在連接音視訊…",
     "建立通話失敗",
     entry = "通話",
+    waitingForAnswer = "正在等待對方接受邀請…",
+    microphoneIsOn = "麥克風已開", microphoneIsOff = "麥克風已關",
+    speakerIsOn = "揚聲器已開", speakerIsOff = "揚聲器已關",
+    earpieceHint = "請用聽筒接聽",
+    incomingVoiceInvitation = "邀請你語音通話", incomingVideoInvitation = "邀請你視訊通話", declineIncoming = "拒接",
 )
 internal val viCall = PrivChatCallStrings(
     "Gọi thoại", "Gọi video", "Cuộc gọi đến", "Đang gọi...", "Đang trong cuộc gọi", "Trả lời", "Từ chối", "Kết thúc",

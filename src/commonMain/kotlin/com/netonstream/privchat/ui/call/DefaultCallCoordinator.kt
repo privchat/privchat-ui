@@ -185,10 +185,11 @@ class DefaultCallCoordinator(
                         require(response.url.isNotBlank() && response.token.isNotBlank())
                         media.connect(response.call, response.url, response.token)
                     }
-                    if (canConnect(call.callId, ticket)) media.setMicrophone(true)
-                    var speakerEnabled = state.value.speakerEnabled
+                    val microphoneEnabled = state.value.microphoneEnabled
+                    if (canConnect(call.callId, ticket)) media.setMicrophone(microphoneEnabled)
+                    var speakerEnabled = false
                     if (canConnect(call.callId, ticket)) {
-                        val initialSpeaker = call.mediaKind == CallMediaKind.VIDEO
+                        val initialSpeaker = state.value.speakerEnabled
                         try { media.setSpeaker(initialSpeaker); speakerEnabled = initialSpeaker }
                         catch (cancelled: CancellationException) { throw cancelled }
                         catch (failure: Exception) { errorIfCurrent(call.callId, ticket, CallException(CallFailure.ROUTING)) }
@@ -207,7 +208,7 @@ class DefaultCallCoordinator(
                     }
                     mutableState.value = state.value.copy(
                         joined = true, incoming = false,
-                        microphoneEnabled = true, cameraEnabled = cameraEnabled,
+                        microphoneEnabled = microphoneEnabled, cameraEnabled = cameraEnabled,
                         speakerEnabled = speakerEnabled,
                     )
                 }
@@ -362,6 +363,8 @@ class DefaultCallCoordinator(
                 call = call,
                 incoming = self.state == CallParticipantState.INVITED && call.initiatorId != userId,
                 error = if (activeId == null) null else state.value.error,
+                microphoneEnabled = if (activeId == null) true else state.value.microphoneEnabled,
+                speakerEnabled = if (activeId == null) call.mediaKind == CallMediaKind.VIDEO else state.value.speakerEnabled,
             )
             scheduleRingingDeadline(call)
             if (call.transport == CallTransport.WEBRTC && call.state == CallState.ACTIVE && state.value.joined) {
@@ -490,26 +493,29 @@ class DefaultCallCoordinator(
         }
     }
 
-    private suspend fun changeMedia(action: suspend () -> Unit, update: (CallUiState) -> CallUiState) {
+    private suspend fun changeMedia(allowPending: Boolean = false, action: suspend () -> Unit, update: (CallUiState) -> CallUiState) {
         val callId = state.value.call?.callId ?: return
         val ticket = epoch
-        if (!state.value.joined || !canConnect(callId, ticket)) return
+        if (!currentCall(callId, ticket) || callId in stopping || (!state.value.joined && !allowPending)) return
         try {
             mediaLock.withLock {
-                if (!canConnect(callId, ticket) || owner !== this || ownedCall != callId) return@withLock
-                action()
-                if (canConnect(callId, ticket)) mutableState.value = update(state.value)
+                if (!currentCall(callId, ticket) || callId in stopping) return@withLock
+                if (state.value.joined) {
+                    if (!canConnect(callId, ticket) || owner !== this || ownedCall != callId) return@withLock
+                    action()
+                } else if (!allowPending) return@withLock
+                if (currentCall(callId, ticket) && callId !in stopping) mutableState.value = update(state.value)
             }
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (failure: Exception) { errorIfCurrent(callId, ticket, CallException(CallFailure.MEDIA)) }
     }
 
-    override suspend fun setMicrophone(enabled: Boolean) = changeMedia({ media.setMicrophone(enabled) }) { it.copy(microphoneEnabled = enabled) }
+    override suspend fun setMicrophone(enabled: Boolean) = changeMedia(true, { media.setMicrophone(enabled) }) { it.copy(microphoneEnabled = enabled) }
     override suspend fun setCamera(enabled: Boolean) {
         if (state.value.call?.mediaKind != CallMediaKind.VIDEO) return
-        changeMedia({ media.setCamera(enabled) }) { it.copy(cameraEnabled = enabled) }
+        changeMedia(action = { media.setCamera(enabled) }) { it.copy(cameraEnabled = enabled) }
     }
-    override suspend fun setSpeaker(enabled: Boolean) = changeMedia({ media.setSpeaker(enabled) }) { it.copy(speakerEnabled = enabled) }
+    override suspend fun setSpeaker(enabled: Boolean) = changeMedia(true, { media.setSpeaker(enabled) }) { it.copy(speakerEnabled = enabled) }
     override fun showVideo(bounds: CallVideoBounds) {
         if (!current(epoch) || !state.value.joined || state.value.call?.mediaKind != CallMediaKind.VIDEO) return
         if (!listOf(bounds.x, bounds.y, bounds.width, bounds.height).all { it.isFinite() } || bounds.width <= 0 || bounds.height <= 0) return

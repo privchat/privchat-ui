@@ -32,6 +32,11 @@ import kotlinx.coroutines.launch
 /** Mount once above navigation, inside the app's theme/i18n providers. */
 @Composable
 fun CallOverlay(coordinator: CallCoordinator) {
+    val platform = com.tencent.kuikly.compose.ui.platform.LocalConfiguration.current
+    if (platform.isAndroid || platform.isIOS) {
+        NativeCallOverlay(coordinator)
+        return
+    }
     val state by coordinator.state.collectAsState()
     val strings = PrivChatI18n.strings
     val labels = strings.dCall
