@@ -177,7 +177,7 @@ fun MessageContent(
             MessageType.VOICE -> VoiceContent(parsed, message, isSelf, textColor)
             MessageType.FILE -> FileContent(parsed, message, textColor, secondaryTextColor)
             MessageType.STICKER -> StickerContent(parsed)
-            MessageType.LOCATION -> LocationContent(parsed, textColor, secondaryTextColor)
+            MessageType.LOCATION -> LocationContent(parsed, textColor)
             MessageType.LINK -> LinkContent(parsed, (if (isSelf) Theme.colors.selfBubbleStyle else Theme.colors.otherBubbleStyle).link, secondaryTextColor)
             MessageType.CONTACT -> ContactContent(parsed, textColor, secondaryTextColor, onContactClick)
             MessageType.RED_PACKET -> RedPacketMessageView(parsed, redPacketStatusOf, onRedPacketClick)
@@ -1066,7 +1066,7 @@ private fun StickerContent(
 /**
  * 位置消息（协议 LocationMetadata，Phase 2 已扩展）。
  *
- * 展示优先级：POI name > address > lat/lng 兜底。点击 → 系统地图，按 coordinate_system
+ * 展示地点名称，无名称时使用本地化「位置」。点击地图仍使用消息中的真实坐标。
  * 转成 WGS-84 再打开（gcj02/bd09 不转会偏几百米）。历史 thumbnailUrl 保持兼容；
  * 无历史缩略图时通过宿主异步生成本地预览，不阻塞文字显示，不上传或写入消息。
  */
@@ -1074,14 +1074,12 @@ private fun StickerContent(
 private fun LocationContent(
     parsed: ParsedContent,
     textColor: Color,
-    secondaryTextColor: Color,
 ) {
     val lat = parsed.latitude
     val lng = parsed.longitude
     // 先算「有没有真实地名」，再决定显示什么：地图 App 的标注只该收真实地名，
     // 之前那句 `title.takeIf { it != "位置" }` 是拿兜底文案当哨兵值——文案一翻译就失效。
     val placeName = parsed.locationName?.takeIf { it.isNotBlank() }
-        ?: parsed.address?.takeIf { it.isNotBlank() }
     val title = placeName ?: PrivChatI18n.current.locationFallbackTitle
     val clickMod = if (lat != null && lng != null) {
         Modifier.clickable {
@@ -1147,23 +1145,8 @@ private fun LocationContent(
             color = textColor,
             maxLines = 2,
         )
-        // 副行：有 POI 名时显示地址；否则显示坐标兜底。
-        val subtitle = parsed.locationName?.takeIf { it.isNotBlank() }
-            ?.let { parsed.address?.takeIf { a -> a.isNotBlank() } }
-            ?: lat?.let { la -> lng?.let { lo -> "${fmtCoord(la)}, ${fmtCoord(lo)}" } }
-        if (subtitle != null) {
-            VerticalSpacer(2.dp)
-            Text(
-                text = subtitle,
-                style = Theme.typography.label,
-                color = secondaryTextColor,
-                maxLines = 2,
-            )
-        }
     }
 }
-
-private fun fmtCoord(v: Double): String = ((v * 100000).toLong() / 100000.0).toString()
 
 /**
  * 链接卡片消息（协议 LinkMetadata：url / title / description / thumbnail）。
