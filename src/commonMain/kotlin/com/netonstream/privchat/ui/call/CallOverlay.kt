@@ -4,6 +4,8 @@ import androidx.compose.runtime.*
 import com.gearui.components.button.Button
 import com.gearui.components.button.ButtonSize
 import com.gearui.components.button.ButtonTheme
+import com.gearui.components.actionsheet.ActionSheet
+import com.gearui.components.actionsheet.ActionSheetItem
 import com.gearui.foundation.primitives.Text
 import com.gearui.foundation.primitives.ScrollView
 import com.gearui.theme.Theme
@@ -143,16 +145,25 @@ private fun CallIdentity(call: CallSnapshot) {
 }
 
 @Composable
-fun ChatCallButtons(channelId: ULong) {
-    val coordinator = CallUiBridge.coordinator ?: return
+fun rememberChatCallAction(channelId: ULong): (() -> Unit)? {
+    val coordinator = CallUiBridge.coordinator ?: return null
     val state by coordinator.state.collectAsState()
-    if (!state.available) return
+    if (!state.available) return null
     val labels = PrivChatI18n.strings.dCall
     val scope = rememberCoroutineScope()
-    Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(text = labels.audio, size = ButtonSize.SMALL, disabled = state.busy || state.call != null,
-            onClick = { scope.launch { coordinator.start(channelId, CallMediaKind.AUDIO) } })
-        Button(text = labels.video, size = ButtonSize.SMALL, disabled = state.busy || state.call != null,
-            onClick = { scope.launch { coordinator.start(channelId, CallMediaKind.VIDEO) } })
+    return {
+        val current = coordinator.state.value
+        ActionSheet.showList(
+            items = listOf(
+                ActionSheetItem(label = labels.video, disabled = current.busy || current.call != null),
+                ActionSheetItem(label = labels.audio, disabled = current.busy || current.call != null),
+            ),
+            onSelected = { _, index ->
+                val latest = coordinator.state.value
+                if (latest.available && !latest.busy && latest.call == null) {
+                    scope.launch { coordinator.start(channelId, if (index == 0) CallMediaKind.VIDEO else CallMediaKind.AUDIO) }
+                }
+            },
+        )
     }
 }

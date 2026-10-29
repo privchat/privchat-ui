@@ -38,6 +38,7 @@ data class PrivChatCallStrings(
     val routingError: String,
     val connecting: String,
     val connectionFailed: String,
+    val entry: String = "Call",
 )
 
 fun PrivChatCallStrings.channelLabel(id: ULong, name: String?): String =
@@ -74,6 +75,7 @@ internal val enCall = PrivChatCallStrings(
     "Could not change the audio output. The call is still connected.",
     "Connecting media...",
     "Failed to establish call",
+    entry = "Call",
 )
 internal val zhCall = PrivChatCallStrings(
     "语音通话", "视频通话", "来电", "正在呼叫…", "通话中", "接听", "拒绝", "挂断",
@@ -85,6 +87,7 @@ internal val zhCall = PrivChatCallStrings(
     "无法切换音频输出，通话仍保持连接。",
     "正在连接音视频…",
     "建立通话失败",
+    entry = "通话",
 )
 internal val hantCall = PrivChatCallStrings(
     "語音通話", "視訊通話", "來電", "正在呼叫…", "通話中", "接聽", "拒絕", "掛斷",
@@ -96,6 +99,7 @@ internal val hantCall = PrivChatCallStrings(
     "無法切換音訊輸出，通話仍保持連線。",
     "正在連接音視訊…",
     "建立通話失敗",
+    entry = "通話",
 )
 internal val viCall = PrivChatCallStrings(
     "Gọi thoại", "Gọi video", "Cuộc gọi đến", "Đang gọi...", "Đang trong cuộc gọi", "Trả lời", "Từ chối", "Kết thúc",
@@ -107,4 +111,5 @@ internal val viCall = PrivChatCallStrings(
     "Không thể đổi đầu ra âm thanh. Cuộc gọi vẫn được kết nối.",
     "Đang kết nối âm thanh và video...",
     "Không thể thiết lập cuộc gọi",
+    entry = "Cuộc gọi",
 )

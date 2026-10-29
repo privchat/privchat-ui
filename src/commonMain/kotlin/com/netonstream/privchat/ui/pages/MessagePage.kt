@@ -1145,7 +1145,6 @@ fun MessagePage(
             },
         )
         networkStatusBar?.invoke()
-        com.netonstream.privchat.ui.call.ChatCallButtons(channel.channelId)
 
         // 置顶条：群聊有置顶消息时展示最新一条预览；群主/管理员可一键取消置顶。
         // 所有成员可打开完整列表并定位原消息；收起仅影响本地显示。
@@ -1588,6 +1587,7 @@ fun MessagePage(
 
         // 输入框
         MessageInputBar(
+            onCall = com.netonstream.privchat.ui.call.rememberChatCallAction(channel.channelId),
             text = inputText,
             onTextChange = { rawNewText ->
                 // UX-10：把用户编辑与已有 mention 区间做 diff 合并——触碰到任一 span 时整段抹除，
@@ -2921,6 +2921,7 @@ private fun MessageInputBar(
     onPickCamera: () -> Unit = {},
     onPickFile: () -> Unit = {},
     onLocation: () -> Unit = {},
+    onCall: (() -> Unit)? = null,
     onSticker: suspend (com.netonstream.privchat.sdk.dto.StickerMessagePayload) -> Result<ULong>,
     onRedPacket: () -> Unit = {},
     onMoneyTransfer: () -> Unit = {},
@@ -2969,17 +2970,11 @@ private fun MessageInputBar(
     }
     var lastKeyboardHeight by remember { mutableStateOf(0f) }
     // strings 进 key：切语言后这些标签必须重算，否则加号面板还停在旧语言。
-    val stickerCatalog = com.netonstream.privchat.ui.sticker.StickerUiBridge.catalog
-    val plusActions = remember(moneyEnabled, strings, stickerCatalog) {
+    val plusActions = run {
         buildList {
             add(PlusAction(Icons.image, strings.plusAlbum, onPickImage))
             add(PlusAction(Icons.camera, strings.plusCamera, onPickCamera))
-            if (stickerCatalog != null) {
-                add(PlusAction(Icons.image, strings.stickerPacks) {
-                    displayedPanelMode = InputPanelMode.STICKER
-                    onPanelModeChange(InputPanelMode.STICKER)
-                })
-            }
+            onCall?.let { call -> add(PlusAction(Icons.phone, strings.dCall.entry, call)) }
             if (com.netonstream.privchat.ui.platform.LocationUiBridge.available) {
                 add(PlusAction(Icons.flag, strings.plusLocation, onLocation))
             }
