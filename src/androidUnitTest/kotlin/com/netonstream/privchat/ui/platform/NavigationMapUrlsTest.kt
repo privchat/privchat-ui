@@ -50,7 +50,10 @@ class NavigationMapUrlsTest {
 
     @Test fun googleReceivesWgs84NotGcj02() {
         val expected = CoordinateConverter.gcj02ToWgs84(39.9, 116.4)
-        assertEquals("google.navigation:q=${expected.first},${expected.second}&mode=d", url("google", "gcj02"))
+        val android = query(assertNotNull(url("google", "gcj02")))
+        assertEquals("${expected.first},${expected.second}", android["destination"])
+        assertEquals("1", android["api"])
+        assertEquals("driving", android["travelmode"])
         val ios = query(assertNotNull(url("google", "gcj02", ios = true)))
         assertEquals("${expected.first},${expected.second}", ios["daddr"])
         assertEquals("driving", ios["directionsmode"])
@@ -67,20 +70,23 @@ class NavigationMapUrlsTest {
     @Test fun amapWgs84RequestsProviderOffsetExactlyOnce() {
         for (ios in listOf(false, true)) {
             val uri = assertNotNull(url("amap", ios = ios))
-            assertTrue(uri.startsWith(if (ios) "iosamap://navi?" else "androidamap://navi?"))
+            assertTrue(uri.startsWith(if (ios) "iosamap://path?" else "amapuri://route/plan/?"))
             val q = query(uri)
-            assertEquals("39.9", q["lat"]); assertEquals("116.4", q["lon"])
+            assertEquals("39.9", q["dlat"]); assertEquals("116.4", q["dlon"])
             assertEquals("1", q["dev"])
+            assertEquals("0", q["t"])
+            assertEquals("Destination", q["dname"])
+            assertFalse(q.containsKey("slat")); assertFalse(q.containsKey("slon")); assertFalse(q.containsKey("sname"))
         }
     }
 
     @Test fun amapGcj02IsNotOffsetAgainAndBd09IsConverted() {
         val gcj = query(assertNotNull(url("amap", "gcj02")))
-        assertEquals("39.9", gcj["lat"]); assertEquals("116.4", gcj["lon"]); assertEquals("0", gcj["dev"])
+        assertEquals("39.9", gcj["dlat"]); assertEquals("116.4", gcj["dlon"]); assertEquals("0", gcj["dev"])
         val expected = CoordinateConverter.bd09ToGcj02(39.9, 116.4)
         val bd = query(assertNotNull(url("amap", "bd09")))
-        assertEquals(expected.first.toString(), bd["lat"])
-        assertEquals(expected.second.toString(), bd["lon"]); assertEquals("0", bd["dev"])
+        assertEquals(expected.first.toString(), bd["dlat"])
+        assertEquals(expected.second.toString(), bd["dlon"]); assertEquals("0", bd["dev"])
     }
 
     @Test fun baiduPreservesCoordinatesWithAnExplicitSourceCrs() {
@@ -105,8 +111,35 @@ class NavigationMapUrlsTest {
         for (id in listOf("amap", "tencent")) {
             val uri = assertNotNull(url(id, label = label, key = "unit-test-key"))
             assertFalse(uri.contains('#')); assertFalse(uri.contains(' ')); assertFalse(uri.contains("A&B"))
-            val nameKey = if (id == "amap") "poiname" else "to"
+            val nameKey = if (id == "amap") "dname" else "to"
             assertEquals(label, query(uri)[nameKey])
+        }
+    }
+
+    @Test fun everyProviderRequestsRoutePlanningWithoutAutoStartingGuidance() {
+        for (id in NavigationMapUrls.androidPackages.keys) for (ios in listOf(false, true)) {
+            for (crs in listOf("wgs84", "gcj02", "bd09")) {
+                val uri = assertNotNull(url(id, crs, ios = ios, key = "unit-test-key"))
+                val endpoint = uri.substringBefore('?')
+                assertFalse(endpoint.contains("navi", ignoreCase = true), uri)
+                val q = query(uri)
+                for (key in listOf("dir_action", "navigate", "autostart", "auto_start")) {
+                    assertFalse(q.containsKey(key), uri)
+                }
+                when (id) {
+                    "google" -> {
+                        assertEquals(if (ios) "comgooglemaps://" else "https://www.google.com/maps/dir/", endpoint)
+                        assertEquals(if (ios) setOf("daddr", "directionsmode") else setOf("api", "destination", "travelmode"), q.keys)
+                    }
+                    "amap" -> {
+                        assertEquals(if (ios) "iosamap://path" else "amapuri://route/plan/", endpoint)
+                        assertEquals(setOf("sourceApplication", "dlat", "dlon", "dname", "dev", "t"), q.keys)
+                        assertEquals("0", q["t"])
+                    }
+                    "baidu" -> { assertEquals("baidumap://map/direction", endpoint); assertEquals("driving", q["mode"]) }
+                    "tencent" -> { assertEquals("qqmap://map/routeplan", endpoint); assertEquals("drive", q["type"]) }
+                }
+            }
         }
     }
 

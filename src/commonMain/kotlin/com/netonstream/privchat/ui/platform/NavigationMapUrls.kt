@@ -52,14 +52,15 @@ internal object NavigationMapUrls {
             "google" -> {
                 val (lat, lng) = wgsPoint(latitude, longitude, source) ?: return null
                 if (ios) "comgooglemaps://?daddr=$lat,$lng&directionsmode=driving"
-                else "google.navigation:q=$lat,$lng&mode=d"
+                else "https://www.google.com/maps/dir/?api=1&destination=${encode("$lat,$lng")}&travelmode=driving"
             }
             "amap" -> {
                 val (lat, lng) = if (source == "bd09ll") CoordinateConverter.bd09ToGcj02(latitude, longitude)
                     else latitude to longitude
                 if (!validPoint(lat, lng)) return null
                 val dev = if (source == "wgs84") 1 else 0
-                "${if (ios) "iosamap" else "androidamap"}://navi?sourceApplication=PrivChat&poiname=$name&lat=$lat&lon=$lng&dev=$dev&style=2"
+                // Omitting start coordinates and name lets AMap use the current location.
+                "${if (ios) "iosamap://path" else "amapuri://route/plan/"}?sourceApplication=PrivChat&dlat=$lat&dlon=$lng&dname=$name&dev=$dev&t=0"
             }
             "baidu" -> {
                 // Baidu direction binds the destination name and coordinates in one value.

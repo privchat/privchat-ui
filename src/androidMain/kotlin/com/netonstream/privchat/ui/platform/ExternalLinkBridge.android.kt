@@ -34,9 +34,9 @@ actual object ExternalLinkBridge {
         return NavigationMapUrls.androidPackages.mapNotNull { (id, pkg) ->
             if (id == "tencent" && tencentKey(ctx) == null) return@mapNotNull null
             val probe = when (id) {
-                "google" -> "google.navigation:q=0,0"
-                "amap" -> "androidamap://navi"
-                "baidu" -> "baidumap://map/navi"
+                "google" -> "https://www.google.com/maps/dir/?api=1&destination=0,0"
+                "amap" -> "amapuri://route/plan/"
+                "baidu" -> "baidumap://map/direction"
                 "tencent" -> "qqmap://map/routeplan"
                 else -> return@mapNotNull null
             }
