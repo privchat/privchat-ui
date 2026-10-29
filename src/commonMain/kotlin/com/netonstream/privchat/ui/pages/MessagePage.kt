@@ -1587,7 +1587,8 @@ fun MessagePage(
 
         // 输入框
         MessageInputBar(
-            onCall = com.netonstream.privchat.ui.call.rememberChatCallAction(channel.channelId),
+            onCall = com.netonstream.privchat.ui.call.rememberChatCallAction(channel.channelId, channel.displayName,
+                channel.peerAvatarUrl?.takeIf { it.isNotBlank() } ?: channel.avatarUrl.orEmpty()),
             text = inputText,
             onTextChange = { rawNewText ->
                 // UX-10：把用户编辑与已有 mention 区间做 diff 合并——触碰到任一 span 时整段抹除，

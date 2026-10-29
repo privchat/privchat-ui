@@ -65,10 +65,17 @@ class DefaultCallCoordinator(
     }
     private fun error(error: Throwable) { if (current(epoch)) mutableState.value = state.value.copy(error = error) }
     private fun id(key: String) = commands.getOrPut(key, commandId)
-    private fun idle() = CallUiState(available = state.value.available, error = state.value.error)
-    override fun clearError() { if (!closed) mutableState.value = state.value.copy(error = null) }
+    private fun idle() = CallUiState(available = state.value.available, error = state.value.error,
+        presentation = if (state.value.error != null) state.value.presentation ?: state.value.call?.let { CallPresentation(it.channelId, it.mediaKind) } else null)
+    override fun clearError() { if (!closed) mutableState.value = state.value.copy(error = null,
+        presentation = state.value.presentation.takeIf { state.value.call != null || state.value.busy }) }
 
-    override suspend fun start(channelId: ULong, mediaKind: CallMediaKind, inviteeIds: List<ULong>) {
+    override suspend fun start(channelId: ULong, mediaKind: CallMediaKind, inviteeIds: List<ULong>) =
+        start(CallPresentation(channelId, mediaKind), inviteeIds)
+
+    override suspend fun start(presentation: CallPresentation, inviteeIds: List<ULong>) {
+        val channelId = presentation.channelId
+        val mediaKind = presentation.mediaKind
         if (!current(epoch)) return
         if (state.value.call != null || state.value.busy) { error(CallException(CallFailure.BUSY)); return }
         val ticket = epoch
@@ -77,7 +84,7 @@ class DefaultCallCoordinator(
         fun ownsStartUi() = current(ticket) && (startedCallId?.let { state.value.call?.callId == it }
             ?: (revision == startRevision && state.value.call == null))
         cancelStart = false
-        mutableState.value = state.value.copy(busy = true, error = null)
+        mutableState.value = state.value.copy(busy = true, error = null, presentation = presentation)
         val key = "invite:$channelId:$mediaKind:${inviteeIds.sorted().joinToString()}"
         try {
             checkMedia()
@@ -361,6 +368,8 @@ class DefaultCallCoordinator(
         } else if ((activeId == null && call.callId !in stopping) || activeId == call.callId) {
             mutableState.value = state.value.copy(
                 call = call,
+                presentation = state.value.presentation?.takeIf { it.channelId == call.channelId }
+                    ?: CallPresentation(call.channelId, call.mediaKind),
                 incoming = self.state == CallParticipantState.INVITED && call.initiatorId != userId,
                 error = if (activeId == null) null else state.value.error,
                 microphoneEnabled = if (activeId == null) true else state.value.microphoneEnabled,
@@ -417,7 +426,7 @@ class DefaultCallCoordinator(
                     if (state.value.joined && it.callId !in stopping) startHeartbeat(it.callId, ticket)
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (failure: Exception) { if (current(ticket)) error(failure) }
+            catch (failure: Exception) { if (current(ticket) && state.value.call != null) error(failure) }
         }
     }
 

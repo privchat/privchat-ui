@@ -27,6 +27,9 @@ interface CallMedia {
     fun dismissVideo() {}
 }
 
+/** Presentation snapshot from the actual chat, retained even if invite fails before a call exists. */
+data class CallPresentation(val channelId: ULong, val mediaKind: CallMediaKind, val name: String = "", val avatarUrl: String = "")
+
 data class CallUiState(
     val available: Boolean = false,
     val call: CallSnapshot? = null,
@@ -38,12 +41,15 @@ data class CallUiState(
     val cameraEnabled: Boolean = false,
     val speakerEnabled: Boolean = false,
     val error: Throwable? = null,
+    val presentation: CallPresentation? = null,
 )
 
 /** All entry points are called on the host UI dispatcher. One instance per authenticated session. */
 interface CallCoordinator {
     val state: StateFlow<CallUiState>
     suspend fun start(channelId: ULong, mediaKind: CallMediaKind, inviteeIds: List<ULong> = emptyList())
+    suspend fun start(presentation: CallPresentation, inviteeIds: List<ULong> = emptyList()) =
+        start(presentation.channelId, presentation.mediaKind, inviteeIds)
     suspend fun accept()
     suspend fun reject()
     suspend fun hangUp()

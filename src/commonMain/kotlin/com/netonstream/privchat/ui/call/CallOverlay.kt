@@ -150,7 +150,7 @@ private fun CallIdentity(call: CallSnapshot) {
 }
 
 @Composable
-fun rememberChatCallAction(channelId: ULong): (() -> Unit)? {
+fun rememberChatCallAction(channelId: ULong, name: String = "", avatarUrl: String = ""): (() -> Unit)? {
     val coordinator = CallUiBridge.coordinator ?: return null
     val state by coordinator.state.collectAsState()
     if (!state.available) return null
@@ -166,7 +166,7 @@ fun rememberChatCallAction(channelId: ULong): (() -> Unit)? {
             onSelected = { _, index ->
                 val latest = coordinator.state.value
                 if (latest.available && !latest.busy && latest.call == null) {
-                    scope.launch { coordinator.start(channelId, if (index == 0) CallMediaKind.VIDEO else CallMediaKind.AUDIO) }
+                    scope.launch { coordinator.start(CallPresentation(channelId, if (index == 0) CallMediaKind.VIDEO else CallMediaKind.AUDIO, name, avatarUrl)) }
                 }
             },
         )

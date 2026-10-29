@@ -51,11 +51,16 @@ internal fun NativeCallOverlay(coordinator: CallCoordinator) {
     if (call == null && state.error == null && !state.busy) return
     // A phone-style page cannot be dismissed into an invisible, still active call.
     BackHandler { }
-    val channel = channels.firstOrNull { it.channelId == call?.channelId }
-    val name = call?.let { labels.channelLabel(it.channelId, channel?.displayName) } ?: labels.entry
-    val video = call?.mediaKind == CallMediaKind.VIDEO
-    val outgoing = call != null && !state.incoming && (call.state == CallState.RINGING || !state.joined)
+    val channelId = call?.channelId ?: state.presentation?.channelId
+    val presentation = state.presentation?.takeIf { it.channelId == channelId }
+    val channel = channels.firstOrNull { it.channelId == channelId }
+    val name = channelId?.let { labels.channelLabel(it, channel?.displayName?.takeIf(String::isNotBlank)
+        ?: presentation?.name?.takeIf(String::isNotBlank)) } ?: labels.entry
+    val video = (call?.mediaKind ?: presentation?.mediaKind) == CallMediaKind.VIDEO
+    val outgoing = !state.incoming && (call?.state == CallState.RINGING ||
+        (!state.joined && (call != null || (state.busy && presentation != null))))
     val status = when {
+        call == null && state.error != null -> ""
         state.incoming -> if (video) labels.incomingVideoInvitation else labels.incomingVoiceInvitation
         call?.state == CallState.RINGING -> labels.waitingForAnswer
         state.mediaConnected -> labels.active
@@ -120,7 +125,8 @@ internal fun NativeCallOverlay(coordinator: CallCoordinator) {
         put("expiresAtMs", call?.expiresAtMs ?: 0L)
         put("hint", if (outgoing && !state.speakerEnabled) labels.earpieceHint else "")
         put("initials", AvatarText.initialsOf(name = name))
-        put("avatar", if (channel?.isDm == true) channel.peerAvatarUrl ?: channel.avatarUrl.orEmpty() else channel?.avatarUrl.orEmpty())
+        put("avatar", channel?.peerAvatarUrl?.takeIf(String::isNotBlank)
+            ?: channel?.avatarUrl?.takeIf(String::isNotBlank) ?: presentation?.avatarUrl.orEmpty())
         put("kind", if (video) labels.video else labels.audio)
         put("status", status); put("error", failure.orEmpty()); put("actions", actions)
     }.toString()

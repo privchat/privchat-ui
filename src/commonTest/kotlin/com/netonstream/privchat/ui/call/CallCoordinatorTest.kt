@@ -12,6 +12,43 @@ import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CallCoordinatorTest {
+    @Test fun idleReconciliationFailureMustNotOpenAnAnonymousCallPage() = runTest {
+        val api = Control().apply { activeFailure = true }
+        val c = DefaultCallCoordinator(api, 1u, Media(), backgroundScope)
+        try {
+            c.onForegroundOrReconnect(); runCurrent()
+            assertNull(c.state.value.call)
+            assertNull(c.state.value.error)
+            assertNull(c.state.value.presentation)
+            assertFalse(c.state.value.busy)
+        } finally { c.close(); runCurrent() }
+    }
+    @Test fun failedInviteKeepsChatIdentityAndMediaKindUntilAcknowledged() = runTest {
+        val api = Control().apply { capabilitiesFailure = true }
+        val c = DefaultCallCoordinator(api, 1u, Media(), backgroundScope)
+        val identity = CallPresentation(9u, CallMediaKind.VIDEO, "Contact nickname", "https://example.invalid/avatar.png")
+        try {
+            c.start(identity)
+            assertNull(c.state.value.call)
+            assertNotNull(c.state.value.error)
+            assertFalse(c.state.value.busy)
+            assertEquals(identity, c.state.value.presentation)
+            c.clearError()
+            assertNull(c.state.value.presentation)
+            assertNull(c.state.value.error)
+        } finally { c.close(); runCurrent() }
+    }
+    @Test fun incomingCallCannotReuseAnotherChatPresentation() = runTest {
+        val api = Control().apply { capabilitiesFailure = true }
+        val c = DefaultCallCoordinator(api, 1u, Media(), backgroundScope)
+        try {
+            c.start(CallPresentation(99u, CallMediaKind.VIDEO, "Other contact", "https://example.invalid/other.png"))
+            c.onEvent(event(snapshot()))
+            assertEquals(9uL, c.state.value.presentation?.channelId)
+            assertEquals("", c.state.value.presentation?.name)
+            assertEquals("", c.state.value.presentation?.avatarUrl)
+        } finally { c.close(); runCurrent() }
+    }
     @Test fun terminalSnapshotCancelsPendingNativeConnectWithoutWaitingForItsTimeout() = runTest {
         for (transport in listOf(CallTransport.LIVEKIT, CallTransport.WEBRTC)) {
             val api = Control().apply { call = snapshot().copy(transport = transport) }
@@ -143,8 +180,10 @@ class CallCoordinatorTest {
         override suspend fun capabilities(): Result<CallCapabilitiesResponse> =
             if (capabilitiesFailure) Result.failure(IllegalStateException("unknown route"))
             else Result.success(CallCapabilitiesResponse(enabled, 8u, 4u, 30u))
+        var activeFailure = false
         override suspend fun active(): Result<CallActiveResponse> {
             activeCalls++
+            if (activeFailure) return Result.failure(IllegalStateException("network unavailable"))
             return Result.success(activeGate?.await() ?: CallActiveResponse(listOf(call)))
         }
         override suspend fun get(callId: ULong) = Result.success(CallResponse(call))
