@@ -321,6 +321,36 @@ class CallCoordinatorTest {
         late.close(); runCurrent()
     }
 
+    @Test fun activeGroupStillExpiresOnlyThisDevicesUnansweredInvitation() = runTest {
+        val api = Control().apply {
+            call = snapshot(state = CallState.ACTIVE).copy(expiresAtMs = 1_000,
+                participants = listOf(CallParticipant(1u, CallParticipantState.INVITED),
+                    CallParticipant(2u, CallParticipantState.JOINED),
+                    CallParticipant(3u, CallParticipantState.JOINED)))
+        }
+        val media = Media()
+        val c = DefaultCallCoordinator(api, 1u, media, backgroundScope, nowMs = { testScheduler.currentTime })
+        c.onEvent(event(api.call)); assertTrue(c.state.value.incoming)
+        advanceTimeBy(1_001); runCurrent()
+        assertNull(c.state.value.call)
+        assertTrue(api.mutations.isEmpty(), "Local presentation timeout must not hang up an active group")
+        assertEquals(0, media.connections)
+        c.onEvent(event(api.call.copy(version = 2u)))
+        assertNull(c.state.value.call, "A late active snapshot must not reopen an expired invitation")
+        c.close(); runCurrent()
+    }
+
+    @Test fun joiningActiveGroupCancelsOnlyItsLocalInvitationDeadline() = runTest {
+        val api = Control().apply { call = snapshot(state = CallState.ACTIVE).copy(expiresAtMs = 1_000) }
+        val c = DefaultCallCoordinator(api, 1u, Media(), backgroundScope, nowMs = { testScheduler.currentTime })
+        c.onEvent(event(api.call)); c.accept(); runCurrent()
+        advanceTimeBy(1_001); runCurrent()
+        assertEquals(CallState.ACTIVE, c.state.value.call?.state)
+        assertTrue(c.state.value.joined)
+        assertEquals(listOf("join"), api.mutations.map { it.first })
+        c.close(); runCurrent()
+    }
+
     @Test fun serverActiveSnapshotCancelsRingingDeadline() = runTest {
         val api = Control().apply { call = snapshot().copy(expiresAtMs = 1_000) }
         val c = DefaultCallCoordinator(api, 1u, Media(), backgroundScope, nowMs = { testScheduler.currentTime })
@@ -648,7 +678,8 @@ class CallCoordinatorTest {
     @Test fun noTurnZeroExpiryStaysConnectedWithoutAutomaticRenewal() = runTest {
         for (servers in listOf(emptyList(), listOf(CallIceServer(listOf("stun:example.invalid"))))) {
             val api = Control().apply {
-                call = snapshot(state = CallState.ACTIVE).copy(transport = CallTransport.WEBRTC)
+                call = snapshot(state = CallState.ACTIVE).copy(transport = CallTransport.WEBRTC,
+                    expiresAtMs = testScheduler.currentTime + 50_000)
                 peer = peer.copy(iceServers = servers, credentialExpiresAtMs = 0)
             }
             val media = Media()

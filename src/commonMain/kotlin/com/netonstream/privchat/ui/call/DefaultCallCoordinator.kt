@@ -334,7 +334,7 @@ class DefaultCallCoordinator(
         val self = call.participants.first { it.userId == userId }
         val terminal = call.state == CallState.ENDED || self.state == CallParticipantState.LEFT || self.state == CallParticipantState.REJECTED
         val activeId = state.value.call?.callId
-        if (call.state == CallState.RINGING && nowMs?.invoke()?.let { call.expiresAtMs <= it } == true) {
+        if (!terminal && awaitsRingingDeadline(call) && nowMs?.invoke()?.let { call.expiresAtMs <= it } == true) {
             expireRinging(call.callId, epoch)
             return
         }
@@ -541,11 +541,16 @@ class DefaultCallCoordinator(
         commands.clear()
     }
 
+    private fun awaitsRingingDeadline(call: CallSnapshot): Boolean = call.state != CallState.ENDED &&
+        (call.state == CallState.RINGING || call.participants.any {
+            it.userId == userId && it.state == CallParticipantState.INVITED
+        })
+
     private fun scheduleRingingDeadline(call: CallSnapshot) {
         ringingDeadline?.cancel()
         ringingDeadline = null
         val clock = nowMs ?: return
-        if (call.state != CallState.RINGING) return
+        if (!awaitsRingingDeadline(call)) return
         val ticket = epoch
         ringingDeadline = scope.launch {
             delay((call.expiresAtMs - clock()).coerceAtLeast(0))
@@ -556,7 +561,7 @@ class DefaultCallCoordinator(
     private fun expireRinging(callId: ULong, ticket: Long) {
         if (!currentCall(callId, ticket)) return
         val call = snapshots[callId] ?: return
-        if (call.state != CallState.RINGING || nowMs?.invoke()?.let { it < call.expiresAtMs } != false) return
+        if (!awaitsRingingDeadline(call) || nowMs?.invoke()?.let { it < call.expiresAtMs } != false) return
         // Local presentation deadline only: retain the authoritative snapshot and send no mutation.
         heartbeat?.cancel()
         stopPeer(callId)
