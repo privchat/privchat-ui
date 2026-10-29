@@ -115,6 +115,8 @@ internal fun NativeCallOverlay(coordinator: CallCoordinator) {
         put("callId", callId); put("name", name)
         put("layout", if (state.incoming) "incoming" else if (outgoing) "outgoing" else "standard")
         put("ring", state.incoming && !state.busy && call?.state == CallState.RINGING)
+        put("ringback", !state.incoming && call?.state == CallState.RINGING)
+        put("videoBackground", state.joined && video && !outgoing && !state.incoming)
         put("expiresAtMs", call?.expiresAtMs ?: 0L)
         put("hint", if (outgoing && !state.speakerEnabled) labels.earpieceHint else "")
         put("initials", AvatarText.initialsOf(name = name))
@@ -154,7 +156,7 @@ internal fun NativeCallOverlay(coordinator: CallCoordinator) {
         MakeKuiklyComposeNode<KrCallScreen>(factory = { KrCallScreen() }, modifier = Modifier.fillMaxSize(),
             viewInit = { getViewEvent().onAction { onAction.value(it) }; getViewAttr().state(json) },
             viewUpdate = { it.getViewAttr().state(json) })
-        if (state.joined && video) Box(Modifier.fillMaxWidth().height(maxHeight / 2).onGloballyPositioned {
+        if (state.joined && video) Box(Modifier.fillMaxSize().onGloballyPositioned {
             val p = it.positionInRoot()
             videoBounds = CallVideoBounds(p.x / density, p.y / density, it.size.width / density, it.size.height / density)
         })
