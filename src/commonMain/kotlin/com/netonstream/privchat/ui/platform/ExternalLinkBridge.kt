@@ -9,8 +9,16 @@ package com.netonstream.privchat.ui.platform
  *
  * Android 使用 `Intent.ACTION_VIEW`；iOS 使用 `UIApplication.openURL`。
  */
+data class NavigationMapApp(val id: String, val name: String)
+
 expect object ExternalLinkBridge {
     fun openUri(uri: String): Boolean
+
+    /** Supported, installed native handlers only; never includes a browser fallback. */
+    fun installedNavigationMaps(): List<NavigationMapApp>
+
+    /** Requests native navigation. False for unsupported IDs/CRS, invalid points or missing handlers. */
+    fun navigateTo(appId: String, latitude: Double, longitude: Double, crs: String?, label: String?): Boolean
 
     /**
      * 在系统地图打开经纬度坐标（Android `geo:`→默认地图 App / iOS Apple Maps）。

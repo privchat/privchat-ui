@@ -3421,7 +3421,17 @@ private fun MessageInputBar(
                                                         PlusActionItem(
                                                             icon = action.icon,
                                                             text = action.text,
-                                                            onClick = action.onClick,
+                                                            onClick = {
+                                                                dispatchChatAttachmentAction(
+                                                                    dismiss = {
+                                                                        pendingAutoFocus = false
+                                                                        closeAllPanels()
+                                                                        focusManager.clearFocus(force = true)
+                                                                        keyboardController?.hide()
+                                                                    },
+                                                                    action = action.onClick,
+                                                                )
+                                                            },
                                                         )
                                                     }
                                                 }
@@ -3548,6 +3558,12 @@ private fun CircleIconButton(
             tint = colors.foreground,
         )
     }
+}
+
+internal fun dispatchChatAttachmentAction(dismiss: () -> Unit, action: () -> Unit) {
+    // Clear local transition/reservation state before a picker or modal takes over.
+    dismiss()
+    action()
 }
 
 private data class PlusAction(

@@ -26,6 +26,10 @@ actual object MessageAlertController {
 actual object ExternalLinkBridge {
     actual fun openUri(uri: String): Boolean = false
 
+    actual fun installedNavigationMaps(): List<NavigationMapApp> = emptyList()
+
+    actual fun navigateTo(appId: String, latitude: Double, longitude: Double, crs: String?, label: String?): Boolean = false
+
     actual fun openMap(latitude: Double, longitude: Double, coordinateSystem: String?, label: String?): Boolean = false
 }
 
