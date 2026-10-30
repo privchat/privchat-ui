@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.components
 
+import com.gearui.components.indexbar.IndexBar
 import com.gearui.components.icon.*
 import com.gearui.components.closebutton.CloseButton
 import com.tencent.kuikly.compose.foundation.interaction.collectIsPressedAsState
@@ -222,10 +223,10 @@ fun MentionPickerSheet(
                     }
                     // 搜索态没有字母分组，索引条自然为空——列一条点不动的字母条只会误导。
                     IndexBar(
-                        letters = sectionStarts.mapNotNull { it.first },
+                        indexes = sectionStarts.mapNotNull { it.first?.toString() },
                         modifier = Modifier.align(Alignment.CenterEnd),
-                        onPick = { letter ->
-                            sectionStarts.firstOrNull { it.first == letter }?.let { (_, row) ->
+                        onSelect = { letter ->
+                            sectionStarts.firstOrNull { it.first?.toString() == letter }?.let { (_, row) ->
                                 scope.launch { listState.scrollToItem(row) }
                             }
                         },

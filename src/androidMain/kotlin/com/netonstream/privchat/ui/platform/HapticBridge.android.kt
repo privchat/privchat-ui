@@ -5,6 +5,8 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import com.gearui.system.AndroidHapticFeedback
+import com.gearui.system.Haptics
 
 actual object HapticBridge {
 
@@ -12,10 +14,13 @@ actual object HapticBridge {
 
     fun register(context: Context) {
         appContext = context.applicationContext
+        // GearUI's own components (the index bar) tap through the kit's Haptics.
+        Haptics.host = AndroidHapticFeedback(context)
     }
 
     fun unregister() {
         appContext = null
+        Haptics.host = null
     }
 
     private val vibrator: Vibrator?

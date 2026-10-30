@@ -1,5 +1,6 @@
 package com.netonstream.privchat.ui.pages
 
+import com.gearui.components.indexbar.IndexBar
 import com.gearui.components.icon.*
 import com.gearui.components.tabs.TabPager
 import com.gearui.components.refresh.pullRefreshItem
@@ -19,7 +20,6 @@ import com.netonstream.privchat.ui.i18n.PinyinIndex
 import kotlinx.coroutines.launch
 import com.tencent.kuikly.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.rememberCoroutineScope
-import com.netonstream.privchat.ui.components.IndexBar
 import com.netonstream.privchat.ui.search.SearchField
 import com.netonstream.privchat.ui.search.PeopleSearch
 import com.netonstream.privchat.ui.search.FieldHit
@@ -280,10 +280,10 @@ private fun FriendsTabContent(
 
         // 搜索态没有字母分组，索引条自然为空——列一条点不动的字母条只会误导。
         IndexBar(
-            letters = sectionStarts.mapNotNull { it.first },
+            indexes = sectionStarts.mapNotNull { it.first?.toString() },
             modifier = Modifier.align(Alignment.CenterEnd),
-            onPick = { letter ->
-                sectionStarts.firstOrNull { it.first == letter }?.let { (_, row) ->
+            onSelect = { letter ->
+                sectionStarts.firstOrNull { it.first?.toString() == letter }?.let { (_, row) ->
                     scope.launch { listState.scrollToItem(row) }
                 }
             },
