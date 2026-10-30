@@ -444,6 +444,8 @@ fun MessagePage(
     onRedPacketClick: ((String) -> Unit)? = null,
     // 点转账卡片（传 transferId）→ 宿主打开转账详情。
     onMoneyTransferClick: ((String) -> Unit)? = null,
+    /** 点消息里服务端附带的页面链接（如任务标题）→ 宿主按 route 打开对应页面。null=链接不可点。 */
+    onPageLinkClick: ((com.netonstream.privchat.ui.models.MessagePageLink) -> Unit)? = null,
     onError: ((String) -> Unit)? = null,
     /** 搜索命中跳转：以该 server_message_id 为锚打开会话（spec §5 jump-to-message） */
     initialFocusMessageId: ULong? = null,
@@ -1358,6 +1360,7 @@ fun MessagePage(
                                         null
                                     },
                                     onAvatarClick = if (!isSelf) onAvatarClick else null,
+                                    onPageLinkClick = onPageLinkClick,
                                     onMentionClick = onAvatarClick?.let { open ->
                                         { userId, name ->
                                             // 名字优先，SDK 给的 userId 兜底——顺序是刻意的。
@@ -2080,6 +2083,7 @@ private fun MessageRow(
     onAvatarClick: ((ULong) -> Unit)? = null,
     /** 点击消息里的 @ 提及。与 [onAvatarClick] 分开：自己发的消息不给点头像，但 @ 要能点。 */
     onMentionClick: ((ULong?, String) -> Unit)? = null,
+    onPageLinkClick: ((com.netonstream.privchat.ui.models.MessagePageLink) -> Unit)? = null,
     onAvatarLongPress: ((ULong, String) -> Unit)? = null,
     peerReadPts: ULong? = null,
     reactions: List<com.netonstream.privchat.sdk.dto.ReactionChip> = emptyList(),
@@ -2370,6 +2374,7 @@ private fun MessageRow(
                             onImagePreview = onImagePreview,
                             onContactClick = onAvatarClick,
                             onMentionClick = onMentionClick,
+                            onPageLinkClick = onPageLinkClick,
                             onRedPacketClick = onRedPacketClick,
                             onMoneyTransferClick = onMoneyTransferClick,
                             channelDisplayName = channelDisplayName,

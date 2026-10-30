@@ -67,6 +67,7 @@ import com.tencent.kuikly.compose.ui.text.SpanStyle
 import com.tencent.kuikly.compose.ui.text.TextLinkStyles
 import com.tencent.kuikly.compose.ui.text.buildAnnotatedString
 import com.tencent.kuikly.compose.ui.text.withLink
+import com.tencent.kuikly.compose.ui.text.style.TextDecoration
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.material3.Text as KuiklyText
 import com.netonstream.privchat.ui.media.awaitLocalMediaPath
@@ -118,6 +119,8 @@ fun MessageContent(
      * 第一个参数是 SDK 解析出的 userId，可能为 null，此时由上层按名字兜底。
      */
     onMentionClick: ((ULong?, String) -> Unit)? = null,
+    /** 点击服务端附在消息上的页面链接（如小薇提醒里的任务标题）；由宿主按 route 打开页面。null 时链接不可点。 */
+    onPageLinkClick: ((MessagePageLink) -> Unit)? = null,
 ) {
     val colors = Theme.colors
     val textColor = if (isSelf) colors.messageTextSelf else colors.messageTextOther
@@ -171,6 +174,8 @@ fun MessageContent(
                 textColor = textColor,
                 isSelf = isSelf,
                 onMentionClick = onMentionClick,
+                links = if (onPageLinkClick == null) emptyList() else message.pageLinks(),
+                onPageLinkClick = onPageLinkClick,
             )
             MessageType.IMAGE -> ImageContent(parsed, message, imageBubbleSize!!, onImagePreview)
             MessageType.VIDEO -> VideoContent(parsed, message, onVideoPreview)
@@ -229,9 +234,19 @@ private fun TextContent(
     textColor: Color,
     isSelf: Boolean,
     onMentionClick: ((ULong?, String) -> Unit)?,
+    links: List<MessagePageLink> = emptyList(),
+    onPageLinkClick: ((MessagePageLink) -> Unit)? = null,
 ) {
-    val safeEntities = remember(text, entities) { validTextEntities(text, entities) }
-    if (safeEntities.isEmpty()) {
+    // 页面链接优先：与之重叠的 SDK 实体（比如标题里的数字）不再单独成链接。
+    val spans = remember(text, entities, links) {
+        val pages = pageLinkRanges(text, links)
+        val others = validTextEntities(text, entities).filter { entity ->
+            pages.none { (range, _) -> entity.start <= range.last && range.first < entity.end }
+        }
+        (pages.map { (range, link) -> TextSpan(range.first, range.last + 1, text.substring(range), link = link) } +
+            others.map { TextSpan(it.start, it.end, it.text, entity = it) }).sortedBy { it.start }
+    }
+    if (spans.isEmpty()) {
         Text(
             text = text,
             modifier = Modifier.appleEmoji(),
@@ -243,28 +258,29 @@ private fun TextContent(
 
     val bodyStyle = Theme.typography.bodyMedium
     // 链接色由**所在气泡的实际底色**解析（见 PrivChatThemeExtension 的注释）：
-    // 品牌底色不动，浅底取深蓝、深底取浅蓝，且都保证对底色 ≥4.5。
+    // 品牌底色不动，浅底取深蓝、深底取浅蓝，且都保证对底色 ≥4.5。下划线是统一的链接样式。
     val linkColor = (if (isSelf) Theme.colors.selfBubbleStyle else Theme.colors.otherBubbleStyle).link
-    val linkStyle = TextLinkStyles(style = SpanStyle(color = linkColor))
+    val linkStyle = TextLinkStyles(style = SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline))
 
     val annotated = buildAnnotatedString {
         var cursor = 0
-        safeEntities.forEachIndexed { index, entity ->
-            if (entity.start > cursor) {
-                append(text.substring(cursor, entity.start))
+        spans.forEachIndexed { index, span ->
+            if (span.start > cursor) {
+                append(text.substring(cursor, span.start))
             }
             withLink(
                 LinkAnnotation.Clickable(
-                    tag = "entity-$index",
+                    tag = "span-$index",
                     styles = linkStyle,
                     linkInteractionListener = LinkInteractionListener {
-                        showEntityActionSheet(entity, onMentionClick)
+                        span.link?.let { onPageLinkClick?.invoke(it) }
+                        span.entity?.let { showEntityActionSheet(it, onMentionClick) }
                     },
                 ),
             ) {
-                append(entity.text)
+                append(span.text)
             }
-            cursor = entity.end
+            cursor = span.end
         }
         if (cursor < text.length) {
             append(text.substring(cursor))
@@ -280,6 +296,15 @@ private fun TextContent(
         lineHeight = bodyStyle.lineHeight,
     )
 }
+
+/** A tappable stretch of a text message: a page link from the server or an entity the SDK found. */
+private data class TextSpan(
+    val start: Int,
+    val end: Int,
+    val text: String,
+    val link: MessagePageLink? = null,
+    val entity: MessageTextEntity? = null,
+)
 
 /**
  * 按实体类型弹出 ActionSheet；调用方只需传入一个 `Entity`，
