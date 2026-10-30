@@ -7,7 +7,8 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
 /**
- * A page link the server attached to a message (`links` in its extra, or in extra.metadata):
+ * A page link the server attached to a message (privchat-protocol `MessageLink`, found at
+ * `metadata.links` in the message extra):
  * [text] is shown underlined where it appears in the message, and tapping it opens the page named by
  * [route] with [params]. Which pages exist is the host app's business; this layer only shows and reports.
  */
@@ -21,12 +22,11 @@ fun messagePageLinks(extra: String?): List<MessagePageLink> {
     val links = (root["links"] ?: (root["metadata"] as? JsonObject)?.get("links")) as? JsonArray ?: return emptyList()
     return links.mapNotNull { element ->
         val link = element as? JsonObject ?: return@mapNotNull null
-        val strings = link.mapNotNull { (key, value) ->
-            (value as? JsonPrimitive)?.takeIf { it.isString }?.let { key to it.content }
-        }.toMap()
-        val text = strings["text"]?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-        val route = strings["route"]?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-        MessagePageLink(text, route, strings - "text" - "route")
+        fun string(value: Any?) = (value as? JsonPrimitive)?.takeIf { it.isString }?.content
+        val text = string(link["text"])?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+        val route = string(link["route"])?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+        val params = (link["params"] as? JsonObject)?.mapNotNull { (key, value) -> string(value)?.let { key to it } }?.toMap()
+        MessagePageLink(text, route, params ?: emptyMap())
     }
 }
 

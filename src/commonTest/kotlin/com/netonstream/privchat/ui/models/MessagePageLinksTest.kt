@@ -5,7 +5,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class MessagePageLinksTest {
-    private val task = """{"text":"修复按钮","route":"workspace.task","workspace_id":"5","work_item_id":"12"}"""
+    private val task = """{"text":"修复按钮","route":"workspace.task","params":{"workspace_id":"5","work_item_id":"12"}}"""
 
     @Test fun linksComeFromExtraOrItsMetadataWithTheirRouteAndParams() {
         val expected = listOf(MessagePageLink("修复按钮", "workspace.task", mapOf("workspace_id" to "5", "work_item_id" to "12")))
