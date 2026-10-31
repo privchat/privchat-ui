@@ -68,7 +68,7 @@ interface StickerCatalog {
 }
 
 /** Resolve only the painter source. Message/outbox/catalog identities keep the original URL. */
-internal suspend fun stickerRenderSource(catalog: StickerCatalog?, owner: StickerSession?, originalUrl: String): String {
+suspend fun stickerRenderSource(catalog: StickerCatalog?, owner: StickerSession?, originalUrl: String): String {
     if (owner == null || catalog?.session != owner) return originalUrl
     val cached = catalog.cachedImage(originalUrl) ?: return originalUrl
     return cached.fileUrl.takeIf {
