@@ -130,7 +130,8 @@ fun UserProfilePage(
 
                         // 账号：对外只展示昵称 + 用户名（自设 handle，空则整行隐藏）。
                         // 内部用户 ID 不对外展示（对用户无意义，也不泄露内部编号）。
-                        val handle = user.username.takeIf { it.isNotBlank() }
+                        // The SDK fills a missing username with the uid; that is not an account to show.
+                        val handle = user.username.takeIf { it.isNotBlank() && it != user.userId.toString() }
                         if (isSystemUser) {
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
@@ -442,7 +443,9 @@ fun FriendProfilePage(
                         }
 
                         // 账号：用户名有值才展示；内部用户 ID 不对外展示（同陌生人视图）。
-                        val friendHandle = friend.username.takeIf { it.isNotBlank() }
+                        // The SDK fills a missing username with the uid (a phone-only account, the personal
+                        // assistant); that is not an account to show, so the row is left out.
+                        val friendHandle = friend.username.takeIf { it.isNotBlank() && it != friend.userId.toString() }
                         if (friendHandle != null) {
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
