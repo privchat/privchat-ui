@@ -88,7 +88,16 @@ data class ConnectivityState(
      * 「连接中」呈现，认证成功即清除。会话中途真掉线（隧道、切网）不置位，仍是「重连中」。
      */
     val resumedFromBackground: Boolean = false,
+    /**
+     * 首次连接成功前连续失败的次数（启动预检 / 建连）。到 [UNREACHABLE_AFTER_FAILURES] 后状态条
+     * 从「连接中」改说「暂时无法连接，正在重试」：一直只说连接中，用户分不清是慢还是连不上。
+     * 认证成功、登出/切号清零。
+     */
+    val connectFailures: Int = 0,
 )
+
+/** 首次连接连续失败这么多次后，状态条改为「暂时无法连接，正在重试」。 */
+const val UNREACHABLE_AFTER_FAILURES = 3
 
 // ========== Sync（§17.1） ==========
 
@@ -263,6 +272,7 @@ object ClientRuntime {
                     reconnectAttempt = 0,
                     serverBusy = false, // 成功信号清 busy
                     resumedFromBackground = false,
+                    connectFailures = 0,
                     lastConnectedAt = now,
                     lastError = null,
                 )
@@ -294,6 +304,11 @@ object ClientRuntime {
      * 必须在 [onConnectionStateChanged]("disconnected") **之前**调，让这次掉线带上
      * 「用户没看见」的标记；否则回前台时状态条会显示「重连中」。
      */
+    /** 首次连接的一次尝试失败（启动预检或建连）：还在重试，但要让用户知道不是单纯的慢。 */
+    fun onConnectAttemptFailed() {
+        _connectivity.value = _connectivity.value.let { it.copy(connectFailures = it.connectFailures + 1) }
+    }
+
     fun onBackgroundDisconnect() {
         _connectivity.value = _connectivity.value.copy(resumedFromBackground = true)
     }
@@ -459,7 +474,7 @@ object ClientRuntime {
 
 // ========== 运行时状态条（优先级固定，勿改序） ==========
 
-enum class RuntimeBannerKind { AUTH_EXPIRED, OFFLINE, RECONNECTING, CONNECTING, SERVER_BUSY, SYNCING, CONNECTED, HIDDEN }
+enum class RuntimeBannerKind { AUTH_EXPIRED, OFFLINE, RECONNECTING, CONNECTING, UNREACHABLE_RETRYING, SERVER_BUSY, SYNCING, CONNECTED, HIDDEN }
 
 /**
  * 状态条唯一决策函数（纯函数，可单测）。**优先级固定（P4.1 拍板，改序须过评审）**：
@@ -506,7 +521,9 @@ fun resolveRuntimeBanner(
     // 首次连接尚未成功（本会话从未认证过 → lastConnectedAt==null）：显示「连接中」而非
     // 「网络已断开」。用户刚打开 app、连接流程仍在进行，还没连过就提示断网是误导。
     // 真正的设备离线由上面 networkReachable=false 分支覆盖；曾连上后掉线由 reconnecting 覆盖。
-    hasStartedConnectionFlow && connectivity.lastConnectedAt == null -> RuntimeBannerKind.CONNECTING
+    hasStartedConnectionFlow && connectivity.lastConnectedAt == null ->
+        if (connectivity.connectFailures >= UNREACHABLE_AFTER_FAILURES) RuntimeBannerKind.UNREACHABLE_RETRYING
+        else RuntimeBannerKind.CONNECTING
     hasStartedConnectionFlow -> RuntimeBannerKind.OFFLINE
     else -> RuntimeBannerKind.HIDDEN
 }

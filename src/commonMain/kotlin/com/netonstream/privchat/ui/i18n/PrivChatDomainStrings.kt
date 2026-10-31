@@ -2107,6 +2107,7 @@ data class PrivChatAuxiliaryStrings(
     val loginExpired: String,
     val syncFailedRetry: String,
     val bannerServerBusy: String,
+    val bannerUnreachableRetrying: String,
     val startupInitializing: String,
     val startupVerifyingAccount: String,
     val startupConnecting: String,
@@ -2279,6 +2280,7 @@ data class PrivChatAuxiliaryStringsPatch(
     val loginExpired: String? = null,
     val syncFailedRetry: String? = null,
     val bannerServerBusy: String? = null,
+    val bannerUnreachableRetrying: String? = null,
     val startupInitializing: String? = null,
     val startupVerifyingAccount: String? = null,
     val startupConnecting: String? = null,
@@ -2415,6 +2417,7 @@ val PrivChatAuxiliaryStringsPatch.isEmpty: Boolean
         loginExpired == null &&
         syncFailedRetry == null &&
         bannerServerBusy == null &&
+        bannerUnreachableRetrying == null &&
         startupInitializing == null &&
         startupVerifyingAccount == null &&
         startupConnecting == null &&
@@ -2567,6 +2570,7 @@ fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivC
         loginExpired = patch.loginExpired ?: loginExpired,
         syncFailedRetry = patch.syncFailedRetry ?: syncFailedRetry,
         bannerServerBusy = patch.bannerServerBusy ?: bannerServerBusy,
+        bannerUnreachableRetrying = patch.bannerUnreachableRetrying ?: bannerUnreachableRetrying,
         startupInitializing = patch.startupInitializing ?: startupInitializing,
         startupVerifyingAccount = patch.startupVerifyingAccount ?: startupVerifyingAccount,
         startupConnecting = patch.startupConnecting ?: startupConnecting,

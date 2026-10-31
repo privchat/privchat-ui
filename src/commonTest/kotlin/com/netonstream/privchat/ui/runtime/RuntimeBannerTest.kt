@@ -122,4 +122,33 @@ class RuntimeBannerTest {
         assertEquals(RuntimeBannerKind.RECONNECTING, kind)
         ClientRuntime.reset()
     }
+
+    @Test
+    fun first_connection_failing_repeatedly_says_it_is_retrying_not_just_connecting() {
+        // 一直只说「连接中」，用户分不清是慢还是根本连不上。
+        ClientRuntime.reset()
+        fun kind() = resolveRuntimeBanner(
+            connectivity = ClientRuntime.connectivity.value,
+            sync = SyncState(),
+            hasStartedConnectionFlow = true,
+            showConnectedBanner = false,
+        )
+        repeat(UNREACHABLE_AFTER_FAILURES - 1) { ClientRuntime.onConnectAttemptFailed() }
+        assertEquals(RuntimeBannerKind.CONNECTING, kind(), "前几次失败可能只是慢，还说连接中")
+
+        ClientRuntime.onConnectAttemptFailed()
+        assertEquals(RuntimeBannerKind.UNREACHABLE_RETRYING, kind())
+
+        ClientRuntime.onConnectionStateChanged("authenticated")
+        assertEquals(0, ClientRuntime.connectivity.value.connectFailures, "连上就清零，下次断线从头计")
+        ClientRuntime.reset()
+    }
+
+    @Test
+    fun logout_clears_the_retrying_notice_of_the_previous_account() {
+        ClientRuntime.reset()
+        repeat(UNREACHABLE_AFTER_FAILURES) { ClientRuntime.onConnectAttemptFailed() }
+        ClientRuntime.reset()
+        assertEquals(0, ClientRuntime.connectivity.value.connectFailures, "上个账号的失败次数不能带进下个账号")
+    }
 }

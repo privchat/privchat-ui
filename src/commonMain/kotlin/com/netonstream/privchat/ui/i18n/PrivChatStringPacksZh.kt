@@ -648,6 +648,7 @@ internal val zhAuxiliary = PrivChatAuxiliaryStrings(
     loginExpired = "登录已失效，请重新登录",
     syncFailedRetry = "同步失败，稍后会自动重试",
     bannerServerBusy = "服务繁忙，请稍后",
+    bannerUnreachableRetrying = "暂时无法连接，正在重试…",
     startupInitializing = "正在初始化…",
     startupVerifyingAccount = "正在验证账号…",
     startupConnecting = "正在连接服务器…",
