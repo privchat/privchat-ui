@@ -89,8 +89,12 @@ object PrivChat {
      * 设置显示时区
      *
      * @param zoneId IANA 时区 ID，如 "Asia/Shanghai"、"Asia/Ho_Chi_Minh"、"America/New_York"
+     *
+     * 已初始化时先经 SDK 校验（TIMEZONE_SPEC）：非法 ID 报错且保留原配置，UI 也不前进，
+     * 避免 UI 与 SDK 实例时区分叉。纯本地配置，不触网。
      */
     fun setTimeZone(zoneId: String) {
+        if (isInitialized && client.setDisplayTimezone(zoneId).isFailure) return
         _timeZoneId = zoneId
     }
 
@@ -98,6 +102,7 @@ object PrivChat {
      * 重置为设备系统时区
      */
     fun resetTimeZone() {
+        if (isInitialized) client.resetDisplayTimezone()
         _timeZoneId = systemDefaultTimeZoneId()
     }
 
@@ -349,6 +354,9 @@ object PrivChat {
      */
     fun init(client: PrivchatClient) {
         _client = client
+        // 把 UI 显示时区同步给 SDK 实例（TIMEZONE_SPEC）；纯本地配置，不触网。
+        // core 未就绪时静默降级：Formatter 原子取不到值会回退平台 base 转换。
+        runCatching { client.setDisplayTimezone(_timeZoneId) }
         restoreDraftsFromPersistence()
     }
 

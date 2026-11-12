@@ -3,7 +3,6 @@ package com.netonstream.privchat.ui.utils
 import com.netonstream.privchat.ui.PrivChat
 import com.netonstream.privchat.ui.common.base.LocalDateTimeInfo
 import com.netonstream.privchat.ui.common.base.currentTimeMillis
-import com.netonstream.privchat.ui.common.base.epochMillisToLocalDateTime
 import com.netonstream.privchat.ui.i18n.PrivChatI18n
 import com.netonstream.privchat.ui.i18n.withArgs
 import kotlin.math.pow
@@ -379,6 +378,22 @@ object Formatter {
     fun unreadCount(count: UInt, max: Int = 99): String = unreadCount(count.toInt(), max)
 
     // ========== 私有辅助方法 ==========
+
+    /**
+     * UTC 毫秒 → 指定时区本地日期时间（TIMEZONE_SPEC §4 原子能力的 UI 委托入口）。
+     *
+     * 已初始化时优先走 SDK 原子（Rust chrono-tz，含 DST，三端一致）；core 未就绪或
+     * 转换失败时回退平台 base 实现。纯本地计算，不触网；UTC 毫秒在数据层永不偏移。
+     * 遮蔽 base 同名导入，故上层 ~19 处调用点无需改动。
+     */
+    private fun epochMillisToLocalDateTime(epochMillis: Long, timeZoneId: String): LocalDateTimeInfo {
+        if (PrivChat.isInitialized) {
+            PrivChat.client.epochMillisToLocalDateTime(epochMillis, timeZoneId).getOrNull()?.let {
+                return LocalDateTimeInfo(it.year, it.month, it.day, it.hour, it.minute, it.second, it.dayOfWeek)
+            }
+        }
+        return com.netonstream.privchat.ui.common.base.epochMillisToLocalDateTime(epochMillis, timeZoneId)
+    }
 
     private fun formatHHmm(local: LocalDateTimeInfo): String {
         return "${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
