@@ -2049,6 +2049,7 @@ data class PrivChatAuxiliaryStrings(
     val operationFailed: String,
     val smsCodeError: String,
     val loginErrInvalidCredentials: String,
+    val loginErrInvalidDeviceId: String,
     val loginErrAccountDisabled: String,
     val registerErrUsernameTaken: String,
     val registerErrUsernameInvalid: String,
@@ -2223,6 +2224,7 @@ data class PrivChatAuxiliaryStringsPatch(
     val operationFailed: String? = null,
     val smsCodeError: String? = null,
     val loginErrInvalidCredentials: String? = null,
+    val loginErrInvalidDeviceId: String? = null,
     val loginErrAccountDisabled: String? = null,
     val registerErrUsernameTaken: String? = null,
     val registerErrUsernameInvalid: String? = null,
@@ -2360,6 +2362,7 @@ val PrivChatAuxiliaryStringsPatch.isEmpty: Boolean
         operationFailed == null &&
         smsCodeError == null &&
         loginErrInvalidCredentials == null &&
+        loginErrInvalidDeviceId == null &&
         loginErrAccountDisabled == null &&
         registerErrUsernameTaken == null &&
         registerErrUsernameInvalid == null &&
@@ -2513,6 +2516,7 @@ fun PrivChatAuxiliaryStrings.merge(patch: PrivChatAuxiliaryStringsPatch?): PrivC
         operationFailed = patch.operationFailed ?: operationFailed,
         smsCodeError = patch.smsCodeError ?: smsCodeError,
         loginErrInvalidCredentials = patch.loginErrInvalidCredentials ?: loginErrInvalidCredentials,
+        loginErrInvalidDeviceId = patch.loginErrInvalidDeviceId ?: loginErrInvalidDeviceId,
         loginErrAccountDisabled = patch.loginErrAccountDisabled ?: loginErrAccountDisabled,
         registerErrUsernameTaken = patch.registerErrUsernameTaken ?: registerErrUsernameTaken,
         registerErrUsernameInvalid = patch.registerErrUsernameInvalid ?: registerErrUsernameInvalid,

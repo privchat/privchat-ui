@@ -589,6 +589,7 @@ internal val enAuxiliary = PrivChatAuxiliaryStrings(
     operationFailed = "Operation failed. Please try again later.",
     smsCodeError = "Incorrect verification code. Please try again.",
     loginErrInvalidCredentials = "The username or password you entered is incorrect. Please check and try again.",
+    loginErrInvalidDeviceId = "The device ID is invalid. Update the app and try signing in again.",
     loginErrAccountDisabled = "This account has been disabled.",
     registerErrUsernameTaken = "This username is unavailable or already taken. Please choose another.",
     registerErrUsernameInvalid = "This username is unavailable or already taken. Please choose another.",

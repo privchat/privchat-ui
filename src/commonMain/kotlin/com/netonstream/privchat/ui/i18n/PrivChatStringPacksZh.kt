@@ -591,6 +591,7 @@ internal val zhAuxiliary = PrivChatAuxiliaryStrings(
     operationFailed = "操作失败，请稍后重试",
     smsCodeError = "验证码错误，请重新输入",
     loginErrInvalidCredentials = "您输入的账号或密码不正确，请仔细检查后重试。",
+    loginErrInvalidDeviceId = "设备 ID 格式不符。请更新应用后重新登录。",
     loginErrAccountDisabled = "该账号已被禁用",
     registerErrUsernameTaken = "用户名不可用或已被其他用户使用，请更换",
     registerErrUsernameInvalid = "用户名不可用或已被其他用户使用，请更换",

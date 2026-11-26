@@ -589,6 +589,7 @@ internal val viAuxiliary = PrivChatAuxiliaryStrings(
     operationFailed = "Thao tác thất bại, vui lòng thử lại sau",
     smsCodeError = "Mã xác minh không đúng, vui lòng nhập lại",
     loginErrInvalidCredentials = "Tên đăng nhập hoặc mật khẩu bạn nhập không đúng. Vui lòng kiểm tra lại và thử lại.",
+    loginErrInvalidDeviceId = "Mã thiết bị không hợp lệ. Vui lòng cập nhật ứng dụng và đăng nhập lại.",
     loginErrAccountDisabled = "Tài khoản này đã bị vô hiệu hóa",
     registerErrUsernameTaken = "Tên người dùng không khả dụng hoặc đã được sử dụng, vui lòng chọn tên khác",
     registerErrUsernameInvalid = "Tên người dùng không khả dụng hoặc đã được sử dụng, vui lòng chọn tên khác",

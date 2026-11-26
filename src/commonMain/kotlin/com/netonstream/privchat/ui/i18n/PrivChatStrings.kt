@@ -558,6 +558,7 @@ data class PrivChatStrings(
     val operationFailed: String get() = dAuxiliary.operationFailed
     val smsCodeError: String get() = dAuxiliary.smsCodeError
     val loginErrInvalidCredentials: String get() = dAuxiliary.loginErrInvalidCredentials
+    val loginErrInvalidDeviceId: String get() = dAuxiliary.loginErrInvalidDeviceId
     val loginErrAccountDisabled: String get() = dAuxiliary.loginErrAccountDisabled
     val registerErrUsernameTaken: String get() = dAuxiliary.registerErrUsernameTaken
     val registerErrUsernameInvalid: String get() = dAuxiliary.registerErrUsernameInvalid

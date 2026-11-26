@@ -26,6 +26,7 @@ class PlatformErrorMessageTest {
         assertEquals(en.platformErrInviteAlreadyBound, PlatformErrorMessage.describe(Err(10100, "INVITE_ALREADY_BOUND"), en))
         assertEquals(en.platformErrBalanceInsufficient, PlatformErrorMessage.describe(Err(10205, "WALLET_AVAILABLE_BALANCE_INSUFFICIENT"), en))
         assertEquals(en.loginErrInvalidCredentials, PlatformErrorMessage.describe(Err(10011, "INVALID_CREDENTIALS"), en))
+        assertEquals(en.loginErrInvalidDeviceId, PlatformErrorMessage.describe(Err(10100, "INVALID_DEVICE_ID"), en))
     }
 
     @Test

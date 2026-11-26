@@ -124,6 +124,7 @@ object PlatformErrorMessage {
 
         // ── account / system：登录、验证码 ──
         "INVALID_CREDENTIALS" -> strings.loginErrInvalidCredentials
+        "INVALID_DEVICE_ID" -> strings.loginErrInvalidDeviceId
         "ACCOUNT_DISABLED" -> strings.loginErrAccountDisabled
         "ACCOUNT_DELETED" -> strings.platformErrAccountDeleted
         "INVALID_MOBILE", "MOBILE_INVALID" -> strings.authPhoneInvalid

@@ -589,6 +589,7 @@ internal val hantAuxiliary = PrivChatAuxiliaryStrings(
     operationFailed = "操作失敗，請稍後再試",
     smsCodeError = "驗證碼錯誤，請重新輸入",
     loginErrInvalidCredentials = "您輸入的帳號或密碼不正確，請仔細檢查後重試。",
+    loginErrInvalidDeviceId = "裝置 ID 格式不符。請更新應用程式後重新登入。",
     loginErrAccountDisabled = "該帳號已被停用",
     registerErrUsernameTaken = "用戶名不可用或已被其他用戶使用，請更換",
     registerErrUsernameInvalid = "用戶名不可用或已被其他用戶使用，請更換",
