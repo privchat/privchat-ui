@@ -1,11 +1,9 @@
 package com.netonstream.privchat.ui.pages
 
 import com.netonstream.privchat.ui.emoji.appleEmoji
-import com.tencent.kuikly.compose.ui.platform.LocalConfiguration
 import com.tencent.kuikly.compose.ui.input.pointer.pointerInput
 import com.tencent.kuikly.compose.foundation.gestures.awaitFirstDown
 import com.tencent.kuikly.compose.foundation.gestures.awaitEachGesture
-import com.tencent.kuikly.compose.ui.graphics.graphicsLayer
 import com.gearui.foundation.layout.Spacing
 import com.gearui.components.searchbar.SearchBarAlignment
 import com.gearui.components.searchbar.SearchBarButton
@@ -57,11 +55,14 @@ import com.tencent.kuikly.compose.ui.Alignment
 import com.tencent.kuikly.compose.ui.Modifier
 import com.tencent.kuikly.compose.ui.draw.clip
 import com.tencent.kuikly.compose.ui.graphics.Color
+import com.tencent.kuikly.compose.ui.semantics.contentDescription
+import com.tencent.kuikly.compose.ui.semantics.semantics
 import com.tencent.kuikly.compose.ui.unit.dp
 import com.tencent.kuikly.compose.ui.zIndex
 import com.gearui.foundation.primitives.Icon
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlin.math.abs
 
 /**
  * 会话列表页面
@@ -119,8 +120,9 @@ fun ConversationPage(
     }
     val localStates by PrivChat.channelLocalStates.collectAsState()
     val scope = rememberCoroutineScope()
-    // 第 0 项是搜索入口，平时藏在导航栏下面：列表从第 1 项（第一条会话）开始，下拉才露出来。
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = FIRST_CONVERSATION_INDEX)
+    val listState = rememberLazyListState()
+    // A short lazy list can backfill its viewport, so scroll position alone cannot hide search.
+    var searchExpanded by remember { mutableStateOf(false) }
     val swipeGroup = rememberSwipeCellGroupState()
 
     // 搜索关键词
@@ -146,58 +148,20 @@ fun ConversationPage(
         )
     }
 
-    // 搜索入口露出的比例（0 = 藏着，1 = 全露）。导航栏的放大镜随之淡出：两个搜索入口不同时出现（微信的做法）。
-    val searchReveal by remember {
-        derivedStateOf {
-            if (listState.firstVisibleItemIndex != SEARCH_ENTRY_INDEX) return@derivedStateOf 0f
-            val entry = listState.layoutInfo.visibleItemsInfo.firstOrNull() ?: return@derivedStateOf 0f
-            if (entry.size <= 0) 0f
-            else (1f - listState.firstVisibleItemScrollOffset.toFloat() / entry.size).coerceIn(0f, 1f)
-        }
-    }
-
-    // 双击底部「消息」Tab 回到列表顶部：外部每次双击把计数 +1，这里响应变化滚动。
-    // 落点是第一条会话（搜索入口仍藏着），不是第 0 项。
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > 0) {
-            listState.animateScrollToItem(FIRST_CONVERSATION_INDEX)
+            searchExpanded = false
+            listState.animateScrollToItem(0)
         }
     }
 
-    // 任意频道收到新消息时自动回到顶部，让新消息那一行露出来。搜索入口正露着时列表已经
-    // 在顶部，不动它；否则落到第一条会话——不能落到第 0 项，否则每来一条消息搜索框都冒出来。
     val channelUpdateMarker = remember(channels) {
         channels.maxOfOrNull { it.lastTs } ?: 0UL
     }
     LaunchedEffect(channelUpdateMarker) {
         if (channelUpdateMarker > 0UL && filteredChannels.isNotEmpty()) {
             delay(50)
-            if (listState.firstVisibleItemIndex != SEARCH_ENTRY_INDEX) {
-                listState.scrollToItem(FIRST_CONVERSATION_INDEX)
-            }
-        }
-    }
-
-    // 搜索入口只停在「全露」或「全藏」：露出超过一半就展开，否则收回（iOS 列表顶部搜索栏的行为）。
-    //
-    // 吸附时机分平台：
-    // - 滚动停下时（两端都有）：惯性滑进搜索区、半路停住时补一次；iOS 只用这一个——原生减速和
-    //   回弹本身连贯，松手就抢着动画，动画走完原生惯性还会再推几点，停在错的位置。
-    // - Android 再加手指抬起的那一刻：等滚动停下再动的话，松手后的惯性先走一小段、停一下、
-    //   吸附动画再接着走，走走停停看上去就是在抖。
-    val snapOnRelease = LocalConfiguration.current.isAndroid
-    suspend fun settleSearchEntry() {
-        if (listState.firstVisibleItemIndex != SEARCH_ENTRY_INDEX) return
-        val entry = listState.layoutInfo.visibleItemsInfo.firstOrNull() ?: return
-        val hidden = listState.firstVisibleItemScrollOffset
-        if (hidden <= 0 || hidden >= entry.size) return
-        listState.animateScrollToItem(
-            if (hidden * 2 < entry.size) SEARCH_ENTRY_INDEX else FIRST_CONVERSATION_INDEX
-        )
-    }
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.isScrollInProgress }.collect { scrolling ->
-            if (!scrolling) settleSearchEntry()
+            if (!searchExpanded && listState.canScrollBackward) listState.scrollToItem(0)
         }
     }
 
@@ -235,16 +199,19 @@ fun ConversationPage(
                     rightWidgetWidth = NavBarDefaults.actionSlotWidth * 2,
                     rightWidget = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                        // 全局搜索(聊天记录)入口。列表顶部的搜索框露出时淡出；全露时不再接点击，
-                        // 不留一个看不见却点得到的按钮。
-                        NavBarActionSlot(
-                            modifier = Modifier.graphicsLayer { alpha = 1f - searchReveal },
-                            onClick = if (searchReveal < 1f) onGlobalSearch else null,
-                        ) {
-                            Icon(Icons.magnifyingGlass,
-                                size = NavBarDefaults.actionIconSize,
-                                tint = Theme.colors.foreground,
-                            )
+                        // Keep the plus slot fixed when the search button is hidden.
+                        if (searchExpanded) {
+                            Spacer(Modifier.width(NavBarDefaults.actionSlotWidth))
+                        } else {
+                            NavBarActionSlot(
+                                modifier = Modifier.semantics { contentDescription = strings.search },
+                                onClick = onGlobalSearch,
+                            ) {
+                                Icon(Icons.magnifyingGlass,
+                                    size = NavBarDefaults.actionIconSize,
+                                    tint = Theme.colors.foreground,
+                                )
+                            }
                         }
                         // gearui ContextMenu：定位、阴影、点击外部消失、按下高亮都内置好了
                         ContextMenu(
@@ -285,33 +252,41 @@ fun ConversationPage(
             }
             networkStatusBar?.invoke()
 
-        // 会话列表。第 0 项是下拉露出的搜索入口，和 NavBar 的放大镜同一个去处（全局搜索页）。
+        if (searchExpanded) {
+            SearchBarButton(
+                onClick = onGlobalSearch,
+                placeholder = strings.search,
+                alignment = SearchBarAlignment.CENTER,
+                modifier = Modifier.fillMaxWidth()
+                    .padding(horizontal = Spacing.lg, vertical = Spacing.xs),
+            )
+        }
         GearLazyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                // 只观察，不消费：Android 上手指抬起时吸附搜索入口（见 snapOnRelease）。
-                .pointerInput(Unit) {
+                .weight(1f)
+                .fillMaxWidth()
+                // Observe the completed pull without taking scroll or swipe-cell input.
+                .pointerInput(listState) {
+                    val threshold = maxOf(28.dp.toPx(), viewConfiguration.touchSlop)
                     awaitEachGesture {
-                        awaitFirstDown(requireUnconsumed = false)
-                        do {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val startedAtTop = !listState.canScrollBackward
+                        while (true) {
                             val event = awaitPointerEvent()
-                        } while (event.changes.any { it.pressed })
-                        if (snapOnRelease) scope.launch { settleSearchEntry() }
+                            if (event.changes.any { it.id != down.id && it.pressed }) break
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            if (change.pressed) continue
+                            val drag = change.position - down.position
+                            if (abs(drag.y) >= threshold && abs(drag.y) > abs(drag.x)) {
+                                if (drag.y < 0f) searchExpanded = false
+                                else if (startedAtTop) searchExpanded = true
+                            }
+                            break
+                        }
                     }
                 },
             state = listState,
         ) {
-            item(key = "search-entry") {
-                SearchBarButton(
-                    onClick = onGlobalSearch,
-                    placeholder = strings.search,
-                    alignment = SearchBarAlignment.CENTER,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        // 搜索入口本身有 44 的点击区（画出来的框 36），上下再各 4，整行 52（微信）。
-                        .padding(horizontal = Spacing.lg, vertical = Spacing.xs),
-                )
-            }
             if (filteredChannels.isEmpty()) {
                 // 空状态
                 item {
@@ -574,9 +549,3 @@ private fun buildDescription(
 
     return builder.toString()
 }
-
-/** 列表第 0 项：下拉露出的搜索入口。 */
-private const val SEARCH_ENTRY_INDEX = 0
-
-/** 第一条会话（或空状态）所在的位置；列表的「顶部」指这里，搜索入口藏在它上面。 */
-private const val FIRST_CONVERSATION_INDEX = 1
