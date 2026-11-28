@@ -158,15 +158,23 @@ fun rememberChatCallAction(channelId: ULong, name: String = "", avatarUrl: Strin
     val scope = rememberCoroutineScope()
     return {
         val current = coordinator.state.value
-        ActionSheet.showList(
-            items = listOf(
-                ActionSheetItem(label = labels.video, disabled = current.busy || current.call != null),
-                ActionSheetItem(label = labels.audio, disabled = current.busy || current.call != null),
+        val choices = listOf(
+            labels.video to CallPresentation(channelId, CallMediaKind.VIDEO, name, avatarUrl),
+            labels.audio to CallPresentation(channelId, CallMediaKind.AUDIO, name, avatarUrl),
+            labels.videoWithoutCamera to CallPresentation(
+                channelId, CallMediaKind.VIDEO, name, avatarUrl, startWithCamera = false,
             ),
+        )
+        ActionSheet.showList(
+            items = choices.map { (label, _) ->
+                ActionSheetItem(label = label, disabled = current.busy || current.call != null)
+            },
             onSelected = { _, index ->
                 val latest = coordinator.state.value
                 if (latest.available && !latest.busy && latest.call == null) {
-                    scope.launch { coordinator.start(CallPresentation(channelId, if (index == 0) CallMediaKind.VIDEO else CallMediaKind.AUDIO, name, avatarUrl)) }
+                    choices.getOrNull(index)?.second?.let { presentation ->
+                        scope.launch { coordinator.start(presentation) }
+                    }
                 }
             },
         )

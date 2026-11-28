@@ -569,6 +569,28 @@ class CallCoordinatorTest {
         c.close(); runCurrent()
     }
 
+    @Test fun outgoingVideoWithCameraOffStillJoinsAndCanEnableItLater() = runTest {
+        val api = Control().apply { call = snapshot().copy(initiatorId = 1u, mediaKind = CallMediaKind.VIDEO) }
+        val media = Media()
+        val c = DefaultCallCoordinator(api, 1u, media, backgroundScope)
+        c.start(CallPresentation(api.call.channelId, CallMediaKind.VIDEO, startWithCamera = false))
+
+        assertEquals(CallMediaKind.VIDEO, api.invitations.single().mediaKind)
+        assertEquals(1, media.connections)
+        assertTrue(c.state.value.joined)
+        assertEquals(listOf(true), media.microphoneCalls)
+        assertTrue(media.cameraCalls.isEmpty())
+        assertFalse(c.state.value.cameraEnabled)
+
+        c.setCamera(true)
+        assertEquals(listOf(true), media.cameraCalls)
+        assertTrue(c.state.value.cameraEnabled)
+        c.hangUp()
+        assertEquals(1, media.disconnections)
+        assertNull(c.state.value.call)
+        c.close(); runCurrent()
+    }
+
     @Test fun ringingAudioChoicesAreAppliedAtJoinWithoutPrematureCapture() = runTest {
         val api = Control(); val media = Media()
         val c = DefaultCallCoordinator(api, 1u, media, backgroundScope)

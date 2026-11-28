@@ -202,7 +202,8 @@ class DefaultCallCoordinator(
                         catch (failure: Exception) { errorIfCurrent(call.callId, ticket, CallException(CallFailure.ROUTING)) }
                     }
                     var cameraEnabled = false
-                    if (canConnect(call.callId, ticket) && call.mediaKind == CallMediaKind.VIDEO) {
+                    if (canConnect(call.callId, ticket) && call.mediaKind == CallMediaKind.VIDEO &&
+                        state.value.presentation?.startWithCamera != false) {
                         try { media.setCamera(true); cameraEnabled = true }
                         catch (cancelled: CancellationException) { throw cancelled }
                         catch (failure: Exception) { errorIfCurrent(call.callId, ticket, CallException(CallFailure.MEDIA)) }

@@ -28,7 +28,13 @@ interface CallMedia {
 }
 
 /** Presentation snapshot from the actual chat, retained even if invite fails before a call exists. */
-data class CallPresentation(val channelId: ULong, val mediaKind: CallMediaKind, val name: String = "", val avatarUrl: String = "")
+data class CallPresentation(
+    val channelId: ULong,
+    val mediaKind: CallMediaKind,
+    val name: String = "",
+    val avatarUrl: String = "",
+    val startWithCamera: Boolean = true,
+)
 
 data class CallUiState(
     val available: Boolean = false,
